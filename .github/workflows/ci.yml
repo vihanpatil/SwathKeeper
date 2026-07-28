@@ -1,0 +1,57 @@
+name: FieldGuard CI
+
+# Runs on GitHub's servers on every push and pull request. You don't run this —
+# GitHub does, in a fresh Ubuntu VM, and reports a green check or red X on each commit.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # ACTIVE NOW. Validates the tiger-team config + repo structure on every push.
+  # This is meaningful from day one, before any ROS 2 code exists.
+  # ---------------------------------------------------------------------------
+  validate-config:
+    name: Validate tiger-team config & structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install validator dependencies
+        run: pip install pyyaml
+      - name: Validate agents, settings.json, and structure
+        run: python scripts/validate_agents.py
+
+  # ---------------------------------------------------------------------------
+  # READY TO GROW (Week 2+). Uncomment once the colcon workspace, the Docker
+  # image (built by devops-reliability-engineer), and the eval harness exist.
+  # This is the real pipeline: build → test → headless sim smoke → eval metrics.
+  # ---------------------------------------------------------------------------
+  # build-test-sim:
+  #   name: colcon build + tests + headless sim smoke + eval
+  #   runs-on: ubuntu-latest
+  #   container: ghcr.io/vihanpatil/fieldguard:latest   # pinned ROS 2 + Gazebo + ArduPilot image
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: colcon build
+  #       run: colcon build --symlink-install
+  #     - name: Unit + integration tests
+  #       run: |
+  #         colcon test
+  #         colcon test-result --verbose
+  #     - name: Headless sim smoke scenario + eval harness
+  #       run: |
+  #         source install/setup.bash
+  #         ./scripts/run_eval.sh --headless --scenario smoke
+  #     - name: Upload eval metrics
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: eval-metrics
+  #         path: eval/results/
+  #     # Fail the build if avoidance success or coverage completeness regresses
+  #     # (thresholds enforced inside run_eval.sh — owned by perception-ml-engineer + qa-safety-reviewer).

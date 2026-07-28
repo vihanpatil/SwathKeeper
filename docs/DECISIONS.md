@@ -45,10 +45,36 @@ Owner / roles: product-lead, tech-lead, flight-software-engineer.
 
 ---
 
-## ADR-003: NDVI-vs-RGB detection approach  (status: PROPOSED — resolve after the Week 1-2 spike)
+## ADR-003: NDVI-vs-RGB detection approach  (status: PROPOSED — spike kicked off Week 1, see docs/SPIKE_ndvi_vs_rgb.md)
 Decision: _pending spike._
 Alternative(s): (a) detect directly on NDVI-rendered frames (recommended, matches real hardware);
 (b) render a synthetic RGB pass in sim for perception only.
 Why: To be decided by `perception-ml-engineer` on a metric (detection precision/recall on a labeled
 sim clip), not before. Fill this in when the spike lands.
 Owner / roles: perception-ml-engineer, tech-lead.
+
+---
+
+## ADR-004: Pin the simulation toolchain versions  (2026-07-27, status: ACCEPTED)
+Confirmed by `robotics-sim-engineer` against ArduPilot's `ardupilot_gz` docs and the
+`aerial-autonomy-stack` reference (both pin the same stack); no landscape shift as of mid-2026.
+Exact pins live in `CLAUDE.md` "Pinned versions" and the bringup steps in `docs/WEEK1_BRINGUP.md`.
+Note: `ardupilot_gazebo` uses the `ros2` branch (not `main`), and ArduPilot firmware tracks `master`
+(not a stable Copter tag) because the AP_DDS/ROS 2 bridge surface tracks master — the one remaining
+open item is capturing the exact firmware commit SHA once the Week 1 build is green.
+Decision: pin **Gazebo Harmonic (LTS)** + ArduPilot's **`ardupilot_gz`** ROS 2
+integration on **ROS 2 Humble** (Ubuntu 22.04), matching ArduPilot's officially documented and
+CI-tested stack, run inside a **Docker/Ubuntu container** (the dev machine is macOS, where this
+stack is not practically supported natively).
+Alternative(s) rejected:
+  (a) **ROS 2 Jazzy + Harmonic** — newer LTS, longer support horizon, but ArduPilot's docs and CI
+      primarily exercise Humble, so it carries more first-run setup risk. Kept as the fallback.
+  (b) **Native macOS install** — rejected; Gazebo + ArduPilot SITL + ROS 2 aren't practically
+      supported on macOS, and fighting that would burn the Week 1-2 gate.
+  (c) **Gazebo Garden** — rejected; Harmonic is the current LTS and the release ArduPilot targets.
+Why: the Week 1-2 gate is "get a mission flying," so following ArduPilot's most-documented,
+most-tested combination minimizes setup risk on the critical path; longevity is secondary for a
+time-boxed portfolio build.
+Owner / roles: robotics-sim-engineer (research + confirm exact branch/tags), devops-reliability-engineer
+(container image), tech-lead (recorded). Promote to `accepted` with exact pins written into
+`CLAUDE.md` once robotics-sim-engineer confirms compatibility.

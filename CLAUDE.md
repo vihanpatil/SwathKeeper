@@ -45,11 +45,21 @@ recording them.
 ArduPilot/PX4 + a simulated camera through YOLOv8 + simulated LiDAR avoidance. Close to this use
 case — mine it for setup time; adapt, don't adopt wholesale.
 
-## Pinned versions (fill in once chosen — owned by robotics-sim-engineer + devops)
-- Gazebo: _TBD (Harmonic | Garden)_
-- ROS 2 distro: _TBD_
-- ArduPilot branch/tag: _TBD_
-- `ardupilot_gazebo`: _TBD_
+## Pinned versions (ADR-004, confirmed by robotics-sim-engineer 2026-07-27; owned by robotics-sim-engineer + devops)
+Rationale: ArduPilot's own documented/CI-tested stack, corroborated by the `aerial-autonomy-stack` ref.
+Run in Docker on Ubuntu 22.04 — this stack is not practically supported natively on macOS.
+- **Base OS**: Ubuntu 22.04 (jammy), in Docker Desktop
+- **ROS 2 distro**: Humble (Tier 1; EOL 2027-05)
+- **Gazebo**: Harmonic — `GZ_VERSION=harmonic` (LTS; EOL 2028-09)
+- **`ardupilot_gz`**: branch `main`
+- **`ardupilot_gazebo`**: branch `ros2`  ← note: not `main`
+- **`ros_gz`, `sdformat_urdf`, `micro-ROS-Agent`**: branch `humble`
+- **`SITL_Models`**: branch `main`
+- **ArduPilot firmware**: branch `master` — pin the exact commit SHA here once the Week 1 build goes
+  green (see `docs/WEEK1_BRINGUP.md` §7). `master` (not a stable Copter tag) is intentional: the
+  AP_DDS/ROS 2 bridge surface tracks master, so a stable tag risks DDS topic mismatches.
+- Setup + bringup checklist: `docs/WEEK1_BRINGUP.md`. Container: `sim/docker/Dockerfile` +
+  `scripts/sim_docker_build.sh` / `sim_docker_run.sh`.
 
 ## Repo layout
 ```
