@@ -12,9 +12,19 @@ The `product-lead` re-cuts scope rather than moving the deadline. Full detail: `
 | **8** | Buffer / polish. | all | Green CI from clean clone; tagged demo-ready commit; safety sign-off from `qa-safety-reviewer`. |
 
 ## Current status
-- **Week:** 0 (setup complete — tiger team scaffolded, repo initialized).
-- **Next action:** run `/standup`, then have `robotics-sim-engineer` pin versions and stand up the
-  Gazebo + ArduPilot SITL bringup; in parallel `perception-ml-engineer` scopes the Week 1-2 spike.
+- **Week:** 1 (planning done; execution is the human's to run). Both lanes scoped in parallel.
+- **Lane 1 — sim bringup (`robotics-sim-engineer`):** ✅ toolchain pinned (ADR-004 ACCEPTED: Gazebo
+  Harmonic + `ardupilot_gz` on ROS 2 Humble, Ubuntu 22.04 in Docker). Bringup checklist in
+  `docs/WEEK1_BRINGUP.md`; starter container in `sim/docker/`. **Human next:** run the checklist to
+  get a no-obstacle mission flying, then capture the exact ArduPilot firmware SHA into CLAUDE.md.
+- **Lane 2 — detection spike (`perception-ml-engineer`):** ✅ scoped in `docs/SPIKE_ndvi_vs_rgb.md`
+  (default NDVI-direct; FNR is the safety-critical metric; 3-day time-box). **Blocked on** a sim clip
+  from Lane 1 (short fixed-seed flight rendered as NDVI + co-located RGB with pose logs).
+- **CI:** ✅ starter GitHub Actions workflow validates the tiger-team config on every push; the real
+  build/test/sim/eval pipeline is stubbed and ready to grow at Week 2+.
+- **Blocking human steps:** (1) create the GitHub repo + push so CI runs; (2) install Docker Desktop
+  and run `docs/WEEK1_BRINGUP.md`. Interface names off the AP_DDS bridge need locking by `tech-lead`
+  once the bridge is up (topic/frame names have moved between versions — verify against the checkout).
 
 ## Explicit stretch goals (documented, NOT v1 blockers)
 - Full coverage-debt reconciliation (v1 ships "avoid, return to next waypoint" first).
