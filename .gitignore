@@ -1,0 +1,37 @@
+# ROS 2 / colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Sim / data artifacts
+*.rosbag
+*.bag
+*.db3
+rosbag2_*/
+*.mp4
+*.avi
+eval/results/
+*.log
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Secrets / local env (also denied in .claude/settings.json)
+.env
+*.env
+secrets/
+
+# Claude Code local (keep shared config; ignore local overrides)
+.claude/settings.local.json
+.claude/agent-memory-local/
