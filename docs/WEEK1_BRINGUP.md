@@ -70,10 +70,20 @@ docker run -it --rm \
   bash
 ```
 
-**Verify:** the shell prompt comes up inside the container, `ros2 --version` and `gz sim --version`
-both resolve.
+**Verify:** the shell prompt comes up inside the container, and `ls /opt/ros/humble/setup.bash` and
+`gz sim --version` both resolve. (Check the setup file with `ls`, not `printenv ROS_DISTRO` — the
+Dockerfile sets `ENV ROS_DISTRO=humble`, so `printenv` prints `humble` even on a broken image where
+ROS never actually installed. The file existing is the real proof.)
 
 ## 3. Import + build the ROS 2 / Gazebo / ArduPilot workspace (inside the container)
+
+> **Before §3 — confirm your shell is _inside the container_, not the macOS host:** run
+> `ls /opt/ros/humble/setup.bash` and it must print the path (on the host it says "No such file").
+> Your prompt should look like `root@<hash>:~#`. Also, if you edited `sim/docker/Dockerfile` since
+> your last build, **rebuild the image (§2) first** — Dockerfile edits (e.g. ROS auto-sourcing in
+> `.bashrc`) don't reach a running container until you rebuild. If `ros2` isn't found even though
+> `setup.bash` exists, you're on a stale image; rebuild, or `source /opt/ros/humble/setup.bash` to
+> unblock the current shell.
 
 Following ArduPilot's own documented workflow (`ardupilot_gz`, see version confirmation below):
 

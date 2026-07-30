@@ -77,4 +77,7 @@ WORKDIR /root
 # (/root/ardu_ws) so first-run failures are visible and fixable step by step. Once Week 1 is green,
 # devops-reliability-engineer should bake the resolved SHAs + build into this image for CI.
 
+RUN echo 'source /opt/ros/humble/setup.bash' >> /root/.bashrc \
+ && echo 'export GZ_VERSION=harmonic'        >> /root/.bashrc
+
 CMD ["/bin/bash"]
