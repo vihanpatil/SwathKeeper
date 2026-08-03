@@ -63,11 +63,13 @@ RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pk
         gstreamer1.0-gl \
     && rm -rf /var/lib/apt/lists/*
 
-# --- ArduPilot build prerequisites -------------------------------------------
+# --- ArduPilot + ros_gz build prerequisites ----------------------------------
+# libgflags-dev: ros_gz_sim #includes <gflags/gflags.h> and links libgflags at runtime; rosdep
+# doesn't reliably pull it (and Harmonic's versioned rosdep keys are skipped — see WEEK1_BRINGUP §3).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ccache g++ gawk python3-dev python3-pexpect \
         python3-setuptools python3-numpy python3-pyparsing python3-psutil \
-        rsync \
+        rsync libgflags-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root
