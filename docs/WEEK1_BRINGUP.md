@@ -95,17 +95,21 @@ mkdir -p /root/ardu_ws/src
 cd /root/ardu_ws
 vcs import --input https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos --recursive src
 
+# Add OSRF's Gazebo rosdep rules so rosdep can resolve the gz-* keys (gz-sim8, gz-msgs10, gz-plugin2,
+# gz-cmake3, gz-transport13, sdformat14, ...) against GZ_VERSION. WITHOUT this, rosdep can't map those
+# keys and ABORTS, installing nothing. This is ArduPilot's documented approach and is also baked into
+# the image Dockerfile — safe to re-run here.
+wget -q https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list \
+  -O /etc/ros/rosdep/sources.list.d/00-gazebo.list
 rosdep update
-apt-get update
-# Gazebo Harmonic's version-suffixed rosdep keys (gz-sim8 = Sim 8, gz-transport13, sdformat14) aren't
-# in the rosdep DB, but the libs are already installed in the image (gz-harmonic). Skip them so rosdep
-# installs the *rest* of the deps. Without --skip-keys rosdep aborts and installs NOTHING — then
-# colcon fails later on a missing dep like gflags.
-rosdep install --from-paths src --ignore-src -y \
-  --skip-keys "gz-transport13 gz-sim8 sdformat14"
-apt-get install -y libgflags-dev   # ros_gz_sim #includes gflags/gflags.h; not reliably pulled by rosdep
 
-colcon build
+rosdep install --from-paths src --ignore-src -y
+
+# Build only what the Gazebo bringup needs. `--packages-up-to ardupilot_gz_bringup` pulls the ros_gz /
+# ardupilot_gazebo / ardupilot_gz packages and skips micro_ros_agent — whose upstream micro_ros_msgs
+# build is a known-flaky eProsima issue and isn't needed until the DDS bridge (§6). If micro_ros_agent
+# still gets pulled in and fails, add: --packages-skip micro_ros_agent
+colcon build --packages-up-to ardupilot_gz_bringup
 ```
 
 **Verify:** `colcon build` finishes with `Summary: N packages finished [..]` and **0 packages

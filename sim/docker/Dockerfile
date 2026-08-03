@@ -63,9 +63,16 @@ RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pk
         gstreamer1.0-gl \
     && rm -rf /var/lib/apt/lists/*
 
+# --- OSRF Gazebo rosdep rules -------------------------------------------------
+# Lets `rosdep install` (run in WEEK1_BRINGUP §3) resolve Harmonic's gz-* keys — gz-sim8, gz-msgs10,
+# gz-plugin2, gz-cmake3, gz-transport13, sdformat14, ... — to the installed gz-harmonic packages,
+# driven by GZ_VERSION. Without it rosdep can't map those keys and aborts, installing nothing.
+RUN wget -q https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list \
+        -O /etc/ros/rosdep/sources.list.d/00-gazebo.list
+
 # --- ArduPilot + ros_gz build prerequisites ----------------------------------
 # libgflags-dev: ros_gz_sim #includes <gflags/gflags.h> and links libgflags at runtime; rosdep
-# doesn't reliably pull it (and Harmonic's versioned rosdep keys are skipped — see WEEK1_BRINGUP §3).
+# doesn't reliably pull it, so bake it in.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ccache g++ gawk python3-dev python3-pexpect \
         python3-setuptools python3-numpy python3-pyparsing python3-psutil \
