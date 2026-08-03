@@ -96,7 +96,14 @@ cd /root/ardu_ws
 vcs import --input https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos --recursive src
 
 rosdep update
-rosdep install --from-paths src --ignore-src -y
+apt-get update
+# Gazebo Harmonic's version-suffixed rosdep keys (gz-sim8 = Sim 8, gz-transport13, sdformat14) aren't
+# in the rosdep DB, but the libs are already installed in the image (gz-harmonic). Skip them so rosdep
+# installs the *rest* of the deps. Without --skip-keys rosdep aborts and installs NOTHING — then
+# colcon fails later on a missing dep like gflags.
+rosdep install --from-paths src --ignore-src -y \
+  --skip-keys "gz-transport13 gz-sim8 sdformat14"
+apt-get install -y libgflags-dev   # ros_gz_sim #includes gflags/gflags.h; not reliably pulled by rosdep
 
 colcon build
 ```
