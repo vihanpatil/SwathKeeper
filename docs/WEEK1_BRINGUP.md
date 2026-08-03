@@ -105,6 +105,14 @@ rosdep update
 
 rosdep install --from-paths src --ignore-src -y
 
+# ArduPilot's SITL build (AP_DDS / ROS 2 enabled on master) needs the microxrceddsgen code generator
+# on PATH, or waf fails with "Could not find the program ['microxrceddsgen']". It's baked into the
+# image Dockerfile; if you're on an image without it, install it once (v4.7.0 for firmware 4.7+):
+#   apt-get install -y default-jdk
+#   git clone --recurse-submodules --branch v4.7.0 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /opt/Micro-XRCE-DDS-Gen
+#   (cd /opt/Micro-XRCE-DDS-Gen && ./gradlew assemble)
+#   export PATH="$PATH:/opt/Micro-XRCE-DDS-Gen/scripts"
+
 # Build up to the Gazebo bringup target. Pulls the ros_gz / ardupilot_gazebo / ardupilot_gz packages
 # (and micro_ros_agent, which builds fine once the OSRF rosdep deps above are installed).
 #

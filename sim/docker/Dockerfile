@@ -79,6 +79,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         rsync libgflags-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# --- Micro-XRCE-DDS-Gen (ArduPilot AP_DDS code generator) --------------------
+# ArduPilot SITL (AP_DDS / ROS 2 enabled on master) needs `microxrceddsgen` on PATH, or waf configure
+# fails with "Could not find the program ['microxrceddsgen']". Branch v4.7.0 aligns with firmware 4.7+.
+RUN apt-get update && apt-get install -y --no-install-recommends default-jdk \
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone --recurse-submodules --branch v4.7.0 \
+        https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /opt/Micro-XRCE-DDS-Gen \
+    && cd /opt/Micro-XRCE-DDS-Gen && ./gradlew assemble
+ENV PATH="/opt/Micro-XRCE-DDS-Gen/scripts:${PATH}"
+
 WORKDIR /root
 
 # NOTE: the ros2_gz.repos import + colcon build + ArduPilot ./waf build are deliberately NOT baked
