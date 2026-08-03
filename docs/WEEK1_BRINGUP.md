@@ -105,10 +105,14 @@ rosdep update
 
 rosdep install --from-paths src --ignore-src -y
 
-# Build only what the Gazebo bringup needs. `--packages-up-to ardupilot_gz_bringup` pulls the ros_gz /
-# ardupilot_gazebo / ardupilot_gz packages and skips micro_ros_agent — whose upstream micro_ros_msgs
-# build is a known-flaky eProsima issue and isn't needed until the DDS bridge (§6). If micro_ros_agent
-# still gets pulled in and fails, add: --packages-skip micro_ros_agent
+# Build up to the Gazebo bringup target. Pulls the ros_gz / ardupilot_gazebo / ardupilot_gz packages
+# (and micro_ros_agent, which builds fine once the OSRF rosdep deps above are installed).
+#
+# MEMORY (macOS Docker Desktop): ros_gz_bridge generates large, template-heavy message-conversion
+# files; compiling them in parallel can exhaust Docker's RAM and get the compiler OOM-killed
+# ("fatal error: Killed signal terminated program cc1plus"). If that happens, cap parallelism:
+#   MAKEFLAGS="-j2" colcon build --packages-up-to ardupilot_gz_bringup --executor sequential
+# (drop to -j1 if it still OOMs) and/or raise Docker Desktop memory (Settings > Resources) to ~12 GB.
 colcon build --packages-up-to ardupilot_gz_bringup
 ```
 
