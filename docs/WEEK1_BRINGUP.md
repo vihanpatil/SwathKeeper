@@ -267,9 +267,9 @@ mode rtl                 # land the §6 hover first; wait for DISARMED
 wp load /workspace/fieldguard/config/missions/boustrophedon.waypoints
 wp list                  # confirm 15 items loaded
 param set DISARM_DELAY 0
+param set AUTO_OPTIONS 3  # Copter blocks arming in AUTO by default; bit0=allow arm, bit1=auto-takeoff
 mode auto
-arm throttle
-rc 3 1500                # throttle-up starts the mission: NAV_TAKEOFF, then the lanes, then RTL
+arm throttle             # arms AND auto-starts the mission: NAV_TAKEOFF, the lanes, then RTL
 ```
 
 **Verify:** the vehicle flies the full lawnmower in Gazebo and returns/lands (the mission's RTL) with
