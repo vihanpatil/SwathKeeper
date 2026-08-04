@@ -138,7 +138,7 @@ cd /root/ardu_ws/src/ardupilot
 
 # MAVProxy gives you the SITL command console. This is lighter than the full first-time setup
 # (Tools/environment_install/install-prereqs-ubuntu.sh -y), which also works but installs a lot.
-python3 -m pip install --upgrade MAVProxy pymavlink
+python3 -m pip install --upgrade MAVProxy pymavlink future   # 'future' is a MAVProxy runtime dep
 
 # HEADLESS (macOS Docker): do NOT pass --map/--console — those open wxPython GUI windows that need an
 # X display the container doesn't have. Plain sim_vehicle.py runs MAVProxy as a text prompt right here.
