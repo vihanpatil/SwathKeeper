@@ -70,10 +70,20 @@ docker run -it --rm \
   bash
 ```
 
-**Verify:** the shell prompt comes up inside the container, `ros2 --version` and `gz sim --version`
-both resolve.
+**Verify:** the shell prompt comes up inside the container, and `ls /opt/ros/humble/setup.bash` and
+`gz sim --version` both resolve. (Check the setup file with `ls`, not `printenv ROS_DISTRO` — the
+Dockerfile sets `ENV ROS_DISTRO=humble`, so `printenv` prints `humble` even on a broken image where
+ROS never actually installed. The file existing is the real proof.)
 
 ## 3. Import + build the ROS 2 / Gazebo / ArduPilot workspace (inside the container)
+
+> **Before §3 — confirm your shell is _inside the container_, not the macOS host:** run
+> `ls /opt/ros/humble/setup.bash` and it must print the path (on the host it says "No such file").
+> Your prompt should look like `root@<hash>:~#`. Also, if you edited `sim/docker/Dockerfile` since
+> your last build, **rebuild the image (§2) first** — Dockerfile edits (e.g. ROS auto-sourcing in
+> `.bashrc`) don't reach a running container until you rebuild. If `ros2` isn't found even though
+> `setup.bash` exists, you're on a stale image; rebuild, or `source /opt/ros/humble/setup.bash` to
+> unblock the current shell.
 
 Following ArduPilot's own documented workflow (`ardupilot_gz`, see version confirmation below):
 
@@ -85,10 +95,33 @@ mkdir -p /root/ardu_ws/src
 cd /root/ardu_ws
 vcs import --input https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos --recursive src
 
+# Add OSRF's Gazebo rosdep rules so rosdep can resolve the gz-* keys (gz-sim8, gz-msgs10, gz-plugin2,
+# gz-cmake3, gz-transport13, sdformat14, ...) against GZ_VERSION. WITHOUT this, rosdep can't map those
+# keys and ABORTS, installing nothing. This is ArduPilot's documented approach and is also baked into
+# the image Dockerfile — safe to re-run here.
+wget -q https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list \
+  -O /etc/ros/rosdep/sources.list.d/00-gazebo.list
 rosdep update
+
 rosdep install --from-paths src --ignore-src -y
 
-colcon build
+# ArduPilot's SITL build (AP_DDS / ROS 2 enabled on master) needs the microxrceddsgen code generator
+# on PATH, or waf fails with "Could not find the program ['microxrceddsgen']". It's baked into the
+# image Dockerfile; if you're on an image without it, install it once (v4.7.0 for firmware 4.7+):
+#   apt-get install -y default-jdk
+#   git clone --recurse-submodules --branch v4.7.0 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /opt/Micro-XRCE-DDS-Gen
+#   (cd /opt/Micro-XRCE-DDS-Gen && ./gradlew assemble)
+#   export PATH="$PATH:/opt/Micro-XRCE-DDS-Gen/scripts"
+
+# Build up to the Gazebo bringup target. Pulls the ros_gz / ardupilot_gazebo / ardupilot_gz packages
+# (and micro_ros_agent, which builds fine once the OSRF rosdep deps above are installed).
+#
+# MEMORY (macOS Docker Desktop): ros_gz_bridge generates large, template-heavy message-conversion
+# files; compiling them in parallel can exhaust Docker's RAM and get the compiler OOM-killed
+# ("fatal error: Killed signal terminated program cc1plus"). If that happens, cap parallelism:
+#   MAKEFLAGS="-j2" colcon build --packages-up-to ardupilot_gz_bringup --executor sequential
+# (drop to -j1 if it still OOMs) and/or raise Docker Desktop memory (Settings > Resources) to ~12 GB.
+colcon build --packages-up-to ardupilot_gz_bringup
 ```
 
 **Verify:** `colcon build` finishes with `Summary: N packages finished [..]` and **0 packages
@@ -102,50 +135,95 @@ snapshot is the real reproducibility pin, not just the branch names.
 
 ```bash
 cd /root/ardu_ws/src/ardupilot
-Tools/environment_install/install-prereqs-ubuntu.sh -y   # first time only
-./waf configure --board sitl
-./waf copter
 
-sim_vehicle.py -v ArduCopter --map --console
+# MAVProxy gives you the SITL command console. This is lighter than the full first-time setup
+# (Tools/environment_install/install-prereqs-ubuntu.sh -y), which also works but installs a lot.
+python3 -m pip install --upgrade MAVProxy pymavlink future   # 'future' is a MAVProxy runtime dep
+
+# HEADLESS (macOS Docker): do NOT pass --map/--console — those open wxPython GUI windows that need an
+# X display the container doesn't have. Plain sim_vehicle.py runs MAVProxy as a text prompt right here.
+# (ardupilot_sitl already built arducopter in §3, so this starts fast.)
+# sim_vehicle.py lives in Tools/autotest and isn't on PATH unless install-prereqs added it — add it:
+export PATH="$PWD/Tools/autotest:$PATH"
+sim_vehicle.py -v ArduCopter
 ```
 
-**Verify:** MAVProxy console connects, `mode guided`, `arm throttle`, `takeoff 5` climbs the
-simulated vehicle in the pure dronekit-less SITL physics model (no Gazebo yet). Land, exit. If this
-step fails, the problem is in the ArduPilot build, not the Gazebo/ROS 2 integration — fix here
-first.
+**Verify:** at the MAVProxy text prompt (`MAV>` / `GUIDED>`), wait for a GPS/EKF-ready message
+(`EKF3 IMU0 is using GPS`), then:
+
+```
+param set DISARM_DELAY 0   # stop the ~10 s ground auto-disarm from racing your takeoff
+mode guided
+arm throttle
+takeoff 5
+```
+
+Expect `NAV_TAKEOFF: ACCEPTED` and the altitude climbing (`status` shows `Alt`), in the pure SITL
+physics model (no Gazebo yet). Gotchas: the vehicle auto-disarms ~10 s after arming if it hasn't
+taken off, so a late/garbled takeoff then fails on a disarmed vehicle (hence `DISARM_DELAY 0`); and
+the periodic `Flight battery 100 percent` lines are just telemetry noise — type your commands over
+them. `Ctrl-D`/`exit` to quit. If this fails, the problem is in the ArduPilot build, not the
+Gazebo/ROS 2 integration — fix here first.
 
 ## 5. Launch Gazebo headless with the ArduPilot plugin
 
+Two prerequisites the image now bakes in, but which are the difference between a loading and a
+non-loading world (both cost real debugging time the first time):
+- **`libdebuginfod1`** must be installed, or `ardupilot_gazebo`'s `libGstCameraPlugin.so` fails to
+  load (`libdebuginfod.so.1: cannot open shared object file`).
+- **`GZ_SIM_RESOURCE_PATH` must include `ardupilot_gazebo`'s `share` dir**, or the `package://` URIs
+  in the `iris_with_gimbal` model don't resolve and the **entire world fails to load**
+  (`Unable to find uri[package://ardupilot_gazebo/models/...]` → `Failed to load a world`). The
+  container `.bashrc` sets this; if you build a fresh env, re-add it:
+
 ```bash
 source /root/ardu_ws/install/setup.bash
-gz sim -s -r --headless-rendering iris_runway.sdf   # or via the ardupilot_gz_bringup launch, see below
+export GZ_SIM_RESOURCE_PATH="$GZ_SIM_RESOURCE_PATH:/root/ardu_ws/install/ardupilot_gazebo/share"
 ```
 
-In practice, prefer the packaged launch file over a bare `gz sim` invocation — it wires the SDF
-world, the plugin, and the ros_gz bridge in one shot:
+**Recommended — run Gazebo and SITL as two separate processes** so each one's health is visible.
+Shell A: start the world and leave it running:
+
+```bash
+gz sim -v4 -s -r --headless-rendering iris_runway.sdf
+```
+It should keep running with only cosmetic `gz_frame_id` warnings — no `Unable to find uri` and no
+`Failed to load a world`. (This continues straight into §6.)
+
+**The all-in-one launch** wires world + plugin + ros_gz bridge + micro_ros_agent + SITL together, but
+is flakier about startup ordering (SITL can race Gazebo's plugin, then exit) and needs the same env
+above. Prefer it *after* the two-piece flow is proven, and always `pkill -9 -f 'arducopter|mavproxy|gz sim'`
+first:
 
 ```bash
 ros2 launch ardupilot_gz_bringup iris_runway.launch.py rviz:=false use_gz_tf:=true
 ```
 
-**Verify:** `gz topic -l` (or `ros2 topic list`, once the bridge is up) shows the world/clock/model
-topics; no plugin-load errors in the console output. This is running gzserver headless (no gzclient
-window) — correct default for a macOS host, see rendering gotcha below.
+**Verify:** the world stays up with no `Unable to find uri` / `Failed to load a world`. Running
+gzserver headless (no gzclient window) is the correct default on a macOS host.
 
 ## 6. Confirm SITL ⟷ Gazebo JSON backend + ROS 2 bridge together
 
-`ardupilot_gz_bringup`'s launch file starts SITL for you with the `gazebo-iris` frame already; if
-running it manually:
+With the world from §5 running in shell A, start SITL wired to Gazebo in shell B (headless: no
+`--map`/`--console`, which need an X display):
 
 ```bash
-sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --map --console
+cd /root/ardu_ws/src/ardupilot
+export PATH="$PWD/Tools/autotest:$PATH"
+sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
 ```
 
 **Verify, in order:**
-1. MAVProxy connects and `arm throttle` + `takeoff 5` visibly moves the model in Gazebo (rotors
-   spin, altitude changes) — this confirms the SITL→Gazebo actuator path.
-2. `ros2 topic list` shows ArduPilot's DDS topics (pose, battery, nav status, clock) — confirms the
-   AP_DDS→ROS 2 bridge is alive.
+1. First boot often shows `AP: Frame: UNSUPPORTED` and repeated `PreArm: Motors: Check frame class
+   and type`. The gazebo-iris `FRAME_CLASS 1` / `FRAME_TYPE 1` params load but only apply to the motor
+   mixer after a reboot. Fix once at the `MAV>` prompt: `param set FRAME_CLASS 1` →
+   `param set FRAME_TYPE 1` → `reboot`; wait ~15 s for reconnect (now `Frame: QUAD/X`). Then
+   `param set DISARM_DELAY 0` → `mode guided` → `arm throttle` → `takeoff 5` climbs, and the model
+   moves in Gazebo — confirming the SITL ⟷ Gazebo JSON actuator path.
+2. **AP_DDS → ROS 2 (`/ap/*` topics) is a separate follow-up**, not automatic: the default
+   gazebo-iris params do **not** set `DDS_ENABLE`, so `ros2 topic list | grep '^/ap'` is empty until
+   DDS is enabled (a param / DDS-enabled param file). Not required to fly a mission (that uses
+   MAVLink); wire it up when the ROS 2 control nodes need ArduPilot state.
 3. `ros2 topic hz /ap/pose/filtered` (or the equivalent pose topic name — confirm exact name
    against your checked-out `ardupilot_gz`/AP_DDS version, names have moved before) reports a
    steady rate, not zero.

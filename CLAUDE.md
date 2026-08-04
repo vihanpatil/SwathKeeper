@@ -55,11 +55,16 @@ Run in Docker on Ubuntu 22.04 — this stack is not practically supported native
 - **`ardupilot_gazebo`**: branch `ros2`  ← note: not `main`
 - **`ros_gz`, `sdformat_urdf`, `micro-ROS-Agent`**: branch `humble`
 - **`SITL_Models`**: branch `main`
-- **ArduPilot firmware**: branch `master` — pin the exact commit SHA here once the Week 1 build goes
-  green (see `docs/WEEK1_BRINGUP.md` §7). `master` (not a stable Copter tag) is intentional: the
-  AP_DDS/ROS 2 bridge surface tracks master, so a stable tag risks DDS topic mismatches.
+- **ArduPilot firmware**: branch `master` (not a stable Copter tag) is intentional: the AP_DDS/ROS 2
+  bridge surface tracks master, so a stable tag risks DDS topic mismatches.
 - Setup + bringup checklist: `docs/WEEK1_BRINGUP.md`. Container: `sim/docker/Dockerfile` +
   `scripts/sim_docker_build.sh` / `sim_docker_run.sh`.
+
+### Pinned commit SHAs (captured 2026-08-04 — first green Gazebo flight; the real reproducibility anchor)
+- `ardupilot`        `9895756d874ec9128d50918f6747a83706f4e221`  (V4.8.0-dev)
+- `ardupilot_gazebo` `cc0290d964dfa373531963a8fc39093a0836af0a`
+- `ardupilot_gz`     `8df4dc1726e37504e6fc8b952d02e554cfa3176f`
+- `ros_gz`           `9d7f8c721c233a9ac8b43950129d51e67905523e`
 
 ## Repo layout
 ```

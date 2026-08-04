@@ -63,12 +63,32 @@ RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pk
         gstreamer1.0-gl \
     && rm -rf /var/lib/apt/lists/*
 
-# --- ArduPilot build prerequisites -------------------------------------------
+# --- OSRF Gazebo rosdep rules -------------------------------------------------
+# Lets `rosdep install` (run in WEEK1_BRINGUP §3) resolve Harmonic's gz-* keys — gz-sim8, gz-msgs10,
+# gz-plugin2, gz-cmake3, gz-transport13, sdformat14, ... — to the installed gz-harmonic packages,
+# driven by GZ_VERSION. Without it rosdep can't map those keys and aborts, installing nothing.
+RUN wget -q https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list \
+        -O /etc/ros/rosdep/sources.list.d/00-gazebo.list
+
+# --- ArduPilot + ros_gz build prerequisites ----------------------------------
+# libgflags-dev: ros_gz_sim #includes <gflags/gflags.h> and links libgflags at runtime.
+# libdebuginfod1: ardupilot_gazebo's libGstCameraPlugin.so links it; without it the gimbal camera
+# plugin fails to load ("libdebuginfod.so.1: cannot open shared object file").
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ccache g++ gawk python3-dev python3-pexpect \
         python3-setuptools python3-numpy python3-pyparsing python3-psutil \
-        rsync \
+        rsync libgflags-dev libdebuginfod1 \
     && rm -rf /var/lib/apt/lists/*
+
+# --- Micro-XRCE-DDS-Gen (ArduPilot AP_DDS code generator) --------------------
+# ArduPilot SITL (AP_DDS / ROS 2 enabled on master) needs `microxrceddsgen` on PATH, or waf configure
+# fails with "Could not find the program ['microxrceddsgen']". Branch v4.7.0 aligns with firmware 4.7+.
+RUN apt-get update && apt-get install -y --no-install-recommends default-jdk \
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone --recurse-submodules --branch v4.7.0 \
+        https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /opt/Micro-XRCE-DDS-Gen \
+    && cd /opt/Micro-XRCE-DDS-Gen && ./gradlew assemble
+ENV PATH="/opt/Micro-XRCE-DDS-Gen/scripts:${PATH}"
 
 WORKDIR /root
 
@@ -76,5 +96,12 @@ WORKDIR /root
 # into this image yet — do them interactively per docs/WEEK1_BRINGUP.md §3-4 against a named volume
 # (/root/ardu_ws) so first-run failures are visible and fixable step by step. Once Week 1 is green,
 # devops-reliability-engineer should bake the resolved SHAs + build into this image for CI.
+
+# Auto-source ROS + set Gazebo env in every shell. The GZ_SIM_RESOURCE_PATH line adds
+# ardupilot_gazebo's share dir: its colcon env hook omits it, so package://ardupilot_gazebo/... URIs
+# in iris_with_gimbal otherwise fail to resolve and the world won't load.
+RUN echo 'source /opt/ros/humble/setup.bash' >> /root/.bashrc \
+ && echo 'export GZ_VERSION=harmonic' >> /root/.bashrc \
+ && echo 'export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH}:/root/ardu_ws/install/ardupilot_gazebo/share"' >> /root/.bashrc
 
 CMD ["/bin/bash"]
