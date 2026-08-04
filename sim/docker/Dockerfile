@@ -71,12 +71,13 @@ RUN wget -q https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gaze
         -O /etc/ros/rosdep/sources.list.d/00-gazebo.list
 
 # --- ArduPilot + ros_gz build prerequisites ----------------------------------
-# libgflags-dev: ros_gz_sim #includes <gflags/gflags.h> and links libgflags at runtime; rosdep
-# doesn't reliably pull it, so bake it in.
+# libgflags-dev: ros_gz_sim #includes <gflags/gflags.h> and links libgflags at runtime.
+# libdebuginfod1: ardupilot_gazebo's libGstCameraPlugin.so links it; without it the gimbal camera
+# plugin fails to load ("libdebuginfod.so.1: cannot open shared object file").
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ccache g++ gawk python3-dev python3-pexpect \
         python3-setuptools python3-numpy python3-pyparsing python3-psutil \
-        rsync libgflags-dev \
+        rsync libgflags-dev libdebuginfod1 \
     && rm -rf /var/lib/apt/lists/*
 
 # --- Micro-XRCE-DDS-Gen (ArduPilot AP_DDS code generator) --------------------
@@ -96,7 +97,11 @@ WORKDIR /root
 # (/root/ardu_ws) so first-run failures are visible and fixable step by step. Once Week 1 is green,
 # devops-reliability-engineer should bake the resolved SHAs + build into this image for CI.
 
+# Auto-source ROS + set Gazebo env in every shell. The GZ_SIM_RESOURCE_PATH line adds
+# ardupilot_gazebo's share dir: its colcon env hook omits it, so package://ardupilot_gazebo/... URIs
+# in iris_with_gimbal otherwise fail to resolve and the world won't load.
 RUN echo 'source /opt/ros/humble/setup.bash' >> /root/.bashrc \
- && echo 'export GZ_VERSION=harmonic'        >> /root/.bashrc
+ && echo 'export GZ_VERSION=harmonic' >> /root/.bashrc \
+ && echo 'export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH}:/root/ardu_ws/install/ardupilot_gazebo/share"' >> /root/.bashrc
 
 CMD ["/bin/bash"]

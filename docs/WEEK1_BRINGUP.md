@@ -167,36 +167,59 @@ Gazebo/ROS 2 integration — fix here first.
 
 ## 5. Launch Gazebo headless with the ArduPilot plugin
 
+Two prerequisites the image now bakes in, but which are the difference between a loading and a
+non-loading world (both cost real debugging time the first time):
+- **`libdebuginfod1`** must be installed, or `ardupilot_gazebo`'s `libGstCameraPlugin.so` fails to
+  load (`libdebuginfod.so.1: cannot open shared object file`).
+- **`GZ_SIM_RESOURCE_PATH` must include `ardupilot_gazebo`'s `share` dir**, or the `package://` URIs
+  in the `iris_with_gimbal` model don't resolve and the **entire world fails to load**
+  (`Unable to find uri[package://ardupilot_gazebo/models/...]` → `Failed to load a world`). The
+  container `.bashrc` sets this; if you build a fresh env, re-add it:
+
 ```bash
 source /root/ardu_ws/install/setup.bash
-gz sim -s -r --headless-rendering iris_runway.sdf   # or via the ardupilot_gz_bringup launch, see below
+export GZ_SIM_RESOURCE_PATH="$GZ_SIM_RESOURCE_PATH:/root/ardu_ws/install/ardupilot_gazebo/share"
 ```
 
-In practice, prefer the packaged launch file over a bare `gz sim` invocation — it wires the SDF
-world, the plugin, and the ros_gz bridge in one shot:
+**Recommended — run Gazebo and SITL as two separate processes** so each one's health is visible.
+Shell A: start the world and leave it running:
+
+```bash
+gz sim -v4 -s -r --headless-rendering iris_runway.sdf
+```
+It should keep running with only cosmetic `gz_frame_id` warnings — no `Unable to find uri` and no
+`Failed to load a world`. (This continues straight into §6.)
+
+**The all-in-one launch** wires world + plugin + ros_gz bridge + micro_ros_agent + SITL together, but
+is flakier about startup ordering (SITL can race Gazebo's plugin, then exit) and needs the same env
+above. Prefer it *after* the two-piece flow is proven, and always `pkill -9 -f 'arducopter|mavproxy|gz sim'`
+first:
 
 ```bash
 ros2 launch ardupilot_gz_bringup iris_runway.launch.py rviz:=false use_gz_tf:=true
 ```
 
-**Verify:** `gz topic -l` (or `ros2 topic list`, once the bridge is up) shows the world/clock/model
-topics; no plugin-load errors in the console output. This is running gzserver headless (no gzclient
-window) — correct default for a macOS host, see rendering gotcha below.
+**Verify:** the world stays up with no `Unable to find uri` / `Failed to load a world`. Running
+gzserver headless (no gzclient window) is the correct default on a macOS host.
 
 ## 6. Confirm SITL ⟷ Gazebo JSON backend + ROS 2 bridge together
 
-`ardupilot_gz_bringup`'s launch file starts SITL for you with the `gazebo-iris` frame already; if
-running it manually:
+With the world from §5 running in shell A, start SITL wired to Gazebo in shell B (headless: no
+`--map`/`--console`, which need an X display):
 
 ```bash
-sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --map --console
+cd /root/ardu_ws/src/ardupilot
+export PATH="$PWD/Tools/autotest:$PATH"
+sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
 ```
 
 **Verify, in order:**
-1. MAVProxy connects and `arm throttle` + `takeoff 5` visibly moves the model in Gazebo (rotors
-   spin, altitude changes) — this confirms the SITL→Gazebo actuator path.
-2. `ros2 topic list` shows ArduPilot's DDS topics (pose, battery, nav status, clock) — confirms the
-   AP_DDS→ROS 2 bridge is alive.
+1. MAVProxy connects and `param set DISARM_DELAY 0` → `mode guided` → `arm throttle` → `takeoff 5`
+   climbs, and the model moves in Gazebo — this confirms the SITL ⟷ Gazebo JSON actuator path.
+2. **AP_DDS → ROS 2 (`/ap/*` topics) is a separate follow-up**, not automatic: the default
+   gazebo-iris params do **not** set `DDS_ENABLE`, so `ros2 topic list | grep '^/ap'` is empty until
+   DDS is enabled (a param / DDS-enabled param file). Not required to fly a mission (that uses
+   MAVLink); wire it up when the ROS 2 control nodes need ArduPilot state.
 3. `ros2 topic hz /ap/pose/filtered` (or the equivalent pose topic name — confirm exact name
    against your checked-out `ardupilot_gz`/AP_DDS version, names have moved before) reports a
    steady rate, not zero.
