@@ -12,15 +12,18 @@ The `product-lead` re-cuts scope rather than moving the deadline. Full detail: `
 | **8** | Buffer / polish. | all | Green CI from clean clone; tagged demo-ready commit; safety sign-off from `qa-safety-reviewer`. |
 
 ## Current status
-- **Week 1 sim bringup: DONE through §7 (2026-08-04).** Full ArduPilot + Gazebo + ROS 2 workspace
-  builds from source (§3); SITL flies standalone (§4); the custom-plugin Gazebo world loads (§5); and
-  **the iris drone flies in Gazebo via the SITL⟷Gazebo JSON backend — armed, took off, hovering at the
-  commanded 5 m confirmed from both MAVProxy and Gazebo model pose (§6)**. Firmware SHAs pinned in
-  CLAUDE.md (§7). All fixes captured on branch `fix/week1-bringup` (see `docs/WEEK1_BRINGUP.md`).
-- **Remaining for the Week 1-2 milestone:** §8 — fly a **boustrophedon (lawnmower) mission end-to-end**
-  in AUTO mode over the field, no obstacles. Then the custom farm world + NDVI-vs-RGB spike.
+- **✅ WEEK 1-2 MILESTONE COMPLETE (2026-08-04): boustrophedon mission flies end-to-end, no obstacles.**
+  Full ArduPilot + Gazebo + ROS 2 workspace builds from source (§3); SITL flies standalone (§4); the
+  custom-plugin Gazebo world loads (§5); the iris flies in Gazebo via the SITL⟷Gazebo JSON backend
+  (§6); firmware SHAs pinned in CLAUDE.md (§7); and a generated boustrophedon coverage mission flew
+  **fully autonomously in AUTO — takeoff, 6-lane lawnmower sweep, RTL — confirmed from both MAVProxy
+  (`Reached command #N`) and Gazebo model pose (holding 15 m, sweeping the field) (§8)**. Generator:
+  `scripts/gen_boustrophedon.py`. All bringup fixes on branch `fix/week1-bringup` (`docs/WEEK1_BRINGUP.md`).
+- **Next (Weeks 3-4 — the differentiator):** custom farm world (field polygon, tree rows, scripted
+  birds); NDVI-vs-RGB detection spike; detector + **reactive avoidance + coverage-debt replanning loop**.
 - **Deferred, non-blocking:** enable AP_DDS (`DDS_ENABLE=1`) for `/ap/*` ROS 2 topics (needed for the
-  ROS 2 control path, not for a MAVLink mission); bake the workspace build into the image (devops).
+  ROS 2 control path — perception/planner nodes — not for a MAVLink mission); bake the workspace build
+  into the image (devops); merge the `fix/week1-bringup` PR.
 
 ### Earlier (kickoff)
 - **Week:** 1 (planning done; execution is the human's to run). Both lanes scoped in parallel.
