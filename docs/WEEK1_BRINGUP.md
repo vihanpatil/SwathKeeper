@@ -143,6 +143,8 @@ python3 -m pip install --upgrade MAVProxy pymavlink
 # HEADLESS (macOS Docker): do NOT pass --map/--console — those open wxPython GUI windows that need an
 # X display the container doesn't have. Plain sim_vehicle.py runs MAVProxy as a text prompt right here.
 # (ardupilot_sitl already built arducopter in §3, so this starts fast.)
+# sim_vehicle.py lives in Tools/autotest and isn't on PATH unless install-prereqs added it — add it:
+export PATH="$PWD/Tools/autotest:$PATH"
 sim_vehicle.py -v ArduCopter
 ```
 
