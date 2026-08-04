@@ -148,10 +148,22 @@ export PATH="$PWD/Tools/autotest:$PATH"
 sim_vehicle.py -v ArduCopter
 ```
 
-**Verify:** at the MAVProxy text prompt (`MAV>` / `GUIDED>`), wait for a GPS/EKF-ready message, then
-`mode guided`, `arm throttle`, `takeoff 5` — the altitude in the status text climbs, in the pure SITL
-physics model (no Gazebo yet). `Ctrl-D`/`exit` to quit. If this fails, the problem is in the ArduPilot
-build, not the Gazebo/ROS 2 integration — fix here first.
+**Verify:** at the MAVProxy text prompt (`MAV>` / `GUIDED>`), wait for a GPS/EKF-ready message
+(`EKF3 IMU0 is using GPS`), then:
+
+```
+param set DISARM_DELAY 0   # stop the ~10 s ground auto-disarm from racing your takeoff
+mode guided
+arm throttle
+takeoff 5
+```
+
+Expect `NAV_TAKEOFF: ACCEPTED` and the altitude climbing (`status` shows `Alt`), in the pure SITL
+physics model (no Gazebo yet). Gotchas: the vehicle auto-disarms ~10 s after arming if it hasn't
+taken off, so a late/garbled takeoff then fails on a disarmed vehicle (hence `DISARM_DELAY 0`); and
+the periodic `Flight battery 100 percent` lines are just telemetry noise — type your commands over
+them. `Ctrl-D`/`exit` to quit. If this fails, the problem is in the ArduPilot build, not the
+Gazebo/ROS 2 integration — fix here first.
 
 ## 5. Launch Gazebo headless with the ArduPilot plugin
 
