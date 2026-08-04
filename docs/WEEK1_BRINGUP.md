@@ -135,17 +135,21 @@ snapshot is the real reproducibility pin, not just the branch names.
 
 ```bash
 cd /root/ardu_ws/src/ardupilot
-Tools/environment_install/install-prereqs-ubuntu.sh -y   # first time only
-./waf configure --board sitl
-./waf copter
 
-sim_vehicle.py -v ArduCopter --map --console
+# MAVProxy gives you the SITL command console. This is lighter than the full first-time setup
+# (Tools/environment_install/install-prereqs-ubuntu.sh -y), which also works but installs a lot.
+python3 -m pip install --upgrade MAVProxy pymavlink
+
+# HEADLESS (macOS Docker): do NOT pass --map/--console — those open wxPython GUI windows that need an
+# X display the container doesn't have. Plain sim_vehicle.py runs MAVProxy as a text prompt right here.
+# (ardupilot_sitl already built arducopter in §3, so this starts fast.)
+sim_vehicle.py -v ArduCopter
 ```
 
-**Verify:** MAVProxy console connects, `mode guided`, `arm throttle`, `takeoff 5` climbs the
-simulated vehicle in the pure dronekit-less SITL physics model (no Gazebo yet). Land, exit. If this
-step fails, the problem is in the ArduPilot build, not the Gazebo/ROS 2 integration — fix here
-first.
+**Verify:** at the MAVProxy text prompt (`MAV>` / `GUIDED>`), wait for a GPS/EKF-ready message, then
+`mode guided`, `arm throttle`, `takeoff 5` — the altitude in the status text climbs, in the pure SITL
+physics model (no Gazebo yet). `Ctrl-D`/`exit` to quit. If this fails, the problem is in the ArduPilot
+build, not the Gazebo/ROS 2 integration — fix here first.
 
 ## 5. Launch Gazebo headless with the ArduPilot plugin
 
