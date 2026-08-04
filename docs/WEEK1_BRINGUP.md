@@ -214,8 +214,12 @@ sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
 ```
 
 **Verify, in order:**
-1. MAVProxy connects and `param set DISARM_DELAY 0` → `mode guided` → `arm throttle` → `takeoff 5`
-   climbs, and the model moves in Gazebo — this confirms the SITL ⟷ Gazebo JSON actuator path.
+1. First boot often shows `AP: Frame: UNSUPPORTED` and repeated `PreArm: Motors: Check frame class
+   and type`. The gazebo-iris `FRAME_CLASS 1` / `FRAME_TYPE 1` params load but only apply to the motor
+   mixer after a reboot. Fix once at the `MAV>` prompt: `param set FRAME_CLASS 1` →
+   `param set FRAME_TYPE 1` → `reboot`; wait ~15 s for reconnect (now `Frame: QUAD/X`). Then
+   `param set DISARM_DELAY 0` → `mode guided` → `arm throttle` → `takeoff 5` climbs, and the model
+   moves in Gazebo — confirming the SITL ⟷ Gazebo JSON actuator path.
 2. **AP_DDS → ROS 2 (`/ap/*` topics) is a separate follow-up**, not automatic: the default
    gazebo-iris params do **not** set `DDS_ENABLE`, so `ros2 topic list | grep '^/ap'` is empty until
    DDS is enabled (a param / DDS-enabled param file). Not required to fly a mission (that uses
