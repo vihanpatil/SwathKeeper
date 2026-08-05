@@ -18,23 +18,18 @@ once**, by hand, in Week 1. Every deliverable since — farm world, geofence, AP
 decision, CI — is validated **only in pure-Python and on synthetic data.** That is real, disciplined
 engineering. It is **not** the same as "it works in sim," and the roadmap must not read as if it were.
 
-**Risk register — un-run validations (the #1 project risk). Runbook: `docs/WEEK3_VALIDATION.md`.**
-The Week 3 Docker session proves **two** of the three pending items + the farm-world flight-check; the
-third (ADR-003) is **NOT** doable yet and must not be batched here:
-1. **Farm world flies** — `farmguard_field.sdf` loads and the mission flies through it
-   (`scripts/run_farm_mission.sh`). **UN-RUN.** → Gate 1.
-2. **AP_DDS publishes as verified (ADR-005)** — `ros2 topic list | grep ^/ap` matches the contract.
-   **UN-RUN.** → Gate 2.
-3. **ADR-006 resume behavior** — AUTO→GUIDED→AUTO resumes the interrupted leg with `MIS_RESTART=0`.
-   **UN-RUN.** → Gate 3.
-- **ADR-003 real-render re-confirmation is NOT batchable in Week 3** — there is **no NDVI camera in the
-  sim yet** (the NDVI render is the Weeks 5-6 pipeline). It stays gated on Weeks 5-6. _(Corrected
-  2026-08-05: ADR-003/005/006 and the standup wrongly said "batch all three" — there is nothing to
-  render from until the NDVI camera exists.)_
+**Risk register — ✅ CLEARED 2026-08-05. Runbook + results: `docs/WEEK3_VALIDATION.md`.**
+The Week 3 Docker session ran end-to-end; all three gates passed:
+1. **Farm world flies** — ✅ armed, took off to 15 m, flew the mission (`Reached command #N`). → Gate 1.
+2. **AP_DDS publishes as verified (ADR-005)** — ✅ all 18 `/ap/*` topics match the contract. **ADR-005 confirmed.** → Gate 2.
+3. **ADR-006 resume behavior** — ✅ `MIS_RESTART=0`, AUTO→GUIDED→AUTO resumed the interrupted leg. **ADR-006 confirmed.** → Gate 3.
+- **ADR-003 real-render re-confirmation remains deferred to Weeks 5-6** — there is **no NDVI camera in the
+  sim yet** (the NDVI render is the Weeks 5-6 pipeline). Correctly NOT batchable now.
+- **6 real bringup bugs** found + fixed en route (PR #6): bash-3.2 array, colcon `set -u`, MAVProxy,
+  `future`, `micro_ros_msgs`, and AP_DDS `--enable-DDS` (SITL builds DDS OUT by default).
 
-Until Gates 1-3 pass, everything downstream is **provisional.** Week 1 proved the Docker stack is fragile.
-**Product-lead decision (2026-08-05): the Week 3 loop build is GATED on Gates 1-3 passing** — build begins
-only once the foundation is confirmed. This is the single highest-leverage action; do it first.
+The foundation is **confirmed live, no longer provisional.** **The Week 3 loop build is now UNBLOCKED**
+(the product-lead gate on Gates 1-3 is cleared).
 
 **Reality check on the ambition (you asked for zero sweet-talk):** this is a **simulation-only,
 single-developer, ~7-8-week portfolio project** (ADR-000, CLAUDE.md). Stated plainly: in its current
@@ -95,10 +90,10 @@ the interface assumptions were wrong. The portfolio lives or dies on this loop e
 | # | Workstream | Lead | Support | Exit criterion |
 |---|---|---|---|---|
 | 0 | ✅ **ADR-006** — avoidance command interface, verified vs pinned SHA | `tech-lead` | `flight-software-engineer` | **DONE.** Our executor owns the maneuver: AUTO→GUIDED→one **3D-vetted `/ap/cmd_gps_pose`** setpoint (world-ENU, `frame_id="map"`)→GUIDED→AUTO. `MIS_RESTART=0` makes AUTO deterministically resume the interrupted leg to the same next waypoint (no index juggling). Rejected ArduPilot built-in OA (would move the reactive decision into the autopilot — deletes the differentiator). Source-verified @ pinned SHA; ACCEPTED (confirmation-pending: live resume needs the Docker run). Bonus: AP_DDS exposes **no mission-current service** → a source-verified reason requeue/reconciliation (ADR-002 stretch) is genuinely harder, not just deferred. |
-| 1 | ⏳ **Human Docker validation (THE GATE)** — Gates 1-3 in `docs/WEEK3_VALIDATION.md`. **Blocks the loop build below** (product-lead decision 2026-08-05) | human | `robotics-sim-engineer`, `flight-software-engineer` | Gates 1-3 pass (or breakage surfaced early); ADR-005 + ADR-006 flip to confirmed |
-| 2 | 🔒 HELD (gated on #1) — Avoidance **decision policy**: given a detection + geofence + coverage state, when/where to dodge | `perception-ml-engineer` | `qa-safety-reviewer` | Emits a **3D-safe** maneuver for every QA scenario (never steers into a geofenced tree) |
-| 3 | 🔒 HELD (gated on #1) — Avoidance **executor + coverage-debt bookkeeping**: take control, execute, resume, log every event, mark uncovered cells as debt | `flight-software-engineer` | `qa-safety-reviewer` | QA's pending scenarios go green: no silently-skipped cell, no missed bird, no geofence breach |
-| 4 | 🔒 HELD (gated on #1) — Extend `geofence.py` to **3D** (altitude-aware safety gate) | `flight-software-engineer` | — | `geo_avoid_into_tree` scenario passes |
+| 1 | ✅ **Human Docker validation (THE GATE)** — Gates 1-3 in `docs/WEEK3_VALIDATION.md` | human | `robotics-sim-engineer`, `flight-software-engineer` | **DONE 2026-08-05** — all 3 gates passed; ADR-005 + ADR-006 confirmed live |
+| 2 | 🔨 IN PROGRESS — Avoidance **decision policy**: given a detection + geofence + coverage state, when/where to dodge | `perception-ml-engineer` | `qa-safety-reviewer` | Emits a **3D-safe** maneuver for every QA scenario (never steers into a geofenced tree) |
+| 3 | 🔨 IN PROGRESS — Avoidance **executor + coverage-debt bookkeeping**: take control, execute, resume, log every event, mark uncovered cells as debt | `flight-software-engineer` | `qa-safety-reviewer` | QA's pending scenarios go green: no silently-skipped cell, no missed bird, no geofence breach |
+| 4 | 🔨 IN PROGRESS — Extend `geofence.py` to **3D** (altitude-aware safety gate) | `flight-software-engineer` | — | `geo_avoid_into_tree` scenario passes |
 
 - _Forcing-scenario already in place:_ tree row 0 (x=15) sits exactly on a boustrophedon lane centerline
   (min XY clearance **−2.0 m** — overlaps in plane, safe today only via the 11.5 m vertical margin at 15 m
