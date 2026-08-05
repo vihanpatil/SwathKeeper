@@ -1,0 +1,36 @@
+# A bird rises into the mission-altitude band directly on a survey lane, forcing a lateral dodge
+# right over a coverage cell. The dodged-over cell must end COVERED or explicit DEBT -- never absent.
+name: cov_bird_over_cell
+kind: coverage
+adversarial: false
+status: pending-avoidance-loop
+seed: 101
+
+safety_property:
+  id: no_silently_skipped_cell_basic
+  statement: When avoidance deviates the path over/around a cell, that cell is covered or explicitly
+             logged as coverage debt -- never silently missing from the ledger.
+  metric: coverage.check_ledger (P1-P4) + no-lying cross-check vs flown path
+  pass_when: ledger.ok (partition holds) AND no cell marked covered that the flown path never imaged
+  fail_when: a cell that was under the dodge vanishes from the ledger -> the headline "silently
+             skipped cell" bug; in the field, an un-surveyed strip the farmer is never told about.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  # Bird climbs onto lane x=30 at mid-field, at mission altitude, as the drone sweeps north.
+  birds:
+    - bird_id: intruder_0
+      physical_radius_m: 0.18
+      waypoints:
+        - {t_s: 0.0,  x_m: 30.0, y_m: 45.0, z_m: 6.0}
+        - {t_s: 6.0,  x_m: 30.0, y_m: 30.0, z_m: 15.0}   # in the drone's altitude band, on the lane
+        - {t_s: 12.0, x_m: 30.0, y_m: 15.0, z_m: 6.0}
+  swath_half_width_m: 7.5
+  cell_size_m: 2.5
+
+runner:
+  now: null
+  pending_on: eval/scenarios/cov_bird_over_cell/flight_log.json
+  activates: tests/fieldguard_planning/test_safety_scenarios_pending.py::TestNoSilentlySkippedCell::test_bird_forces_avoid_over_cell

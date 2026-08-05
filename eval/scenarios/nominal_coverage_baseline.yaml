@@ -1,0 +1,29 @@
+# Baseline: the nominal boustrophedon plan (no avoidance) must already cover every field cell and
+# produce a balanced coverage-debt ledger. This is the bar the Week 3-4 avoidance loop must never
+# silently regress below. RUNNABLE NOW (pure geometry over the current mission).
+name: nominal_coverage_baseline
+kind: coverage
+adversarial: false
+status: runnable-now
+seed: 0
+
+safety_property:
+  id: nominal_covers_all_cells
+  statement: The nominal boustrophedon path images every cell of the field grid; ledger has zero debt.
+  metric: coverage.coverage_from_path + coverage.check_ledger
+  pass_when: uncovered cells == 0 AND ledger.ok AND debt_count == 0
+  fail_when: any cell uncovered by the plan -> a coverage hole that exists BEFORE avoidance, so the
+             whole "never drop a cell" claim is meaningless.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  birds: none (nominal plan, no dynamic obstacles)
+  swath_half_width_m: 7.5   # = lane_spacing/2; SEE eval/scenarios/README.md swath caveat
+  cell_size_m: 2.5
+
+runner:
+  now: tests/fieldguard_planning/test_coverage.py::TestNominalCoverage
+  pending_on: null
+  activates: null

@@ -28,6 +28,73 @@ jobs:
         run: python scripts/validate_agents.py
 
   # ---------------------------------------------------------------------------
+  # ACTIVE (Week 2). Runs entirely on plain ubuntu-latest -- no Docker, no Gazebo, no ROS 2 --
+  # because everything it exercises (fieldguard_planning geometry, the ADR-003 eval spike harness,
+  # the stdlib generator scripts) is deliberately pure-Python so it CAN run in CI before the
+  # Gazebo/ArduPilot container exists. The real headless-sim job is the commented `build-test-sim`
+  # job below, still blocked on the Docker image.
+  #
+  # Dependency policy (CLAUDE.md "pin everything"): tests/fieldguard_planning is stdlib-only by
+  # design (zero install step). Only the eval/ spike harness needs numpy+scipy, pinned in
+  # requirements-eval.txt to the exact versions verified locally on Python 3.12.12
+  # (see .claude/agent-memory/devops-reliability-engineer for the reference run).
+  # ---------------------------------------------------------------------------
+  planning-and-eval:
+    name: Planning tests + eval spike harness (numpy/scipy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Planning test suite (stdlib only, no install step)
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests/fieldguard_planning -v
+
+      - name: Install eval harness dependencies (pinned)
+        run: |
+          set -euo pipefail
+          pip install -r requirements-eval.txt
+
+      - name: Smoke-run stdlib generator scripts (catch import/CLI breakage)
+        run: |
+          set -euo pipefail
+          python3 scripts/gen_boustrophedon.py -o /tmp/smoke_boustrophedon.waypoints
+          python3 scripts/gen_farm_world.py \
+            --obstacles-out /tmp/smoke_static_obstacles.json \
+            --world-out /tmp/smoke_farm_world.sdf
+          # check_mission_geofence.py intentionally exits 1 when it finds the documented, EXPECTED
+          # XY-only overlap at leg 4 (safe: >11m of vertical separation at mission altitude -- see
+          # the script's own docstring / sim/README.md). We only want to catch import/CLI breakage
+          # here, not re-gate on that already-understood business-logic exit code.
+          python3 scripts/check_mission_geofence.py || true
+
+      - name: Regenerate spike clip (fixed seed 42 -- the reproducibility regression)
+        run: |
+          set -euo pipefail
+          python3 sim/spike/gen_spike_clip.py --seed 42 --out sim/spike/out/spike_seed42
+
+      - name: Run eval spike harness end-to-end (label GT -> both baselines -> score)
+        run: |
+          set -euo pipefail
+          bash eval/run_spike.sh
+
+      - name: Assert no regression on the seed-42 headline metric
+        run: |
+          set -euo pipefail
+          python3 scripts/check_spike_regression.py eval/results/spike_scores.json
+
+      - name: Upload eval metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-spike-metrics
+          path: eval/results/
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # READY TO GROW (Week 2+). Uncomment once the colcon workspace, the Docker
   # image (built by devops-reliability-engineer), and the eval harness exist.
   # This is the real pipeline: build → test → headless sim smoke → eval metrics.

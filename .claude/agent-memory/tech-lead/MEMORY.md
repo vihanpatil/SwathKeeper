@@ -1,0 +1,2 @@
+- [ADR-003 NDVI detection decided](project_adr003-ndvi-detection.md) — NDVI-direct accepted, pending real-Gazebo-render re-confirmation; no model justified yet
+- [ADR-005 AP_DDS contract locked](project_adr005-apdds-contract.md) — /ap/* map locked to pinned SHA; live-bridge ros2 topic confirmation still owed (batch with ADR-003 in Docker run)

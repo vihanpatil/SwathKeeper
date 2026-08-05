@@ -1,0 +1,1 @@
+- [Node/topic map + coverage-debt/control-param notes](node_topic_map.md) — src/ package state, geofence API, XY clearance finding, ArduPilot gotchas (Week 2 snapshot, 2026-08-04)

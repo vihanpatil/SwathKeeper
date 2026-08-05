@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "pending_gazebo_replacement": true,
+  "generator": "sim/spike/gen_spike_clip.py",
+  "seed": 42,
+  "duration_s": 1.5,
+  "fps": 2.0,
+  "num_frames": 3,
+  "image_width_px": 160,
+  "image_height_px": 120,
+  "coordinate_frame": "world ENU meters (x=East, y=North, z=Up), REP-103 convention",
+  "camera": {
+    "image_width_px": 160,
+    "image_height_px": 120,
+    "fx": 520.0,
+    "fy": 520.0,
+    "cx": 320.0,
+    "cy": 240.0
+  },
+  "camera_extrinsic": {
+    "mount": "rigid nadir, no gimbal, fixed for entire clip",
+    "convention": "camera X=world East, camera Y=world South (down-image), camera Z(depth)=world Down (i.e. pinhole optical convention, X right / Y down / Z forward)",
+    "quat_wxyz": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "offset_from_drone_m": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "flight": {
+    "altitude_m": 15.0,
+    "start_xy_m": [
+      15.0,
+      20.0
+    ],
+    "heading": "east",
+    "speed_mps": 3.0,
+    "pos_jitter_std_m": 0.03
+  },
+  "field": {
+    "width_m": 120.0,
+    "height_m": 40.0,
+    "gsd_m_per_px": 0.05
+  },
+  "ndvi_dtype": "float32, saved via numpy.save (.npy), values clipped to [-1, 1]",
+  "ndvi_preview_note": "frames/ndvi_preview/*.png is a false-color visualization for humans only -- NOT authoritative, do not label/eval against it.",
+  "bbox_convenience_note": "poses.jsonl birds[].generator_bbox_px is a convenience cross-check computed by this generator, NOT the authoritative ground truth. eval/label_from_sim.py should independently project birds[].pos_m through camera + drone pose to produce ground_truth.json, per docs/SPIKE_ndvi_vs_rgb.md section 3.",
+  "occlusion_note": "no static obstacles in this spike (ADR-001 scope: no trees needed) -- in_frustum_hint/generator_bbox_px only account for the camera frustum, not true 3D occlusion. Out of scope per docs/SPIKE_ndvi_vs_rgb.md."
+}

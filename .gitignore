@@ -21,6 +21,10 @@ rosbag2_*/
 eval/results/
 *.log
 
+# Spike clip generator output (regenerate via sim/spike/gen_spike_clip.py; sim/spike/sample/ is a
+# small committed fixture and is intentionally NOT ignored)
+sim/spike/out/
+
 # OS / editor
 .DS_Store
 *.swp

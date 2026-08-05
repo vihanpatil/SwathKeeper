@@ -1,0 +1,33 @@
+# ADR-003 NDVI-vs-RGB spike scenario (docs/SPIKE_ndvi_vs_rgb.md).
+# Reproducibility record for the deciding run: regenerate the clip, then run the harness with
+# exactly these params. See eval/run_spike.sh for the wired-up runner.
+name: spike_birds
+resolves: ADR-003
+
+clip:
+  # Regenerate with:
+  #   python3 sim/spike/gen_spike_clip.py --seed 42 --out sim/spike/out/spike_seed42
+  # SYNTHETIC stand-in (not a Gazebo render): meta.json has synthetic=true. Numbers validate the
+  # HARNESS + give a first signal; confirm against the real Gazebo render before closing ADR-003.
+  dir: sim/spike/out/spike_seed42
+  seed: 42
+  generator: sim/spike/gen_spike_clip.py
+  duration_s: 30.0
+  fps: 10
+  resolution: [640, 480]
+  birds: 3            # bird_0 clean canopy; bird_1 over soil (FN hard case); bird_2 far + near clutter
+
+scoring:
+  iou_thresh: 0.3     # loose: 'a bird is roughly there', not pixel-tight (avoidance-relevant)
+  per_bird_fnr_bar: 0.10
+  fnr_gap_bar: 0.10
+
+approach_a_ndvi:
+  thresh: 0.05        # NDVI below this = bird candidate; below soil (~0.15), above bird core (~-0.08)
+  min_area: 6
+  max_area: 5000
+
+approach_b_rgb:
+  thresh: 110         # min-channel min(R,G,B) above this = bright/achromatic bird vs green/brown bg
+  min_area: 6
+  max_area: 5000

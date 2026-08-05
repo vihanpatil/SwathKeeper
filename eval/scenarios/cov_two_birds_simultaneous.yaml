@@ -1,0 +1,41 @@
+# ADVERSARIAL. Two birds trigger back-to-back avoidances a couple seconds apart on the same lane.
+# The second avoidance must NOT clobber the first's requeue/debt bookkeeping -- a common state-machine
+# bug is that a fresh avoidance resets or overwrites the pending coverage-debt from the prior one.
+name: cov_two_birds_simultaneous
+kind: coverage
+adversarial: true
+status: pending-avoidance-loop
+seed: 103
+
+safety_property:
+  id: back_to_back_avoidance_preserves_ledger
+  statement: Two overlapping/consecutive avoidances leave a ledger where every cell is still
+             accounted for exactly once; neither avoidance erases the other's debt/requeue records.
+  metric: coverage.check_ledger (P1 partition + no duplicates)
+  pass_when: ledger.ok (no missing, no duplicate) after both avoidances
+  fail_when: a cell dropped by the first dodge is silently forgotten when the second dodge starts,
+             OR a cell is double-logged because both avoidances claimed it.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  # Two birds cross lane x=45 within ~2 s of each other while the drone sweeps north on it.
+  birds:
+    - bird_id: intruder_0
+      physical_radius_m: 0.18
+      waypoints:
+        - {t_s: 0.0, x_m: 38.0, y_m: 25.0, z_m: 15.0}
+        - {t_s: 4.0, x_m: 52.0, y_m: 25.0, z_m: 15.0}   # crosses lane x=45 near t~2s
+    - bird_id: intruder_1
+      physical_radius_m: 0.18
+      waypoints:
+        - {t_s: 0.0, x_m: 52.0, y_m: 33.0, z_m: 15.0}
+        - {t_s: 4.0, x_m: 38.0, y_m: 33.0, z_m: 15.0}   # crosses lane x=45 near t~2s, just north
+  swath_half_width_m: 7.5
+  cell_size_m: 2.5
+
+runner:
+  now: null
+  pending_on: eval/scenarios/cov_two_birds_simultaneous/flight_log.json
+  activates: tests/fieldguard_planning/test_safety_scenarios_pending.py::TestNoSilentlySkippedCell::test_two_birds_near_simultaneous

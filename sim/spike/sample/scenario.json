@@ -1,0 +1,170 @@
+{
+  "schema_version": "1.0",
+  "note": "Default fixed-seed scenario for the ADR-003 NDVI-vs-RGB spike (docs/SPIKE_ndvi_vs_rgb.md). SYNTHETIC STAND-IN, not a Gazebo render -- see sim/spike/README.md.",
+  "seed": 42,
+  "duration_s": 30.0,
+  "fps": 10,
+  "camera": {
+    "image_width_px": 640,
+    "image_height_px": 480,
+    "fx": 520.0,
+    "fy": 520.0,
+    "cx": 320.0,
+    "cy": 240.0
+  },
+  "flight": {
+    "altitude_m": 15.0,
+    "start_xy_m": [
+      15.0,
+      20.0
+    ],
+    "heading": "east",
+    "speed_mps": 3.0,
+    "pos_jitter_std_m": 0.03
+  },
+  "field": {
+    "width_m": 120.0,
+    "height_m": 40.0,
+    "gsd_m_per_px": 0.05
+  },
+  "ndvi_background": {
+    "canopy_base": 0.78,
+    "canopy_noise_std": 0.04,
+    "feather_m": 0.4,
+    "soil_patches": [
+      {
+        "id": "soil_0",
+        "cx_m": 65.0,
+        "cy_m": 20.0,
+        "r_m": 7.0,
+        "ndvi": 0.15,
+        "rgb": [
+          120,
+          90,
+          60
+        ],
+        "note": "bare-ground hard case: bird_1 is scripted to cross this patch (false-negative risk for NDVI-direct)"
+      },
+      {
+        "id": "soil_1",
+        "cx_m": 20.0,
+        "cy_m": 15.0,
+        "r_m": 3.0,
+        "ndvi": 0.2,
+        "rgb": [
+          130,
+          100,
+          70
+        ],
+        "note": "background bare patch, no bird crosses it -- precision/FP texture only"
+      }
+    ],
+    "shadow_patches": [
+      {
+        "id": "shadow_0",
+        "cx_m": 47.0,
+        "cy_m": 20.0,
+        "r_m": 8.0,
+        "ndvi_delta": -0.15,
+        "rgb_delta": [
+          -40,
+          -40,
+          -30
+        ],
+        "note": "moderate NDVI depression (canopy shadow analog); no birds scripted through it in v1"
+      }
+    ],
+    "clutter_blobs": [
+      {
+        "id": "clutter_0",
+        "cx_m": 92.0,
+        "cy_m": 15.0,
+        "r_m": 1.0,
+        "ndvi": -0.05,
+        "rgb": [
+          110,
+          105,
+          95
+        ],
+        "note": "static non-bird low-NDVI feature (e.g. mulch/exposed rock), bird-blob-sized -- false-positive test for naive NDVI threshold. bird_2 passes near but not on top of it."
+      }
+    ]
+  },
+  "birds": [
+    {
+      "bird_id": "bird_0",
+      "physical_radius_m": 0.15,
+      "ndvi_value": -0.1,
+      "rgb_color": [
+        200,
+        200,
+        205
+      ],
+      "note": "easy case: clean canopy background, mid-range (~10m below camera). Sanity baseline both approaches should catch. Transverse crossing (near-constant x) so it stays in-frame while the camera dwells over it.",
+      "waypoints": [
+        {
+          "t_s": 4.4,
+          "x_m": 32.0,
+          "y_m": 27.0,
+          "z_m": 5.0
+        },
+        {
+          "t_s": 6.9,
+          "x_m": 32.0,
+          "y_m": 13.0,
+          "z_m": 5.0
+        }
+      ]
+    },
+    {
+      "bird_id": "bird_1",
+      "physical_radius_m": 0.15,
+      "ndvi_value": -0.08,
+      "rgb_color": [
+        195,
+        195,
+        200
+      ],
+      "note": "hard case: crosses soil_0 (background NDVI ~0.15) at close range (~7m below camera) while bird NDVI is -0.08 -- low contrast against background. RGB stays high-contrast (grey bird on brown soil) -- this is the case the spike is designed to falsify (a) on. x held at the soil_0 center (65,20) so the whole transverse crossing stays over/at the patch edge.",
+      "waypoints": [
+        {
+          "t_s": 15.4,
+          "x_m": 65.0,
+          "y_m": 27.0,
+          "z_m": 8.0
+        },
+        {
+          "t_s": 17.9,
+          "x_m": 65.0,
+          "y_m": 13.0,
+          "z_m": 8.0
+        }
+      ]
+    },
+    {
+      "bird_id": "bird_2",
+      "physical_radius_m": 0.15,
+      "ndvi_value": -0.09,
+      "rgb_color": [
+        205,
+        205,
+        210
+      ],
+      "note": "far/small case (~13m below camera, smallest apparent radius) passing near (not over) clutter_0 at (92,15) -- tests range sensitivity and bird-vs-static-clutter discrimination (motion is the only distinguishing signal, since NDVI/RGB values are similar to the clutter blob). x held near clutter_0's x so both are in-frame together; y sweep stays >=2m off clutter_0's position (clutter r=1.0 + feather=0.4) so it never overlaps.",
+      "waypoints": [
+        {
+          "t_s": 24.75,
+          "x_m": 93.0,
+          "y_m": 26.0,
+          "z_m": 2.0
+        },
+        {
+          "t_s": 27.25,
+          "x_m": 93.0,
+          "y_m": 17.0,
+          "z_m": 2.0
+        }
+      ]
+    }
+  ]
+}

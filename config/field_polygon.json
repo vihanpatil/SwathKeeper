@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "note": "Authoritative field boundary. Consumed by scripts/gen_boustrophedon.py (mission) and scripts/gen_farm_world.py (Gazebo world) so both stay geometrically consistent -- if you change this polygon, regenerate BOTH config/missions/boustrophedon.waypoints and sim/worlds/farmguard_field.sdf, or the mission will no longer sweep the world you're flying it in.",
+  "home_lat": -35.363262,
+  "home_lon": 149.165237,
+  "home_elevation_m": 584,
+  "coordinate_frame": "local ENU meters (x=East, y=North, z=Up) relative to (home_lat, home_lon); origin (0,0) = SITL home = drone spawn point = SW corner of the field. Same ENU convention documented in sim/spike/README.md for the NDVI spike.",
+  "polygon_m": [[0.0, 0.0], [75.0, 0.0], [75.0, 60.0], [0.0, 60.0]],
+  "polygon_note": "Rectangle currently swept by config/missions/boustrophedon.waypoints: 6 lanes x 15m spacing = 75m east extent, 60m north extent (scripts/gen_boustrophedon.py --width 80 --height 60 --spacing 15 --alt 15 -- the generator's internal lane math yields 75m, not the nominal 80m 'width' argument; see that script's boustrophedon_latlon()).",
+  "mission_altitude_m": 15.0
+}
