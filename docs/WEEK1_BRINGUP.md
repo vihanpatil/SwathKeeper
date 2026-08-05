@@ -95,6 +95,13 @@ mkdir -p /root/ardu_ws/src
 cd /root/ardu_ws
 vcs import --input https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos --recursive src
 
+# ros2_gz.repos pulls micro_ros_agent but NOT its runtime dependency micro_ros_msgs. Without it the
+# agent BUILDS fine but dies at runtime (Week-3 bringup, docs/WEEK3_VALIDATION.md Gate 2):
+#   micro_ros_agent: error while loading shared libraries:
+#   libmicro_ros_msgs__rosidl_typesupport_cpp.so: cannot open shared object file: No such file or directory
+# Clone it explicitly (branch humble, matching CLAUDE.md's micro-ROS pin) so colcon builds + installs it:
+git clone -b humble https://github.com/micro-ROS/micro_ros_msgs.git src/micro_ros_msgs
+
 # Add OSRF's Gazebo rosdep rules so rosdep can resolve the gz-* keys (gz-sim8, gz-msgs10, gz-plugin2,
 # gz-cmake3, gz-transport13, sdformat14, ...) against GZ_VERSION. WITHOUT this, rosdep can't map those
 # keys and ABORTS, installing nothing. This is ArduPilot's documented approach and is also baked into
