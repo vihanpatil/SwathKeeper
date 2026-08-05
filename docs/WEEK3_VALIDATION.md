@@ -1,8 +1,15 @@
 # Week 3 — Human Docker Validation Session (the gating run)
 
+> ## ✅ RESULT (2026-08-05): all three gates PASSED — foundation confirmed live, core-loop build unblocked.
+> - **Gate 1** ✅ farm world flies — armed, took off to 15 m, `Reached command #N` through the lanes.
+> - **Gate 2** ✅ AP_DDS — all **18 `/ap/*` topics** present, exactly matching the ADR-005 contract. **ADR-005 confirmed.**
+> - **Gate 3** ✅ resume — `MIS_RESTART=0`, AUTO→GUIDED→AUTO resumed at the interrupted leg, no restart. **ADR-006 confirmed.**
+> - **6 real bringup bugs** found + fixed en route (bash-3.2 array, colcon `set -u`, MAVProxy, `future`, `micro_ros_msgs`, `--enable-DDS`).
+> - **Still pending (correctly deferred):** ADR-003 real-render — no NDVI camera in sim yet (Weeks 5-6).
+
 Owner: **human** (you), with `robotics-sim-engineer` + `flight-software-engineer` on standby for failures.
-Created 2026-08-05 at the Week 3 standup. **This is the gate:** the Week 3 core-loop build is HELD until
-Gates 1-3 below pass (product-lead decision, 2026-08-05 — "gate on Docker first").
+Created 2026-08-05 at the Week 3 standup. **This was the gate:** the Week 3 core-loop build was HELD until
+Gates 1-3 passed (product-lead decision, 2026-08-05 — "gate on Docker first"). **Now cleared.**
 
 ## Why this exists
 

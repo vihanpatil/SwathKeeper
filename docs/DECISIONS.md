@@ -99,10 +99,17 @@ Owner / roles: robotics-sim-engineer (research + confirm exact branch/tags), dev
 (container image), tech-lead (recorded). Promote to `accepted` with exact pins written into
 `CLAUDE.md` once robotics-sim-engineer confirms compatibility.
 
-## ADR-005: Enable AP_DDS explicitly + lock the /ap/* topic/service/frame contract to the pinned ArduPilot SHA   (2026-08-04, status: ACCEPTED — confirmation-pending)
-Decision: Enable AP_DDS via an explicit param file (`config/sitl_params/dds_udp.parm`: DDS_ENABLE=1,
-DDS_UDP_PORT=2019), loaded through `sim_vehicle.py --add-param-file` rather than relying on the
-compiled-in default or `ardupilot_gz_bringup`'s launch file. Keep DDS_USE_NS=0 (compiled default) so
+## ADR-005: Enable AP_DDS explicitly + lock the /ap/* topic/service/frame contract to the pinned ArduPilot SHA   (2026-08-04, status: ACCEPTED — CONFIRMED live 2026-08-05)
+**CONFIRMED 2026-08-05 (Week-3 Gate 2, `docs/WEEK3_VALIDATION.md`):** all 18 `/ap/*` topics enumerated
+below appeared on the running bridge, exactly matching this source-verified list (14 publishers + 4 `/ap`
+subscribers; the 5th subscriber is the bare `/clock`). **Correction to the original enablement claim:**
+AP_DDS is **compiled OUT of SITL by default** (`-DAP_DDS_ENABLED=0`) — SITL must be built with
+`sim_vehicle.py --enable-DDS` first, or the `DDS_ENABLE` param does not even exist and no `/ap/*` topics
+appear. The param file alone is NOT sufficient. (An earlier draft implied DDS was compiled-in by default;
+that conflated the `AP_DDS_ENABLED` compile gate with the `DDS_ENABLE` param value — see WEEK1_BRINGUP §6b.)
+Decision: Build SITL with `--enable-DDS`, **then** enable the bridge via an explicit param file
+(`config/sitl_params/dds_udp.parm`: DDS_ENABLE=1, DDS_UDP_PORT=2019), loaded through
+`sim_vehicle.py --add-param-file` rather than relying on `ardupilot_gz_bringup`'s launch file. Keep DDS_USE_NS=0 (compiled default) so
 names stay a flat `/ap/<name>`. Lock the following `/ap/*` interface — verified directly from source at
 ArduPilot commit `9895756d874ec9128d50918f6747a83706f4e221` (V4.8.0-dev, CLAUDE.md "Pinned commit
 SHAs"), every `#if AP_DDS_*_ENABLED` gate checked, not guessed — as the contract Week 3-4
@@ -149,7 +156,10 @@ appear with these names/types before treating ADR-005 as fully validated (same p
 "re-confirm on the real Gazebo render").
 Owner / roles: flight-software-engineer (verified source + drafted), tech-lead (records).
 
-## ADR-006: Reactive-avoidance executor = AUTO->GUIDED->AUTO, we own the maneuver policy   (2026-08-05, status: ACCEPTED — confirmation-pending)
+## ADR-006: Reactive-avoidance executor = AUTO->GUIDED->AUTO, we own the maneuver policy   (2026-08-05, status: ACCEPTED — CONFIRMED live 2026-08-05)
+**CONFIRMED 2026-08-05 (Week-3 Gate 3, `docs/WEEK3_VALIDATION.md`):** with `MIS_RESTART=0`, AUTO→GUIDED→AUTO
+resumed the interrupted leg (reached #3, took control heading to #4, handed back → resumed at #4, continued
+#5→#8), no restart at #1. The resume mechanism the executor depends on works on the real stack.
 Decision: On a dynamic bird detection during the AUTO boustrophedon mission, **our** executor node
 takes control by switching AUTO -> GUIDED (via the `/ap/mode_switch` service, ardupilot_msgs/ModeSwitch,
 locked in ADR-005), commands a **single pre-vetted avoidance setpoint** in GUIDED, then switches
