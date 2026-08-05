@@ -98,7 +98,7 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             self.policy = AvoidancePolicy(field_polygon=load_field_polygon(),
                                           cruise_alt_m=CRUISE_ALT_M)
             self.sink = Ros2VehicleSink(self)
-            self.executor = AvoidanceExecutor(self.geofence, self.cells, self.sink,
+            self.avoidance_executor = AvoidanceExecutor(self.geofence, self.cells, self.sink,
                                               swath_half_width_m=SWATH_HALF_M, alt_bounds=(2.0, 30.0))
             self.detection_source = detection_source or (lambda t: [])
             self.mission_xy = list(mission_xy) if mission_xy else []
@@ -128,12 +128,12 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             t = (self.get_clock().now() - self._t0).nanoseconds * 1e-9
             dets = self.detection_source(t)
             maneuver = self.policy.decide_multi(dets, self._drone, self.geofence)
-            self.executor.step(self._drone, maneuver)
+            self.avoidance_executor.step(self._drone, maneuver)
 
         def dump_flight_log(self, out_path: Path) -> None:
             import json
-            self.executor.finalize()
-            log = self.executor.flight_log("live_run", seed=0, cell_size_m=2.5)
+            self.avoidance_executor.finalize()
+            log = self.avoidance_executor.flight_log("live_run", seed=0, cell_size_m=2.5)
             out_path.write_text(json.dumps(log, indent=2))
             self.get_logger().info(f"wrote flight log -> {out_path}")
 
