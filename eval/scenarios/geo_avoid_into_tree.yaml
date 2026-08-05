@@ -1,0 +1,42 @@
+# ADVERSARIAL. The avoid-into-obstacle conflict. The drone sweeps lane x=60, right next to orchard
+# row 2 (x=65, only 5 m east). A bird approaches from the WEST, so the naive "dodge away from the
+# threat" points the drone EAST -- straight at row 2. The avoidance planner must validate the
+# manoeuvre against the geofence BEFORE executing and dodge west instead. Avoidance must never
+# create a new collision.
+name: geo_avoid_into_tree
+kind: geofence
+adversarial: true
+status: pending-avoidance-loop
+seed: 301
+
+safety_property:
+  id: avoid_never_enters_tree_or_exits_field
+  statement: The flown avoidance path is never simultaneously inside a tree's obstacle_radius_m AND
+             at/below the tree danger band (<= 5.5 m), and never leaves the field polygon.
+  metric: geofence.is_point_excluded (3D-aware, altitude band) + point-in-polygon
+  pass_when: no flown point in (tree radius AND tree band); all flown points inside field polygon
+  fail_when: the dodge drives the drone into row 2 (a NEW collision the avoidance itself caused) or
+             pushes it outside the field boundary -- either is a geofence breach created by avoidance.
+  note: geofence.py is XY-only; this property is deliberately 3D so a dodge that DESCENDS turns the
+        benign at-altitude XY overlap into a real strike. See eval/scenarios/README.md open gap #1.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  # Bird west of lane x=60, at mission altitude, so the away-from-threat direction is east toward
+  # tree row 2 at x=65. Tests that the planner refuses the east dodge.
+  birds:
+    - bird_id: pincher_0
+      physical_radius_m: 0.18
+      waypoints:
+        - {t_s: 0.0, x_m: 55.0, y_m: 30.0, z_m: 15.0}
+        - {t_s: 5.0, x_m: 59.0, y_m: 30.0, z_m: 15.0}   # closes on the lane from the west
+        - {t_s: 10.0, x_m: 55.0, y_m: 30.0, z_m: 15.0}
+  swath_half_width_m: 7.5
+  cell_size_m: 2.5
+
+runner:
+  now: null
+  pending_on: eval/scenarios/geo_avoid_into_tree/flight_log.json
+  activates: tests/fieldguard_planning/test_safety_scenarios_pending.py::TestAvoidanceDoesNotBreachGeofence

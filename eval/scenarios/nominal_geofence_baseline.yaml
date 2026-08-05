@@ -1,0 +1,29 @@
+# Baseline: pin the nominal mission's relationship to the geofence. The row-0 lane (x=15) flies
+# THROUGH orchard row 0 in XY (min clearance -1.997 m) -- safe TODAY only by 11.5 m of vertical
+# separation. Exactly one XY breach, on that lane, safe by altitude. RUNNABLE NOW.
+name: nominal_geofence_baseline
+kind: geofence
+adversarial: false
+status: runnable-now
+seed: 0
+
+safety_property:
+  id: only_row0_lane_breaches_xy
+  statement: The nominal mission has exactly one XY geofence breach (the row-0 lane), justified
+             solely by vertical separation (mission 15 m vs tree 3.5 m).
+  metric: geofence.check_path + vertical-separation margin
+  pass_when: exactly 1 XY-breaching leg, on the x=15 lane, nearest obstacle in row 0
+             AND (mission_altitude_m - tree_height_m) >= 5.0
+  fail_when: a NEW XY breach appears on any other leg (a lane started clipping a tree it used to
+             clear) OR vertical separation drops below the margin the breach relies on.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  birds: none
+
+runner:
+  now: tests/fieldguard_planning/test_mission_geofence.py::TestNominalMissionGeofence
+  pending_on: null
+  activates: null

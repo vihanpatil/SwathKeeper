@@ -98,3 +98,53 @@ time-boxed portfolio build.
 Owner / roles: robotics-sim-engineer (research + confirm exact branch/tags), devops-reliability-engineer
 (container image), tech-lead (recorded). Promote to `accepted` with exact pins written into
 `CLAUDE.md` once robotics-sim-engineer confirms compatibility.
+
+## ADR-005: Enable AP_DDS explicitly + lock the /ap/* topic/service/frame contract to the pinned ArduPilot SHA   (2026-08-04, status: ACCEPTED — confirmation-pending)
+Decision: Enable AP_DDS via an explicit param file (`config/sitl_params/dds_udp.parm`: DDS_ENABLE=1,
+DDS_UDP_PORT=2019), loaded through `sim_vehicle.py --add-param-file` rather than relying on the
+compiled-in default or `ardupilot_gz_bringup`'s launch file. Keep DDS_USE_NS=0 (compiled default) so
+names stay a flat `/ap/<name>`. Lock the following `/ap/*` interface — verified directly from source at
+ArduPilot commit `9895756d874ec9128d50918f6747a83706f4e221` (V4.8.0-dev, CLAUDE.md "Pinned commit
+SHAs"), every `#if AP_DDS_*_ENABLED` gate checked, not guessed — as the contract Week 3-4
+perception/planner ROS 2 nodes code against:
+  Publishers: /ap/time (builtin_interfaces/Time), /ap/navsat (sensor_msgs/NavSatFix, frame_id=GPS
+  instance index as string), /ap/tf_static (tf2_msgs/TFMessage, base_link->GPS_<i>), /ap/battery
+  (sensor_msgs/BatteryState, frame_id=battery instance index), /ap/imu/experimental/data
+  (sensor_msgs/Imu, frame_id=base_link_ned), /ap/pose/filtered (geometry_msgs/PoseStamped,
+  frame_id=base_link **but content is ENU position relative to EKF/home origin — REP-105 mislabeling,
+  treat content not frame_id as authoritative**), /ap/twist/filtered (geometry_msgs/TwistStamped,
+  frame_id=base_link; linear=world ENU, angular=body-frame — two frames under one label), /ap/airspeed
+  (ardupilot_msgs/Airspeed), /ap/rc (ardupilot_msgs/Rc), /ap/geopose/filtered
+  (geographic_msgs/GeoPoseStamped), /ap/goal_lla (geographic_msgs/GeoPointStamped), /ap/clock
+  (rosgraph_msgs/Clock), /ap/gps_global_origin/filtered (geographic_msgs/GeoPointStamped, WGS-84 EKF
+  origin — the anchor for pose/filtered's ENU frame), /ap/status (ardupilot_msgs/Status).
+  Subscribers: **/clock** (rosgraph_msgs/Clock — note: **NOT /ap/clock**, an absolute-path special
+  case in the topic table), /ap/joy (sensor_msgs/Joy), /ap/tf (tf2_msgs/TFMessage), /ap/cmd_vel
+  (geometry_msgs/TwistStamped), /ap/cmd_gps_pose (ardupilot_msgs/GlobalPosition).
+  Services (ArduPilot=server): /ap/arm_motors, /ap/mode_switch, /ap/prearm_check,
+  /ap/experimental/takeoff, /ap/set_parameters, /ap/get_parameters.
+  Source: libraries/AP_DDS/{AP_DDS_Topic_Table.h, AP_DDS_Service_Table.h, AP_DDS_Client.h,
+  AP_DDS_Client.cpp, AP_DDS_config.h, AP_DDS_Frames.h} @ ardupilot commit
+  9895756d874ec9128d50918f6747a83706f4e221.
+Alternative(s) rejected:
+  (a) Use `ardupilot_gz_bringup`'s default DDS enablement (auto-loads dds_udp.parm + dds_use_ns.parm,
+      auto-spawns micro_ros_agent). Rejected — that launch file hardcodes its own world path (already
+      rejected project-wide, sim/README.md / WEEK1_BRINGUP.md), and its default DDS_USE_NS=1 would
+      namespace every topic under /v<sysid>/ for no benefit in a single-vehicle project.
+  (b) Trust the compiled-in ENABLED_BY_DEFAULT=1 and skip explicit enablement. Rejected — a SITL
+      instance's eeprom.bin (persisted on our named Docker volume) keeps whatever DDS_ENABLE value was
+      saved the first time that param existed; a later compiled-default change does not retroactively
+      re-enable an existing instance. Explicit + reproducible beats implicit.
+  (c) Take topic/frame names from ArduPilot's ROS 2 wiki/docs. Rejected — ROADMAP already flags these
+      names have moved between versions; the reproducibility anchor is the pinned commit SHA, not a
+      version-unspecified doc page.
+Why: The Week 3-4 avoidance loop is a ROS 2 control path that consumes ArduPilot telemetry and issues
+guided commands over these exact names/types/frames, so I locked the contract by reading AP_DDS source
+at the exact commit we build — that way perception and planner nodes can be written in parallel against
+names that won't silently drift, with a concrete re-verification target the day we bump the SHA.
+Open follow-up (do not silently forget): this contract is verified from **source at the pinned SHA**,
+but the live bridge only comes up in the human Docker run — so the actual `ros2 topic list` /
+`ros2 topic hz` confirmation against a running SITL+micro-ROS-agent is still owed. Confirm the topics
+appear with these names/types before treating ADR-005 as fully validated (same pattern as ADR-003's
+"re-confirm on the real Gazebo render").
+Owner / roles: flight-software-engineer (verified source + drafted), tech-lead (records).

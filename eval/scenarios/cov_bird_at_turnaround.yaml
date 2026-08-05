@@ -1,0 +1,38 @@
+# ADVERSARIAL. The bird forces a dodge at the exact moment of a lane reversal (top turnaround
+# between lane x=15 and lane x=30), when the plan's "next waypoint" is itself changing. This is the
+# likeliest place a cell falls between the old lane and the new lane and is dropped by BOTH -- the
+# ADR-002 "avoid, return to next waypoint" rule is at its most fragile during a turn.
+name: cov_bird_at_turnaround
+kind: coverage
+adversarial: true
+status: pending-avoidance-loop
+seed: 102
+
+safety_property:
+  id: no_dropped_cell_at_turnaround
+  statement: A dodge that coincides with a lane turnaround still accounts for every cell near the
+             turn -- none is dropped in the handoff between the ending lane and the next lane.
+  metric: coverage.check_ledger (P1-P4)
+  pass_when: ledger.ok AND every cell within one swath of the turn region is covered or explicit debt
+  fail_when: a turn-region cell is absent from the ledger because "return to next waypoint" skipped
+             past it while avoidance was active -> silent coverage hole at every headland.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  # Bird sits in the north headland between x=15 and x=30 as the drone reverses lanes (~y=60).
+  birds:
+    - bird_id: intruder_0
+      physical_radius_m: 0.18
+      waypoints:
+        - {t_s: 0.0,  x_m: 22.0, y_m: 52.0, z_m: 6.0}
+        - {t_s: 5.0,  x_m: 22.0, y_m: 59.0, z_m: 15.0}   # in band, in the turnaround corridor
+        - {t_s: 10.0, x_m: 22.0, y_m: 52.0, z_m: 6.0}
+  swath_half_width_m: 7.5
+  cell_size_m: 2.5
+
+runner:
+  now: null
+  pending_on: eval/scenarios/cov_bird_at_turnaround/flight_log.json
+  activates: tests/fieldguard_planning/test_safety_scenarios_pending.py::TestNoSilentlySkippedCell::test_bird_at_lane_turnaround

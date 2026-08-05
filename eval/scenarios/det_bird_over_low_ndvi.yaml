@@ -1,0 +1,39 @@
+# ADVERSARIAL. The exact failure ADR-003 flagged: a bird over bare/low-NDVI soil, where NDVI
+# contrast between bird and ground is smallest. The spike did NOT trip this on SYNTHETIC frames;
+# this re-checks it on the REAL Gazebo NDVI render, the only place the claim is trustworthy.
+name: det_bird_over_low_ndvi
+kind: detection
+adversarial: true
+status: pending-avoidance-loop
+seed: 202
+
+safety_property:
+  id: no_missed_bird_over_bare_soil
+  statement: A bird over a low-NDVI (bare-soil) patch is still detected before closest approach.
+  metric: score.per_bird_track_fnr
+  pass_when: per_bird_track_fnr == 0.0 on the REAL render
+  fail_when: the low-contrast bird is missed pre-closest-approach -> the specific false-negative
+             ADR-003 warned about, now realized against the real sensor.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  ground: a low-NDVI (bare soil, NDVI ~0.10-0.15) patch under the bird's crossing point
+  # Bird crosses over the bare-soil patch at mission altitude.
+  birds:
+    - bird_id: lowcontrast_0
+      physical_radius_m: 0.18
+      waypoints:
+        - {t_s: 0.0, x_m: 22.0, y_m: 20.0, z_m: 15.0}
+        - {t_s: 4.0, x_m: 38.0, y_m: 20.0, z_m: 15.0}   # crosses lane x=30 over the low-NDVI patch
+  scoring:
+    iou_thresh: 0.3
+    per_bird_fnr_bar: 0.0
+  requires: real Gazebo NDVI render (meta.json synthetic == false) -- a synthetic clip does NOT
+            satisfy this scenario (see ADR-003 open follow-up).
+
+runner:
+  now: null
+  pending_on: eval/scenarios/det_bird_over_low_ndvi/flight_log.json
+  activates: tests/fieldguard_planning/test_safety_scenarios_pending.py::TestNoMissedBird::test_bird_over_low_ndvi_ground

@@ -1,0 +1,36 @@
+# A bird crosses the flight line at mission altitude. Detection must fire on >=1 frame BEFORE
+# closest approach (per-bird-track FNR == 0). Reuses eval/score.py -- the SAME metric family as
+# ADR-003, so the safety bar is consistent across perception and avoidance.
+name: det_bird_crosses_path
+kind: detection
+adversarial: false
+status: pending-avoidance-loop
+seed: 201
+
+safety_property:
+  id: no_missed_bird_baseline
+  statement: A bird crossing the path is detected before closest approach; no near-miss.
+  metric: score.per_bird_track_fnr
+  pass_when: per_bird_track_fnr == 0.0
+  fail_when: a bird is first seen only at/after closest approach (or never) -> the missed-bird
+             failure; in the field, a collision the avoidance loop never got the chance to prevent.
+
+setup:
+  mission: config/missions/boustrophedon.waypoints
+  field_polygon: config/field_polygon.json
+  static_obstacles: config/static_obstacles.json
+  # A small, fast bird crossing lane x=30 west->east at mission altitude.
+  birds:
+    - bird_id: crosser_0
+      physical_radius_m: 0.15   # small
+      waypoints:
+        - {t_s: 0.0, x_m: 22.0, y_m: 40.0, z_m: 15.0}
+        - {t_s: 3.0, x_m: 38.0, y_m: 40.0, z_m: 15.0}   # fast: 16 m in 3 s across the lane
+  scoring:
+    iou_thresh: 0.3
+    per_bird_fnr_bar: 0.0   # for avoidance we demand ZERO per-bird misses, stricter than ADR-003's 0.10
+
+runner:
+  now: null
+  pending_on: eval/scenarios/det_bird_crosses_path/flight_log.json  # incl. detection.{ground_truth,detections}
+  activates: tests/fieldguard_planning/test_safety_scenarios_pending.py::TestNoMissedBird::test_bird_crosses_path

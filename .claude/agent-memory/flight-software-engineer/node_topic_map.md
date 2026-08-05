@@ -1,11 +1,12 @@
 ---
 name: node-topic-map
-description: FieldGuard ROS 2 / package map as of Week 2 (geofence consumer landed; no rclpy nodes exist yet)
+description: FieldGuard ROS 2 / package map + locked AP_DDS /ap/* topic contract as of Week 2 (geofence consumer + DDS enablement landed; no rclpy nodes exist yet)
 metadata:
   type: project
 ---
 
-State as of 2026-08-04 (Week 2 hand-off: mission-through-farm-world wiring + geofence consumer).
+State as of 2026-08-04 (Week 2 hand-off: mission-through-farm-world wiring + geofence consumer +
+AP_DDS enablement/interface-lock).
 
 ## What exists in `src/` today
 - `src/fieldguard_planning/` — **not yet a real colcon/ament package** (no `package.xml`/`setup.py`).
@@ -57,6 +58,58 @@ rediscovered by me, just tracking since they're load-bearing for anything I buil
 - AP_DDS (`/ap/*` ROS 2 topics) is NOT enabled by default on gazebo-iris params — separate from
   flying a mission (which only needs MAVLink), needed later when ROS 2 control nodes consume
   telemetry.
+
+## AP_DDS enablement + locked `/ap/*` interface contract (Week 2 workstream D)
+
+**Enablement:** `config/sitl_params/dds_udp.parm` (`DDS_ENABLE 1`, `DDS_UDP_PORT 2019`), loaded via
+`sim_vehicle.py --add-param-file=...` (documented `docs/WEEK1_BRINGUP.md` §6b). Deliberately did
+**not** load ArduPilot's own `dds_use_ns.parm` (`DDS_USE_NS=1`) — that adds a `/v<sysid>/` segment
+to every name; single-vehicle project, so kept plain `/ap/<name>`. Needs a third process, the
+micro-ROS-DDS-XRCE agent: `ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019` — same
+container, localhost:2019 only (AP_DDS's default UDP peer for non-ChibiOS boards), no new Docker
+port mapping needed.
+
+**Non-obvious finding:** `DDS_ENABLE` actually compiles in as **on-by-default**
+(`ENABLED_BY_DEFAULT = 1` in `AP_DDS_Client.cpp`) at our pinned SHA — contradicting the earlier
+WEEK1_BRINGUP.md note that gazebo-iris params leave it off. Likely explanation: the SITL instance's
+`eeprom.bin` (on the named Docker volume, persists across container restarts) saved `DDS_ENABLE=0`
+the first time that param existed for this instance, and a later compiled-default change doesn't
+retroactively update an already-saved param. Lesson: don't trust "the code says X defaults to Y" for
+anything `AP_PARAM_FLAG_ENABLE`-persisted — load it explicitly via a param file every time instead.
+
+**Verified topic/frame map — sourced from `libraries/AP_DDS/AP_DDS_Topic_Table.h`,
+`AP_DDS_Service_Table.h`, `AP_DDS_Client.h`, `AP_DDS_Client.cpp`, `AP_DDS_config.h`,
+`AP_DDS_Frames.h` @ ArduPilot commit `9895756d874ec9128d50918f6747a83706f4e221` (all 19 topics + 6
+services default-enabled at this SHA for a standard ArduCopter SITL build — checked every gating
+flag, not assumed). Full table handed to tech-lead as a `docs/DECISIONS.md` ADR draft (Week 2); see
+that ADR once recorded for the authoritative copy. Headline non-obvious findings worth remembering
+independent of the ADR text:**
+- `/ap/pose/filtered` (`geometry_msgs/PoseStamped`) and `/ap/twist/filtered`
+  (`geometry_msgs/TwistStamped`, linear part) both carry `header.frame_id = "base_link"` but their
+  *content* is actually **ENU position/velocity relative to the EKF/home origin** (world-frame, not
+  body-frame) — a REP-105 mislabeling baked into upstream AP_DDS, not a bug in anything we wrote.
+  Consumers must treat the numeric content as authoritative and ignore the frame_id string for
+  these two topics. Good news: this ENU-relative-to-home convention is exactly what
+  `config/field_polygon.json` / `src/fieldguard_planning/geofence.py` already use, so no conversion
+  needed once live telemetry replaces the mission-file-based checks I built in the earlier Week 2
+  task.
+- `/ap/twist/filtered.twist.angular` (body-frame rates) and `.twist.linear` (world ENU) are two
+  different frames under one message/one frame_id — don't naively treat the whole `Twist` as one
+  frame.
+- `/ap/navsat` and `/ap/battery` frame_id is the **instance index as a decimal string** (e.g. `"0"`,
+  `"1"`), not a named frame — easy to misparse as garbage if you're expecting `"base_link"`/`"map"`.
+- `/ap/gps_global_origin/filtered` (`geographic_msgs/GeoPointStamped`) is the WGS-84 lat/lon/alt of
+  the EKF origin that `/ap/pose/filtered`'s ENU frame is relative to — the live-telemetry equivalent
+  of `config/field_polygon.json`'s `home_lat`/`home_lon`. Worth cross-checking against it once the
+  bridge is live (should match to GPS/EKF precision).
+- The `/clock` **subscriber** topic (`rosgraph_msgs/Clock`) is special-cased in
+  `AP_DDS_Topic_Table.h`: its `topic_name` starts with `/`, which the ArduPilot naming code
+  (`dds_format_name`, `AP_DDS_Client.cpp`) treats as an absolute DDS path and does NOT prefix with
+  `/ap/` — it really is the global `/clock`, not `/ap/clock`. Every other topic gets the `/ap/`
+  prefix.
+- Services are ArduPilot-as-**server** (`Service_rr::Replier`); ROS 2 nodes are the client:
+  `/ap/arm_motors`, `/ap/mode_switch`, `/ap/prearm_check`, `/ap/experimental/takeoff`,
+  `/ap/set_parameters`, `/ap/get_parameters`.
 
 ## Launch/run helpers I added (Week 2)
 - `scripts/run_farm_mission.sh` — Shell A wrapper (starts `farmguard_field.sdf` with correct env),

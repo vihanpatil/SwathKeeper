@@ -24,6 +24,7 @@ set -euo pipefail
 REPO_IN_CONTAINER="/workspace/fieldguard"
 WORLD="$REPO_IN_CONTAINER/sim/worlds/farmguard_field.sdf"
 MISSION="$REPO_IN_CONTAINER/config/missions/boustrophedon.waypoints"
+DDS_PARAM_FILE="$REPO_IN_CONTAINER/config/sitl_params/dds_udp.parm"
 
 if [[ ! -f /opt/ros/humble/setup.bash ]]; then
   echo "ERROR: /opt/ros/humble/setup.bash not found -- this script must run inside the" >&2
@@ -51,7 +52,8 @@ cat <<EOF
 
   cd /root/ardu_ws/src/ardupilot
   export PATH="\$PWD/Tools/autotest:\$PATH"
-  sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
+  sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON \\
+    --add-param-file=$DDS_PARAM_FILE
 
   # At the MAVProxy prompt, wait for the EKF-ready message first (docs/WEEK1_BRINGUP.md §6), then:
   mode rtl                  # land any current hover; wait for DISARMED
@@ -61,6 +63,18 @@ cat <<EOF
   param set AUTO_OPTIONS 3  # bit0=allow arm in AUTO, bit1=auto-takeoff
   mode auto
   arm throttle              # arms AND auto-starts: NAV_TAKEOFF, the 6 lanes, then RTL
+
+[run_farm_mission] Open a THIRD shell (docker exec -it fieldguard-sim bash) for the AP_DDS agent --
+  needed for /ap/* ROS 2 topics (Week 3-4 perception/planner nodes), not for flying the mission
+  itself (that's plain MAVLink). See docs/WEEK1_BRINGUP.md §6b / docs/DECISIONS.md for the locked
+  /ap/* topic+frame contract:
+
+  source /root/ardu_ws/install/setup.bash
+  ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
+
+  # Then, from any shell with ROS 2 sourced:
+  ros2 topic list | grep '^/ap'      # expect ~19 topics
+  ros2 topic hz /ap/pose/filtered    # steady rate, not zero
 
 [run_farm_mission] Starting Gazebo now (Ctrl-C here stops the world) ...
 EOF

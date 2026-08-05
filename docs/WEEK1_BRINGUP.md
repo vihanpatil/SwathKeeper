@@ -223,13 +223,57 @@ sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
 2. **AP_DDS → ROS 2 (`/ap/*` topics) is a separate follow-up**, not automatic: the default
    gazebo-iris params do **not** set `DDS_ENABLE`, so `ros2 topic list | grep '^/ap'` is empty until
    DDS is enabled (a param / DDS-enabled param file). Not required to fly a mission (that uses
-   MAVLink); wire it up when the ROS 2 control nodes need ArduPilot state.
-3. `ros2 topic hz /ap/pose/filtered` (or the equivalent pose topic name — confirm exact name
-   against your checked-out `ardupilot_gz`/AP_DDS version, names have moved before) reports a
-   steady rate, not zero.
+   MAVLink); see §6b below to enable it and confirm the `/ap/*` topics live.
 
-If (1) works but (2)/(3) don't: the DDS bridge or micro-ROS agent isn't running — check
-`micro_ros_agent` came up as part of the launch file.
+## 6b. Enable AP_DDS (the ROS 2 `/ap/*` bridge)
+
+(Week 2 workstream D, `flight-software-engineer`.) `DDS_ENABLE` **does compile in as on-by-default**
+at our pinned ArduPilot SHA (`libraries/AP_DDS/AP_DDS_Client.cpp`, `ENABLED_BY_DEFAULT = 1` at
+commit `9895756d874ec9128d50918f6747a83706f4e221` — see `CLAUDE.md` "Pinned commit SHAs") — but a
+SITL instance's `eeprom.bin` (persisted on the named Docker volume, `docs/WEEK1_BRINGUP.md` §2)
+keeps whatever value was saved the *first* time DDS existed for that instance, so don't rely on the
+compiled default. Load it explicitly and reproducibly instead:
+
+```bash
+cd /root/ardu_ws/src/ardupilot
+export PATH="$PWD/Tools/autotest:$PATH"
+sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON \
+  --add-param-file=/workspace/fieldguard/config/sitl_params/dds_udp.parm
+```
+
+`config/sitl_params/dds_udp.parm` sets `DDS_ENABLE 1` and `DDS_UDP_PORT 2019` — mirroring
+ArduPilot's own `Tools/ros2/ardupilot_sitl/config/default_params/dds_udp.parm` at the pinned SHA
+(what `ardupilot_gz_bringup`'s launch file loads by default). We load it via `--add-param-file`
+rather than the launch file because this project's bringup deliberately bypasses that launch file
+(custom world path, see §5-6 above) — see the param file's own header comment for why we do **not**
+also load `dds_use_ns.parm` (keeps topic names as plain `/ap/<name>`, not `/ap/v1/<name>`).
+
+DDS needs a **third shell**: the micro-ROS-DDS-XRCE agent, which the `ardupilot_gz_bringup` launch
+file would normally spawn for you (`use_dds_agent:=True` → `ardupilot_sitl`'s
+`sitl_dds_udp.launch.py` → a `micro_ros_agent` node, confirmed by reading that package's launch
+source at the pinned ArduPilot SHA). Since we're not using that launch file, start it ourselves —
+same container, localhost only, no new Docker port mapping needed (AP_DDS's default UDP peer is
+`127.0.0.1` for non-ChibiOS boards, `libraries/AP_DDS/AP_DDS_config.h`):
+
+```bash
+# Shell C:
+source /root/ardu_ws/install/setup.bash
+ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
+```
+
+**Verify:** with shells A (Gazebo), B (SITL, `--add-param-file` above), and C (agent) all up:
+
+```bash
+ros2 topic list | grep '^/ap'      # expect ~19 topics, see docs/DECISIONS.md for the locked list
+ros2 topic hz /ap/pose/filtered    # steady rate, not zero
+ros2 service list | grep '^/ap'    # expect 6 services (arm_motors, mode_switch, ...)
+```
+
+The exact `/ap/*` topic names, message types, and frame_ids are **locked against our pinned
+ArduPilot SHA** (not guessed) in `docs/DECISIONS.md` — that's the contract the Week 3-4
+perception/planner ROS 2 nodes code against. If a topic is missing from `ros2 topic list`, check
+(in order): shell C actually running, `DDS_ENABLE` really got set (`param show DDS_ENABLE` at the
+`MAV>` prompt), and shell A/B connected (§6 point 1).
 
 ## 7. Record the exact versions that worked (produces edits to `CLAUDE.md`, human does this)
 
