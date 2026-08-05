@@ -264,20 +264,27 @@ rather than the launch file because this project's bringup deliberately bypasses
 (custom world path, see §5-6 above) — see the param file's own header comment for why we do **not**
 also load `dds_use_ns.parm` (keeps topic names as plain `/ap/<name>`, not `/ap/v1/<name>`).
 
-DDS needs a **third shell**: the micro-ROS-DDS-XRCE agent, which the `ardupilot_gz_bringup` launch
-file would normally spawn for you (`use_dds_agent:=True` → `ardupilot_sitl`'s
-`sitl_dds_udp.launch.py` → a `micro_ros_agent` node, confirmed by reading that package's launch
-source at the pinned ArduPilot SHA). Since we're not using that launch file, start it ourselves —
-same container, localhost only, no new Docker port mapping needed (AP_DDS's default UDP peer is
-`127.0.0.1` for non-ChibiOS boards, `libraries/AP_DDS/AP_DDS_config.h`):
+DDS needs the micro-ROS-DDS-XRCE agent, which the `ardupilot_gz_bringup` launch file would normally
+spawn for you (`use_dds_agent:=True` → `ardupilot_sitl`'s `sitl_dds_udp.launch.py` → a
+`micro_ros_agent` node, confirmed by reading that package's launch source at the pinned ArduPilot SHA).
+Since we're not using that launch file, start it ourselves — same container, localhost only, no new
+Docker port mapping needed (AP_DDS's default UDP peer is `127.0.0.1` for non-ChibiOS boards,
+`libraries/AP_DDS/AP_DDS_config.h`):
 
 ```bash
-# Shell C:
+# Agent shell:
 source /root/ardu_ws/install/setup.bash
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
 ```
 
-**Verify:** with shells A (Gazebo), B (SITL, `--add-param-file` above), and C (agent) all up:
+> ⚠️ **Start the agent BEFORE SITL.** AP_DDS pings the agent at startup; if the agent is not already
+> listening on port 2019, SITL prints `AP: DDS: No ping response, exiting` and **no `/ap/*` data ever
+> flows** (a consumer sees a frozen pose). Correct bringup order: **Gazebo → agent → SITL**. If you
+> started SITL first and see that message, start the agent, and if the spam doesn't stop within ~15 s,
+> restart SITL (`pkill -9 -f build/sitl/bin/arducopter`, then re-run it) with the agent already up.
+> Learned live during the Week-3 avoidance demo (`docs/WEEK3_AVOIDANCE_DEMO.md`).
+
+**Verify:** with Gazebo, the agent, and SITL (`--add-param-file` above) all up:
 
 ```bash
 ros2 topic list | grep '^/ap'      # expect ~19 topics, see docs/DECISIONS.md for the locked list

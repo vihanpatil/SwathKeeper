@@ -18,8 +18,9 @@ recording them.
 3. **Farmer-facing dashboard** — deferred, built last, kept light. It's the proof, not the point.
 
 ## Architecture (authoritative summary — see docs/SPEC.md §Architecture)
-- **Sim**: Gazebo (Harmonic *or* Garden — pin one) + `ardupilot_gazebo` + ROS 2. Custom farm world:
-  bounded field polygon, tree rows (static obstacles), scripted bird actors (dynamic obstacles).
+- **Sim**: Gazebo Harmonic (pinned, ADR-004) + `ardupilot_gazebo` + ROS 2. Custom farm world
+  (`sim/worlds/farmguard_field.sdf`): bounded field polygon, tree rows (static obstacles), scripted
+  bird actors (dynamic obstacles).
 - **Sensing**: simulated NDVI camera (dual-band: Red + synthetic NIR). A second-sensor config
   (NDVI+depth or NDVI+RGB) runs in parallel as a **comparison arm** to quantify a second sensor's value.
 - **Perception**: lightweight detector on NDVI frames + a **pre-known static-obstacle map** (trees

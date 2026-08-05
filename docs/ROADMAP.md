@@ -91,9 +91,22 @@ the interface assumptions were wrong. The portfolio lives or dies on this loop e
 |---|---|---|---|---|
 | 0 | ✅ **ADR-006** — avoidance command interface, verified vs pinned SHA | `tech-lead` | `flight-software-engineer` | **DONE.** Our executor owns the maneuver: AUTO→GUIDED→one **3D-vetted `/ap/cmd_gps_pose`** setpoint (world-ENU, `frame_id="map"`)→GUIDED→AUTO. `MIS_RESTART=0` makes AUTO deterministically resume the interrupted leg to the same next waypoint (no index juggling). Rejected ArduPilot built-in OA (would move the reactive decision into the autopilot — deletes the differentiator). Source-verified @ pinned SHA; ACCEPTED (confirmation-pending: live resume needs the Docker run). Bonus: AP_DDS exposes **no mission-current service** → a source-verified reason requeue/reconciliation (ADR-002 stretch) is genuinely harder, not just deferred. |
 | 1 | ✅ **Human Docker validation (THE GATE)** — Gates 1-3 in `docs/WEEK3_VALIDATION.md` | human | `robotics-sim-engineer`, `flight-software-engineer` | **DONE 2026-08-05** — all 3 gates passed; ADR-005 + ADR-006 confirmed live |
-| 2 | 🔨 IN PROGRESS — Avoidance **decision policy**: given a detection + geofence + coverage state, when/where to dodge | `perception-ml-engineer` | `qa-safety-reviewer` | Emits a **3D-safe** maneuver for every QA scenario (never steers into a geofenced tree) |
-| 3 | 🔨 IN PROGRESS — Avoidance **executor + coverage-debt bookkeeping**: take control, execute, resume, log every event, mark uncovered cells as debt | `flight-software-engineer` | `qa-safety-reviewer` | QA's pending scenarios go green: no silently-skipped cell, no missed bird, no geofence breach |
-| 4 | 🔨 IN PROGRESS — Extend `geofence.py` to **3D** (altitude-aware safety gate) | `flight-software-engineer` | — | `geo_avoid_into_tree` scenario passes |
+| 2 | ✅ DONE — Avoidance **decision policy** (`src/fieldguard_planning/avoidance_policy.py`) | `perception-ml-engineer` | `qa-safety-reviewer` | 3D-safe maneuver for every QA scenario; HOLD when boxed in; never emits an unvetted setpoint |
+| 3 | ✅ DONE — Avoidance **executor + coverage-debt** (`avoidance_executor.py`) | `flight-software-engineer` | `qa-safety-reviewer` | Latching AUTO→GUIDED→AUTO (one takeover/resume); coverage-debt partition holds by construction; 5 QA scenarios activated |
+| 4 | ✅ DONE — `geofence.py` **3D** gate (`is_safe_3d`) | `flight-software-engineer` | — | `geo_avoid_into_tree` scenario passes |
+
+**✅ WEEKS 3-4 CORE COMPLETE — and DEMONSTRATED LIVE (2026-08-05).** The full reactive-avoidance loop
+ran end-to-end on the real ArduPilot SITL + Gazebo + ROS 2 stack: during a boustrophedon survey the
+drone detected the (scripted, `--demo`) bird on lane x=30, took over (`/ap/mode_switch`→GUIDED),
+commanded a 3D-vetted dodge (`/ap/cmd_gps_pose`), held clear, then resumed AUTO and finished the survey
+— one clean takeover/resume, no thrash. ROS 2 adapter: `src/fieldguard_planning/ros2_adapter.py` +
+`avoidance_node.py` (PR #10); runbook `docs/WEEK3_AVOIDANCE_DEMO.md`; run artifact
+`eval/results/live_flight_log.json`. Test suite 34→55. See memory `week3-avoidance-loop-live`.
+- _Open polish (non-blocking):_ dodge setpoints are jumpy (policy recomputes each tick — commit to one
+  point per encounter); package the node as a colcon package for `ros2 run`.
+- **NEXT → Weeks 5-6:** NDVI rendering pipeline → real blob detector plugged into the SAME
+  `detection_source` seam (replacing the `--demo` bird) → georeferenced health map → **re-confirm
+  ADR-003 on the real render** (the still-pending item). Start with `/standup`.
 
 - _Forcing-scenario already in place:_ tree row 0 (x=15) sits exactly on a boustrophedon lane centerline
   (min XY clearance **−2.0 m** — overlaps in plane, safe today only via the 11.5 m vertical margin at 15 m
