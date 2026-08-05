@@ -302,6 +302,14 @@ spike re-run + ADR-005 live-topic + ADR-006 live-resume checks — one Docker se
      → re-confirm ADR-003 numbers hold on the real render.
   4. Confirm the pinned Harmonic build exposes the thermal sensor on `ogre2` (Sensors system already
      runs `ogre2`, world line 13-15) — thermal is ogre2-only; verify `gz-sim-thermal-system` loads.
+  5. **Principal point (cx,cy) unpinned** — georef defaults cx,cy to image-center (`CameraIntrinsics.from_config`);
+     CONFIRM empirically against the real `/fg/*/camera_info` once Gate 1 publishes it (log in WEEK5_VALIDATION.md).
+  6. **Georef anchor rule (DECIDED, from stitch build):** anchor to the **live `/ap/gps_global_origin/filtered`**
+     (WGS-84 EKF origin, ADR-005) at runtime — authoritative; `config/field_polygon.json` home is used **only**
+     for offline/test. `home_lat/lon/alt` is a transform param, sourced live and config-defaulted offline.
+  7. **Dependency boundary (DECIDED, from stitch build):** `fieldguard_planning` stays **stdlib-only** for the
+     planning/avoidance core; **numpy** is permitted **only** in the NDVI image-math modules (`ndvi_fusion.py`,
+     `ndvi_georef.py`) — genuine array math, already project-blessed via `requirements-eval.txt`.
 Owner / roles: tech-lead (decided + verified against Gazebo Harmonic sensor docs + ros_gz bridge),
 robotics-sim-engineer (builds the two-sensor mount + per-model temperature authoring + bridge),
 perception-ml-engineer (ADR-003 re-run on `/fg/ndvi/image`), flight-software-engineer (georef stitch
