@@ -85,6 +85,7 @@ def build_node(detection_source: Optional[DetectionSource] = None,
     """Construct the rclpy node. Kept as a factory so the (untestable-off-sim) rclpy import is lazy."""
     import rclpy
     from rclpy.node import Node
+    from rclpy.qos import qos_profile_sensor_data  # BEST_EFFORT — matches AP_DDS publisher QoS (ADR-005)
     from geometry_msgs.msg import PoseStamped
 
     from .ros2_adapter import Ros2VehicleSink
@@ -106,7 +107,8 @@ def build_node(detection_source: Optional[DetectionSource] = None,
 
             # ADR-005: /ap/pose/filtered is PoseStamped whose CONTENT is world-ENU relative to the
             # EKF/home origin (frame_id says base_link but the content, not the label, is authoritative).
-            self.create_subscription(PoseStamped, "/ap/pose/filtered", self._on_pose, 10)
+            self.create_subscription(PoseStamped, "/ap/pose/filtered", self._on_pose,
+                                     qos_profile_sensor_data)
             self.create_timer(1.0 / CONTROL_HZ, self._on_tick)
             self.get_logger().info("fieldguard_avoidance up: subscribing /ap/pose/filtered @ "
                                    f"{CONTROL_HZ} Hz")
@@ -135,6 +137,8 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             out_path.write_text(json.dumps(log, indent=2))
             self.get_logger().info(f"wrote flight log -> {out_path}")
 
+    if not rclpy.ok():          # rclpy.init() must run before any Node is constructed
+        rclpy.init()
     return rclpy, AvoidanceNode()
 
 
