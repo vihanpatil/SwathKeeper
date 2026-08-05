@@ -15,4 +15,8 @@ if [[ "${1:-}" == "--amd64" ]]; then
   PLATFORM_ARGS=(--platform linux/amd64)
 fi
 
-docker build "${PLATFORM_ARGS[@]}" -t "$IMAGE_TAG" -f "$REPO_ROOT/sim/docker/Dockerfile" "$REPO_ROOT"
+# Note: ${PLATFORM_ARGS[@]+"${PLATFORM_ARGS[@]}"} (not a bare "${PLATFORM_ARGS[@]}") so an EMPTY
+# array doesn't trip `set -u` on bash 3.2 — the version macOS ships, which treats an empty array as
+# unset ("unbound variable"). This idiom expands to nothing when empty, and to the quoted elements
+# otherwise. Do not "simplify" it back.
+docker build ${PLATFORM_ARGS[@]+"${PLATFORM_ARGS[@]}"} -t "$IMAGE_TAG" -f "$REPO_ROOT/sim/docker/Dockerfile" "$REPO_ROOT"
