@@ -37,7 +37,12 @@ if [[ ! -f "$WORLD" ]]; then
   exit 1
 fi
 
+# colcon/ROS setup files reference unbound vars (COLCON_TRACE, AMENT_*, etc.) and are NOT safe to
+# source under `set -u` — it aborts with "COLCON_TRACE: unbound variable". Drop -u just around the
+# sourcing, then restore it. Standard pattern for sourcing ROS 2 overlays from a strict script.
+set +u
 source /root/ardu_ws/install/setup.bash
+set -u
 export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH:-}:/root/ardu_ws/install/ardupilot_gazebo/share"
 
 cat <<EOF
