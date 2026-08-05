@@ -1,8 +1,7 @@
 """Tests for the import-safe helpers in avoidance_node.py (the rclpy node itself is verified live).
 
-`scripted_bird_source` (the demo detector stand-in) and `_nearest_upcoming_wp` (the current-waypoint
-derivation) are pure/stdlib and must be right: the first drives what the loop reacts to, the second
-feeds the resume bookkeeping.
+The detection sources (demo stand-ins for the NDVI detector) and `_nearest_upcoming_wp` are
+pure/stdlib and must be right: they drive what the loop reacts to and the resume bookkeeping.
 """
 import sys
 import unittest
@@ -11,25 +10,39 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from fieldguard_planning.avoidance_node import (  # noqa: E402
-    scripted_bird_source, _nearest_upcoming_wp, DEMO_BIRDS,
+    scripted_bird_source, proximity_bird_source, _nearest_upcoming_wp, DEMO_BIRD_ENU,
 )
+from fieldguard_planning.avoidance_types import DroneState  # noqa: E402
+
+
+def _drone(x, y, z=15.0):
+    return DroneState(position_enu=(x, y, z), heading_rad=0.0, current_wp_index=0)
 
 
 class TestScriptedBirdSource(unittest.TestCase):
     def test_emits_within_window_only(self):
         src = scripted_bird_source([("b0", (30.0, 30.0, 15.0), 2.0, 5.0)])
-        self.assertEqual(src(0.0), [])                 # before window
-        self.assertEqual(len(src(3.0)), 1)             # inside
-        self.assertEqual(src(9.0), [])                 # after window
-        det = src(3.0)[0]
-        self.assertEqual(det.track_id, "b0")
-        self.assertEqual(det.position_enu, (30.0, 30.0, 15.0))
+        self.assertEqual(src(0.0, None), [])            # before window
+        self.assertEqual(len(src(3.0, None)), 1)        # inside
+        self.assertEqual(src(9.0, None), [])            # after window
+        self.assertEqual(src(3.0, None)[0].track_id, "b0")
 
-    def test_default_demo_bird_is_a_threat_on_lane_x30(self):
-        src = scripted_bird_source(DEMO_BIRDS)
-        dets = src(1.0)
-        self.assertEqual(len(dets), 1)
-        self.assertEqual(dets[0].position_enu[0], 30.0)  # on lane x=30
+
+class TestProximityBirdSource(unittest.TestCase):
+    def test_appears_on_proximity_lingers_then_clears(self):
+        src = proximity_bird_source(DEMO_BIRD_ENU, trigger_radius_m=15.0, linger_s=8.0)
+        # far away -> nothing, and the trigger has NOT armed
+        self.assertEqual(src(1.0, _drone(0.0, 0.0)), [])
+        # drone arrives within 15 m of the bird at (30,30) -> bird appears
+        self.assertEqual(len(src(10.0, _drone(30.0, 40.0))), 1)   # 10 m away, triggers at t=10
+        # lingers while within linger_s of the trigger, even if the drone moves off
+        self.assertEqual(len(src(15.0, _drone(0.0, 0.0))), 1)     # t=15, 5s since trigger -> still present
+        # after linger_s it has "flown off"
+        self.assertEqual(src(19.0, _drone(30.0, 30.0)), [])       # t=19, 9s since trigger -> gone
+
+    def test_none_drone_is_safe(self):
+        src = proximity_bird_source(DEMO_BIRD_ENU)
+        self.assertEqual(src(1.0, None), [])
 
 
 class TestNearestWaypoint(unittest.TestCase):
