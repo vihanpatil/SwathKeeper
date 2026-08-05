@@ -63,7 +63,7 @@ def _nearest_upcoming_wp(pos_xy: Tuple[float, float], mission_xy: Sequence[Tuple
 # forever, which is safe but doesn't show the resume). Tune the window to your machine's flight
 # timing: the drone must reach lane x=30 while the bird is still present. A crossing bird is the real
 # case; this static-with-window stand-in is enough until the NDVI detector plugs into this same seam.
-DEMO_BIRDS = [("demo_bird_0", (30.0, 30.0, 15.0), 0.0, 40.0)]
+DEMO_BIRDS = [("demo_bird_0", (30.0, 30.0, 15.0), 0.0, 60.0)]
 
 
 def scripted_bird_source(birds) -> DetectionSource:
