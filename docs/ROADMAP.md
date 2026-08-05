@@ -49,8 +49,14 @@ obstacle-populated farm world, so the Weeks 3-4 avoidance core starts on day one
     centerline (min XY clearance **−2.0 m** — overlaps in plane, safe today only via the 11.5 m vertical
     margin at 15 m alt vs 3.5 m trees). So a scenario that forces a genuine XY dodge already exists —
     lower altitude or raise that tree; rows 1/2 sit 5-10 m off-lane and won't. Deliberate, documented.
-- **Deferred, non-blocking:** bake the workspace build into the image (devops); merge the
-  `fix/week1-bringup` PR. _(AP_DDS moved into Week 2 as goal D — the ROS 2 control path needs it.)_
+- **CI (2026-08-04):** a no-Docker `planning-and-eval` job now runs on every push/PR — the stdlib
+  `tests/fieldguard_planning` suite + the eval spike harness end-to-end + a seed-42 per-bird-track-FNR
+  regression gate (`.github/workflows/ci.yml`, `requirements-eval.txt`, `scripts/check_spike_regression.py`).
+  Verified locally in a clean py3.12 venv; deterministic across reruns. The Docker/Gazebo `build-test-sim`
+  job stays deferred until the container image exists.
+- **Deferred, non-blocking:** bake the workspace build into the image + stand up the Docker/Gazebo CI
+  job (devops); merge the `fix/week1-bringup` PR. _(AP_DDS moved into Week 2 as goal D — the ROS 2
+  control path needs it.)_
 
 ### Earlier (kickoff)
 - **Week:** 1 (planning done; execution is the human's to run). Both lanes scoped in parallel.
