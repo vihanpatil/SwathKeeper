@@ -148,3 +148,63 @@ but the live bridge only comes up in the human Docker run — so the actual `ros
 appear with these names/types before treating ADR-005 as fully validated (same pattern as ADR-003's
 "re-confirm on the real Gazebo render").
 Owner / roles: flight-software-engineer (verified source + drafted), tech-lead (records).
+
+## ADR-006: Reactive-avoidance executor = AUTO->GUIDED->AUTO, we own the maneuver policy   (2026-08-05, status: ACCEPTED — confirmation-pending)
+Decision: On a dynamic bird detection during the AUTO boustrophedon mission, **our** executor node
+takes control by switching AUTO -> GUIDED (via the `/ap/mode_switch` service, ardupilot_msgs/ModeSwitch,
+locked in ADR-005), commands a **single pre-vetted avoidance setpoint** in GUIDED, then switches
+GUIDED -> AUTO to resume coverage. Verified mechanism, all cited @ pinned ArduPilot commit
+`9895756d874ec9128d50918f6747a83706f4e221`:
+  - **Maneuver command (primary):** a discrete guided position setpoint on `/ap/cmd_gps_pose`
+    (ardupilot_msgs/GlobalPosition, WGS-84, anchored to `/ap/gps_global_origin/filtered` from ADR-005).
+    Alternative primitive `/ap/cmd_vel` (geometry_msgs/TwistStamped, world-ENU) is also valid but is a
+    velocity we'd have to integrate to safety-check; a position target is the thing the safety gate
+    actually evaluates, so it is the v1 primitive. **Both are honored only in GUIDED + armed:**
+    `AP_DDS_ExternalControl.cpp::handle_velocity_control` / `handle_global_position_control` ->
+    `AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate` / `set_global_position`, each gated by
+    `ready_for_external_control()` = `copter.flightmode->in_guided_mode() && copter.motors->armed()`
+    (ArduCopter/AP_ExternalControl_Copter.cpp @ SHA). This reconciles the ADR-005 note that `/ap/cmd_vel`
+    is a subscriber: it is a live input, but ArduPilot silently drops it unless we are in GUIDED.
+  - **Frame the executor MUST command in:** world-**ENU** with `header.frame_id = "map"`. Unlike
+    `/ap/pose/filtered` (ADR-005: content authoritative, frame_id lies), for these command topics the
+    `frame_id` **is honored** as a real switch: `handle_velocity_control` transforms `"map"` ENU -> NED
+    as `{linear.y, linear.x, -linear.z}`, whereas `"base_link"` is treated as body frame via
+    `ahrs.body_to_earth()` (AP_DDS_ExternalControl.cpp @ SHA). Sending `base_link` by mistake would fly a
+    body-frame dodge. Command `"map"`/ENU.
+  - **Resume mechanism:** re-entering AUTO runs `ModeAuto::run()` -> `mission.start_or_resume()`
+    (ArduCopter/mode_auto.cpp @ SHA), which calls `resume()` unless `MIS_RESTART==1`
+    (AP_Mission.cpp::start_or_resume @ SHA). We **pin `MIS_RESTART=0`** in the param file (same explicit
+    discipline as ADR-005) so AUTO deterministically resumes the leg it was flying and continues to the
+    **same next waypoint** it was navigating to when interrupted — exactly the ADR-002 v1 behavior, no
+    index manipulation required.
+  - **Why no waypoint-index juggling:** AP_DDS at this SHA exposes **no mission-current service** (ADR-005
+    table: mode_switch/arm/prearm/takeoff/get+set_parameters only). Skipping/requeuing cells would need
+    `AP_Mission::set_current_cmd` reachable only via MAVLink `MAV_CMD_DO_SET_MISSION_CURRENT` — a second
+    control channel. v1 doesn't need it (natural resume suffices), which is a verified concrete reason the
+    full coverage-debt reconciliation (ADR-002 stretch) is genuinely harder, not just deferred.
+Safety requirement handed to flight-software (build, not decided here): the executor MUST pass the
+candidate avoidance setpoint (and ideally the swept path to it) through a **3D safety gate BEFORE**
+switching to GUIDED — the target must lie outside every geofenced-tree obstacle volume AND within
+altitude bounds. `config`/`geofence.py` is currently **XY-only**; extend it to altitude-aware so a dodge
+cannot climb/descend into a canopy or breach the ceiling (QA's `geo_avoid_into_tree` is the regression).
+If the gate rejects the primary dodge, fall back to hover-in-GUIDED; never execute an unvetted maneuver.
+Log every takeover (trigger detection id + AUTO->GUIDED), the maneuver target + gate verdict, and the
+resume (GUIDED->AUTO + resumed waypoint) per the CLAUDE.md instrumentation rule.
+Alternative(s) rejected:
+  (a) Pure MAVLink mission manipulation / `DO_REPOSITION`. Rejected for v1 — it adds a second control
+      channel alongside the AP_DDS bridge we already locked (ADR-005) for no v1 benefit; keep one bus.
+      (It's the natural home for the ADR-002 *stretch* requeue, which genuinely needs it — noted above.)
+  (b) Lean on ArduPilot's built-in object avoidance (BendyRuler/Dijkstra + `OA_*`/proximity). Rejected —
+      that path is built for known-obstacle/proximity avoidance and would move the reactive decision
+      **into the autopilot**, deleting the exact thing this project exists to show (priority #1); our
+      differentiator is that *our* code sees, decides, and acts, and we can log and defend every step.
+Why: We keep the avoidance brain in our own ROS 2 code — detect, safety-gate, switch to GUIDED, command
+one vetted setpoint, then hand control back to AUTO which resumes the mission on its own — because that
+is the whole point of the project (priority #1), and every takeover, maneuver, and resume is a line in a
+log I can walk an interviewer through.
+Open follow-up (do not silently forget): the interface is verified from **source @ the pinned SHA**, but
+the live behavior — that GUIDED accepts our setpoint mid-mission and AUTO with `MIS_RESTART=0` actually
+resumes to the intended waypoint — must be **confirmed in the human Docker run** before ADR-006 is fully
+validated (same pattern as ADR-003 real-render and ADR-005 live-topic checks; batch all three).
+Owner / roles: tech-lead (decided + verified source@SHA), flight-software-engineer (builds executor +
+3D geofence), perception-ml-engineer (detection trigger), qa-safety-reviewer (`geo_avoid_into_tree`).
