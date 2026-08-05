@@ -37,7 +37,7 @@ mapping, built in simulation on the ArduPilot stack.
 
 ## Architecture
 
-1. **Simulation environment:** Gazebo (Harmonic or Garden) + `ardupilot_gazebo` plugin +
+1. **Simulation environment:** Gazebo Harmonic (pinned, ADR-004) + `ardupilot_gazebo` plugin +
    ROS 2. Custom "farm world": bounded field polygon, rows of trees as static obstacles,
    scripted bird actors as dynamic obstacles (Gazebo actor plugins).
 2. **Sensing:** simulated NDVI camera (dual-band render: red + synthetic NIR pass).
@@ -76,11 +76,17 @@ for obstacle avoidance — close enough to your use case to save you real setup 
 
 ## Open questions to pin down as you build (not before)
 
+_All three are now RESOLVED (2026-08-05) — kept here as the original framing; see `docs/DECISIONS.md`
+and `docs/ROADMAP.md` for outcomes._
+
 - **Obstacle density for the MVP demo:** start with 2–3 scripted bird trajectories, not
-  a flock. Keep the avoidance loop debuggable before you scale complexity.
+  a flock. Keep the avoidance loop debuggable before you scale complexity. — **Resolved:** the farm
+  world ships 3 scripted bird actors; the live demo uses a single scripted bird (MVP scope).
 - **Replanning sophistication for v1:** ship "avoid, return to next waypoint" first.
   Document full coverage-debt reconciliation as an explicit stretch goal — good
-  interview material either way, and you don't want to block v1 on it.
+  interview material either way, and you don't want to block v1 on it. — **Resolved (ADR-002):** v1
+  ships avoid-then-resume + honest coverage-debt tracking; full reconciliation is the stretch goal.
 - **NDVI-only detection viability:** decide after the Week 1–2 spike whether the
   vegetation-index signal alone is enough for reliable dynamic-obstacle detection, or
-  whether a synthetic RGB pass earns its complexity.
+  whether a synthetic RGB pass earns its complexity. — **Resolved (ADR-003):** NDVI-direct — the blob
+  baseline hit per-bird-track FNR 0.000 on the spike; re-confirm on the real render in Weeks 5–6.

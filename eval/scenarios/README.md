@@ -112,12 +112,17 @@ replace this assumption.**
 |---|---|---|---|---|
 | `nominal_coverage_baseline` | coverage | no | nominal plan covers every cell; ledger balances | **now** |
 | `nominal_geofence_baseline` | geofence | no | only the row-0 lane breaches XY; safe by altitude | **now** |
-| `cov_bird_over_cell` | coverage | no | dodge over a cell ⇒ cell covered OR explicit debt | pending |
-| `cov_bird_at_turnaround` | coverage | **yes** | dodge during lane reversal drops no cell | pending |
-| `cov_two_birds_simultaneous` | coverage | **yes** | back-to-back dodges keep ledger honest | pending |
-| `det_bird_crosses_path` | detection | no | per-bird-track FNR == 0 (no missed bird) | pending |
-| `det_bird_over_low_ndvi` | detection | **yes** | FNR == 0 over bare soil (ADR-003 FN risk) | pending |
-| `geo_avoid_into_tree` | geofence | **yes** | dodge never enters a tree band+radius, nor exits field | pending |
+| `cov_bird_over_cell` | coverage | no | dodge over a cell ⇒ cell covered OR explicit debt | ✅ **activated** |
+| `cov_bird_at_turnaround` | coverage | **yes** | dodge during lane reversal drops no cell | ✅ **activated** |
+| `cov_two_birds_simultaneous` | coverage | **yes** | back-to-back dodges keep ledger honest | ✅ **activated** |
+| `det_bird_crosses_path` | detection | no | per-bird-track FNR == 0 (no missed bird) | pending (Weeks 5-6) |
+| `det_bird_over_low_ndvi` | detection | **yes** | FNR == 0 over bare soil (ADR-003 FN risk) | pending (Weeks 5-6) |
+| `geo_avoid_into_tree` | geofence | **yes** | dodge never enters a tree band+radius, nor exits field | ✅ **activated** |
+
+_Activated 2026-08-05: `eval/scenarios/generate_flight_logs.py` drives the real policy+executor to
+produce each `flight_log.json`, so the matching `test_safety_scenarios_pending.py` assertions now run
+and pass. The 2 `det_*` (detection-FNR) scenarios stay pending — they need detection artifacts from the
+real NDVI render (Weeks 5-6), not an avoidance flown path; fabricating those would defeat the metric._
 
 **Runnable-now** scenarios are asserted by `tests/fieldguard_planning/test_coverage.py` and
 `test_mission_geofence.py` against the *current* mission — they are the baseline the avoidance loop
@@ -132,13 +137,16 @@ python3 -m unittest discover -s tests/fieldguard_planning -v
 
 ---
 
-## 4. Known open safety gaps (as of Week 2)
+## 4. Known open safety gaps
 
-1. **Geofence is XY-only.** `geofence.py` checks the east/north plane. The nominal row-0 XY breach is
-   safe *only* by 11.5 m of vertical separation. Any avoidance/imaging manoeuvre that **descends into
-   the ≤ 5.5 m tree band** turns that benign overlap into a strike. The pending geofence assertion is
-   therefore **3D-aware** (`TREE_DANGER_BAND_TOP_M`). Week 3-4 avoidance must either hold altitude or
-   be validated in 3D — do not reuse the XY-only nominal check as the avoidance safety gate.
-2. **Camera swath unvalidated** (see §2 caveat). Coverage guarantee rests on an unmeasured FOV number.
-3. **Detection realism.** ADR-003's FNR numbers are from a *synthetic* clip. `det_bird_over_low_ndvi`
-   must be re-run on the real Gazebo NDVI render before the "no missed bird" claim is trusted.
+1. **Geofence 3D gate — ✅ CLOSED (Weeks 3-4).** The XY nominal check (`geofence.is_point_excluded`)
+   is safe for the 15 m cruise *only* by 11.5 m of vertical separation, so a maneuver that **descends
+   into the ≤ 5.5 m tree band** would turn that benign overlap into a strike. The 3D gate
+   `geofence.is_safe_3d` now exists and the avoidance policy + executor vet every dodge setpoint through
+   it (a point over a tree at altitude is safe; one in the canopy band is rejected → HOLD). The
+   `geo_avoid_into_tree` scenario asserts the flown path never enters a tree's radius AND danger band.
+2. **Camera swath unvalidated** (see §2 caveat) — still open. Coverage guarantee rests on an unmeasured
+   7.5 m FOV number; measure the real swath (perception-ml / robotics-sim) and replace the assumption.
+3. **Detection realism** — still open. ADR-003's FNR numbers are from a *synthetic* clip;
+   `det_bird_over_low_ndvi` must be re-run on the real Gazebo NDVI render (Weeks 5-6) before the "no
+   missed bird" claim is trusted. This is the one remaining confirmation-pending item.

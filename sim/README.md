@@ -61,17 +61,20 @@ Each entry:
 Read `obstacle_radius_m` for the exclusion radius, not `canopy_radius_m` — the latter is what the
 Gazebo model's collision sphere actually uses, the former already includes a safety margin on top.
 Tree height (3.5m) is well below `config/field_polygon.json`'s `mission_altitude_m` (15m), so the
-existing no-avoidance-aware boustrophedon mission physically clears every tree — this is why "the
-mission flies through the world" holds today even though avoidance logic is Week 3-4 scope.
+existing boustrophedon mission physically clears every tree — this is why "the mission flies through
+the world" held even before the avoidance loop existed. (The reactive-avoidance loop is now built and
+demonstrated live — see `docs/WEEK3_AVOIDANCE_DEMO.md`; it adds its own 3D safety gate on top of this
+geofence for dodge maneuvers that may leave cruise altitude, `geofence.is_safe_3d`.)
 
 **Consumer implementation (Week 2, `flight-software-engineer`):** `src/fieldguard_planning/geofence.py`
 loads this file and exposes `GeofenceMap.from_file(...)` with `is_point_excluded(x, y)`,
 `excluding_obstacle(x, y)`, `point_clearance(x, y)`, and `segment_clearance(p1, p2)` /
 `check_path(points)` for mission-leg (not just point) checks — see that module's docstring and
-`tests/fieldguard_planning/test_geofence.py`. Stdlib-only on purpose so it's usable by the Week 3-4
-avoidance loop without pulling in a ROS 2/Gazebo dependency just to ask "is this point a known
-tree." Not yet packaged as a colcon package (no `package.xml`) — that lands when a real ROS 2 node
-needs it installed rather than `sys.path`-imported.
+`tests/fieldguard_planning/test_geofence.py`. Stdlib-only on purpose so the whole avoidance loop that
+now consumes it (`avoidance_policy.py`, `avoidance_executor.py`) stays unit-testable without a ROS 2 /
+Gazebo dependency just to ask "is this point a known tree." Still not packaged as a colcon package (no
+`package.xml`); the live ROS 2 node runs via `python3 -m fieldguard_planning.avoidance_node` — colcon
+packaging (for `ros2 run`) is a documented follow-up.
 
 ## Frame conventions (must match across the project)
 
