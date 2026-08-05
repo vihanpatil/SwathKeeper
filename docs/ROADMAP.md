@@ -6,10 +6,51 @@ The `product-lead` re-cuts scope rather than moving the deadline. Full detail: `
 | Weeks | Goal | Primary roles | Exit criteria |
 |---|---|---|---|
 | **1-2** | Gazebo + ArduPilot SITL running; custom farm world; basic boustrophedon mission flies end-to-end, **no obstacles yet**. Run the NDVI-vs-RGB detection spike. | `robotics-sim-engineer`, `flight-software-engineer`, `perception-ml-engineer` | A mission flies the full field in sim; detection-approach decision recorded in DECISIONS.md with the metric that decided it. |
-| **3-4** | Static tree obstacles (geofence) + scripted dynamic bird obstacles; detector + reactive avoidance + coverage-debt replanning loop. **The core.** | `perception-ml-engineer`, `flight-software-engineer`, `qa-safety-reviewer` | Drone detects a bird, avoids, returns to next waypoint; avoidance events + requeued cells logged; QA has scenarios that can't silently skip a cell. |
+| **3-4** | Detector + **reactive avoidance + coverage-debt-tracking loop** in the Week-2 farm world (obstacles already built in Week 2). **The core — the differentiator.** | `tech-lead` (ADR-006), `perception-ml-engineer`, `flight-software-engineer`, `qa-safety-reviewer` | Drone detects a bird → avoids (3D-safe, no dodge into a geofenced tree) → returns to next waypoint, **demonstrated in sim** (needs the human Docker run); every detection/takeover/maneuver/resume + any uncovered cell (logged as coverage-**debt**) instrumented; QA's no-silent-skip scenarios green. v1 = return-to-next-waypoint (ADR-002); full requeue/reconciliation = stretch. |
 | **5-6** | NDVI rendering pipeline; per-frame vegetation index; georeferenced stitching into a health map. Second-sensor comparison arm quantified. | `robotics-sim-engineer`, `perception-ml-engineer`, `flight-software-engineer` | A georeferenced NDVI heatmap for a full flight; comparison-arm numbers (what a 2nd sensor buys) written up. |
 | **7** | Dashboard, demo video, README, resume bullets. | `gtm-narrative-lead`, `flight-software-engineer`, `devops-reliability-engineer` | Light dashboard (replay + avoidance log + NDVI overlay); recorded 60-90s demo; README readable in 90s; metric-backed resume bullets. |
 | **8** | Buffer / polish. | all | Green CI from clean clone; tagged demo-ready commit; safety sign-off from `qa-safety-reviewer`. |
+
+## ⚠️ Reality check & brutally honest status (2026-08-05, product-lead — no sweet talk, by request)
+
+**What is actually true right now.** The full sim stack (Gazebo + ArduPilot + ROS 2) has run **exactly
+once**, by hand, in Week 1. Every deliverable since — farm world, geofence, AP_DDS contract, detection
+decision, CI — is validated **only in pure-Python and on synthetic data.** That is real, disciplined
+engineering. It is **not** the same as "it works in sim," and the roadmap must not read as if it were.
+
+**Risk register — un-run validations (the #1 project risk). Runbook: `docs/WEEK3_VALIDATION.md`.**
+The Week 3 Docker session proves **two** of the three pending items + the farm-world flight-check; the
+third (ADR-003) is **NOT** doable yet and must not be batched here:
+1. **Farm world flies** — `farmguard_field.sdf` loads and the mission flies through it
+   (`scripts/run_farm_mission.sh`). **UN-RUN.** → Gate 1.
+2. **AP_DDS publishes as verified (ADR-005)** — `ros2 topic list | grep ^/ap` matches the contract.
+   **UN-RUN.** → Gate 2.
+3. **ADR-006 resume behavior** — AUTO→GUIDED→AUTO resumes the interrupted leg with `MIS_RESTART=0`.
+   **UN-RUN.** → Gate 3.
+- **ADR-003 real-render re-confirmation is NOT batchable in Week 3** — there is **no NDVI camera in the
+  sim yet** (the NDVI render is the Weeks 5-6 pipeline). It stays gated on Weeks 5-6. _(Corrected
+  2026-08-05: ADR-003/005/006 and the standup wrongly said "batch all three" — there is nothing to
+  render from until the NDVI camera exists.)_
+
+Until Gates 1-3 pass, everything downstream is **provisional.** Week 1 proved the Docker stack is fragile.
+**Product-lead decision (2026-08-05): the Week 3 loop build is GATED on Gates 1-3 passing** — build begins
+only once the foundation is confirmed. This is the single highest-leverage action; do it first.
+
+**Reality check on the ambition (you asked for zero sweet-talk):** this is a **simulation-only,
+single-developer, ~7-8-week portfolio project** (ADR-000, CLAUDE.md). Stated plainly: in its current
+form it is **not a company and will not be "bought for billions."** Saying otherwise would be the exact
+flattery you told me to cut. What it genuinely can be — and what actually moves careers, and only *later*
+companies — is a **rigorous, honest, interview-defensible demonstration of the hardest
+practically-unsolved problem in ag-drone autonomy: live reactive avoidance that never silently drops
+coverage.** Commercial ag drones fly pre-surveyed static missions; a defensible
+reactive-avoidance-with-coverage-integrity demo is a genuine differentiator.
+
+Becoming something commercially real would require what is explicitly **out of scope** and impossible
+solo in 7-8 weeks: real flight hardware, real field trials, paying customers, BVLOS/regulatory work, and
+a defensible moat. The honest path to "the next big thing" does **not** run through inflating a sim demo
+— it runs through making the core loop so rigorous and well-measured that it earns the credibility to
+attempt those steps. **Priority is therefore unchanged and correct: make the reactive-avoidance loop
+excellent, measured, and honest. That is the bet. Everything else is narrative dressing on top of it.**
 
 ## Current status
 - **✅ WEEK 1-2 GATE CLOSED (2026-08-04): both exit criteria met.**
@@ -43,12 +84,26 @@ obstacle-populated farm world, so the Weeks 3-4 avoidance core starts on day one
 | D | ✅ Enable AP_DDS + lock interface names | `flight-software-engineer` | `tech-lead`, `devops-reliability-engineer` | **DONE (pending human `ros2 topic list` confirm).** Explicit enablement `config/sitl_params/dds_udp.parm` (`DDS_ENABLE=1`); full `/ap/*` topic/service/frame contract verified from AP_DDS source @ pinned SHA and pinned in **ADR-005**. Non-obvious catches: `/ap/pose|twist/filtered` are frame-mislabeled (content is world-ENU, not `base_link`); subscriber is bare `/clock` not `/ap/clock`; compiled `DDS_ENABLE` default is untrustworthy (SITL `eeprom.bin` persists the saved value) → hence explicit param file. |
 | E | ✅ Scenario scaffolding (skeletons that can't let a cell be silently skipped) | `qa-safety-reviewer` | — | **DONE** — coverage-debt invariant defined (720-cell canonical grid; every cell terminal-status `covered`\|`debt`, absence = the silently-skipped bug); `src/fieldguard_planning/coverage.py` + 8 `eval/scenarios/*` specs; test suite 15→34 (27 pass now, 7 self-activate when a flight log exists). Two safety findings flagged: (i) the geofence is XY-only — the avoidance gate must be 3D; (ii) coverage rests on an unvalidated 7.5 m camera swath. |
 
-- **Next (Weeks 3-4 — the differentiator):** detector + **reactive avoidance + coverage-debt replanning
-  loop** running in the Week-2 farm world.
-  - _Setup already in place for Weeks 3-4:_ tree row 0 (x=15) sits exactly on a boustrophedon lane
-    centerline (min XY clearance **−2.0 m** — overlaps in plane, safe today only via the 11.5 m vertical
-    margin at 15 m alt vs 3.5 m trees). So a scenario that forces a genuine XY dodge already exists —
-    lower altitude or raise that tree; rows 1/2 sit 5-10 m off-lane and won't. Deliberate, documented.
+## Weeks 3-4 plan — the core loop (2026-08-05 — set at Week 3 standup; product-lead owns)
+**Goal:** the detect → avoid → return-to-next-waypoint loop, built as **sim-agnostic, unit-tested Python**
+proven against QA's adversarial scenarios, then demonstrated in sim. **Sequencing (product-lead, 2026-08-05):
+the loop build is GATED on the human Docker validation (Gates 1-3) passing** — confirm the foundation
+first, then build on it.
+**Failure condition:** building the loop on an unconfirmed sim foundation and discovering at demo time that
+the interface assumptions were wrong. The portfolio lives or dies on this loop existing **and being real.**
+
+| # | Workstream | Lead | Support | Exit criterion |
+|---|---|---|---|---|
+| 0 | ✅ **ADR-006** — avoidance command interface, verified vs pinned SHA | `tech-lead` | `flight-software-engineer` | **DONE.** Our executor owns the maneuver: AUTO→GUIDED→one **3D-vetted `/ap/cmd_gps_pose`** setpoint (world-ENU, `frame_id="map"`)→GUIDED→AUTO. `MIS_RESTART=0` makes AUTO deterministically resume the interrupted leg to the same next waypoint (no index juggling). Rejected ArduPilot built-in OA (would move the reactive decision into the autopilot — deletes the differentiator). Source-verified @ pinned SHA; ACCEPTED (confirmation-pending: live resume needs the Docker run). Bonus: AP_DDS exposes **no mission-current service** → a source-verified reason requeue/reconciliation (ADR-002 stretch) is genuinely harder, not just deferred. |
+| 1 | ⏳ **Human Docker validation (THE GATE)** — Gates 1-3 in `docs/WEEK3_VALIDATION.md`. **Blocks the loop build below** (product-lead decision 2026-08-05) | human | `robotics-sim-engineer`, `flight-software-engineer` | Gates 1-3 pass (or breakage surfaced early); ADR-005 + ADR-006 flip to confirmed |
+| 2 | 🔒 HELD (gated on #1) — Avoidance **decision policy**: given a detection + geofence + coverage state, when/where to dodge | `perception-ml-engineer` | `qa-safety-reviewer` | Emits a **3D-safe** maneuver for every QA scenario (never steers into a geofenced tree) |
+| 3 | 🔒 HELD (gated on #1) — Avoidance **executor + coverage-debt bookkeeping**: take control, execute, resume, log every event, mark uncovered cells as debt | `flight-software-engineer` | `qa-safety-reviewer` | QA's pending scenarios go green: no silently-skipped cell, no missed bird, no geofence breach |
+| 4 | 🔒 HELD (gated on #1) — Extend `geofence.py` to **3D** (altitude-aware safety gate) | `flight-software-engineer` | — | `geo_avoid_into_tree` scenario passes |
+
+- _Forcing-scenario already in place:_ tree row 0 (x=15) sits exactly on a boustrophedon lane centerline
+  (min XY clearance **−2.0 m** — overlaps in plane, safe today only via the 11.5 m vertical margin at 15 m
+  alt vs 3.5 m trees). A scenario that forces a genuine dodge already exists — lower altitude or raise that
+  tree; rows 1/2 sit 5-10 m off-lane and won't. Deliberate, documented.
 - **CI (2026-08-04):** a no-Docker `planning-and-eval` job now runs on every push/PR — the stdlib
   `tests/fieldguard_planning` suite + the eval spike harness end-to-end + a seed-42 per-bird-track-FNR
   regression gate (`.github/workflows/ci.yml`, `requirements-eval.txt`, `scripts/check_spike_regression.py`).
