@@ -95,6 +95,13 @@ mkdir -p /root/ardu_ws/src
 cd /root/ardu_ws
 vcs import --input https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos --recursive src
 
+# ros2_gz.repos pulls micro_ros_agent but NOT its runtime dependency micro_ros_msgs. Without it the
+# agent BUILDS fine but dies at runtime (Week-3 bringup, docs/WEEK3_VALIDATION.md Gate 2):
+#   micro_ros_agent: error while loading shared libraries:
+#   libmicro_ros_msgs__rosidl_typesupport_cpp.so: cannot open shared object file: No such file or directory
+# Clone it explicitly (branch humble, matching CLAUDE.md's micro-ROS pin) so colcon builds + installs it:
+git clone -b humble https://github.com/micro-ROS/micro_ros_msgs.git src/micro_ros_msgs
+
 # Add OSRF's Gazebo rosdep rules so rosdep can resolve the gz-* keys (gz-sim8, gz-msgs10, gz-plugin2,
 # gz-cmake3, gz-transport13, sdformat14, ...) against GZ_VERSION. WITHOUT this, rosdep can't map those
 # keys and ABORTS, installing nothing. This is ArduPilot's documented approach and is also baked into
@@ -227,19 +234,28 @@ sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
 
 ## 6b. Enable AP_DDS (the ROS 2 `/ap/*` bridge)
 
-(Week 2 workstream D, `flight-software-engineer`.) `DDS_ENABLE` **does compile in as on-by-default**
-at our pinned ArduPilot SHA (`libraries/AP_DDS/AP_DDS_Client.cpp`, `ENABLED_BY_DEFAULT = 1` at
-commit `9895756d874ec9128d50918f6747a83706f4e221` — see `CLAUDE.md` "Pinned commit SHAs") — but a
-SITL instance's `eeprom.bin` (persisted on the named Docker volume, `docs/WEEK1_BRINGUP.md` §2)
-keeps whatever value was saved the *first* time DDS existed for that instance, so don't rely on the
-compiled default. Load it explicitly and reproducibly instead:
+(Week 2 workstream D, `flight-software-engineer`; **corrected 2026-08-05 at Week-3 Gate 2**.)
+**AP_DDS is compiled OUT of SITL by default.** A plain `sim_vehicle.py` / `./waf configure --board sitl`
+builds with `-DAP_DDS_ENABLED=0`, so the `DDS_ENABLE` parameter **does not exist** (`param show
+DDS_ENABLE` is blank, `param set DDS_ENABLE 1` → "Unable to find parameter") and **no `/ap/*` topics
+ever appear** no matter how the agent or param file are set. You MUST build SITL with `--enable-DDS`:
 
 ```bash
 cd /root/ardu_ws/src/ardupilot
 export PATH="$PWD/Tools/autotest:$PATH"
-sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON \
+sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --enable-DDS \
   --add-param-file=/workspace/fieldguard/config/sitl_params/dds_udp.parm
 ```
+(The first `--enable-DDS` build triggers a full waf reconfigure + recompile — expect a few minutes.
+Re-running `sim_vehicle.py` **without** `--enable-DDS` reconfigures it back OFF, so always pass it.)
+
+_Earlier this section wrongly claimed "DDS_ENABLE compiles in as on-by-default." That conflated two
+things: the compile gate `AP_DDS_ENABLED` (OFF for SITL unless `--enable-DDS`) vs. the param's default
+**value** once compiled._ Once AP_DDS is compiled in, `DDS_ENABLE` exists and defaults to 1
+(`libraries/AP_DDS/AP_DDS_Client.cpp`, `ENABLED_BY_DEFAULT = 1` @ SHA `9895756d...`). The
+`--add-param-file` above still sets `DDS_ENABLE 1` / `DDS_UDP_PORT 2019` explicitly, because a SITL
+instance's `eeprom.bin` (persisted on the named volume, §2) keeps whatever value was saved the *first*
+time DDS existed for that instance — so don't trust the compiled default value either.
 
 `config/sitl_params/dds_udp.parm` sets `DDS_ENABLE 1` and `DDS_UDP_PORT 2019` — mirroring
 ArduPilot's own `Tools/ros2/ardupilot_sitl/config/default_params/dds_udp.parm` at the pinned SHA
