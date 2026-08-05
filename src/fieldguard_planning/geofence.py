@@ -151,3 +151,47 @@ class GeofenceMap:
         for i in range(len(points) - 1):
             results.append((i, self.segment_clearance(points[i], points[i + 1])))
         return results
+
+    # --- 3D safety gate (Weeks 3-4 avoidance) --------------------------------
+    # The XY queries above answer "is this point in a tree's exclusion column?" -- correct for the
+    # cruise mission, which flies at 15 m well above the 3.5 m canopy (that's WHY lane x=15 can pass
+    # straight over tree row 0 in XY, min clearance -2.0 m, and still be safe). But an avoidance
+    # maneuver may DESCEND, so its setpoint must be vetted in 3D: unsafe only if it is inside a tree's
+    # actual volume (XY within obstacle_radius_m AND z within the canopy band + a vertical margin).
+    # A point above the canopy is safe even when it overlaps a tree in XY. This is the gate ADR-006
+    # requires the executor to pass a setpoint through before switching to GUIDED; QA scenario
+    # `geo_avoid_into_tree` asserts a naive away-from-bird dodge that steers into a tree is rejected.
+
+    def unsafe_obstacle_3d(
+        self,
+        point_enu: Tuple[float, float, float],
+        vertical_margin_m: float = 1.0,
+    ) -> Optional[Obstacle]:
+        """The tree whose 3D volume contains `point_enu`, or None if the point clears all trees in 3D.
+
+        A tree occupies the cylinder: XY within `obstacle_radius_m`, Z in
+        [`z_m`, `z_m + height_m + vertical_margin_m`]. Points above that band are clear.
+        """
+        px, py, pz = point_enu
+        for obs in self._obstacles:
+            in_xy = math.hypot(px - obs.x_m, py - obs.y_m) <= obs.obstacle_radius_m
+            in_z = obs.z_m <= pz <= (obs.z_m + obs.height_m + vertical_margin_m)
+            if in_xy and in_z:
+                return obs
+        return None
+
+    def is_safe_3d(
+        self,
+        point_enu: Tuple[float, float, float],
+        vertical_margin_m: float = 1.0,
+        alt_bounds: Optional[Tuple[float, float]] = None,
+    ) -> bool:
+        """True iff `point_enu` (world-ENU metres) is a safe GUIDED setpoint: outside every tree's 3D
+        volume AND, if `alt_bounds=(min_alt, max_alt)` is given, within the flight-altitude envelope.
+        The executor re-checks this as a backstop before every DIVERT and falls back to HOLD on False.
+        """
+        if alt_bounds is not None:
+            min_alt, max_alt = alt_bounds
+            if not (min_alt <= point_enu[2] <= max_alt):
+                return False
+        return self.unsafe_obstacle_3d(point_enu, vertical_margin_m) is None
