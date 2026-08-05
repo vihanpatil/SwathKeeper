@@ -36,7 +36,10 @@ from .geofence import GeofenceMap
 from .coverage import build_grid, load_field_polygon
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-DetectionSource = Callable[[float], List[Detection]]  # t_seconds -> current detections (world-ENU)
+# (t_seconds, drone_state_or_None) -> current detections in world-ENU. The real NDVI detector will
+# ignore the drone arg (it works from camera frames); the demo source uses it for proximity triggering.
+DetectionSource = Callable[[float, Optional[DroneState]], List[Detection]]
+ENU = Tuple[float, float, float]
 
 CRUISE_ALT_M = 15.0
 SWATH_HALF_M = 7.5
@@ -56,18 +59,38 @@ def _nearest_upcoming_wp(pos_xy: Tuple[float, float], mission_xy: Sequence[Tuple
     return best_i
 
 
-# A scripted bird for the live demo before the NDVI detector exists (Weeks 5-6). Each entry:
-# (track_id, position_enu, t_start_s, t_end_s). Default: a static threat parked on lane x=30 at
-# cruise altitude, so the drone must dodge it as it sweeps that lane.
-DEMO_BIRDS = [("demo_bird_0", (30.0, 30.0, 15.0), 0.0, 1e9)]
+# The --demo bird: a stand-in threat on lane x=30 at cruise altitude, until the NDVI detector exists
+# (Weeks 5-6, which plugs into this same DetectionSource seam).
+DEMO_BIRD_ENU: ENU = (30.0, 30.0, 15.0)
 
 
 def scripted_bird_source(birds) -> DetectionSource:
-    """Turn a list of (track_id, position_enu, t0, t1) into a DetectionSource — a stand-in for the
-    real NDVI detector so the live control loop is demonstrable now. Pure/stdlib (unit-tested)."""
-    def src(t: float) -> List[Detection]:
+    """Time-windowed detections: list of (track_id, position_enu, t0_s, t1_s). Ignores drone position.
+    Pure/stdlib, unit-tested. Useful for deterministic tests; the --demo uses proximity instead."""
+    def src(t: float, drone: Optional[DroneState] = None) -> List[Detection]:
         return [Detection(pos, frame_id=int(t * CONTROL_HZ), track_id=tid)
                 for tid, pos, t0, t1 in birds if t0 <= t <= t1]
+    return src
+
+
+def proximity_bird_source(bird_enu: ENU, trigger_radius_m: float = 10.0,
+                          linger_s: float = 12.0) -> DetectionSource:
+    """A demo bird that appears when the drone FIRST comes within `trigger_radius_m` of `bird_enu`,
+    lingers `linger_s`, then 'flies off'. Position-triggered, not wall-clock-timed, so the demo shows
+    dodge -> hold -> resume regardless of when (or how long after node start) the drone reaches the
+    spot. Stateful closure; pure/stdlib, unit-tested."""
+    bx, by, _ = bird_enu
+    state = {"trigger_t": None}
+
+    def src(t: float, drone: Optional[DroneState]) -> List[Detection]:
+        if drone is None:
+            return []
+        if state["trigger_t"] is None:
+            if math.hypot(drone.position_enu[0] - bx, drone.position_enu[1] - by) <= trigger_radius_m:
+                state["trigger_t"] = t
+        if state["trigger_t"] is not None and (t - state["trigger_t"]) <= linger_s:
+            return [Detection(bird_enu, frame_id=int(t * CONTROL_HZ), track_id="demo_bird_0")]
+        return []
     return src
 
 
@@ -85,6 +108,7 @@ def build_node(detection_source: Optional[DetectionSource] = None,
     """Construct the rclpy node. Kept as a factory so the (untestable-off-sim) rclpy import is lazy."""
     import rclpy
     from rclpy.node import Node
+    from rclpy.qos import qos_profile_sensor_data  # BEST_EFFORT — matches AP_DDS publisher QoS (ADR-005)
     from geometry_msgs.msg import PoseStamped
 
     from .ros2_adapter import Ros2VehicleSink
@@ -97,16 +121,19 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             self.policy = AvoidancePolicy(field_polygon=load_field_polygon(),
                                           cruise_alt_m=CRUISE_ALT_M)
             self.sink = Ros2VehicleSink(self)
-            self.executor = AvoidanceExecutor(self.geofence, self.cells, self.sink,
+            self.avoidance_executor = AvoidanceExecutor(self.geofence, self.cells, self.sink,
                                               swath_half_width_m=SWATH_HALF_M, alt_bounds=(2.0, 30.0))
-            self.detection_source = detection_source or (lambda t: [])
+            self.detection_source = detection_source or (lambda t, d: [])
             self.mission_xy = list(mission_xy) if mission_xy else []
             self._drone: Optional[DroneState] = None
             self._t0 = self.get_clock().now()
+            self._got_pose = False
+            self._last_status_t = -1e9
 
             # ADR-005: /ap/pose/filtered is PoseStamped whose CONTENT is world-ENU relative to the
             # EKF/home origin (frame_id says base_link but the content, not the label, is authoritative).
-            self.create_subscription(PoseStamped, "/ap/pose/filtered", self._on_pose, 10)
+            self.create_subscription(PoseStamped, "/ap/pose/filtered", self._on_pose,
+                                     qos_profile_sensor_data)
             self.create_timer(1.0 / CONTROL_HZ, self._on_tick)
             self.get_logger().info("fieldguard_avoidance up: subscribing /ap/pose/filtered @ "
                                    f"{CONTROL_HZ} Hz")
@@ -119,22 +146,38 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             q = msg.pose.orientation
             yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
             self._drone = DroneState(position_enu=(p.x, p.y, p.z), heading_rad=yaw, current_wp_index=wp)
+            if not self._got_pose:
+                self._got_pose = True
+                self.get_logger().info(f"first /ap/pose/filtered received: ENU("
+                                       f"{p.x:.1f}, {p.y:.1f}, {p.z:.1f}) — loop is live")
 
         def _on_tick(self):
             if self._drone is None:
                 return  # no pose yet
             t = (self.get_clock().now() - self._t0).nanoseconds * 1e-9
-            dets = self.detection_source(t)
+            dets = self.detection_source(t, self._drone)
             maneuver = self.policy.decide_multi(dets, self._drone, self.geofence)
-            self.executor.step(self._drone, maneuver)
+            self.avoidance_executor.step(self._drone, maneuver)
+            # Heartbeat every ~2 s so the node isn't a black box: position, decision, nearest bird.
+            if t - self._last_status_t >= 2.0:
+                self._last_status_t = t
+                x, y, z = self._drone.position_enu
+                nb = min((math.hypot(x - d.position_enu[0], y - d.position_enu[1]) for d in dets),
+                         default=None)
+                nb_s = f"{nb:.1f} m" if nb is not None else "none in view"
+                self.get_logger().info(f"[status t={t:5.1f}s] pos=({x:5.1f},{y:5.1f},{z:4.1f}) "
+                                       f"wp={self._drone.current_wp_index} decision={maneuver.decision.value} "
+                                       f"nearest_bird={nb_s}")
 
         def dump_flight_log(self, out_path: Path) -> None:
             import json
-            self.executor.finalize()
-            log = self.executor.flight_log("live_run", seed=0, cell_size_m=2.5)
+            self.avoidance_executor.finalize()
+            log = self.avoidance_executor.flight_log("live_run", seed=0, cell_size_m=2.5)
             out_path.write_text(json.dumps(log, indent=2))
             self.get_logger().info(f"wrote flight log -> {out_path}")
 
+    if not rclpy.ok():          # rclpy.init() must run before any Node is constructed
+        rclpy.init()
     return rclpy, AvoidanceNode()
 
 
@@ -142,7 +185,7 @@ def main(argv=None):
     import sys
     args = argv if argv is not None else sys.argv[1:]
     demo = "--demo" in args
-    src = scripted_bird_source(DEMO_BIRDS) if demo else None
+    src = proximity_bird_source(DEMO_BIRD_ENU) if demo else None
     try:
         mission_xy = default_mission_xy()
     except Exception:

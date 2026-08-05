@@ -167,6 +167,9 @@ class AvoidanceExecutor:
         self._tick: int = 0
         self._divert_audits: List[DivertAudit] = []
         self._finalized = False
+        # Latching state: the waypoint we were flying to when we took control, or None if not
+        # currently in a maneuver. Set on takeover, consumed + cleared on the single resume.
+        self._wp_at_takeover: Optional[int] = None
 
     # -- logging -------------------------------------------------------------------------------
     def _log(self, kind: str, **detail) -> None:
@@ -219,11 +222,16 @@ class AvoidanceExecutor:
     # -- decision handlers -----------------------------------------------------------------------
     def _handle_proceed(self, drone_state: DroneState) -> None:
         if self.mode == MODE_GUIDED:
-            # Threat cleared while we were holding (or mid-divert bookkeeping) -- hand back to AUTO.
+            # Threat cleared -> the SINGLE hand-back after a maneuver (ADR-006: MIS_RESTART=0 resumes
+            # the same next waypoint). Not a per-tick toggle -- we only get here once the policy stops
+            # returning DIVERT/HOLD.
             self.sink.set_mode(MODE_AUTO)
             self.mode = MODE_AUTO
-            self._log("resume", trigger="proceed_after_hold",
-                      resumed_wp_index=self.sink.current_waypoint())
+            resumed_wp = self.sink.current_waypoint()
+            self._log("resume", trigger="threat_cleared", resumed_wp_index=resumed_wp,
+                      wp_index_at_takeover=self._wp_at_takeover,
+                      resumed_same_waypoint=(resumed_wp == self._wp_at_takeover))
+            self._wp_at_takeover = None
         self._record_position(drone_state.position_enu)
         self._log("proceed", position_enu=drone_state.position_enu,
                   wp_index=drone_state.current_wp_index)
@@ -232,6 +240,7 @@ class AvoidanceExecutor:
                      reason: Optional[str] = None) -> None:
         if self.mode != MODE_GUIDED:
             wp_at_takeover = drone_state.current_wp_index
+            self._wp_at_takeover = wp_at_takeover
             self.sink.set_mode(MODE_GUIDED)
             self.mode = MODE_GUIDED
             self._log("takeover", reason="hold", from_mode=MODE_AUTO, to_mode=MODE_GUIDED,
@@ -267,15 +276,16 @@ class AvoidanceExecutor:
                               reason=f"gate_reject:{maneuver.reason or 'unvetted'}")
             return
 
-        wp_at_takeover = drone_state.current_wp_index
         if self.mode != MODE_GUIDED:
+            wp_at_takeover = drone_state.current_wp_index
+            self._wp_at_takeover = wp_at_takeover      # latch: one takeover per threat encounter
             self.sink.set_mode(MODE_GUIDED)
             self.mode = MODE_GUIDED
             self._log("takeover", reason="divert", from_mode=MODE_AUTO, to_mode=MODE_GUIDED,
                       wp_index_at_takeover=wp_at_takeover, track_id=self._track_id(maneuver))
 
-        self._record_position(drone_state.position_enu)  # where the takeover began
-        self.sink.send_setpoint_enu(setpoint)
+        self._record_position(drone_state.position_enu)  # where the drone is this tick
+        self.sink.send_setpoint_enu(setpoint)            # (re)command the vetted dodge target
         self._record_position(setpoint)                   # the vetted detour point itself
         self._log("maneuver", decision="divert", setpoint_enu=setpoint, verdict="accepted",
                   debug=maneuver.debug, policy_reason=maneuver.reason,
@@ -288,13 +298,9 @@ class AvoidanceExecutor:
             at_risk_cell_ids=self._at_risk_cells(drone_state.position_enu),
         ))
 
-        # ADR-006: hand back to AUTO, which resumes the SAME next waypoint under MIS_RESTART=0.
-        self.sink.set_mode(MODE_AUTO)
-        self.mode = MODE_AUTO
-        resumed_wp = self.sink.current_waypoint()
-        self._log("resume", trigger="divert_complete", resumed_wp_index=resumed_wp,
-                  wp_index_at_takeover=wp_at_takeover,
-                  resumed_same_waypoint=(resumed_wp == wp_at_takeover))
+        # STAY in GUIDED holding this dodge until the threat clears. The single hand-back to AUTO is
+        # done in _handle_proceed when the policy next returns PROCEED -- NOT here every tick. This is
+        # what stops the 5 Hz GUIDED<->AUTO thrash: take over once, hold, resume once (ADR-006 v1).
 
     @staticmethod
     def _track_id(maneuver: AvoidanceManeuver) -> Optional[str]:
