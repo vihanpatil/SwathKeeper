@@ -1,0 +1,8192 @@
+{
+  "scenario": "cov_bird_over_cell",
+  "seed": 101,
+  "cell_size_m": 2.5,
+  "swath_half_width_m": 7.5,
+  "flown_path_enu": [
+    [
+      15.0,
+      2.0,
+      15.0
+    ],
+    [
+      15.0,
+      4.0,
+      15.0
+    ],
+    [
+      15.0,
+      6.0,
+      15.0
+    ],
+    [
+      15.0,
+      8.0,
+      15.0
+    ],
+    [
+      15.0,
+      10.0,
+      15.0
+    ],
+    [
+      15.0,
+      12.0,
+      15.0
+    ],
+    [
+      15.0,
+      14.0,
+      15.0
+    ],
+    [
+      15.0,
+      16.0,
+      15.0
+    ],
+    [
+      15.0,
+      18.0,
+      15.0
+    ],
+    [
+      15.0,
+      20.0,
+      15.0
+    ],
+    [
+      15.0,
+      22.0,
+      15.0
+    ],
+    [
+      15.0,
+      24.0,
+      15.0
+    ],
+    [
+      15.0,
+      26.0,
+      15.0
+    ],
+    [
+      15.0,
+      28.0,
+      15.0
+    ],
+    [
+      15.0,
+      30.0,
+      15.0
+    ],
+    [
+      15.0,
+      32.0,
+      15.0
+    ],
+    [
+      15.0,
+      34.0,
+      15.0
+    ],
+    [
+      15.0,
+      36.0,
+      15.0
+    ],
+    [
+      15.0,
+      38.0,
+      15.0
+    ],
+    [
+      15.0,
+      40.0,
+      15.0
+    ],
+    [
+      15.0,
+      42.0,
+      15.0
+    ],
+    [
+      15.0,
+      44.0,
+      15.0
+    ],
+    [
+      15.0,
+      46.0,
+      15.0
+    ],
+    [
+      15.0,
+      48.0,
+      15.0
+    ],
+    [
+      15.0,
+      50.0,
+      15.0
+    ],
+    [
+      15.0,
+      52.0,
+      15.0
+    ],
+    [
+      15.0,
+      54.0,
+      15.0
+    ],
+    [
+      15.0,
+      56.0,
+      15.0
+    ],
+    [
+      15.0,
+      58.0,
+      15.0
+    ],
+    [
+      30.0,
+      58.0,
+      15.0
+    ],
+    [
+      30.0,
+      56.0,
+      15.0
+    ],
+    [
+      30.0,
+      54.0,
+      15.0
+    ],
+    [
+      30.0,
+      52.0,
+      15.0
+    ],
+    [
+      30.0,
+      50.0,
+      15.0
+    ],
+    [
+      30.0,
+      48.0,
+      15.0
+    ],
+    [
+      30.0,
+      46.0,
+      15.0
+    ],
+    [
+      30.0,
+      44.0,
+      15.0
+    ],
+    [
+      30.0,
+      42.0,
+      15.0
+    ],
+    [
+      30.0,
+      52.0,
+      15.0
+    ],
+    [
+      30.0,
+      40.0,
+      15.0
+    ],
+    [
+      30.0,
+      50.0,
+      15.0
+    ],
+    [
+      30.0,
+      38.0,
+      15.0
+    ],
+    [
+      30.0,
+      48.0,
+      15.0
+    ],
+    [
+      30.0,
+      36.0,
+      15.0
+    ],
+    [
+      30.0,
+      46.0,
+      15.0
+    ],
+    [
+      30.0,
+      34.0,
+      15.0
+    ],
+    [
+      30.0,
+      44.0,
+      15.0
+    ],
+    [
+      30.0,
+      32.0,
+      15.0
+    ],
+    [
+      30.0,
+      42.0,
+      15.0
+    ],
+    [
+      30.0,
+      30.0,
+      15.0
+    ],
+    [
+      20.000000000067462,
+      29.999963267948964,
+      15.0
+    ],
+    [
+      30.0,
+      28.0,
+      15.0
+    ],
+    [
+      30.0,
+      18.0,
+      15.0
+    ],
+    [
+      30.0,
+      26.0,
+      15.0
+    ],
+    [
+      30.0,
+      16.0,
+      15.0
+    ],
+    [
+      30.0,
+      24.0,
+      15.0
+    ],
+    [
+      30.0,
+      14.0,
+      15.0
+    ],
+    [
+      30.0,
+      22.0,
+      15.0
+    ],
+    [
+      30.0,
+      12.0,
+      15.0
+    ],
+    [
+      30.0,
+      20.0,
+      15.0
+    ],
+    [
+      30.0,
+      10.0,
+      15.0
+    ],
+    [
+      30.0,
+      18.0,
+      15.0
+    ],
+    [
+      30.0,
+      8.0,
+      15.0
+    ],
+    [
+      30.0,
+      16.0,
+      15.0
+    ],
+    [
+      30.0,
+      14.0,
+      15.0
+    ],
+    [
+      30.0,
+      12.0,
+      15.0
+    ],
+    [
+      30.0,
+      10.0,
+      15.0
+    ],
+    [
+      30.0,
+      8.0,
+      15.0
+    ],
+    [
+      30.0,
+      6.0,
+      15.0
+    ],
+    [
+      30.0,
+      4.0,
+      15.0
+    ],
+    [
+      30.0,
+      2.0,
+      15.0
+    ],
+    [
+      45.0,
+      2.0,
+      15.0
+    ],
+    [
+      45.0,
+      4.0,
+      15.0
+    ],
+    [
+      45.0,
+      6.0,
+      15.0
+    ],
+    [
+      45.0,
+      8.0,
+      15.0
+    ],
+    [
+      45.0,
+      10.0,
+      15.0
+    ],
+    [
+      45.0,
+      12.0,
+      15.0
+    ],
+    [
+      45.0,
+      14.0,
+      15.0
+    ],
+    [
+      45.0,
+      16.0,
+      15.0
+    ],
+    [
+      45.0,
+      18.0,
+      15.0
+    ],
+    [
+      45.0,
+      20.0,
+      15.0
+    ],
+    [
+      45.0,
+      22.0,
+      15.0
+    ],
+    [
+      45.0,
+      24.0,
+      15.0
+    ],
+    [
+      45.0,
+      26.0,
+      15.0
+    ],
+    [
+      45.0,
+      28.0,
+      15.0
+    ],
+    [
+      45.0,
+      30.0,
+      15.0
+    ],
+    [
+      45.0,
+      32.0,
+      15.0
+    ],
+    [
+      45.0,
+      34.0,
+      15.0
+    ],
+    [
+      45.0,
+      36.0,
+      15.0
+    ],
+    [
+      45.0,
+      38.0,
+      15.0
+    ],
+    [
+      45.0,
+      40.0,
+      15.0
+    ],
+    [
+      45.0,
+      42.0,
+      15.0
+    ],
+    [
+      45.0,
+      44.0,
+      15.0
+    ],
+    [
+      45.0,
+      46.0,
+      15.0
+    ],
+    [
+      45.0,
+      48.0,
+      15.0
+    ],
+    [
+      45.0,
+      50.0,
+      15.0
+    ],
+    [
+      45.0,
+      52.0,
+      15.0
+    ],
+    [
+      45.0,
+      54.0,
+      15.0
+    ],
+    [
+      45.0,
+      56.0,
+      15.0
+    ],
+    [
+      45.0,
+      58.0,
+      15.0
+    ],
+    [
+      60.0,
+      58.0,
+      15.0
+    ],
+    [
+      60.0,
+      56.0,
+      15.0
+    ],
+    [
+      60.0,
+      54.0,
+      15.0
+    ],
+    [
+      60.0,
+      52.0,
+      15.0
+    ],
+    [
+      60.0,
+      50.0,
+      15.0
+    ],
+    [
+      60.0,
+      48.0,
+      15.0
+    ],
+    [
+      60.0,
+      46.0,
+      15.0
+    ],
+    [
+      60.0,
+      44.0,
+      15.0
+    ],
+    [
+      60.0,
+      42.0,
+      15.0
+    ],
+    [
+      60.0,
+      40.0,
+      15.0
+    ],
+    [
+      60.0,
+      38.0,
+      15.0
+    ],
+    [
+      60.0,
+      36.0,
+      15.0
+    ],
+    [
+      60.0,
+      34.0,
+      15.0
+    ],
+    [
+      60.0,
+      32.0,
+      15.0
+    ],
+    [
+      60.0,
+      30.0,
+      15.0
+    ],
+    [
+      60.0,
+      28.0,
+      15.0
+    ],
+    [
+      60.0,
+      26.0,
+      15.0
+    ],
+    [
+      60.0,
+      24.0,
+      15.0
+    ],
+    [
+      60.0,
+      22.0,
+      15.0
+    ],
+    [
+      60.0,
+      20.0,
+      15.0
+    ],
+    [
+      60.0,
+      18.0,
+      15.0
+    ],
+    [
+      60.0,
+      16.0,
+      15.0
+    ],
+    [
+      60.0,
+      14.0,
+      15.0
+    ],
+    [
+      60.0,
+      12.0,
+      15.0
+    ],
+    [
+      60.0,
+      10.0,
+      15.0
+    ],
+    [
+      60.0,
+      8.0,
+      15.0
+    ],
+    [
+      60.0,
+      6.0,
+      15.0
+    ],
+    [
+      60.0,
+      4.0,
+      15.0
+    ],
+    [
+      60.0,
+      2.0,
+      15.0
+    ]
+  ],
+  "coverage_ledger": [
+    {
+      "cell_id": "cell_0_0",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_1",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_2",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_3",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_4",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_5",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_6",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_7",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_8",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_9",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_10",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_11",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_12",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_13",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_14",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_15",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_16",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_17",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_18",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_19",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_20",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_21",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_22",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_0_23",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_0",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_1",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_2",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_3",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_4",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_5",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_6",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_7",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_8",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_9",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_10",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_11",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_12",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_13",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_14",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_15",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_16",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_17",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_18",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_19",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_20",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_21",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_22",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_1_23",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_0",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_1",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_2",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_3",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_4",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_5",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_6",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_7",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_8",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_9",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_10",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_11",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_12",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_13",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_14",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_15",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_16",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_17",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_18",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_19",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_20",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_21",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_22",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_2_23",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_3_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_3_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_4_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_5_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_6_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_7_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_8_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_9_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_10_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_11_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_12_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_13_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_14_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_15_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_16_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_17_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_18_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_19_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_20_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_21_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_22_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_23_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_24_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_25_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_0",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_1",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_2",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_3",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_4",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_5",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_6",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_7",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_8",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_9",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_10",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_11",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_12",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_13",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_14",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_15",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_16",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_17",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_18",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_19",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_20",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_21",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_22",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_26_23",
+      "status": "covered"
+    },
+    {
+      "cell_id": "cell_27_0",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_1",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_2",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_3",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_4",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_5",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_6",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_7",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_8",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_9",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_10",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_11",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_12",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_13",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_14",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_15",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_16",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_17",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_18",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_19",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_20",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_21",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_22",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_27_23",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_0",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_1",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_2",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_3",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_4",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_5",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_6",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_7",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_8",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_9",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_10",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_11",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_12",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_13",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_14",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_15",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_16",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_17",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_18",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_19",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_20",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_21",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_22",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_28_23",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_0",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_1",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_2",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_3",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_4",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_5",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_6",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_7",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_8",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_9",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_10",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_11",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_12",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_13",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_14",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_15",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_16",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_17",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_18",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_19",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_20",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_21",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_22",
+      "status": "debt"
+    },
+    {
+      "cell_id": "cell_29_23",
+      "status": "debt"
+    }
+  ],
+  "requeue_events": [
+    {
+      "cell_id": "cell_9_15",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_9_16",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_9_17",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_10_14",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_10_15",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_10_16",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_10_17",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_10_18",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_11_14",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_11_15",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_11_16",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_11_17",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_11_18",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_11_19",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_12_14",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_12_15",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_12_16",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_12_17",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_12_18",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_12_19",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_13_14",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_13_15",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_13_16",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_13_17",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_13_18",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_14_15",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_14_16",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_14_17",
+      "t_s": 38.0
+    },
+    {
+      "cell_id": "cell_9_14",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_9_15",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_9_16",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_9_17",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_10_13",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_10_14",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_10_15",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_10_16",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_10_17",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_10_18",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_11_13",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_11_14",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_11_15",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_11_16",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_11_17",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_11_18",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_12_13",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_12_14",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_12_15",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_12_16",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_12_17",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_12_18",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_13_13",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_13_14",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_13_15",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_13_16",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_13_17",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_13_18",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_14_14",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_14_15",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_14_16",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_14_17",
+      "t_s": 39.0
+    },
+    {
+      "cell_id": "cell_9_14",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_9_15",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_9_16",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_10_13",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_10_14",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_10_15",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_10_16",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_10_17",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_11_13",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_11_14",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_11_15",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_11_16",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_11_17",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_12_13",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_12_14",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_12_15",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_12_16",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_12_17",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_13_13",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_13_14",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_13_15",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_13_16",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_13_17",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_14_14",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_14_15",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_14_16",
+      "t_s": 40.0
+    },
+    {
+      "cell_id": "cell_9_13",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_9_14",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_9_15",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_10_12",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_10_13",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_10_14",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_10_15",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_10_16",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_11_13",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_11_14",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_11_15",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_11_16",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_12_13",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_12_14",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_12_15",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_12_16",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_13_12",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_13_13",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_13_14",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_13_15",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_13_16",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_14_13",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_14_14",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_14_15",
+      "t_s": 41.0
+    },
+    {
+      "cell_id": "cell_9_12",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_9_13",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_9_14",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_10_11",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_10_12",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_10_13",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_10_14",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_10_15",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_11_13",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_11_14",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_11_15",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_11_16",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_12_13",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_12_14",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_12_15",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_12_16",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_13_11",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_13_12",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_13_13",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_13_14",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_13_15",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_14_12",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_14_13",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_14_14",
+      "t_s": 42.0
+    },
+    {
+      "cell_id": "cell_9_11",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_9_12",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_9_13",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_10_10",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_10_11",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_10_12",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_10_13",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_10_14",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_11_10",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_11_13",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_11_14",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_11_15",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_12_10",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_12_13",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_12_14",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_12_15",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_13_10",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_13_11",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_13_12",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_13_13",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_13_14",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_14_11",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_14_12",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_14_13",
+      "t_s": 43.0
+    },
+    {
+      "cell_id": "cell_9_10",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_9_11",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_9_12",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_9_13",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_10_9",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_10_10",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_10_11",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_10_12",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_10_13",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_10_14",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_11_9",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_11_10",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_11_13",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_11_14",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_12_9",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_12_10",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_12_13",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_12_14",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_13_9",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_13_10",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_13_11",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_13_12",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_13_13",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_13_14",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_14_10",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_14_11",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_14_12",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_14_13",
+      "t_s": 44.0
+    },
+    {
+      "cell_id": "cell_9_10",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_9_11",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_9_12",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_10_9",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_10_10",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_10_11",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_10_12",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_10_13",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_11_8",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_11_9",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_11_10",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_11_13",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_12_8",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_12_9",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_12_10",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_12_13",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_13_9",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_13_10",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_13_11",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_13_12",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_13_13",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_14_10",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_14_11",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_14_12",
+      "t_s": 45.0
+    },
+    {
+      "cell_id": "cell_9_9",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_9_10",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_9_11",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_10_8",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_10_9",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_10_10",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_10_11",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_10_12",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_11_7",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_11_8",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_11_9",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_11_10",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_12_7",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_12_8",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_12_9",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_12_10",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_13_8",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_13_9",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_13_10",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_13_11",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_13_12",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_14_9",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_14_10",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_14_11",
+      "t_s": 46.0
+    },
+    {
+      "cell_id": "cell_9_8",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_9_9",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_9_10",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_10_7",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_10_8",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_10_9",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_10_10",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_10_11",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_11_7",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_11_8",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_11_9",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_11_10",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_11_12",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_12_7",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_12_8",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_12_9",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_12_10",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_12_12",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_13_7",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_13_8",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_13_9",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_13_10",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_13_11",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_14_8",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_14_9",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_14_10",
+      "t_s": 47.0
+    },
+    {
+      "cell_id": "cell_9_7",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_9_8",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_9_9",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_10_6",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_10_7",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_10_8",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_10_9",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_10_10",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_11_6",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_11_7",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_11_8",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_11_9",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_11_10",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_11_11",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_12_6",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_12_7",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_12_8",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_12_9",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_12_10",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_12_11",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_13_6",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_13_7",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_13_8",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_13_9",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_13_10",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_14_7",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_14_8",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_14_9",
+      "t_s": 48.0
+    },
+    {
+      "cell_id": "cell_9_6",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_9_7",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_9_8",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_9_9",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_10_5",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_10_6",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_10_7",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_10_8",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_10_9",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_10_10",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_11_5",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_11_6",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_11_7",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_11_8",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_11_9",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_11_10",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_12_5",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_12_6",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_12_7",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_12_8",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_12_9",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_12_10",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_13_5",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_13_6",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_13_7",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_13_8",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_13_9",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_13_10",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_14_6",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_14_7",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_14_8",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_14_9",
+      "t_s": 49.0
+    },
+    {
+      "cell_id": "cell_9_6",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_9_7",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_9_8",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_10_5",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_10_6",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_10_7",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_10_8",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_10_9",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_11_4",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_11_5",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_11_6",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_11_7",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_11_8",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_11_9",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_12_4",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_12_5",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_12_6",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_12_7",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_12_8",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_12_9",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_13_5",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_13_6",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_13_7",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_13_8",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_13_9",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_14_6",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_14_7",
+      "t_s": 50.0
+    },
+    {
+      "cell_id": "cell_14_8",
+      "t_s": 50.0
+    }
+  ],
+  "events": [
+    {
+      "seq": 0,
+      "tick": 1,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        2.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 1,
+      "tick": 2,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        4.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 2,
+      "tick": 3,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        6.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 3,
+      "tick": 4,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        8.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 4,
+      "tick": 5,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        10.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 5,
+      "tick": 6,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        12.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 6,
+      "tick": 7,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        14.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 7,
+      "tick": 8,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        16.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 8,
+      "tick": 9,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        18.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 9,
+      "tick": 10,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        20.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 10,
+      "tick": 11,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        22.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 11,
+      "tick": 12,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        24.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 12,
+      "tick": 13,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        26.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 13,
+      "tick": 14,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        28.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 14,
+      "tick": 15,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        30.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 15,
+      "tick": 16,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        32.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 16,
+      "tick": 17,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        34.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 17,
+      "tick": 18,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        36.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 18,
+      "tick": 19,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        38.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 19,
+      "tick": 20,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        40.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 20,
+      "tick": 21,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        42.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 21,
+      "tick": 22,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        44.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 22,
+      "tick": 23,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        46.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 23,
+      "tick": 24,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        48.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 24,
+      "tick": 25,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        50.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 25,
+      "tick": 26,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        52.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 26,
+      "tick": 27,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        54.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 27,
+      "tick": 28,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        56.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 28,
+      "tick": 29,
+      "kind": "proceed",
+      "position_enu": [
+        15.0,
+        58.0,
+        15.0
+      ],
+      "wp_index": 0
+    },
+    {
+      "seq": 29,
+      "tick": 30,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        58.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 30,
+      "tick": 31,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        56.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 31,
+      "tick": 32,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        54.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 32,
+      "tick": 33,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        52.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 33,
+      "tick": 34,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        50.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 34,
+      "tick": 35,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        48.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 35,
+      "tick": 36,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        46.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 36,
+      "tick": 37,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        44.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 37,
+      "tick": 38,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 37,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 38,
+      "tick": 38,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 39,
+      "tick": 38,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        52.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 12.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 40,
+      "tick": 38,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 41,
+      "tick": 39,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 38,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 42,
+      "tick": 39,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 43,
+      "tick": 39,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        50.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 10.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 44,
+      "tick": 39,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 45,
+      "tick": 40,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 39,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 46,
+      "tick": 40,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 47,
+      "tick": 40,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        48.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 8.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 48,
+      "tick": 40,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 49,
+      "tick": 41,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 40,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 50,
+      "tick": 41,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 51,
+      "tick": 41,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        46.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 6.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 52,
+      "tick": 41,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 53,
+      "tick": 42,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 41,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 54,
+      "tick": 42,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 55,
+      "tick": 42,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        44.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 4.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 56,
+      "tick": 42,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 57,
+      "tick": 43,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 42,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 58,
+      "tick": 43,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 59,
+      "tick": 43,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        42.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 2.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 60,
+      "tick": 43,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 61,
+      "tick": 44,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 43,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 62,
+      "tick": 44,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 63,
+      "tick": 44,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        20.000000000067462,
+        29.999963267948964,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          -1.0,
+          -0.0
+        ],
+        "swept_tree_clearance_m": 5.071,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 0.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 5.07 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 64,
+      "tick": 44,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 65,
+      "tick": 45,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 44,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 66,
+      "tick": 45,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 67,
+      "tick": 45,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        18.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          -1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 2.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 68,
+      "tick": 45,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 69,
+      "tick": 46,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 45,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 70,
+      "tick": 46,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 71,
+      "tick": 46,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        16.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          -1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 4.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 72,
+      "tick": 46,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 73,
+      "tick": 47,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 46,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 74,
+      "tick": 47,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 75,
+      "tick": 47,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        14.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          -1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 6.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 76,
+      "tick": 47,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 77,
+      "tick": 48,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 47,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 78,
+      "tick": 48,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 79,
+      "tick": 48,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        12.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          -1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 8.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 80,
+      "tick": 48,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 81,
+      "tick": 49,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 48,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 82,
+      "tick": 49,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 83,
+      "tick": 49,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        10.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          -1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 10.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 84,
+      "tick": 49,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 85,
+      "tick": 50,
+      "kind": "detection",
+      "track_id": "intruder_0",
+      "frame_id": 49,
+      "confidence": 1.0,
+      "position_enu": [
+        30.0,
+        30.0,
+        15.0
+      ],
+      "source": "ndvi_blob",
+      "decision": "divert"
+    },
+    {
+      "seq": 86,
+      "tick": 50,
+      "kind": "takeover",
+      "reason": "divert",
+      "from_mode": "AUTO",
+      "to_mode": "GUIDED",
+      "wp_index_at_takeover": 1,
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 87,
+      "tick": 50,
+      "kind": "maneuver",
+      "decision": "divert",
+      "setpoint_enu": [
+        30.0,
+        8.0,
+        15.0
+      ],
+      "verdict": "accepted",
+      "debug": {
+        "candidate_angle_deg": 0.0,
+        "away_unit": [
+          0.0,
+          -1.0
+        ],
+        "swept_tree_clearance_m": 8.0,
+        "candidates_rejected": [],
+        "params": {
+          "cruise_alt_m": 15.0,
+          "threat_radius_m": 12.0,
+          "vertical_threat_m": 6.0,
+          "divert_distance_m": 10.0,
+          "lateral_tree_margin_m": 0.0,
+          "min_bird_clearance_m": 3.0,
+          "vertical_margin_m": 1.0,
+          "alt_bounds": [
+            2.0,
+            30.0
+          ],
+          "field_margin_m": 1.0,
+          "min_confidence": 0.0
+        },
+        "trigger_range_m": 12.0,
+        "n_threats": 1,
+        "threat_ids": [
+          "intruder_0"
+        ]
+      },
+      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "track_id": "intruder_0"
+    },
+    {
+      "seq": 88,
+      "tick": 50,
+      "kind": "resume",
+      "trigger": "divert_complete",
+      "resumed_wp_index": 1,
+      "wp_index_at_takeover": 1,
+      "resumed_same_waypoint": true
+    },
+    {
+      "seq": 89,
+      "tick": 51,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        16.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 90,
+      "tick": 52,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        14.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 91,
+      "tick": 53,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        12.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 92,
+      "tick": 54,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        10.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 93,
+      "tick": 55,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        8.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 94,
+      "tick": 56,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        6.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 95,
+      "tick": 57,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        4.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 96,
+      "tick": 58,
+      "kind": "proceed",
+      "position_enu": [
+        30.0,
+        2.0,
+        15.0
+      ],
+      "wp_index": 1
+    },
+    {
+      "seq": 97,
+      "tick": 59,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        2.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 98,
+      "tick": 60,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        4.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 99,
+      "tick": 61,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        6.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 100,
+      "tick": 62,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        8.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 101,
+      "tick": 63,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        10.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 102,
+      "tick": 64,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        12.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 103,
+      "tick": 65,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        14.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 104,
+      "tick": 66,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        16.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 105,
+      "tick": 67,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        18.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 106,
+      "tick": 68,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        20.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 107,
+      "tick": 69,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        22.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 108,
+      "tick": 70,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        24.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 109,
+      "tick": 71,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        26.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 110,
+      "tick": 72,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        28.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 111,
+      "tick": 73,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        30.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 112,
+      "tick": 74,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        32.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 113,
+      "tick": 75,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        34.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 114,
+      "tick": 76,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        36.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 115,
+      "tick": 77,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        38.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 116,
+      "tick": 78,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        40.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 117,
+      "tick": 79,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        42.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 118,
+      "tick": 80,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        44.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 119,
+      "tick": 81,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        46.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 120,
+      "tick": 82,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        48.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 121,
+      "tick": 83,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        50.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 122,
+      "tick": 84,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        52.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 123,
+      "tick": 85,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        54.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 124,
+      "tick": 86,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        56.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 125,
+      "tick": 87,
+      "kind": "proceed",
+      "position_enu": [
+        45.0,
+        58.0,
+        15.0
+      ],
+      "wp_index": 2
+    },
+    {
+      "seq": 126,
+      "tick": 88,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        58.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 127,
+      "tick": 89,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        56.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 128,
+      "tick": 90,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        54.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 129,
+      "tick": 91,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        52.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 130,
+      "tick": 92,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        50.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 131,
+      "tick": 93,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        48.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 132,
+      "tick": 94,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        46.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 133,
+      "tick": 95,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        44.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 134,
+      "tick": 96,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        42.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 135,
+      "tick": 97,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        40.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 136,
+      "tick": 98,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        38.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 137,
+      "tick": 99,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        36.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 138,
+      "tick": 100,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        34.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 139,
+      "tick": 101,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        32.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 140,
+      "tick": 102,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        30.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 141,
+      "tick": 103,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        28.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 142,
+      "tick": 104,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        26.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 143,
+      "tick": 105,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        24.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 144,
+      "tick": 106,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        22.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 145,
+      "tick": 107,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        20.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 146,
+      "tick": 108,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        18.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 147,
+      "tick": 109,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        16.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 148,
+      "tick": 110,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        14.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 149,
+      "tick": 111,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        12.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 150,
+      "tick": 112,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        10.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 151,
+      "tick": 113,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        8.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 152,
+      "tick": 114,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        6.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 153,
+      "tick": 115,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        4.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 154,
+      "tick": 116,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        2.0,
+        15.0
+      ],
+      "wp_index": 3
+    },
+    {
+      "seq": 155,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_0",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 156,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_1",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 157,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_2",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 158,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_3",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 159,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_4",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 160,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_5",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 161,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_6",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 162,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_7",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 163,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_8",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 164,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_9",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 165,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_10",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 166,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_11",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 167,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_12",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 168,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_13",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 169,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_14",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 170,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_15",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 171,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_16",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 172,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_17",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 173,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_18",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 174,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_19",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 175,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_20",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 176,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_21",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 177,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 178,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_0_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 179,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_0",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 180,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_1",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 181,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_2",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 182,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_3",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 183,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_4",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 184,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_5",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 185,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_6",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 186,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_7",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 187,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_8",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 188,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_9",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 189,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_10",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 190,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_11",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 191,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_12",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 192,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_13",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 193,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_14",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 194,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_15",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 195,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_16",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 196,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_17",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 197,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_18",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 198,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_19",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 199,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_20",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 200,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_21",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 201,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 202,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_1_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 203,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_0",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 204,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_1",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 205,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_2",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 206,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_3",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 207,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_4",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 208,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_5",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 209,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_6",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 210,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_7",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 211,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_8",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 212,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_9",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 213,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_10",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 214,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_11",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 215,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_12",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 216,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_13",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 217,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_14",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 218,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_15",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 219,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_16",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 220,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_17",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 221,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_18",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 222,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_19",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 223,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_20",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 224,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_21",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 225,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 226,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_2_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 227,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_0",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 228,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_1",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 229,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_2",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 230,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_3",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 231,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_4",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 232,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_5",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 233,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_6",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 234,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_7",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 235,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_8",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 236,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_9",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 237,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_10",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 238,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_11",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 239,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_12",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 240,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_13",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 241,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_14",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 242,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_15",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 243,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_16",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 244,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_17",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 245,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_18",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 246,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_19",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 247,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_20",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 248,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_21",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 249,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 250,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_27_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 251,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_0",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 252,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_1",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 253,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_2",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 254,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_3",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 255,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_4",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 256,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_5",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 257,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_6",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 258,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_7",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 259,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_8",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 260,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_9",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 261,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_10",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 262,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_11",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 263,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_12",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 264,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_13",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 265,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_14",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 266,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_15",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 267,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_16",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 268,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_17",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 269,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_18",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 270,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_19",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 271,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_20",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 272,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_21",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 273,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 274,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 275,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_0",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 276,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_1",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 277,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_2",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 278,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_3",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 279,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_4",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 280,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_5",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 281,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_6",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 282,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_7",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 283,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_8",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 284,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_9",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 285,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_10",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 286,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_11",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 287,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_12",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 288,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_13",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 289,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_14",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 290,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_15",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 291,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_16",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 292,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_17",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 293,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_18",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 294,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_19",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 295,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_20",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 296,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_21",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 297,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 298,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 299,
+      "tick": 116,
+      "kind": "divert_audit_summary",
+      "n_diverts": 13,
+      "n_at_risk_cells_recovered": 376
+    }
+  ]
+}
