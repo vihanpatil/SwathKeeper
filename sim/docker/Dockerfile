@@ -85,7 +85,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # starts but the run is immediately killed ("[Errno 2] No such file or directory: 'mavproxy.py'")
 # and the wp/mode/arm commands have nowhere to go. NOT a default ArduPilot build dep, so it must be
 # installed explicitly. Pinned to the version verified in the Week-3 bringup (docs/WEEK3_VALIDATION.md).
-RUN pip3 install --no-cache-dir MAVProxy==1.8.74
+# `future` is a MAVProxy runtime import (MAVProxy/modules/lib/rline.py: `from future.builtins import
+# input`) that its wheel does not pull in on this platform — without it mavproxy.py dies with
+# "No module named 'future'". Pin it explicitly alongside MAVProxy.
+RUN pip3 install --no-cache-dir MAVProxy==1.8.74 future==1.0.0
 
 # --- Micro-XRCE-DDS-Gen (ArduPilot AP_DDS code generator) --------------------
 # ArduPilot SITL (AP_DDS / ROS 2 enabled on master) needs `microxrceddsgen` on PATH, or waf configure
