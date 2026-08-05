@@ -60,23 +60,27 @@ class TestAvoidanceExecutor(unittest.TestCase):
         self.assertEqual(len(res.covered), 3)
         self.assertEqual(sink.mode, MODE_AUTO)  # never left AUTO on a clean run
 
-    # -- ADR-006 takeover + resume-same-waypoint ------------------------------
-    def test_divert_takes_over_and_resumes_same_waypoint(self):
-        ex, sink = _exec()
+    # -- ADR-006 latch: take over once, hold GUIDED, resume once on clear ------
+    def test_divert_latches_then_resumes_on_clear(self):
+        ex, sink = _exec()  # sink initial_wp_index=3
         mv = AvoidanceManeuver(decision=Decision.DIVERT, setpoint_enu=(30.0, 30.0, 15.0),
                                reason="test divert",
                                triggering_detection=Detection((33.0, 30.0, 15.0), frame_id=1, track_id="bird_0"))
+        # 1) threat present -> take over, hold GUIDED, command the dodge, do NOT resume yet
         ex.step(_drone(30.0, 20.0, wp=3), mv)
-        # entered GUIDED then returned to AUTO
-        self.assertIn(MODE_GUIDED, sink.mode_history)
-        self.assertEqual(sink.mode, MODE_AUTO)
-        # the vetted setpoint was actually commanded
+        self.assertEqual(sink.mode, MODE_GUIDED)                 # latched in GUIDED, not toggled back
         self.assertIn((30.0, 30.0, 15.0), sink.setpoints_sent)
-        # takeover + maneuver + resume all logged, and resume is to the SAME waypoint (MIS_RESTART=0)
-        self.assertTrue(_events(ex, "takeover"))
-        self.assertTrue(_events(ex, "maneuver"))
+        self.assertEqual(len(_events(ex, "takeover")), 1)
+        self.assertEqual(_events(ex, "resume"), [])             # no resume while threat persists
+        # 2) a second DIVERT tick must NOT re-take-over (this is what kills the 5 Hz thrash)
+        ex.step(_drone(30.0, 22.0, wp=3), mv)
+        self.assertEqual(len(_events(ex, "takeover")), 1)       # STILL exactly one takeover
+        self.assertEqual(sink.mode, MODE_GUIDED)
+        # 3) threat clears (PROCEED) -> single resume back to AUTO at the SAME waypoint (MIS_RESTART=0)
+        ex.step(_drone(30.0, 24.0, wp=3), AvoidanceManeuver(decision=Decision.PROCEED))
+        self.assertEqual(sink.mode, MODE_AUTO)
         resume = _events(ex, "resume")
-        self.assertTrue(resume)
+        self.assertEqual(len(resume), 1)
         self.assertTrue(resume[-1]["resumed_same_waypoint"])
 
     # -- safety backstop: unsafe setpoint -> HOLD, never sent -----------------

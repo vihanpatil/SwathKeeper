@@ -57,9 +57,13 @@ def _nearest_upcoming_wp(pos_xy: Tuple[float, float], mission_xy: Sequence[Tuple
 
 
 # A scripted bird for the live demo before the NDVI detector exists (Weeks 5-6). Each entry:
-# (track_id, position_enu, t_start_s, t_end_s). Default: a static threat parked on lane x=30 at
-# cruise altitude, so the drone must dodge it as it sweeps that lane.
-DEMO_BIRDS = [("demo_bird_0", (30.0, 30.0, 15.0), 0.0, 1e9)]
+# (track_id, position_enu, t_start_s, t_end_s). A TRANSIENT threat on lane x=30 at cruise altitude,
+# present for the first 40 s then "flown off" -- so the loop dodges + holds while it's there and then
+# cleanly RESUMES the survey once it clears (a persistent bird would just hold at a safe standoff
+# forever, which is safe but doesn't show the resume). Tune the window to your machine's flight
+# timing: the drone must reach lane x=30 while the bird is still present. A crossing bird is the real
+# case; this static-with-window stand-in is enough until the NDVI detector plugs into this same seam.
+DEMO_BIRDS = [("demo_bird_0", (30.0, 30.0, 15.0), 0.0, 40.0)]
 
 
 def scripted_bird_source(birds) -> DetectionSource:

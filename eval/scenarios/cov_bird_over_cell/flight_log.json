@@ -5516,15 +5516,6 @@
     },
     {
       "seq": 40,
-      "tick": 38,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 41,
       "tick": 39,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -5539,17 +5530,7 @@
       "decision": "divert"
     },
     {
-      "seq": 42,
-      "tick": 39,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 43,
+      "seq": 41,
       "tick": 39,
       "kind": "maneuver",
       "decision": "divert",
@@ -5592,16 +5573,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 44,
-      "tick": 39,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 45,
+      "seq": 42,
       "tick": 40,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -5616,17 +5588,7 @@
       "decision": "divert"
     },
     {
-      "seq": 46,
-      "tick": 40,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 47,
+      "seq": 43,
       "tick": 40,
       "kind": "maneuver",
       "decision": "divert",
@@ -5669,16 +5631,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 48,
-      "tick": 40,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 49,
+      "seq": 44,
       "tick": 41,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -5693,17 +5646,7 @@
       "decision": "divert"
     },
     {
-      "seq": 50,
-      "tick": 41,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 51,
+      "seq": 45,
       "tick": 41,
       "kind": "maneuver",
       "decision": "divert",
@@ -5746,16 +5689,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 52,
-      "tick": 41,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 53,
+      "seq": 46,
       "tick": 42,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -5770,17 +5704,7 @@
       "decision": "divert"
     },
     {
-      "seq": 54,
-      "tick": 42,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 55,
+      "seq": 47,
       "tick": 42,
       "kind": "maneuver",
       "decision": "divert",
@@ -5823,16 +5747,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 56,
-      "tick": 42,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 57,
+      "seq": 48,
       "tick": 43,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -5847,17 +5762,7 @@
       "decision": "divert"
     },
     {
-      "seq": 58,
-      "tick": 43,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 59,
+      "seq": 49,
       "tick": 43,
       "kind": "maneuver",
       "decision": "divert",
@@ -5900,16 +5805,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 60,
-      "tick": 43,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 61,
+      "seq": 50,
       "tick": 44,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -5924,17 +5820,7 @@
       "decision": "divert"
     },
     {
-      "seq": 62,
-      "tick": 44,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 63,
+      "seq": 51,
       "tick": 44,
       "kind": "maneuver",
       "decision": "divert",
@@ -5977,16 +5863,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 64,
-      "tick": 44,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 65,
+      "seq": 52,
       "tick": 45,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6001,17 +5878,7 @@
       "decision": "divert"
     },
     {
-      "seq": 66,
-      "tick": 45,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 67,
+      "seq": 53,
       "tick": 45,
       "kind": "maneuver",
       "decision": "divert",
@@ -6054,16 +5921,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 68,
-      "tick": 45,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 69,
+      "seq": 54,
       "tick": 46,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6078,17 +5936,7 @@
       "decision": "divert"
     },
     {
-      "seq": 70,
-      "tick": 46,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 71,
+      "seq": 55,
       "tick": 46,
       "kind": "maneuver",
       "decision": "divert",
@@ -6131,16 +5979,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 72,
-      "tick": 46,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 73,
+      "seq": 56,
       "tick": 47,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6155,17 +5994,7 @@
       "decision": "divert"
     },
     {
-      "seq": 74,
-      "tick": 47,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 75,
+      "seq": 57,
       "tick": 47,
       "kind": "maneuver",
       "decision": "divert",
@@ -6208,16 +6037,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 76,
-      "tick": 47,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 77,
+      "seq": 58,
       "tick": 48,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6232,17 +6052,7 @@
       "decision": "divert"
     },
     {
-      "seq": 78,
-      "tick": 48,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 79,
+      "seq": 59,
       "tick": 48,
       "kind": "maneuver",
       "decision": "divert",
@@ -6285,16 +6095,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 80,
-      "tick": 48,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 81,
+      "seq": 60,
       "tick": 49,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6309,17 +6110,7 @@
       "decision": "divert"
     },
     {
-      "seq": 82,
-      "tick": 49,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 83,
+      "seq": 61,
       "tick": 49,
       "kind": "maneuver",
       "decision": "divert",
@@ -6362,16 +6153,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 84,
-      "tick": 49,
-      "kind": "resume",
-      "trigger": "divert_complete",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true
-    },
-    {
-      "seq": 85,
+      "seq": 62,
       "tick": 50,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6386,17 +6168,7 @@
       "decision": "divert"
     },
     {
-      "seq": 86,
-      "tick": 50,
-      "kind": "takeover",
-      "reason": "divert",
-      "from_mode": "AUTO",
-      "to_mode": "GUIDED",
-      "wp_index_at_takeover": 1,
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 87,
+      "seq": 63,
       "tick": 50,
       "kind": "maneuver",
       "decision": "divert",
@@ -6439,16 +6211,16 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 88,
-      "tick": 50,
+      "seq": 64,
+      "tick": 51,
       "kind": "resume",
-      "trigger": "divert_complete",
+      "trigger": "threat_cleared",
       "resumed_wp_index": 1,
       "wp_index_at_takeover": 1,
       "resumed_same_waypoint": true
     },
     {
-      "seq": 89,
+      "seq": 65,
       "tick": 51,
       "kind": "proceed",
       "position_enu": [
@@ -6459,7 +6231,7 @@
       "wp_index": 1
     },
     {
-      "seq": 90,
+      "seq": 66,
       "tick": 52,
       "kind": "proceed",
       "position_enu": [
@@ -6470,7 +6242,7 @@
       "wp_index": 1
     },
     {
-      "seq": 91,
+      "seq": 67,
       "tick": 53,
       "kind": "proceed",
       "position_enu": [
@@ -6481,7 +6253,7 @@
       "wp_index": 1
     },
     {
-      "seq": 92,
+      "seq": 68,
       "tick": 54,
       "kind": "proceed",
       "position_enu": [
@@ -6492,7 +6264,7 @@
       "wp_index": 1
     },
     {
-      "seq": 93,
+      "seq": 69,
       "tick": 55,
       "kind": "proceed",
       "position_enu": [
@@ -6503,7 +6275,7 @@
       "wp_index": 1
     },
     {
-      "seq": 94,
+      "seq": 70,
       "tick": 56,
       "kind": "proceed",
       "position_enu": [
@@ -6514,7 +6286,7 @@
       "wp_index": 1
     },
     {
-      "seq": 95,
+      "seq": 71,
       "tick": 57,
       "kind": "proceed",
       "position_enu": [
@@ -6525,7 +6297,7 @@
       "wp_index": 1
     },
     {
-      "seq": 96,
+      "seq": 72,
       "tick": 58,
       "kind": "proceed",
       "position_enu": [
@@ -6536,7 +6308,7 @@
       "wp_index": 1
     },
     {
-      "seq": 97,
+      "seq": 73,
       "tick": 59,
       "kind": "proceed",
       "position_enu": [
@@ -6547,7 +6319,7 @@
       "wp_index": 2
     },
     {
-      "seq": 98,
+      "seq": 74,
       "tick": 60,
       "kind": "proceed",
       "position_enu": [
@@ -6558,7 +6330,7 @@
       "wp_index": 2
     },
     {
-      "seq": 99,
+      "seq": 75,
       "tick": 61,
       "kind": "proceed",
       "position_enu": [
@@ -6569,7 +6341,7 @@
       "wp_index": 2
     },
     {
-      "seq": 100,
+      "seq": 76,
       "tick": 62,
       "kind": "proceed",
       "position_enu": [
@@ -6580,7 +6352,7 @@
       "wp_index": 2
     },
     {
-      "seq": 101,
+      "seq": 77,
       "tick": 63,
       "kind": "proceed",
       "position_enu": [
@@ -6591,7 +6363,7 @@
       "wp_index": 2
     },
     {
-      "seq": 102,
+      "seq": 78,
       "tick": 64,
       "kind": "proceed",
       "position_enu": [
@@ -6602,7 +6374,7 @@
       "wp_index": 2
     },
     {
-      "seq": 103,
+      "seq": 79,
       "tick": 65,
       "kind": "proceed",
       "position_enu": [
@@ -6613,7 +6385,7 @@
       "wp_index": 2
     },
     {
-      "seq": 104,
+      "seq": 80,
       "tick": 66,
       "kind": "proceed",
       "position_enu": [
@@ -6624,7 +6396,7 @@
       "wp_index": 2
     },
     {
-      "seq": 105,
+      "seq": 81,
       "tick": 67,
       "kind": "proceed",
       "position_enu": [
@@ -6635,7 +6407,7 @@
       "wp_index": 2
     },
     {
-      "seq": 106,
+      "seq": 82,
       "tick": 68,
       "kind": "proceed",
       "position_enu": [
@@ -6646,7 +6418,7 @@
       "wp_index": 2
     },
     {
-      "seq": 107,
+      "seq": 83,
       "tick": 69,
       "kind": "proceed",
       "position_enu": [
@@ -6657,7 +6429,7 @@
       "wp_index": 2
     },
     {
-      "seq": 108,
+      "seq": 84,
       "tick": 70,
       "kind": "proceed",
       "position_enu": [
@@ -6668,7 +6440,7 @@
       "wp_index": 2
     },
     {
-      "seq": 109,
+      "seq": 85,
       "tick": 71,
       "kind": "proceed",
       "position_enu": [
@@ -6679,7 +6451,7 @@
       "wp_index": 2
     },
     {
-      "seq": 110,
+      "seq": 86,
       "tick": 72,
       "kind": "proceed",
       "position_enu": [
@@ -6690,7 +6462,7 @@
       "wp_index": 2
     },
     {
-      "seq": 111,
+      "seq": 87,
       "tick": 73,
       "kind": "proceed",
       "position_enu": [
@@ -6701,7 +6473,7 @@
       "wp_index": 2
     },
     {
-      "seq": 112,
+      "seq": 88,
       "tick": 74,
       "kind": "proceed",
       "position_enu": [
@@ -6712,7 +6484,7 @@
       "wp_index": 2
     },
     {
-      "seq": 113,
+      "seq": 89,
       "tick": 75,
       "kind": "proceed",
       "position_enu": [
@@ -6723,7 +6495,7 @@
       "wp_index": 2
     },
     {
-      "seq": 114,
+      "seq": 90,
       "tick": 76,
       "kind": "proceed",
       "position_enu": [
@@ -6734,7 +6506,7 @@
       "wp_index": 2
     },
     {
-      "seq": 115,
+      "seq": 91,
       "tick": 77,
       "kind": "proceed",
       "position_enu": [
@@ -6745,7 +6517,7 @@
       "wp_index": 2
     },
     {
-      "seq": 116,
+      "seq": 92,
       "tick": 78,
       "kind": "proceed",
       "position_enu": [
@@ -6756,7 +6528,7 @@
       "wp_index": 2
     },
     {
-      "seq": 117,
+      "seq": 93,
       "tick": 79,
       "kind": "proceed",
       "position_enu": [
@@ -6767,7 +6539,7 @@
       "wp_index": 2
     },
     {
-      "seq": 118,
+      "seq": 94,
       "tick": 80,
       "kind": "proceed",
       "position_enu": [
@@ -6778,7 +6550,7 @@
       "wp_index": 2
     },
     {
-      "seq": 119,
+      "seq": 95,
       "tick": 81,
       "kind": "proceed",
       "position_enu": [
@@ -6789,7 +6561,7 @@
       "wp_index": 2
     },
     {
-      "seq": 120,
+      "seq": 96,
       "tick": 82,
       "kind": "proceed",
       "position_enu": [
@@ -6800,7 +6572,7 @@
       "wp_index": 2
     },
     {
-      "seq": 121,
+      "seq": 97,
       "tick": 83,
       "kind": "proceed",
       "position_enu": [
@@ -6811,7 +6583,7 @@
       "wp_index": 2
     },
     {
-      "seq": 122,
+      "seq": 98,
       "tick": 84,
       "kind": "proceed",
       "position_enu": [
@@ -6822,7 +6594,7 @@
       "wp_index": 2
     },
     {
-      "seq": 123,
+      "seq": 99,
       "tick": 85,
       "kind": "proceed",
       "position_enu": [
@@ -6833,7 +6605,7 @@
       "wp_index": 2
     },
     {
-      "seq": 124,
+      "seq": 100,
       "tick": 86,
       "kind": "proceed",
       "position_enu": [
@@ -6844,7 +6616,7 @@
       "wp_index": 2
     },
     {
-      "seq": 125,
+      "seq": 101,
       "tick": 87,
       "kind": "proceed",
       "position_enu": [
@@ -6855,7 +6627,7 @@
       "wp_index": 2
     },
     {
-      "seq": 126,
+      "seq": 102,
       "tick": 88,
       "kind": "proceed",
       "position_enu": [
@@ -6866,7 +6638,7 @@
       "wp_index": 3
     },
     {
-      "seq": 127,
+      "seq": 103,
       "tick": 89,
       "kind": "proceed",
       "position_enu": [
@@ -6877,7 +6649,7 @@
       "wp_index": 3
     },
     {
-      "seq": 128,
+      "seq": 104,
       "tick": 90,
       "kind": "proceed",
       "position_enu": [
@@ -6888,7 +6660,7 @@
       "wp_index": 3
     },
     {
-      "seq": 129,
+      "seq": 105,
       "tick": 91,
       "kind": "proceed",
       "position_enu": [
@@ -6899,7 +6671,7 @@
       "wp_index": 3
     },
     {
-      "seq": 130,
+      "seq": 106,
       "tick": 92,
       "kind": "proceed",
       "position_enu": [
@@ -6910,7 +6682,7 @@
       "wp_index": 3
     },
     {
-      "seq": 131,
+      "seq": 107,
       "tick": 93,
       "kind": "proceed",
       "position_enu": [
@@ -6921,7 +6693,7 @@
       "wp_index": 3
     },
     {
-      "seq": 132,
+      "seq": 108,
       "tick": 94,
       "kind": "proceed",
       "position_enu": [
@@ -6932,7 +6704,7 @@
       "wp_index": 3
     },
     {
-      "seq": 133,
+      "seq": 109,
       "tick": 95,
       "kind": "proceed",
       "position_enu": [
@@ -6943,7 +6715,7 @@
       "wp_index": 3
     },
     {
-      "seq": 134,
+      "seq": 110,
       "tick": 96,
       "kind": "proceed",
       "position_enu": [
@@ -6954,7 +6726,7 @@
       "wp_index": 3
     },
     {
-      "seq": 135,
+      "seq": 111,
       "tick": 97,
       "kind": "proceed",
       "position_enu": [
@@ -6965,7 +6737,7 @@
       "wp_index": 3
     },
     {
-      "seq": 136,
+      "seq": 112,
       "tick": 98,
       "kind": "proceed",
       "position_enu": [
@@ -6976,7 +6748,7 @@
       "wp_index": 3
     },
     {
-      "seq": 137,
+      "seq": 113,
       "tick": 99,
       "kind": "proceed",
       "position_enu": [
@@ -6987,7 +6759,7 @@
       "wp_index": 3
     },
     {
-      "seq": 138,
+      "seq": 114,
       "tick": 100,
       "kind": "proceed",
       "position_enu": [
@@ -6998,7 +6770,7 @@
       "wp_index": 3
     },
     {
-      "seq": 139,
+      "seq": 115,
       "tick": 101,
       "kind": "proceed",
       "position_enu": [
@@ -7009,7 +6781,7 @@
       "wp_index": 3
     },
     {
-      "seq": 140,
+      "seq": 116,
       "tick": 102,
       "kind": "proceed",
       "position_enu": [
@@ -7020,7 +6792,7 @@
       "wp_index": 3
     },
     {
-      "seq": 141,
+      "seq": 117,
       "tick": 103,
       "kind": "proceed",
       "position_enu": [
@@ -7031,7 +6803,7 @@
       "wp_index": 3
     },
     {
-      "seq": 142,
+      "seq": 118,
       "tick": 104,
       "kind": "proceed",
       "position_enu": [
@@ -7042,7 +6814,7 @@
       "wp_index": 3
     },
     {
-      "seq": 143,
+      "seq": 119,
       "tick": 105,
       "kind": "proceed",
       "position_enu": [
@@ -7053,7 +6825,7 @@
       "wp_index": 3
     },
     {
-      "seq": 144,
+      "seq": 120,
       "tick": 106,
       "kind": "proceed",
       "position_enu": [
@@ -7064,7 +6836,7 @@
       "wp_index": 3
     },
     {
-      "seq": 145,
+      "seq": 121,
       "tick": 107,
       "kind": "proceed",
       "position_enu": [
@@ -7075,7 +6847,7 @@
       "wp_index": 3
     },
     {
-      "seq": 146,
+      "seq": 122,
       "tick": 108,
       "kind": "proceed",
       "position_enu": [
@@ -7086,7 +6858,7 @@
       "wp_index": 3
     },
     {
-      "seq": 147,
+      "seq": 123,
       "tick": 109,
       "kind": "proceed",
       "position_enu": [
@@ -7097,7 +6869,7 @@
       "wp_index": 3
     },
     {
-      "seq": 148,
+      "seq": 124,
       "tick": 110,
       "kind": "proceed",
       "position_enu": [
@@ -7108,7 +6880,7 @@
       "wp_index": 3
     },
     {
-      "seq": 149,
+      "seq": 125,
       "tick": 111,
       "kind": "proceed",
       "position_enu": [
@@ -7119,7 +6891,7 @@
       "wp_index": 3
     },
     {
-      "seq": 150,
+      "seq": 126,
       "tick": 112,
       "kind": "proceed",
       "position_enu": [
@@ -7130,7 +6902,7 @@
       "wp_index": 3
     },
     {
-      "seq": 151,
+      "seq": 127,
       "tick": 113,
       "kind": "proceed",
       "position_enu": [
@@ -7141,7 +6913,7 @@
       "wp_index": 3
     },
     {
-      "seq": 152,
+      "seq": 128,
       "tick": 114,
       "kind": "proceed",
       "position_enu": [
@@ -7152,7 +6924,7 @@
       "wp_index": 3
     },
     {
-      "seq": 153,
+      "seq": 129,
       "tick": 115,
       "kind": "proceed",
       "position_enu": [
@@ -7163,7 +6935,7 @@
       "wp_index": 3
     },
     {
-      "seq": 154,
+      "seq": 130,
       "tick": 116,
       "kind": "proceed",
       "position_enu": [
@@ -7174,1015 +6946,1015 @@
       "wp_index": 3
     },
     {
-      "seq": 155,
+      "seq": 131,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 156,
+      "seq": 132,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 157,
+      "seq": 133,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 158,
+      "seq": 134,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 159,
+      "seq": 135,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 160,
+      "seq": 136,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 161,
+      "seq": 137,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 162,
+      "seq": 138,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 163,
+      "seq": 139,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 164,
+      "seq": 140,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 165,
+      "seq": 141,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 166,
+      "seq": 142,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 167,
+      "seq": 143,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 168,
+      "seq": 144,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 169,
+      "seq": 145,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 170,
+      "seq": 146,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 171,
+      "seq": 147,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 172,
+      "seq": 148,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 173,
+      "seq": 149,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 174,
+      "seq": 150,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 175,
+      "seq": 151,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 176,
+      "seq": 152,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 177,
+      "seq": 153,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 178,
+      "seq": 154,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 179,
+      "seq": 155,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 180,
+      "seq": 156,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 181,
+      "seq": 157,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 182,
+      "seq": 158,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 183,
+      "seq": 159,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 184,
+      "seq": 160,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 185,
+      "seq": 161,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 186,
+      "seq": 162,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 187,
+      "seq": 163,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 188,
+      "seq": 164,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 189,
+      "seq": 165,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 190,
+      "seq": 166,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 191,
+      "seq": 167,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 192,
+      "seq": 168,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 193,
+      "seq": 169,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 194,
+      "seq": 170,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 195,
+      "seq": 171,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 196,
+      "seq": 172,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 197,
+      "seq": 173,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 198,
+      "seq": 174,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 199,
+      "seq": 175,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 200,
+      "seq": 176,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 201,
+      "seq": 177,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 202,
+      "seq": 178,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 203,
+      "seq": 179,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 204,
+      "seq": 180,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 205,
+      "seq": 181,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 206,
+      "seq": 182,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 207,
+      "seq": 183,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 208,
+      "seq": 184,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 209,
+      "seq": 185,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 210,
+      "seq": 186,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 211,
+      "seq": 187,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 212,
+      "seq": 188,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 213,
+      "seq": 189,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 214,
+      "seq": 190,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 215,
+      "seq": 191,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 216,
+      "seq": 192,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 217,
+      "seq": 193,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 218,
+      "seq": 194,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 219,
+      "seq": 195,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 220,
+      "seq": 196,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 221,
+      "seq": 197,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 222,
+      "seq": 198,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 223,
+      "seq": 199,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 224,
+      "seq": 200,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 225,
+      "seq": 201,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 226,
+      "seq": 202,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 227,
+      "seq": 203,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 228,
+      "seq": 204,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 229,
+      "seq": 205,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 230,
+      "seq": 206,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 231,
+      "seq": 207,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 232,
+      "seq": 208,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 233,
+      "seq": 209,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 234,
+      "seq": 210,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 235,
+      "seq": 211,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 236,
+      "seq": 212,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 237,
+      "seq": 213,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 238,
+      "seq": 214,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 239,
+      "seq": 215,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 240,
+      "seq": 216,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 241,
+      "seq": 217,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 242,
+      "seq": 218,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 243,
+      "seq": 219,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 244,
+      "seq": 220,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 245,
+      "seq": 221,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 246,
+      "seq": 222,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 247,
+      "seq": 223,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 248,
+      "seq": 224,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 249,
+      "seq": 225,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 250,
+      "seq": 226,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 251,
+      "seq": 227,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 252,
+      "seq": 228,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 253,
+      "seq": 229,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 254,
+      "seq": 230,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 255,
+      "seq": 231,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 256,
+      "seq": 232,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 257,
+      "seq": 233,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 258,
+      "seq": 234,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 259,
+      "seq": 235,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 260,
+      "seq": 236,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 261,
+      "seq": 237,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 262,
+      "seq": 238,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 263,
+      "seq": 239,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 264,
+      "seq": 240,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 265,
+      "seq": 241,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 266,
+      "seq": 242,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 267,
+      "seq": 243,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 268,
+      "seq": 244,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 269,
+      "seq": 245,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 270,
+      "seq": 246,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 271,
+      "seq": 247,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 272,
+      "seq": 248,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 273,
+      "seq": 249,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 274,
+      "seq": 250,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 275,
+      "seq": 251,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 276,
+      "seq": 252,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 277,
+      "seq": 253,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 278,
+      "seq": 254,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 279,
+      "seq": 255,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 280,
+      "seq": 256,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 281,
+      "seq": 257,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 282,
+      "seq": 258,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 283,
+      "seq": 259,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 284,
+      "seq": 260,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 285,
+      "seq": 261,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 286,
+      "seq": 262,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 287,
+      "seq": 263,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 288,
+      "seq": 264,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 289,
+      "seq": 265,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 290,
+      "seq": 266,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 291,
+      "seq": 267,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 292,
+      "seq": 268,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 293,
+      "seq": 269,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 294,
+      "seq": 270,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 295,
+      "seq": 271,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 296,
+      "seq": 272,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 297,
+      "seq": 273,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 298,
+      "seq": 274,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 299,
+      "seq": 275,
       "tick": 116,
       "kind": "divert_audit_summary",
       "n_diverts": 13,
