@@ -185,11 +185,35 @@ until the framing question is settled.
 
 ---
 
-## Outcome  *(fill in when the spike lands)*
+## Outcome  *(landed 2026-08-04, perception-ml-engineer)*
 
-- Clip / seed used:
-- Precision / recall / **FNR** — approach (a):
-- Precision / recall / **FNR** — approach (b):
-- Per-bird-track FNR (a) / (b):
-- Decision:
-- ADR-003 updated: yes/no
+Ran end-to-end on the Week-2 spike clip via the new `eval/` harness (`label_from_sim.py` →
+`baseline_ndvi.py` / `baseline_rgb.py` → `score.py`; reproduce with `eval/run_spike.sh`).
+
+- **Clip / seed used:** `sim/spike/out/spike_seed42` — seed 42, 30s @ 10fps, 640×480, 3 scripted
+  birds (`bird_0` clean canopy, `bird_1` crossing bare-soil patch = the false-negative hard case,
+  `bird_2` far + near static clutter). **SYNTHETIC stand-in, not yet a Gazebo render** (`meta.json`
+  `synthetic:true`). GT projection independently verified against the generator's own boxes to
+  **0.007 px** max disagreement (sub-pixel → GT trusted; the Day-1 projection check passed).
+- **Precision / recall / FNR — approach (a) NDVI-direct:** **0.445 / 0.981 / 0.019** (TP 53, FP 66,
+  FN 1). Threshold `NDVI < 0.05` + morphology + blob, no trained model.
+- **Precision / recall / FNR — approach (b) synthetic RGB:** **1.000 / 0.981 / 0.019** (TP 53, FP 0,
+  FN 1). Same blob pipeline on min-channel `min(R,G,B) > 110`.
+- **Per-bird-track FNR (a) / (b):** **0.000 / 0.000** — every bird, including `bird_1` over soil,
+  detected on ≥1 frame before closest approach (12/12 frames for `bird_1`). The feared NDVI
+  wash-out did **not** occur: the bird reads negative NDVI, cleanly below the soil patch (~0.15).
+- **The one FN is shared** by both approaches (`bird_0`, 16/17 visible frames) — a single
+  tiny-blob entry frame, not a safety miss (bird caught on 16 other frames, well before approach).
+- **The (a) precision gap is fully explained:** 66/66 of NDVI-direct's false positives are the one
+  *static* `clutter_0` feature (bird-sized negative-NDVI mulch/rock) — zero random-noise FPs. This
+  is exactly what the planned **static-obstacle map sanity-check** (and blob motion-tracking, since
+  clutter doesn't move) is designed to suppress. Extra dodges are cheap; a missed bird is not.
+- **Decision:** **ADOPT (a) NDVI-direct.** It clears the per-bird FNR bar (0.000 ≤ 0.10) and its
+  frame FNR is *identical* to RGB (gap 0.000 ≤ 0.10). Per §3, fidelity wins the precision tiebreak;
+  the RGB arm is retained as the NDVI+RGB **comparison arm**, not thrown away.
+- **Caveat (must carry into the ADR):** these are **synthetic** numbers — they validate the harness
+  and give a strong first signal, but ADR-003 should be **confirmed against the real Gazebo NDVI
+  render** before being treated as final. Strong enough to make the framing call **provisionally
+  now** (default (a) was never in real danger of being falsified here); re-run `eval/run_spike.sh`
+  on the real render to confirm.
+- **ADR-003 updated:** no — left for `tech-lead` to record (numbers + caveat above).

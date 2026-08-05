@@ -1,8 +1,23 @@
 ---
 name: ndvi-rgb-spike
-description: Week 1-2 spike framing that resolves ADR-003 (NDVI-direct vs synthetic-RGB detection); default, metric, and decision rule
+description: ADR-003 NDVI-vs-RGB spike — RAN 2026-08-04, recommend ADOPT (a) NDVI-direct on synthetic clip (provisional, pending Gazebo render)
 metadata:
   type: project
+---
+
+**RESOLVED (provisionally) 2026-08-04.** Ran the harness end-to-end on synthetic clip
+`sim/spike/out/spike_seed42` (seed 42, 3 birds). Numbers (frame precision/recall/FNR):
+- (a) NDVI-direct: **0.445 / 0.981 / 0.019**, per-bird-track FNR **0.000**.
+- (b) synthetic RGB: **1.000 / 0.981 / 0.019**, per-bird-track FNR **0.000**.
+Both clear the FNR bar; gap 0.000 → **ADOPT (a)** on fidelity tiebreak. The feared NDVI wash-out on
+the bird-over-soil hard case (`bird_1`) did NOT happen (bird reads negative NDVI, soil ~0.15). All
+66 of (a)'s false positives are the ONE static `clutter_0` feature → suppressible by the planned
+static-obstacle map + blob motion-tracking, not random noise. **Caveat:** clip is SYNTHETIC (not a
+Gazebo render); numbers validate the harness + give a strong first signal — confirm on the real
+render before treating ADR-003 as final. tech-lead records the ADR (I did not edit DECISIONS.md).
+Outcome written to `docs/SPIKE_ndvi_vs_rgb.md`. Baseline params: NDVI thresh 0.05, RGB min-channel
+thresh 110, IoU 0.3, blob min_area 6.
+
 ---
 
 Spike plan written 2026-07-27 at `docs/SPIKE_ndvi_vs_rgb.md` to resolve ADR-003

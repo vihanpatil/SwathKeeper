@@ -1,0 +1,4 @@
+frame_id,t_s,cam_x_m,cam_y_m,cam_z_m,ndvi_path,rgb_path
+0,0.0000,14.9415,20.0368,14.9712,frames/ndvi/frame_000000.npy,frames/rgb/frame_000000.png
+1,0.5000,16.4867,20.0047,14.9817,frames/ndvi/frame_000001.npy,frames/rgb/frame_000001.png
+2,1.0000,17.9697,20.0096,14.9861,frames/ndvi/frame_000002.npy,frames/rgb/frame_000002.png

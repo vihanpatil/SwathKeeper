@@ -1,0 +1,1 @@
+- [ADR-003 NDVI detection decided](project_adr003-ndvi-detection.md) — NDVI-direct accepted, pending real-Gazebo-render re-confirmation; no model justified yet

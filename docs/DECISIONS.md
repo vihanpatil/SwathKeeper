@@ -45,13 +45,33 @@ Owner / roles: product-lead, tech-lead, flight-software-engineer.
 
 ---
 
-## ADR-003: NDVI-vs-RGB detection approach  (status: PROPOSED — spike kicked off Week 1, see docs/SPIKE_ndvi_vs_rgb.md)
-Decision: _pending spike._
-Alternative(s): (a) detect directly on NDVI-rendered frames (recommended, matches real hardware);
-(b) render a synthetic RGB pass in sim for perception only.
-Why: To be decided by `perception-ml-engineer` on a metric (detection precision/recall on a labeled
-sim clip), not before. Fill this in when the spike lands.
-Owner / roles: perception-ml-engineer, tech-lead.
+## ADR-003: NDVI-vs-RGB detection approach  (2026-08-04, status: ACCEPTED — confirmation-pending; spike landed, see docs/SPIKE_ndvi_vs_rgb.md §Outcome)
+Decision: Detect directly on the **NDVI-rendered frame itself** (approach (a), NDVI-direct), faithful
+to the single-NDVI-camera hardware (ADR-000). The synthetic-RGB pass (b) is **retained but not as the
+detection path** — it becomes the NDVI+RGB comparison arm that quantifies what a second sensor buys.
+No trained model is justified yet: the classical-CV blob baseline already clears the safety bar, so
+any future model must beat it on the same `eval/` harness to earn its place (pre-empts scope creep).
+Deciding numbers (spike clip `sim/spike/out/spike_seed42`, seed 42, 30s@10fps, 3 birds, blob baseline):
+  - (a) NDVI-direct: precision 0.445, recall 0.981, **FNR 0.019, per-bird-track FNR 0.000**
+  - (b) synthetic RGB: precision 1.000, recall 0.981, **FNR 0.019, per-bird-track FNR 0.000**
+  Decision rule (spike §3) fires for (a): per-bird FNR 0.000 ≤ 0.10 AND frame FNR within 0.10 of (b)
+  (gap 0.000) → fidelity wins the precision tiebreak. The feared failure mode (bird over bare low-NDVI
+  soil → false negative) did NOT occur: caught 12/12 visible frames, birds read negative NDVI cleanly
+  below soil (~0.15). (a)'s precision gap is explained, not mysterious: 66/66 false positives are ONE
+  static clutter feature (zero random-noise FPs), suppressible later by the static-obstacle-map
+  sanity-check + blob motion-tracking — a wasteful dodge is cheap, a missed bird is not.
+Alternative(s) rejected: (b) detect on a synthetic RGB pass. Rejected as the detection path — it would
+make the headline demo depend on a sensor the real drone doesn't have (an interview liability), and it
+was no safer here (identical FNR), so there is no safety reason to pay the fidelity cost.
+Why: We detect on the exact frame the real NDVI camera produces, so nothing about the perception demo
+has to be walked back — and the numbers show the NDVI-only signal catches every bird as reliably as
+RGB does, so fidelity costs us nothing but easily-suppressible extra dodges.
+Open follow-up (do not silently forget): the spike clip is a **SYNTHETIC stand-in, not a real Gazebo
+render** (`meta.json synthetic:true`) — the numbers validate the eval harness and give a strong first
+signal but do NOT yet validate against the real render. The framing call is made **now** (default (a)
+was never in real danger of falsification), but ADR-003 must be **re-confirmed by re-running
+`eval/run_spike.sh` on the real Gazebo NDVI render** before it is treated as fully validated.
+Owner / roles: perception-ml-engineer (decided on metric), tech-lead (recorded).
 
 ---
 
