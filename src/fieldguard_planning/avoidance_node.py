@@ -73,8 +73,8 @@ def scripted_bird_source(birds) -> DetectionSource:
     return src
 
 
-def proximity_bird_source(bird_enu: ENU, trigger_radius_m: float = 15.0,
-                          linger_s: float = 8.0) -> DetectionSource:
+def proximity_bird_source(bird_enu: ENU, trigger_radius_m: float = 10.0,
+                          linger_s: float = 12.0) -> DetectionSource:
     """A demo bird that appears when the drone FIRST comes within `trigger_radius_m` of `bird_enu`,
     lingers `linger_s`, then 'flies off'. Position-triggered, not wall-clock-timed, so the demo shows
     dodge -> hold -> resume regardless of when (or how long after node start) the drone reaches the
