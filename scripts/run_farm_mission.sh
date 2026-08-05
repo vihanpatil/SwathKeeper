@@ -57,8 +57,10 @@ cat <<EOF
 
   cd /root/ardu_ws/src/ardupilot
   export PATH="\$PWD/Tools/autotest:\$PATH"
-  sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON \\
+  sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --enable-DDS \\
     --add-param-file=$DDS_PARAM_FILE
+  # --enable-DDS is REQUIRED: AP_DDS is compiled OUT of SITL by default (AP_DDS_ENABLED=0), so without
+  # it the DDS_ENABLE param does not even exist and no /ap/* topics ever appear (WEEK3_VALIDATION Gate 2).
 
   # At the MAVProxy prompt, wait for the EKF-ready message first (docs/WEEK1_BRINGUP.md §6), then:
   mode rtl                  # land any current hover; wait for DISARMED
