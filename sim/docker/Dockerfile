@@ -75,10 +75,17 @@ RUN wget -q https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gaze
 # libdebuginfod1: ardupilot_gazebo's libGstCameraPlugin.so links it; without it the gimbal camera
 # plugin fails to load ("libdebuginfod.so.1: cannot open shared object file").
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential ccache g++ gawk python3-dev python3-pexpect \
+        build-essential ccache g++ gawk python3-dev python3-pip python3-pexpect \
         python3-setuptools python3-numpy python3-pyparsing python3-psutil \
         rsync libgflags-dev libdebuginfod1 \
     && rm -rf /var/lib/apt/lists/*
+
+# --- MAVProxy (the GCS console sim_vehicle.py drives) -------------------------
+# sim_vehicle.py launches `mavproxy.py` for the interactive wp/mode/arm prompt. Without it SITL
+# starts but the run is immediately killed ("[Errno 2] No such file or directory: 'mavproxy.py'")
+# and the wp/mode/arm commands have nowhere to go. NOT a default ArduPilot build dep, so it must be
+# installed explicitly. Pinned to the version verified in the Week-3 bringup (docs/WEEK3_VALIDATION.md).
+RUN pip3 install --no-cache-dir MAVProxy==1.8.74
 
 # --- Micro-XRCE-DDS-Gen (ArduPilot AP_DDS code generator) --------------------
 # ArduPilot SITL (AP_DDS / ROS 2 enabled on master) needs `microxrceddsgen` on PATH, or waf configure
