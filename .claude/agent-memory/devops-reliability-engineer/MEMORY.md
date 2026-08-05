@@ -1,0 +1,4 @@
+- [CI pipeline structure & verified commands](project_ci_pipeline.md) — job list, exact local repro commands, reference metrics (2026-08-04)
+- [check_mission_geofence.py exit-1-by-design flake](known_ci_flake_check_mission_geofence.md) — why it's `|| true` in CI, when to revisit
+- [Where pinned versions live](reference_pinned_versions.md) — CLAUDE.md vs requirements-eval.txt vs validate-config's unpinned pyyaml
+- [Bug-hunter-not-YAML-author working style](feedback_bug_hunter_not_yaml_author.md) — always run locally in a matching venv before writing CI steps; never claim green without proof
