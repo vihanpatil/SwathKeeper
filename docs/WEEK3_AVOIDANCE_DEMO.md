@@ -10,9 +10,17 @@ The loop logic (`avoidance_policy`, `avoidance_executor`, `geofence`) is sim-agn
 unit-tested; the rclpy parts are verified here, live.
 
 ## Prerequisites
-All three validation gates must be green first (`docs/WEEK3_VALIDATION.md`): **Shell A** Gazebo,
-**Shell B** SITL built `--enable-DDS`, **Shell C** the micro-ROS agent — all up, with `/ap/*` topics
-publishing (`ros2 topic list | grep ^/ap` shows the 18 topics).
+All three validation gates must be green first (`docs/WEEK3_VALIDATION.md`), brought up in THIS ORDER:
+**Shell A** Gazebo, **Shell B** the micro-ROS agent (`ros2 run micro_ros_agent micro_ros_agent udp4
+--port 2019`), **Shell C** SITL built `--enable-DDS`.
+
+> **Agent BEFORE SITL.** AP_DDS's client pings the agent at startup; if the agent isn't already
+> listening on port 2019, SITL prints `AP: DDS: No ping response, exiting` and **no `/ap/*` data ever
+> flows** (the loop then sees a frozen pose). If you started SITL first and see that message, start the
+> agent, and if the spam doesn't stop within ~15 s, restart SITL with the agent already running.
+
+Confirm the bridge is live before flying: `ros2 topic hz /ap/pose/filtered` must show a **steady rate**
+(and `ros2 topic list | grep ^/ap` shows the 18 topics).
 
 ## One-time pre-flight check (do this before the first live run)
 The adapter constructs `ardupilot_msgs/msg/GlobalPosition` and calls `ardupilot_msgs/srv/ModeSwitch`.
