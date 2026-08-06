@@ -144,7 +144,7 @@
       </link>
 
       <joint name="fg_sensor_mount_joint" type="fixed">
-        <parent>iris_with_gimbal::iris_with_standoffs::base_link</parent>
+        <parent>iris_with_gimbal::base_link</parent>
         <child>fg_sensor_mount</child>
       </joint>
     </model>

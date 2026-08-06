@@ -75,21 +75,23 @@ gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard
 - ❌ FAIL: capture the full `-v4` output and report back immediately — per the review, this is the
   single highest-leverage failure this whole ADR could have.
 
-### If the world fails to load specifically at `iris_with_gimbal_ndvi` / the fixed joint
+### The fixed-joint parent name — RESOLVED live 2026-08-05 (Gate 0 passed)
 
-This is a **second, self-identified risk** beyond the review's own kill-switch, worth calling out
-explicitly: the sensor mount is attached via a `<joint type="fixed">` whose `<parent>` is the scoped
-name `iris_with_gimbal::iris_with_standoffs::base_link` (see `config/ndvi_camera.json`'s `"mount"`
-block for the full derivation — traced from ArduPilot's own `models/iris_with_gimbal/model.sdf` at
-the pinned branch, not guessed). If `gz sim` reports it can't resolve that parent link (something
-like "unable to find parent link" naming `fg_sensor_mount_joint` or `iris_with_gimbal_ndvi`):
-1. First fallback to try: shorten the parent name to `iris_with_standoffs::base_link` (drop the
-   `iris_with_gimbal::` prefix) in `config/ndvi_camera.json` → `mount.parent_link_scoped_from_wrapper`,
-   then `python3 scripts/gen_farm_world.py` to regenerate, then retry Gate 0.
-2. If neither resolves, report back — this needs `robotics-sim-engineer` to either find the correct
-   scoped name (`gz model -m iris_with_gimbal_ndvi -l` or the Entity Tree GUI panel would show the
-   actual link names Gazebo resolved) or fall back to the (more heavily reviewed, plugin-based)
-   `gz-sim-detachable-joint-system` mechanism instead of a plain `<joint>`.
+This was a **second, self-identified risk** beyond the review's own kill-switch, and it **did fire on
+the first live run**: `gz sim` rejected the world with
+`Error Code 21: parent frame [iris_with_gimbal::iris_with_standoffs::base_link] specified by joint
+[fg_sensor_mount_joint] not found in model [iris_with_gimbal_ndvi]`. The originally-authored
+fully-nested name (and the fallback first suggested here, `iris_with_standoffs::base_link`) were
+**both wrong**. Confirmed correct value: **`iris_with_gimbal::base_link`**.
+
+Why: `iris_with_gimbal` pulls in `model://iris_with_standoffs` with `<include merge="true">`, which
+flattens `base_link` directly into `iris_with_gimbal` rather than keeping it under an
+`iris_with_standoffs::` sub-scope — proven by the fact that the fully-nested path did NOT resolve
+while the merged path does. From the non-merge wrapper `iris_with_gimbal_ndvi`, the airframe link is
+therefore `iris_with_gimbal::base_link` (drop the middle segment, keep the wrapper prefix). This is
+now the value in `config/ndvi_camera.json` → `mount.parent_link_scoped_from_wrapper`; regenerate with
+`python3 scripts/gen_farm_world.py` if you ever change it. Gate 0 then loaded cleanly with the thermal
+system and all four `/fg/sensor/*` topics present.
 
 This is a separate concern from Gate 0's thermal-system question — the world could fail to load for
 this reason with the thermal system working perfectly fine, or vice versa. Diagnose which one it is
