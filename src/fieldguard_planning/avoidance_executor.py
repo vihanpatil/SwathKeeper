@@ -20,8 +20,9 @@ Design notes on the two safety guarantees this file exists to make impossible-by
    (hover in GUIDED at the vehicle's last known-safe position) and never sends the rejected point to
    the vehicle.
 2. **Never silently drop a coverage cell.** `finalize()` builds the terminal coverage ledger from the
-   ACTUAL flown path (`self.flown_path`, single source of truth -- every position the vehicle was
-   commanded to occupy, nominal or avoidance) by running it through the exact same
+   ACTUAL flown path (`self.flown_path`, single source of truth -- every position the vehicle
+   actually reported occupying, nominal or mid-maneuver; commanded setpoints are NEVER recorded as
+   flown -- see `_handle_divert`) by running it through the exact same
    `coverage.coverage_from_path` the nominal-mission baseline uses. Because every canonical grid cell
    is visited exactly once in that computation, the P1 partition invariant
    (`coverage.check_ledger`) holds BY CONSTRUCTION -- there is no code path that can produce a cell
@@ -284,9 +285,14 @@ class AvoidanceExecutor:
             self._log("takeover", reason="divert", from_mode=MODE_AUTO, to_mode=MODE_GUIDED,
                       wp_index_at_takeover=wp_at_takeover, track_id=self._track_id(maneuver))
 
-        self._record_position(drone_state.position_enu)  # where the drone is this tick
+        self._record_position(drone_state.position_enu)  # where the drone ACTUALLY is this tick
         self.sink.send_setpoint_enu(setpoint)            # (re)command the vetted dodge target
-        self._record_position(setpoint)                   # the vetted detour point itself
+        # The commanded setpoint is deliberately NOT recorded into flown_path: a command is not a
+        # position. Recording it let a never-visited cell finalize as COVERED (found 2026-08-18) --
+        # the exact silent-coverage lie this module exists to prevent. If the vehicle really flies
+        # to the setpoint, the next tick's drone_state records it; if the threat clears first, the
+        # cell under the setpoint honestly books as debt. Regression:
+        # test_commanded_but_unflown_setpoint_does_not_cover (tests/.../test_avoidance_executor.py).
         self._log("maneuver", decision="divert", setpoint_enu=setpoint, verdict="accepted",
                   debug=maneuver.debug, policy_reason=maneuver.reason,
                   track_id=self._track_id(maneuver))
@@ -319,6 +325,10 @@ class AvoidanceExecutor:
         Idempotent: safe to call more than once (returns the same ledger), but `step()` may not be
         called again afterward.
         """
+        if self._finalized:
+            # True idempotency: without this guard a second call re-appended every "debt" event and
+            # a duplicate "divert_audit_summary" to the event log, quietly falsifying the docstring.
+            return self.coverage_ledger
         flown_xy = [(p[0], p[1]) for p in self.flown_path]
         covered_map: Dict[str, bool] = coverage_from_path(self.cells, flown_xy, self.swath_half_width_m)
 

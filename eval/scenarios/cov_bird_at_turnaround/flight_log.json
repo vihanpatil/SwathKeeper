@@ -130,18 +130,8 @@
       15.0
     ],
     [
-      8.414953921314819,
-      42.474233052931226,
-      15.0
-    ],
-    [
       15.0,
       52.0,
-      15.0
-    ],
-    [
-      7.4074339763470345,
-      45.492086265440314,
       15.0
     ],
     [
@@ -160,17 +150,7 @@
       15.0
     ],
     [
-      5.0,
-      58.0,
-      15.0
-    ],
-    [
       30.0,
-      58.0,
-      15.0
-    ],
-    [
-      40.0,
       58.0,
       15.0
     ],
@@ -180,38 +160,18 @@
       15.0
     ],
     [
-      35.144957554275265,
-      47.42507074287456,
-      15.0
-    ],
-    [
       30.0,
       54.0,
       15.0
     ],
     [
-      38.94427190999916,
-      49.52786404500042,
-      15.0
-    ],
-    [
       30.0,
       52.0,
-      15.0
-    ],
-    [
-      38.0,
-      46.0,
       15.0
     ],
     [
       30.0,
       50.0,
-      15.0
-    ],
-    [
-      37.071067811865476,
-      42.928932188134524,
       15.0
     ],
     [
@@ -692,19 +652,19 @@
     },
     {
       "cell_id": "cell_0_16",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_0_17",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_0_18",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_0_19",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_0_20",
@@ -712,15 +672,15 @@
     },
     {
       "cell_id": "cell_0_21",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_0_22",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_0_23",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_0",
@@ -784,39 +744,39 @@
     },
     {
       "cell_id": "cell_1_15",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_16",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_17",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_18",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_19",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_20",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_21",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_22",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_1_23",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_0",
@@ -876,43 +836,43 @@
     },
     {
       "cell_id": "cell_2_14",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_15",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_16",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_17",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_18",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_19",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_20",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_21",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_22",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_2_23",
-      "status": "covered"
+      "status": "debt"
     },
     {
       "cell_id": "cell_3_0",
@@ -6162,718 +6122,900 @@
       "seq": 144,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_0_20",
+      "cell_id": "cell_0_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 145,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_0",
+      "cell_id": "cell_0_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 146,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_1",
+      "cell_id": "cell_0_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 147,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_2",
+      "cell_id": "cell_0_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 148,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_3",
+      "cell_id": "cell_0_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 149,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_4",
+      "cell_id": "cell_0_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 150,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_5",
+      "cell_id": "cell_0_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 151,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_6",
+      "cell_id": "cell_0_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 152,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_7",
+      "cell_id": "cell_1_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 153,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_8",
+      "cell_id": "cell_1_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 154,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_9",
+      "cell_id": "cell_1_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 155,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_10",
+      "cell_id": "cell_1_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 156,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_11",
+      "cell_id": "cell_1_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 157,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_12",
+      "cell_id": "cell_1_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 158,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_13",
+      "cell_id": "cell_1_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 159,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_1_14",
+      "cell_id": "cell_1_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 160,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_0",
+      "cell_id": "cell_1_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 161,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_1",
+      "cell_id": "cell_1_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 162,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_2",
+      "cell_id": "cell_1_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 163,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_3",
+      "cell_id": "cell_1_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 164,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_4",
+      "cell_id": "cell_1_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 165,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_5",
+      "cell_id": "cell_1_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 166,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_6",
+      "cell_id": "cell_1_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 167,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_7",
+      "cell_id": "cell_1_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 168,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_8",
+      "cell_id": "cell_1_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 169,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_9",
+      "cell_id": "cell_1_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 170,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_10",
+      "cell_id": "cell_1_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 171,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_11",
+      "cell_id": "cell_1_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 172,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_12",
+      "cell_id": "cell_1_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 173,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_2_13",
+      "cell_id": "cell_1_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 174,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_0",
+      "cell_id": "cell_1_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 175,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_1",
+      "cell_id": "cell_1_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 176,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_2",
+      "cell_id": "cell_2_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 177,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_3",
+      "cell_id": "cell_2_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 178,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_4",
+      "cell_id": "cell_2_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 179,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_5",
+      "cell_id": "cell_2_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 180,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_6",
+      "cell_id": "cell_2_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 181,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_7",
+      "cell_id": "cell_2_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 182,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_8",
+      "cell_id": "cell_2_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 183,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_9",
+      "cell_id": "cell_2_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 184,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_10",
+      "cell_id": "cell_2_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 185,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_11",
+      "cell_id": "cell_2_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 186,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_12",
+      "cell_id": "cell_2_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 187,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_13",
+      "cell_id": "cell_2_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 188,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_14",
+      "cell_id": "cell_2_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 189,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_15",
+      "cell_id": "cell_2_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 190,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_16",
+      "cell_id": "cell_2_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 191,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_17",
+      "cell_id": "cell_2_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 192,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_18",
+      "cell_id": "cell_2_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 193,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_19",
+      "cell_id": "cell_2_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 194,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_20",
+      "cell_id": "cell_2_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 195,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_21",
+      "cell_id": "cell_2_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 196,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_22",
+      "cell_id": "cell_2_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 197,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_27_23",
+      "cell_id": "cell_2_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 198,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_0",
+      "cell_id": "cell_2_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 199,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_1",
+      "cell_id": "cell_2_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 200,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_2",
+      "cell_id": "cell_27_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 201,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_3",
+      "cell_id": "cell_27_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 202,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_4",
+      "cell_id": "cell_27_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 203,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_5",
+      "cell_id": "cell_27_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 204,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_6",
+      "cell_id": "cell_27_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 205,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_7",
+      "cell_id": "cell_27_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 206,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_8",
+      "cell_id": "cell_27_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 207,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_9",
+      "cell_id": "cell_27_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 208,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_10",
+      "cell_id": "cell_27_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 209,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_11",
+      "cell_id": "cell_27_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 210,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_12",
+      "cell_id": "cell_27_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 211,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_13",
+      "cell_id": "cell_27_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 212,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_14",
+      "cell_id": "cell_27_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 213,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_15",
+      "cell_id": "cell_27_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 214,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_16",
+      "cell_id": "cell_27_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 215,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_17",
+      "cell_id": "cell_27_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 216,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_18",
+      "cell_id": "cell_27_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 217,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_19",
+      "cell_id": "cell_27_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 218,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_20",
+      "cell_id": "cell_27_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 219,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_21",
+      "cell_id": "cell_27_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 220,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_22",
+      "cell_id": "cell_27_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 221,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_28_23",
+      "cell_id": "cell_27_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 222,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_0",
+      "cell_id": "cell_27_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 223,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_1",
+      "cell_id": "cell_27_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 224,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_2",
+      "cell_id": "cell_28_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 225,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_3",
+      "cell_id": "cell_28_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 226,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_4",
+      "cell_id": "cell_28_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 227,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_5",
+      "cell_id": "cell_28_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 228,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_6",
+      "cell_id": "cell_28_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 229,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_7",
+      "cell_id": "cell_28_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 230,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_8",
+      "cell_id": "cell_28_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 231,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_9",
+      "cell_id": "cell_28_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 232,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_10",
+      "cell_id": "cell_28_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 233,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_11",
+      "cell_id": "cell_28_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 234,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_12",
+      "cell_id": "cell_28_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 235,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_13",
+      "cell_id": "cell_28_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 236,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_14",
+      "cell_id": "cell_28_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 237,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_15",
+      "cell_id": "cell_28_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 238,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_16",
+      "cell_id": "cell_28_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 239,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_17",
+      "cell_id": "cell_28_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 240,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_18",
+      "cell_id": "cell_28_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 241,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_19",
+      "cell_id": "cell_28_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 242,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_20",
+      "cell_id": "cell_28_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 243,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_21",
+      "cell_id": "cell_28_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 244,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_22",
+      "cell_id": "cell_28_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 245,
       "tick": 116,
       "kind": "debt",
-      "cell_id": "cell_29_23",
+      "cell_id": "cell_28_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
       "seq": 246,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 247,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_28_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 248,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_0",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 249,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_1",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 250,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_2",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 251,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_3",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 252,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_4",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 253,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_5",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 254,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_6",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 255,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_7",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 256,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_8",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 257,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_9",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 258,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_10",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 259,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_11",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 260,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_12",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 261,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_13",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 262,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_14",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 263,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_15",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 264,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_16",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 265,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_17",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 266,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_18",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 267,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_19",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 268,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_20",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 269,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_21",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 270,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_22",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 271,
+      "tick": 116,
+      "kind": "debt",
+      "cell_id": "cell_29_23",
+      "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
+    },
+    {
+      "seq": 272,
       "tick": 116,
       "kind": "divert_audit_summary",
       "n_diverts": 8,

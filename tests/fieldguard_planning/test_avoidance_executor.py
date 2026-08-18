@@ -112,12 +112,46 @@ class TestAvoidanceExecutor(unittest.TestCase):
         self.assertEqual(status["c0"], CELL_COVERED)
         self.assertTrue(_events(ex, "debt"))
 
+    # -- ledger honesty: a COMMANDED setpoint is not a FLOWN position ---------
+    def test_commanded_but_unflown_setpoint_does_not_cover(self):
+        """Regression for the 2026-08-18 ledger-honesty bug: `_handle_divert` used to record the
+        commanded DIVERT setpoint into flown_path as if flown, so a cell the vehicle never visited
+        finalized as COVERED -- the exact silent-coverage lie the ledger exists to prevent."""
+        ex, sink = _exec()
+        dodge = (30.0, 30.0, 15.0)  # dead-center of c2 -- which the drone will NEVER reach
+        mv = AvoidanceManeuver(decision=Decision.DIVERT, setpoint_enu=dodge, reason="test divert",
+                               triggering_detection=Detection((33.0, 30.0, 15.0), frame_id=1,
+                                                              track_id="bird_0"))
+        ex.step(_drone(30.0, 10.0, wp=3), mv)   # divert commanded toward c2...
+        # ...but the threat clears before the vehicle moves; mission resumes over c0/c1 only
+        ex.step(_drone(30.0, 10.0, wp=3), AvoidanceManeuver(decision=Decision.PROCEED))
+        ex.step(_drone(30.0, 20.0, wp=3), AvoidanceManeuver(decision=Decision.PROCEED))
+        ledger = ex.finalize()
+        self.assertIn(dodge, sink.setpoints_sent)      # the dodge WAS commanded...
+        self.assertNotIn(dodge, ex.flown_path)         # ...but never recorded as flown
+        res = check_ledger([c.cell_id for c in _cells()], ledger)
+        self.assertTrue(res.ok, res.errors)
+        status = {r["cell_id"]: r["status"] for r in ledger}
+        self.assertEqual(status["c2"], CELL_DEBT)      # pre-fix: COVERED (the lie)
+        self.assertEqual(status["c0"], CELL_COVERED)
+        self.assertEqual(status["c1"], CELL_COVERED)
+
     # -- guards ---------------------------------------------------------------
     def test_step_after_finalize_raises(self):
         ex, _ = _exec()
         ex.finalize()
         with self.assertRaises(RuntimeError):
             ex.step(_drone(30.0, 10.0), AvoidanceManeuver(decision=Decision.PROCEED))
+
+    def test_finalize_is_idempotent(self):
+        ex, _ = _exec()
+        for y in (10.0, 20.0):
+            ex.step(_drone(30.0, y), AvoidanceManeuver(decision=Decision.PROCEED))
+        first = ex.finalize()
+        events_after_first = len(ex.event_log)
+        second = ex.finalize()
+        self.assertEqual(first, second)                        # same ledger back
+        self.assertEqual(len(ex.event_log), events_after_first)  # no duplicated debt events
 
 
 if __name__ == "__main__":
