@@ -7,12 +7,14 @@ coverage-debt so no field cell is ever silently dropped.
 
 Per ADR-006 the maneuver shape is fixed: `AUTO -> GUIDED -> one 3D-vetted setpoint -> GUIDED -> AUTO`,
 with `MIS_RESTART=0` making AUTO resume the SAME next waypoint it was flying toward when interrupted
-(confirmed on the real stack 2026-08-05). Per ADR-002 v1 is "avoid, return to next waypoint" -- this
-module does NOT requeue/reorder mission waypoints; it books any coverage the detour cost as EXPLICIT
-debt via `coverage.py`, which is the documented, well-scoped stretch goal (full reconciliation) left
-undone on purpose.
+(confirmed on the real stack 2026-08-05). ADR-006's "**one** setpoint" is enforced here, not upstream:
+the policy is pure and recomputes its dodge every tick, so this module LATCHES the first accepted
+setpoint of an encounter and re-commands that same point until the threat clears (see design note 3).
+Per ADR-002 v1 is "avoid, return to next waypoint" -- this module does NOT requeue/reorder mission
+waypoints; it books any coverage the detour cost as EXPLICIT debt via `coverage.py`, which is the
+documented, well-scoped stretch goal (full reconciliation) left undone on purpose.
 
-Design notes on the two safety guarantees this file exists to make impossible-by-construction:
+Design notes on the guarantees this file exists to make impossible-by-construction:
 
 1. **Never fly an unvetted setpoint.** Every DIVERT setpoint is re-vetted through
    `GeofenceMap.is_safe_3d` here, even though the policy is supposed to have already vetted it --
@@ -28,6 +30,18 @@ Design notes on the two safety guarantees this file exists to make impossible-by
    (`coverage.check_ledger`) holds BY CONSTRUCTION -- there is no code path that can produce a cell
    silently absent from the ledger; the worst that can happen is a cell landing in `debt`, which is
    the explicitly-allowed ADR-002 v1 outcome.
+3. **Command ONE dodge point per encounter, not one per tick.** The policy is a pure function of the
+   current detection + ownship state, so it legitimately returns a different setpoint every tick --
+   the dodge is anchored to the drone and slides forward with it; re-commanding each of those walked
+   the target around (visibly jumpy on film, and one live log showed a ~6 m outlier before it snapped
+   back). See `RELATCH_THRESHOLD_M` for the measured per-tick drift. The fix is
+   deliberately EXECUTOR-side so the policy stays pure and independently testable: the first accepted
+   (3D-vetted) DIVERT setpoint is LATCHED and re-commanded for the rest of the encounter, and only a
+   policy setpoint further than `RELATCH_THRESHOLD_M` away -- a genuinely moving threat, not
+   recompute drift -- can re-latch, and only if it passes the same 3D re-vet. Latch lifecycle is the
+   encounter: set on the first accepted divert, cleared on resume alongside `_wp_at_takeover`.
+   Latching never bypasses guarantee 1 -- every point handed to the sink, latched or fresh, is
+   re-vetted on the tick it is commanded.
 
 Vehicle interaction is behind the `VehicleCommandSink` seam so this stays sim-agnostic and
 unit-testable on a bare interpreter; the real ROS 2 binding (`/ap/mode_switch`,
@@ -52,6 +66,27 @@ MODE_AUTO = "AUTO"
 MODE_GUIDED = "GUIDED"
 
 DEFAULT_VERTICAL_MARGIN_M = 1.0  # matches geofence.is_safe_3d default
+
+# Setpoint-latch escape hatch: how far a NEW policy setpoint must sit from the currently latched one
+# before the executor believes the threat actually moved and re-latches (rather than treating the
+# delta as the policy's per-tick recompute drift and ignoring it). Re-latching is still gated on the
+# same 3D re-vet -- this constant only decides WHICH point gets vetted, never whether it gets vetted.
+# Sized against measured data, not taste: replaying the four eval/scenarios missions through the real
+# policy, the per-tick delta between consecutive DIVERT setpoints inside one encounter is dominated
+# by the ownship step (exactly 2.00 m on a straight lane -- the dodge is anchored to the drone, so it
+# slides forward with it), while genuine re-plans (dodge flipping side, turnaround geometry) jump
+# 3.2-35 m. 3.0 m sits in that gap: it absorbs the slide, and every real re-plan still gets through.
+# It is the tuning knob if demo footage is still twitchy -- raising it also swallows the ~3-4 m
+# turnaround swings, at the cost of flying a staler dodge through the turn.
+RELATCH_THRESHOLD_M = 3.0
+
+
+def _dist_3d(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> float:
+    """Euclidean distance between two world-ENU points. 3D on purpose: an altitude-only jump in the
+    commanded dodge is just as jumpy on film as a lateral one. `** 0.5` keeps this module math-free
+    (stdlib-only discipline, same as `geofence.py` / `coverage.py`)."""
+    dx, dy, dz = a[0] - b[0], a[1] - b[1], a[2] - b[2]
+    return (dx * dx + dy * dy + dz * dz) ** 0.5
 
 
 # --------------------------------------------------------------------------------------------------
@@ -171,6 +206,10 @@ class AvoidanceExecutor:
         # Latching state: the waypoint we were flying to when we took control, or None if not
         # currently in a maneuver. Set on takeover, consumed + cleared on the single resume.
         self._wp_at_takeover: Optional[int] = None
+        # The one dodge point this encounter is flying (design note 3), or None if no DIVERT setpoint
+        # has been accepted yet. Same lifecycle as `_wp_at_takeover`: set on the first accepted
+        # divert, cleared on the single resume, so the NEXT encounter latches fresh.
+        self._latched_setpoint: Optional[Tuple[float, float, float]] = None
 
     # -- logging -------------------------------------------------------------------------------
     def _log(self, kind: str, **detail) -> None:
@@ -231,8 +270,10 @@ class AvoidanceExecutor:
             resumed_wp = self.sink.current_waypoint()
             self._log("resume", trigger="threat_cleared", resumed_wp_index=resumed_wp,
                       wp_index_at_takeover=self._wp_at_takeover,
-                      resumed_same_waypoint=(resumed_wp == self._wp_at_takeover))
+                      resumed_same_waypoint=(resumed_wp == self._wp_at_takeover),
+                      latched_setpoint_enu=self._latched_setpoint)
             self._wp_at_takeover = None
+            self._latched_setpoint = None   # encounter over -- the next one latches fresh
         self._record_position(drone_state.position_enu)
         self._log("proceed", position_enu=drone_state.position_enu,
                   wp_index=drone_state.current_wp_index)
@@ -257,12 +298,29 @@ class AvoidanceExecutor:
                   reason=reason or maneuver.reason, track_id=self._track_id(maneuver))
 
     def _handle_divert(self, drone_state: DroneState, maneuver: AvoidanceManeuver) -> None:
-        setpoint = maneuver.setpoint_enu
-        assert setpoint is not None  # AvoidanceManeuver.__post_init__ guarantees this for DIVERT
+        policy_setpoint = maneuver.setpoint_enu
+        assert policy_setpoint is not None  # AvoidanceManeuver.__post_init__ guarantees this for DIVERT
 
-        # SAFETY BACKSTOP (ADR-006): re-vet every DIVERT setpoint here, regardless of what the
-        # policy already checked. Reject -> HOLD. Never call sink.send_setpoint_enu on a rejected
-        # point.
+        # SETPOINT LATCH (design note 3): pick WHICH point this tick commands before vetting it.
+        # No latch yet -> the policy's point becomes the latch candidate. Latched already -> keep
+        # re-commanding the latched point and ignore the policy's per-tick recompute drift, UNLESS
+        # the policy has moved further than RELATCH_THRESHOLD_M (a genuinely moving threat), which
+        # makes it a re-latch candidate. `latch_action is None` means "re-commanding the latch".
+        latched = self._latched_setpoint
+        offset_m: Optional[float] = None
+        if latched is None:
+            setpoint, latch_action = policy_setpoint, "latch"
+        else:
+            offset_m = _dist_3d(policy_setpoint, latched)
+            if offset_m > RELATCH_THRESHOLD_M:
+                setpoint, latch_action = policy_setpoint, "relatch"
+            else:
+                setpoint, latch_action = latched, None
+
+        # SAFETY BACKSTOP (ADR-006): re-vet whatever point we are about to command -- fresh, re-latch
+        # candidate, or the latched point on its Nth re-command -- regardless of what the policy
+        # already checked. The latch is a smoothing rule, never a way to skip this gate. Reject ->
+        # HOLD. Never call sink.send_setpoint_enu on a rejected point.
         safe = self.geofence.is_safe_3d(
             setpoint, vertical_margin_m=self.vertical_margin_m, alt_bounds=self.alt_bounds)
         if not safe:
@@ -272,18 +330,35 @@ class AvoidanceExecutor:
                 obstacle_id=unsafe_obstacle.id if unsafe_obstacle else None,
                 reason="DIVERT setpoint failed 3D geofence/altitude re-vet; falling back to HOLD",
                 policy_reason=maneuver.reason, track_id=self._track_id(maneuver),
+                latch_action=latch_action or "recommand_latched",
             )
+            # A rejected fresh/re-latch candidate leaves any existing latch intact -- the point we
+            # are already flying is still vetted and still good. But if the LATCHED point itself
+            # just failed, it is no longer flyable: drop it, or every remaining tick of this
+            # encounter re-rejects the same dead point instead of latching a fresh vetted one.
+            if latch_action is None:
+                self._latched_setpoint = None
             self._handle_hold(drone_state, maneuver,
                               reason=f"gate_reject:{maneuver.reason or 'unvetted'}")
             return
 
         if self.mode != MODE_GUIDED:
             wp_at_takeover = drone_state.current_wp_index
-            self._wp_at_takeover = wp_at_takeover      # latch: one takeover per threat encounter
+            self._wp_at_takeover = wp_at_takeover      # one takeover per threat encounter
             self.sink.set_mode(MODE_GUIDED)
             self.mode = MODE_GUIDED
             self._log("takeover", reason="divert", from_mode=MODE_AUTO, to_mode=MODE_GUIDED,
                       wp_index_at_takeover=wp_at_takeover, track_id=self._track_id(maneuver))
+
+        # The candidate survived the backstop -- only now does it become (or replace) the latch.
+        if latch_action is not None:
+            self._log(latch_action, setpoint_enu=setpoint, previous_setpoint_enu=latched,
+                      offset_m=offset_m, relatch_threshold_m=RELATCH_THRESHOLD_M,
+                      reason=("first vetted dodge of this encounter; re-commanded until it clears"
+                              if latch_action == "latch" else
+                              "policy setpoint moved beyond the re-latch threshold and re-vetted safe"),
+                      track_id=self._track_id(maneuver))
+            self._latched_setpoint = setpoint
 
         self._record_position(drone_state.position_enu)  # where the drone ACTUALLY is this tick
         self.sink.send_setpoint_enu(setpoint)            # (re)command the vetted dodge target
@@ -295,7 +370,11 @@ class AvoidanceExecutor:
         # test_commanded_but_unflown_setpoint_does_not_cover (tests/.../test_avoidance_executor.py).
         self._log("maneuver", decision="divert", setpoint_enu=setpoint, verdict="accepted",
                   debug=maneuver.debug, policy_reason=maneuver.reason,
-                  track_id=self._track_id(maneuver))
+                  track_id=self._track_id(maneuver),
+                  # What the policy wanted this tick vs what we actually flew: equal on the latching
+                  # tick, and on later ticks this is the paper trail for the ignored drift.
+                  policy_setpoint_enu=policy_setpoint,
+                  latch_action=latch_action or "recommand_latched")
 
         # Audit-only: which cells were "in the shadow" of this divert, for the event log / a human
         # reading it later. finalize() is the actual source of truth for coverage status.

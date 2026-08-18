@@ -18,7 +18,7 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
 **Checks / regression:**
 - `check_mission_geofence.py` — min XY clearance of the mission path vs. the tree geofence (exits 1 on
   the documented, altitude-safe row-0 overlap — expected, not a failure).
-- `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses (ADR-003).
+- `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses, or frame FNR / precision slip past their calibrated floors (ADR-003).
 - `check_ndvi_bands.py` — ADR-007 Gate 2 (Weeks 5-6): samples the raw `/fg/sensor/nir/image` band and
   asserts canopy/soil/bird read back materially different, well-separated values (see
   `docs/runbooks/NDVI_VALIDATION.md`, needs a running Docker sim + `--out` for a JSON summary; `--print-calibration`

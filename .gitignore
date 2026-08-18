@@ -18,7 +18,7 @@ venv/
 rosbag2_*/
 *.mp4
 *.avi
-eval/results/
+eval/results/*
 *.log
 
 # Spike clip generator output (regenerate via sim/spike/gen_spike_clip.py; sim/spike/sample/ is a
@@ -39,3 +39,20 @@ secrets/
 # Claude Code local (keep shared config; ignore local overrides)
 .claude/settings.local.json
 .claude/agent-memory-local/
+
+# Evidence exceptions (2026-08-18): committed flight/gate artifacts — small JSON/PNG evidence only,
+# never raw frame dumps. The 2026-08-05 live-demo log was lost to a clobber + gitignore; committed
+# evidence is how that never repeats (CI validates *flight_log*.json via check_live_flight_log.py).
+# NOTE the level-by-level pattern: a DIRECTORY exclude (dir/) cannot be pierced by child negations,
+# so each level excludes CONTENTS (dir/*) and re-includes the evidence children.
+!eval/results/live_flight_log_*.json
+!eval/results/gate2_summary.json
+!eval/results/bird_drive_*.json
+!eval/results/clips/
+eval/results/clips/*
+!eval/results/clips/real_flight_*/
+eval/results/clips/real_flight_*/*
+!eval/results/clips/real_flight_*/meta.json
+!eval/results/clips/real_flight_*/poses.jsonl
+!eval/results/clips/real_flight_*/heatmap/
+!eval/results/clips/real_flight_*/INVALID_DO_NOT_USE.md

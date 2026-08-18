@@ -68,6 +68,25 @@ def point_in_polygon(x, y, poly):
     return inside
 
 
+def canopy_center_z_m(defaults: dict) -> float:
+    """Z of the canopy sphere's centre in the tree model's own frame. Single source of truth so the
+    SDF emitter (sdf_tree) and the geofence export (compute_obstacles) can't drift apart."""
+    return defaults["trunk_height_m"] + defaults["canopy_height_m"] / 2.0
+
+
+def tree_height_m(defaults: dict) -> float:
+    """Physical top of a rendered tree: canopy sphere CENTRE + its RADIUS (3.8 m with today's
+    tree_defaults) -- NOT trunk_height_m + canopy_height_m (3.5 m).
+
+    The canopy is drawn as a <sphere> of canopy_radius_m (1.3 m), so its vertical half-extent is
+    that radius; canopy_height_m (2.0 m) only positions the centre. Until 2026-08-18 the export
+    reported 3.5 m while the world drew 3.8 m, understating every tree by 0.3 m -- fail-dangerous
+    for geofence.py's vertical band (`z_m .. z_m + height_m + margin`), which would clear a
+    manoeuvre at 3.6 m as "above the tree" when it is in fact inside the canopy. ADR-001 says the
+    export must describe exactly what is physically in the world, so the world's 3.8 m wins."""
+    return canopy_center_z_m(defaults) + defaults["canopy_radius_m"]
+
+
 def compute_obstacles(static_cfg: dict, polygon_m):
     defaults = static_cfg["tree_defaults"]
     obstacles = []
@@ -90,7 +109,7 @@ def compute_obstacles(static_cfg: dict, polygon_m):
                 "pos_m": [round(x, 3), round(y, 3), 0.0],
                 "obstacle_radius_m": defaults["obstacle_radius_m"],
                 "canopy_radius_m": defaults["canopy_radius_m"],
-                "height_m": round(defaults["trunk_height_m"] + defaults["canopy_height_m"], 3),
+                "height_m": round(tree_height_m(defaults), 3),
             })
             idx += 1
             y += row["tree_spacing_m"]
@@ -144,7 +163,12 @@ def sdf_world_header(field_cfg: dict) -> str:
     </spherical_coordinates>
 
     <light type="directional" name="sun">
-      <cast_shadows>true</cast_shadows>
+      <cast_shadows>false</cast_shadows>
+      <!-- Shadows OFF (2026-08-18, real-render finding): the thermal band (synthetic NIR) ignores
+           illumination but the RGB Red band does not, so a cast shadow darkens Red only and reads
+           as FALSE VEGETATION (NDVI = (NIR-Red)/(NIR+Red) rises). Real NIR is reflective and
+           darkens WITH red in shadow; shadowless is therefore the MORE faithful choice for this
+           two-band emulation. See DECISIONS.md ADR-007 amendment. -->
       <pose>0 0 10 0 0 0</pose>
       <diffuse>0.8 0.8 0.8 1</diffuse>
       <specular>0.8 0.8 0.8 1</specular>
@@ -314,7 +338,7 @@ def sdf_tree(obstacle: dict, defaults: dict, ndvi_cfg: dict) -> str:
     trunk_r = defaults["trunk_radius_m"]
     trunk_h = defaults["trunk_height_m"]
     canopy_r = defaults["canopy_radius_m"]
-    canopy_z = trunk_h + defaults["canopy_height_m"] / 2.0
+    canopy_z = canopy_center_z_m(defaults)  # shared with the export's tree_height_m(); see above
     name = obstacle["id"]
     calib = ndvi_cfg["temperature_calibration"]
     trunk_temp = calib["trunk"]["temperature_k"]

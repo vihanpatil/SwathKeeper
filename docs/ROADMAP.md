@@ -14,7 +14,7 @@ nothing gets added to scope without something else being cut in the same breath,
 |---|---|
 | Weeks 1-2 — sim foundation + detection decision | ✅ complete (2026-08-04) |
 | Weeks 3-4 — reactive avoidance + coverage-debt loop | ✅ complete, **demonstrated live** (2026-08-05) |
-| Week 5 — NDVI pipeline | 🟡 in flight: ADR-007 landed, **Gate 0 GREEN live**; fusion/georef/stitch built + tested; Gates 1-3 + real-render numbers pending the batched session |
+| Week 5 — NDVI pipeline | 🟢 validation DONE: **all four gates GREEN live** (Gate 0 2026-08-05, Gates 1-3 2026-08-18); mount geometry corrected + gated (ADR-007 am. 5, 2.2 px); first tree-verified heatmaps committed. Open: recording throughput + ADR-003 re-run |
 | Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009); implementation gated on the batched session |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
@@ -24,31 +24,21 @@ Public main: current as of PR #13 (2026-08-18). Full narrative of how we got her
 
 ## Next up, in order
 
-1. **The ONE batched Docker validation session** (human; runbook: `docs/runbooks/NDVI_VALIDATION.md`
-   — resume at **Gate 1**, Gate 0 already passed):
-   - Gate 1: `ros_gz` bridge — 4 `/fg/sensor/*` topics, encodings rgb8/mono16, ~5 Hz, intrinsics.
-   - Gate 2: canopy ≈ 0.85 > soil ≈ 0.20 > bird ≈ 0.05 with real gaps (`scripts/check_ndvi_bands.py`
-     — the flat-NDVI silent-failure check).
-   - Gate 3: Week-3 avoidance regression on the NDVI-mounted vehicle model.
-   - Then: full boustrophedon flight with `ndvi_node` live; record frames + pose in the spike
-     schema; **commit the evidence artifacts** (timestamped logs + clip metadata — the 2026-08-05
-     demo log was lost to a clobber; that must not repeat).
-   - If time remains: local `Dockerfile.ci` build + in-container smoke (`docs/runbooks/SIM_CI.md`
-     human steps 1-2 — these do NOT require anything merged).
-2. **Phase C closeout** (agent, 1-2 days after the session):
-   - Stitch the recorded flight (`scripts/stitch_ndvi.py`) → committed heatmap artifact
-     (**Weeks 5-6 exit criterion 1**).
-   - `eval/run_spike.sh` on real frames → ADR-003 confirmed or the delta recorded (**criterion 3**);
-     comparison-arm write-up (**criterion 2**). The standing bar is the **synthetic-clip** blob
-     precision of 0.445 — the real render has produced no numbers yet.
-   - Mechanical doc flips (ADR-007 confirmed banner, statuses).
-   - `sim-image.yml` dispatch → `build-test-sim` from main, inside its original timebox; on failure
-     apply the documented cut-list (`docs/runbooks/SIM_CI.md`) and move on.
-3. **Week 6 go/no-go** (product-lead): real NDVI-blob detector on the `detection_source` seam per
-   ADR-009 — only if Phase C lands cleanly; the pre-authorized fallback is scripted detection for
-   the demo, recorded in DECISIONS.md if taken.
-4. **Week 7:** light dashboard (replay + avoidance log + NDVI overlay on the shared cell grid),
-   60-90s demo video, GTM pass (`gtm-narrative-lead`).
+1. **Recording throughput** (the last quality gap; truth is proven, coverage is not): fused-frame
+   delivery captures only a fraction of each flight (105 frames / 228-586 of 720 cells). First
+   lever per config: `camera.update_rate_hz` 5 → 2 (halves render+transport load; at 3 m/s and a
+   13.8 m footprint, 2 Hz sim still over-samples). Also candidates: bridge QoS, a leaner
+   `ndvi_node` publish path. Measure with the same tree-check + coverage numbers.
+2. **The full-coverage demo take** on the tuned stack (runbook: `docs/runbooks/FULL_PIPELINE_DEMO.md`
+   — geometry gate + render probe + host quiet + birds after arming + Ctrl-C only after DISARM).
+3. **ADR-003 real-render re-run** (criterion 3) + comparison arm (criterion 2): fix
+   `eval/annotate_real_clip.py`'s pre-driver-start labels first (clamp t<0 to the spawn pose — the
+   annotator already refuses to ship them, 17/105 flagged on the last clip), then
+   `CLIP=<clip> bash eval/run_spike.sh` and record the numbers against the synthetic 0.445 bar.
+4. **Doc long-tail**: apply the remaining documentation-review fix-list (78 items, ~70 remaining —
+   list + exact edits preserved; criticals already applied).
+5. **Week 7**: dashboard (replay + avoidance log + NDVI overlay on the shared cell grid), demo
+   video, GTM pass.
 
 ## Explicit stretch goals (documented, NOT v1 blockers)
 - Full coverage-debt reconciliation (v1 ships "avoid, return to next waypoint" + honest debt,

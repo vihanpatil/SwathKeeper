@@ -408,3 +408,55 @@ stack, the committed trajectory data stays untouched (reproducibility unchanged)
 is 150 lines of stdlib instead of a new Gazebo plugin.
 Owner / roles: robotics-sim-engineer, perception-ml-engineer (consumer), qa-safety-reviewer
 (bird trajectories are safety-scenario inputs — interpolation is unit-tested).
+
+### ADR-007 amendment (2026-08-18, real-render findings from the first recorded flight)
+1. **Sun shadows OFF in the farm world** (`gen_farm_world.py`): the thermal band (synthetic NIR)
+   ignores illumination but the RGB Red band does not, so a cast shadow darkens Red alone and
+   reads as FALSE VEGETATION (NDVI rises). Real NIR is reflective and darkens *with* Red in
+   shadow; shadowless is therefore the MORE faithful choice for this two-band emulation, not a
+   cosmetic cut. Found via the drone's own moving shadow reading NDVI-positive.
+2. **Frame↔pose pairing must be stamp-based in the Gazebo clock domain** (`/fg/gz_clock` added to
+   the sensor bridge; `clip_recorder.PoseBuffer`): the software render STALLS AND BURSTS
+   (instantaneous RTF 0.0016–0.48), so pairing frames with poses "at arrival" mislabels a burst's
+   frames by meters — the first recorded flight put 0/18 trees at their true positions while
+   producing a plausible-looking map (the exact failure mode this module's tests warn about).
+   Per-frame pairing residuals are now recorded and out-of-bound frames are flagged
+   (`pose_pair_stale`) and SKIPPED by the stitch rather than painted somewhere wrong.
+
+### ADR-006 amendment (2026-08-18): the executor LATCHES one dodge setpoint per encounter
+ADR-006's "one 3D-vetted setpoint" is now enforced mechanically: the policy stays pure (recomputes
+every tick), and the executor latches the first accepted DIVERT setpoint and re-commands it until
+resume — only a candidate > 3.0 m away (RELATCH_THRESHOLD_M: above per-tick recompute drift, below
+a genuine threat-motion jump) can re-latch, and only through the same 3D re-vet; every commanded
+point, latched or fresh, is still re-vetted on the tick it is sent. Measured on the four safety
+scenarios: ledger/debt byte-identical, setpoint churn roughly halved (turnaround scenarios re-latch
+legitimately — the threat really moves). Rationale: the 2026-08-18 live flight showed the walking
+setpoint on film (one ~6 m outlier). Alternative rejected: smoothing in the policy — would couple
+the pure decision function to actuation history.
+
+### ADR-007 amendment addendum (2026-08-18, evening): two live-throughput lessons
+3. **High-rate topics do not belong on the sensor bridge**: bridging Gazebo's /clock (~350 msg/s)
+   for the recorder starved the image serialization (fused rate collapsed ~8x). The recorder now
+   streams the gz clock natively (`gz topic` subprocess); the bridge carries the four sensor
+   topics only.
+4. **The fusion pairing queue must tolerate arrival skew**: under host CPU load each band drops
+   frames independently and arrives bursty; with `ApproximateTimeSynchronizer(queue_size=10)` a
+   stamp's partner was flushed before it could pair and fused output starved to ~zero while both
+   raw bands looked alive. queue_size is now 60 — this tolerates ARRIVAL skew only; the stamp
+   bound (slop = 25% of frame period) is unchanged. Operational corollary in the demo runbook:
+   keep the host machine quiet during recording flights.
+
+### ADR-007 amendment (2026-08-18, late): the sensor mount was NEVER nadir — and the gate that now proves it is
+5. **Mount rpy corrected (π,0,0 → −π/2,+π/2,0): the camera faced the horizon, upside-down, from
+   the day it was authored.** Gazebo camera sensors look along the sensor frame's **+X axis**
+   (optical z = sensor +X, u+ = sensor −Y, v+ = sensor −Z — established empirically with a
+   landmark-oracle world after crash-tumbling test vehicles produced hours of self-contradictory
+   probes: `<static>` on a wrapper model does NOT propagate to a nested `<include>`, so every
+   in-place camera test free-fell). The original rpy was derived under a pinhole Z-forward mental
+   model. Every prior gate passed anyway because every gate measured VALUES (band separation,
+   rates, topics) and none measured GEOMETRY — five recorded flights were lost to it. The missing
+   gate now exists: `scripts/verify_mount_geometry.sh` (physics-free world copy, vehicle parked
+   1 m from a known tree, canopy centroid must land within 15 px of the
+   `ndvi_georef.world_enu_to_pixel` prediction; measured 2.2 px). Run it after ANY change to the
+   mount, the vehicle SDF, or the georef extrinsics. Gate 2's band-separation PASS remains valid
+   (same materials, same calibration — measured from a different viewpoint).

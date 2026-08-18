@@ -17,3 +17,39 @@ Runs scripted scenarios headless and emits metrics — no "it works" without a n
 
 `results/` is gitignored (raw runs, incl. the live demo's timestamped `live_flight_log_<UTCstamp>.json`); commit summary
 metrics into reports, not raw runs.
+
+## Ground truth for real clips
+
+The synthetic spike clips carry `birds[]` on every `poses.jsonl` line; a clip from the live
+recorder (`src/fieldguard_planning/clip_recorder.py`) does not — nothing in the ROS 2 graph
+publishes bird poses. It doesn't have to: the birds are deterministic. `scripts/drive_birds.py`
+flies the committed `config/birds/farm_world_birds.json` waypoints on the **Gazebo sim clock**, and
+every recorded pose line carries that frame's own gz stamp (`stamp_sim_s`), so a bird's position in
+a frame is exactly `pose_at(stamp_sim_s - t0_sim)`.
+
+```bash
+# 1. the driver writes its anchor at startup (eval/results/bird_drive_<UTCstamp>.json)
+python3 scripts/drive_birds.py                      # prints the sidecar path
+
+# 2. after the flight, label the clip (writes poses_annotated.jsonl, recording untouched)
+python3 eval/annotate_real_clip.py --clip eval/results/clips/<clip> \
+    --sidecar eval/results/bird_drive_<UTCstamp>.json
+# ... eyeball a line, then adopt it:
+python3 eval/annotate_real_clip.py --clip <clip> --sidecar <same file> --in-place
+```
+
+`--bird-t0 <sim seconds>` replaces `--sidecar` for runs older than the sidecar (the driver's
+`t0=...` console line). Labels are **commanded** bird poses, not observed ones (same rule as the
+coverage ledger) — the render lags by one driver tick of sim time, ≈ `period x RTF`, which is
+centimetres at this stack's measured RTF and ~1.2 m only if RTF ever reaches 1.
+
+**Still open — annotated real clips are not yet scoreable.** `label_from_sim.py` was written for
+the synthetic clip and needs two changes before it can turn one into `ground_truth.json`
+(deliberately not made here; they belong to whoever runs the ADR-003 re-run):
+1. it reads a per-frame `camera.pos_m`, which real clips don't record — derive it from
+   `drone.pos_m`/`drone.quat_wxyz` + `meta.camera_extrinsic.offset_from_drone_m`
+   (`ndvi_georef.camera_world_position` already does exactly this).
+2. `spike_common.project_bird` hardcodes the spike's fixed nadir axes (image-right = East) and
+   ignores camera orientation. A real AUTO mission yaws onto each boustrophedon leg, so on return
+   legs every box would be mirrored about the principal point — wrong labels, not missing ones. Use
+   the orientation-aware `ndvi_georef.world_enu_to_pixel` instead.

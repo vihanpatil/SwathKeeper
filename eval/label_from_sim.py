@@ -21,11 +21,38 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 
 import spike_common as sc
+
+# Real recorded clips (clip_recorder schema) carry only the DRONE pose, and the drone yaws along
+# lanes -- the spike's fixed-extrinsic projection (spike_common.project_bird, camera X = world East
+# always) is wrong the moment the vehicle turns. The oriented path below reuses the SAME rotation
+# primitives the stitch georef is built on (ndvi_georef, hand-fixture-tested incl. tilted poses),
+# so GT labels and the heatmap share one camera model.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from fieldguard_planning.ndvi_georef import (  # noqa: E402
+    camera_world_position, world_ray_to_camera_frame,
+)
+
+
+def project_bird_oriented(bird_pos, drone_pos, quat_xyzw, mount_offset_body_m, intr):
+    """(u_px, v_px, zc_m) for a bird world position seen from a fully-oriented drone pose, or None
+    if the bird is behind/beside the camera. Same pinhole convention as spike_common.project_bird;
+    orientation and mount offset handled by the ndvi_georef primitives instead of the spike's
+    fixed nadir extrinsic."""
+    cam_pos = camera_world_position(tuple(drone_pos), tuple(quat_xyzw),
+                                    tuple(mount_offset_body_m))
+    d_world = (bird_pos[0] - cam_pos[0], bird_pos[1] - cam_pos[1], bird_pos[2] - cam_pos[2])
+    d_cam = world_ray_to_camera_frame(d_world, tuple(quat_xyzw))
+    if d_cam[2] <= 1e-9:
+        return None
+    u = intr["cx"] + intr["fx"] * d_cam[0] / d_cam[2]
+    v = intr["cy"] + intr["fy"] * d_cam[1] / d_cam[2]
+    return (u, v, d_cam[2])
 
 
 def build_ground_truth(clip_dir: Path):
@@ -33,14 +60,26 @@ def build_ground_truth(clip_dir: Path):
     intr = meta["camera"]
     w, h = meta["image_width_px"], meta["image_height_px"]
     poses = sc.load_poses(clip_dir)
+    mount_offset = tuple(meta.get("camera_extrinsic", {}).get("offset_from_drone_m",
+                                                              (0.0, 0.0, 0.0)))
 
     frames = []
     disagreements = []  # (frame_id, bird_id, max_corner_px_diff) vs generator_bbox_px
     for d in poses:
-        cam_pos = d["camera"]["pos_m"]
+        # Synthetic spike lines carry an explicit fixed-extrinsic camera pose; real recorded lines
+        # (clip_recorder schema, annotated by eval/annotate_real_clip.py) carry only the oriented
+        # drone pose -- each gets the projection model that matches how its frames were rendered.
+        legacy_cam = d.get("camera", {}).get("pos_m")
+        if legacy_cam is None:
+            wq, xq, yq, zq = d["drone"]["quat_wxyz"]
+            quat_xyzw = (xq, yq, zq, wq)
         birds_gt = []
         for b in d["birds"]:
-            proj = sc.project_bird(b["pos_m"], cam_pos, intr)
+            if legacy_cam is not None:
+                proj = sc.project_bird(b["pos_m"], legacy_cam, intr)
+            else:
+                proj = project_bird_oriented(b["pos_m"], d["drone"]["pos_m"], quat_xyzw,
+                                             mount_offset, intr)
             entry = {"bird_id": b["bird_id"], "bbox": None, "visible": False,
                      "range_m": b.get("range_m")}
             if proj is not None:

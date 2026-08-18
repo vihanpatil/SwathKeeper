@@ -142,7 +142,7 @@ class TestStitchClip(unittest.TestCase):
                 stitch_ndvi.stitch_clip(clip, _cells())
 
     def test_inconsistent_meta_intrinsics_raise(self):
-        """The known sim/spike/sample/ wart: a principal point outside the image would stitch
+        """General clip-validity guard (originally found via a broken sim/spike/sample): a principal point outside the image would stitch
         every frame out of bounds and 'succeed' empty -- must be rejected at load."""
         with tempfile.TemporaryDirectory() as td:
             clip = Path(td)

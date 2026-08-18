@@ -13,7 +13,7 @@
     "obstacle_radius_note": "the radius flight-software's geofence should actually use for exclusion -- canopy_radius_m plus a safety margin. trunk/canopy dims below are for the Gazebo collision/visual geometry only."
   },
   "layout": {
-    "note": "Hand-authored input: 3 orchard rows running north-south, positioned between/around the boustrophedon flight lanes (lanes run north-south at x=0,15,30,45,60,75; rows sit at x=15,40,65). Tree canopy height (3.5m = trunk_height_m + canopy_height_m) is well below mission_altitude_m (15m, config/field_polygon.json) -- the existing no-avoidance-aware boustrophedon mission clears every tree by >11m, which is why exit criterion 'the mission flies through it' holds even though avoidance logic doesn't exist yet (Week 3-4 scope).",
+    "note": "Hand-authored input: 3 orchard rows running north-south, positioned between/around the boustrophedon flight lanes (lanes run north-south at x=0,15,30,45,60,75; rows sit at x=15,40,65). Tree height (3.8m = trunk_height_m + canopy_height_m/2 + canopy_radius_m, i.e. the top of the canopy SPHERE as the world actually draws it -- see scripts/gen_farm_world.py tree_height_m(); it is NOT trunk_height_m + canopy_height_m) is well below mission_altitude_m (15m, config/field_polygon.json) -- the existing no-avoidance-aware boustrophedon mission clears every tree by >11m, which is why exit criterion 'the mission flies through it' holds even though avoidance logic doesn't exist yet (Week 3-4 scope).",
     "rows": [
       {
         "row_id": 0,
@@ -50,7 +50,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row0_1",
@@ -63,7 +63,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row0_2",
@@ -76,7 +76,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row0_3",
@@ -89,7 +89,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row0_4",
@@ -102,7 +102,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row0_5",
@@ -115,7 +115,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row1_0",
@@ -128,7 +128,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row1_1",
@@ -141,7 +141,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row1_2",
@@ -154,7 +154,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row1_3",
@@ -167,7 +167,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row1_4",
@@ -180,7 +180,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row1_5",
@@ -193,7 +193,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row2_0",
@@ -206,7 +206,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row2_1",
@@ -219,7 +219,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row2_2",
@@ -232,7 +232,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row2_3",
@@ -245,7 +245,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row2_4",
@@ -258,7 +258,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     },
     {
       "id": "tree_row2_5",
@@ -271,7 +271,7 @@
       ],
       "obstacle_radius_m": 2.0,
       "canopy_radius_m": 1.3,
-      "height_m": 3.5
+      "height_m": 3.8
     }
   ]
 }

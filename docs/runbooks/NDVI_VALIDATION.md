@@ -2,13 +2,20 @@
 
 Owner: **human** (you), with `robotics-sim-engineer` on standby for failures.
 
-## ✅ GATE 0 PASSED GREEN (2026-08-05) — Gates 1–3 still to run
+## ✅ ALL FOUR GATES PASSED — this runbook is now a RECORD, not a to-do
 
-**Gate 0 (the thermal-system kill-switch) executed live 2026-08-05 and passed**: the thermal
-system loads on the pinned Harmonic+ogre2 stack, the world loads with the sensor mount (after the
-joint-parent fix recorded below — see "The fixed-joint parent name"), and all four `/fg/sensor/*`
-topics are present on the gz side. **Do NOT re-run Gate 0; the batched session resumes at
-Gate 1.** Everything below about Gates 1–3 remains source-verified only.
+| Gate | Result | Evidence |
+|---|---|---|
+| 0 — thermal system loads | ✅ 2026-08-05 | world + mount load on pinned Harmonic+ogre2; 4 `/fg/sensor/*` gz topics |
+| 1 — bridge, encodings, rate | ✅ 2026-08-18 | 4 ROS topics, rgb8/mono16, 5 Hz sim-time (wall = 5 Hz × RTF) |
+| 2 — pixel smoke test | ✅ 2026-08-18 | canopy 0.854 > soil 0.212 > bird 0.040, gaps 0.643/0.171 — `eval/results/gate2_summary.json` |
+| 3 — avoidance regression | ✅ 2026-08-18 | clean takeover→maneuver→resume on the NDVI model — `eval/results/live_flight_log_20260818T144711Z.json` |
+
+Re-run a gate only if the world, sensor mount, or pinned stack changes — and after ANY mount/
+georef change also run the GEOMETRY gate (`scripts/verify_mount_geometry.sh`), which post-dates
+these gates and exists because they measure values, not geometry (ADR-007 amendment 5: the mount
+faced the horizon through all four passes). Next steps live in `docs/ROADMAP.md`; the recording
+procedure in `docs/runbooks/FULL_PIPELINE_DEMO.md`.
 
 ## ⚠️ Session log 2026-08-18 — Gate 1 attempted; read this before resuming
 
@@ -42,18 +49,6 @@ python3 /workspace/fieldguard/scripts/drive_birds.py --once 12  # or: park birds
 ```
 ⚠️ **Restart Gazebo (Shell 1) before resuming** — the running instance predates the world change;
 the regenerated `farmguard_field.sdf` (birds as models) only takes effect on a fresh `gz sim` launch.
-
-## Gates 1–3 are source/doc-verified only, not run
-
-Nothing about Gates 1–3 has executed against the real Gazebo/ogre2 render yet. Every claim about the
-thermal sensor, the bridge, and the sensor-mount attachment was checked against the pinned-branch
-**source** (gz-sim8 == Harmonic, ros_gz `ros2` branch, ArduPilot/ardupilot_gazebo `main`), not
-memory or guesswork — but source-reading is not the same as a live render. This session is what
-converts "source-verified" into "confirmed." **Do the remaining gates in order, starting at
-Gate 1** (Gate 0, the hard kill-switch, already passed — banner above). (Gate 3, added by
-flight-software-engineer 2026-08-05, is a regression check — the NDVI sensor mount changed the
-vehicle model the already-proven Week-3 avoidance loop flies with, not a new ADR-007 render claim —
-but it belongs in the same session since it reuses Gates 0-2's running Gazebo instance.)
 
 ## Why this exists
 
@@ -157,7 +152,13 @@ ros2 topic list | grep '^/fg/sensor'
 # expect exactly 4: /fg/sensor/rgb/image  /fg/sensor/rgb/camera_info
 #                    /fg/sensor/nir/image  /fg/sensor/nir/camera_info
 
-ros2 topic hz /fg/sensor/rgb/image     # steady ~5 Hz (config/ndvi_camera.json update_rate_hz), not zero
+ros2 topic hz /fg/sensor/rgb/image     # WALL rate ≈ 5 Hz × RTF, not zero. Measured 2026-08-18:
+                                        # RTF ≈ 0.17 on this software-rendered ARM stack → ~0.8 Hz
+                                        # wall is CORRECT for the 5 Hz sim-time camera
+                                        # (config/ndvi_camera.json update_rate_hz). Confirm the
+                                        # SIM rate via header stamps: consecutive frames must be
+                                        # ~0.2 s of sim time apart. Budget note: recordings take
+                                        # ~1/RTF wall time (a 5-min mission ≈ 30 min wall).
 ros2 topic hz /fg/sensor/nir/image     # same rate, same cadence as rgb
 
 ros2 topic echo --field encoding /fg/sensor/rgb/image --once   # expect: rgb8
@@ -319,10 +320,33 @@ to patch it live.
 
 Flip ADR-007 in `docs/DECISIONS.md` from "confirmation-pending" to confirmed, with the date and a
 one-line pointer to this doc's results (mirroring how ADR-005/ADR-006 were closed out in Week 3).
-Then Weeks 5-6's remaining scope — the ADR-003 real-render re-confirmation and pointing the
-`ndvi_node`/`ndvi_georef` pipeline (already built + unit-tested against synthetic fixtures,
-`src/fieldguard_planning/ndvi_node.py` / `ndvi_fusion.py` / `ndvi_georef.py`) at the real `/fg/*`
-topics — is unblocked. The real-render re-confirmation is explicitly **out of scope for this
-session and this doc** (perception-ml-engineer, downstream of a green Gate 2); running the
-already-built `ndvi_node` live and confirming the georef stitch against real telemetry is
-flight-software-engineer's next step once Gate 3 is also green.
+Then run **the recorded flight** — the artifact every remaining exit criterion consumes.
+
+### The recorded flight (same session, gates green)
+
+Shell order (1-5 as the gates already have them): Gazebo, bridge, agent, SITL, birds
+(`drive_birds.py --rate 2`, started AFTER arming — its service traffic adds jitter the EKF can't
+tolerate while aligning). Then:
+
+**Shell 6 — the fusion node** (must be up before the recorder; its `/fg/ndvi/image` stamp is the
+georef anchor):
+```bash
+source /root/ardu_ws/install/setup.bash
+PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node
+```
+
+**Shell 7 — the recorder** (writes the spike-schema clip live; Ctrl-C AFTER the mission RTLs):
+```bash
+source /root/ardu_ws/install/setup.bash
+PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 -m fieldguard_planning.record_node \
+  --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)
+```
+Watch for "live intrinsics locked" (that line IS the ADR-007 follow-up-5 evidence) and the
+`recorded N frames` heartbeats. On Ctrl-C it finalizes `meta.json` (`synthetic: false`) and prints
+the exact stitch command. Budget ~1/RTF wall time for the full boustrophedon.
+
+**Afterwards, on the host** (no container needed): `python3 scripts/stitch_ndvi.py --clip <dir>`
+→ the georeferenced heatmap (exit criterion 1); `eval/run_spike.sh` pointed at the same clip → the
+ADR-003 real-render re-confirmation (criterion 3). COMMIT the clip's `meta.json` + `poses.jsonl` +
+`heatmap.*` + a handful of sample frames (not all ~GBs of `.npy`) — evidence, per the 2026-08-18
+clobber lesson.

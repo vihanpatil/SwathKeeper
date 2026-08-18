@@ -6,13 +6,13 @@ ASSERTIONS so a future edit to the mission, the field, or the tree map cannot si
 The non-obvious fact these tests pin (found while building this scaffolding):
   The nominal boustrophedon lane at x=15 (leg 4) flies STRAIGHT THROUGH orchard row 0 in XY --
   min XY clearance -1.997 m. That is a real 2D geofence breach. It is deemed safe TODAY *only*
-  because the mission flies at 15 m and the trees are 3.5 m tall (11.5 m vertical separation). So:
+  because the mission flies at 15 m and the trees are 3.8 m tall (11.2 m vertical separation). So:
 
     - The XY breach is EXPECTED and localised (row 0 lane only). A NEW XY breach appearing on any
       OTHER leg is a regression and must fail (`test_only_row0_lane_breaches_xy`).
     - The safety of that breach rests ENTIRELY on vertical separation, which these tests assert
       explicitly (`test_vertical_separation_is_the_actual_safety_basis`). SAFETY GAP for Week 3-4:
-      geofence.py is XY-only, and any avoidance/imaging manoeuvre that DESCENDS into the 3.5 m tree
+      geofence.py is XY-only, and any avoidance/imaging manoeuvre that DESCENDS into the 3.8 m tree
       band turns this benign 2D overlap into a collision. The avoidance-path geofence assertion must
       therefore be 3D-aware (or must assert the manoeuvre holds altitude) -- see the pending tests
       in test_safety_scenarios_pending.py.
@@ -34,7 +34,7 @@ FIELD_POLYGON = REPO_ROOT / "config" / "field_polygon.json"
 MISSION = REPO_ROOT / "config" / "missions" / "boustrophedon.waypoints"
 STATIC_OBSTACLES = REPO_ROOT / "config" / "static_obstacles.json"
 
-TREE_HEIGHT_M = 3.5           # config/static_obstacles.json height_m (uniform for all trees)
+TREE_HEIGHT_M = 3.8           # config/static_obstacles.json height_m (uniform for all trees)
 MIN_VERTICAL_MARGIN_M = 5.0   # required air gap between mission altitude and tallest obstacle
 
 

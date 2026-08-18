@@ -13,11 +13,12 @@
   "camera": {
     "image_width_px": 160,
     "image_height_px": 120,
-    "fx": 520.0,
-    "fy": 520.0,
-    "cx": 320.0,
-    "cy": 240.0
+    "fx": 130.0,
+    "fy": 130.0,
+    "cx": 80.0,
+    "cy": 60.0
   },
+  "intrinsics_note": "fx/fy/cx/cy were authored for 640x480 (520/520/320/240) and hand-rescaled by 1/4 on 2026-08-18 to be self-consistent with this clip's actual 160x120 frames: a principal point at (320,240) sits OUTSIDE a 160x120 image, which scripts/stitch_ndvi.py rejects at load. Root cause is upstream -- sim/spike/gen_spike_clip.py generate() overrides image_width_px/image_height_px from --width/--height but copies the scenario's intrinsics unscaled, so any non-default frame size reproduces this; the committed 640x480 sim/spike/out/spike_seed42 clip is self-consistent and untouched. The frames here were RENDERED with the old 520/320 values, so this fixture's absolute georeferencing is illustrative, not authoritative.",
   "camera_extrinsic": {
     "mount": "rigid nadir, no gimbal, fixed for entire clip",
     "convention": "camera X=world East, camera Y=world South (down-image), camera Z(depth)=world Down (i.e. pinhole optical convention, X right / Y down / Z forward)",

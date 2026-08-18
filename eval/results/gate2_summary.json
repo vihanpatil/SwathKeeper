@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "reason": "PASS: canopy(0.854) > soil(0.212) > bird(0.040), gaps canopy-soil=0.643 soil-bird=0.171 (both >= 0.080). The raw NIR band genuinely distinguishes all three classes -- independent of the RGB/Red band.",
+  "frames_seen": 996,
+  "frames_with_rgb": 996,
+  "classes": {
+    "canopy": {
+      "pixel_count": 807234,
+      "mean_rho_nir": 0.8541666666666664,
+      "mean_proxy_ndvi": 0.5314513073699318,
+      "calibrated_rho_nir": 0.85
+    },
+    "trunk": {
+      "pixel_count": 39033,
+      "mean_rho_nir": 0.3399179284195429,
+      "mean_proxy_ndvi": -0.026293848895761737,
+      "calibrated_rho_nir": 0.35
+    },
+    "soil": {
+      "pixel_count": 91652116,
+      "mean_rho_nir": 0.21166666666666556,
+      "mean_proxy_ndvi": -0.42853788850891544,
+      "calibrated_rho_nir": 0.2
+    },
+    "bird": {
+      "pixel_count": 3646,
+      "mean_rho_nir": 0.04033333333333362,
+      "mean_proxy_ndvi": -0.7887711168239603,
+      "calibrated_rho_nir": 0.05
+    }
+  }
+}

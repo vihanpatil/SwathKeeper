@@ -15,15 +15,22 @@ check or recorded flight that needs visible birds:
     python3 /workspace/fieldguard/scripts/drive_birds.py --once 12  # place birds at t=12s, exit
                                                                      # (deterministic Gate-2 shots)
 
+Every continuous run drops a run sidecar (`eval/results/bird_drive_<UTCstamp>.json`) recording the
+sim-time anchor t0 — that anchor is the ONLY thing `eval/annotate_real_clip.py` needs to reconstruct
+bird ground truth for a clip recorded during the run, and console scrollback is not a storage medium.
+
 Mechanism: one `gz service /world/<world>/set_pose` call per bird per tick (subprocess, gz CLI —
 no gz-transport Python bindings needed in the container). At the default 5 Hz x 3 birds this is
 ~15 short-lived processes/sec, comfortably within budget, and matches the camera's 5 Hz
 update_rate (config/ndvi_camera.json) — the render never sees a stale hop. Loop-restart matches
 the old actor <loop>true</loop> semantics (time wraps modulo the last waypoint's t_s).
 
-Timing uses WALL clock, matching the old actor behavior only if Gazebo runs at real-time factor
-~1.0 (it does in every runbook; RTF is checked in Gate 3). Slower-than-realtime sim would need
---rate-scale or sim-clock subscription — deliberately NOT built (YAGNI until a runbook needs it).
+Timing uses Gazebo SIM time (polled from the /clock topic each tick) so bird motion stays
+trajectory-correct at ANY real-time factor — load-bearing on this stack: software rendering in
+Docker-on-Apple-Silicon runs the sim well below realtime (measured RTF << 1 in the 2026-08-18
+session), and a wall-clock driver would fly the birds 1/RTF too fast relative to the drone and
+camera. --wall-clock restores the old behavior for the rare RTF≈1 case where /clock is
+unavailable.
 
 Dependency: stdlib only.
 """
@@ -32,6 +39,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import subprocess
 import sys
 import time
@@ -41,6 +49,9 @@ from typing import List, Optional, Sequence, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BIRDS_CONFIG = REPO_ROOT / "config" / "birds" / "farm_world_birds.json"
 DEFAULT_WORLD = "farmguard_field"
+DEFAULT_SIDECAR_DIR = REPO_ROOT / "eval" / "results"  # gitignored, same home as the flight logs
+
+SIDECAR_SCHEMA_VERSION = "1.0"
 
 Pose = Tuple[float, float, float, float]  # (x_m, y_m, z_m, yaw_rad)
 
@@ -75,6 +86,73 @@ def pose_at(t_s: float, waypoints: Sequence[dict], loop: bool = True) -> Pose:
     raise AssertionError(f"unreachable: t_s={t_s} not bracketed by waypoints")  # pragma: no cover
 
 
+def write_run_sidecar(sidecar_dir: Path, t0_sim_s: Optional[float], rate_hz: float,
+                      config_path: Path, bird_ids: Sequence[str], world: str) -> Path:
+    """Record this run's timing anchor to `<sidecar_dir>/bird_drive_<UTCstamp>.json` and return
+    the path.
+
+    A clip recorded while this driver runs has no bird ground truth of its own (nothing in the ROS 2
+    graph publishes bird poses), but it is fully recoverable: bird position at a frame =
+    `pose_at(frame.stamp_sim_s - t0_sim)`. Without this file that anchor exists ONLY in the console
+    scrollback of whichever terminal started the driver -- one closed tab and the clip is unlabelable.
+    Written once at startup and flushed immediately, so a Ctrl-C'd or crashed run still leaves it.
+    Consumed by `eval/annotate_real_clip.py --sidecar`."""
+    sidecar_dir = Path(sidecar_dir)
+    sidecar_dir.mkdir(parents=True, exist_ok=True)
+    path = sidecar_dir / f"bird_drive_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json"
+    payload = {
+        "schema_version": SIDECAR_SCHEMA_VERSION,
+        "driver": "scripts/drive_birds.py",
+        "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "world": world,
+        # "sim" = RTF-proof gz /clock timing; "wall" = wall clock, which leaves NO sim anchor
+        # (t0_sim_s null) and therefore no way to label a clip afterwards.
+        "clock": "wall" if t0_sim_s is None else "sim",
+        "t0_sim_s": t0_sim_s,
+        "rate_hz": rate_hz,
+        # Recorded as passed: the driver runs at /workspace/fieldguard inside the container while
+        # the annotator usually runs from the host checkout, so this path may not resolve there --
+        # it is provenance, not a lookup key (the annotator defaults to its own repo's config and
+        # cross-checks bird_ids).
+        "config": str(config_path),
+        "config_name": Path(config_path).name,
+        "bird_ids": list(bird_ids),
+        "note": ("bird trajectory time for a recorded frame = frame.stamp_sim_s - t0_sim_s; "
+                 "label a clip with: python3 eval/annotate_real_clip.py --clip <dir> --sidecar "
+                 "<this file>"),
+    }
+    with path.open("w") as fh:
+        json.dump(payload, fh, indent=1)
+        fh.write("\n")
+        fh.flush()
+    return path
+
+
+def parse_sim_time_s(clock_text: str) -> Optional[float]:
+    """Extract sim seconds from gz.msgs.Clock text output: the `sim { sec: N nsec: M }` block.
+    Returns None if no sim block is present (e.g. truncated read) — caller decides the fallback."""
+    m = re.search(r"sim\s*\{([^}]*)\}", clock_text)
+    if not m:
+        return None
+    body = m.group(1)
+    sec = re.search(r"sec:\s*(\d+)", body)
+    nsec = re.search(r"nsec:\s*(\d+)", body)
+    if not sec:
+        return None
+    return int(sec.group(1)) + (int(nsec.group(1)) / 1e9 if nsec else 0.0)
+
+
+def gz_sim_now_s(timeout_s: float = 3.0) -> Optional[float]:
+    """Latest sim time via one `gz topic -e -t /clock -n 1` call (publishes fast; returns quickly).
+    None on any failure — the driver loop treats that as 'hold this tick', never crashes."""
+    try:
+        out = subprocess.run(["gz", "topic", "-e", "-t", "/clock", "-n", "1"],
+                             capture_output=True, text=True, timeout=timeout_s)
+        return parse_sim_time_s(out.stdout) if out.returncode == 0 else None
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+
 def set_pose_request(name: str, pose: Pose) -> str:
     """gz.msgs.Pose text-proto for /world/<w>/set_pose. Yaw-only orientation -> quaternion
     (z = sin(yaw/2), w = cos(yaw/2))."""
@@ -83,7 +161,10 @@ def set_pose_request(name: str, pose: Pose) -> str:
             f'orientation: {{z: {math.sin(yaw / 2):.6f}, w: {math.cos(yaw / 2):.6f}}}')
 
 
-def gz_set_pose(world: str, name: str, pose: Pose, timeout_ms: int = 500) -> bool:
+def gz_set_pose(world: str, name: str, pose: Pose, timeout_ms: int = 2000) -> bool:
+    # 2000ms, not 500: with SITL + MAVProxy + software rendering sharing the CPU, service
+    # round-trips beyond 500ms are routine (learned live 2026-08-18 — the first in-mission run
+    # failed every call while the idle-world test had passed).
     """One set_pose service call via the gz CLI. Returns True on success; a failed call is
     reported but never raises — one dropped tick must not kill the driver mid-flight."""
     cmd = ["gz", "service", "-s", f"/world/{world}/set_pose",
@@ -104,6 +185,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--rate", type=float, default=5.0, help="update rate Hz (default 5, = camera rate)")
     ap.add_argument("--once", type=float, metavar="T_S", default=None,
                     help="place every bird at trajectory time T_S and exit (deterministic Gate-2 shots)")
+    ap.add_argument("--wall-clock", action="store_true",
+                    help="time trajectories on wall clock instead of Gazebo /clock sim time "
+                         "(only correct at RTF~1; sim time is the default because software "
+                         "rendering runs this stack well below realtime)")
+    ap.add_argument("--sidecar-dir", type=Path, default=DEFAULT_SIDECAR_DIR,
+                    help="where to write the run sidecar recording t0_sim (default eval/results/) "
+                         "— it is what lets eval/annotate_real_clip.py label a clip recorded "
+                         "during this run")
+    ap.add_argument("--no-sidecar", action="store_true",
+                    help="skip the run sidecar (any clip recorded during this run then depends on "
+                         "console scrollback for its bird ground truth)")
     args = ap.parse_args(argv)
 
     birds = json.loads(args.config.read_text())["birds"]
@@ -116,24 +208,60 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                  for b in birds)
         return 0 if ok else 1
 
+    t0_sim: Optional[float] = None
+    if not args.wall_clock:
+        t0_sim = gz_sim_now_s()
+        if t0_sim is None:
+            print("[drive_birds] WARNING: no /clock reading — falling back to wall clock "
+                  "(trajectory timing only correct at RTF~1)", file=sys.stderr)
+        else:
+            print(f"[drive_birds] sim-time mode, t0={t0_sim:.2f}s (RTF-proof)")
+
+    if not args.no_sidecar:
+        # Never fatal: a read-only mount must not stop a flight that is otherwise fine.
+        try:
+            sidecar = write_run_sidecar(args.sidecar_dir, t0_sim, args.rate, args.config,
+                                        [b["bird_id"] for b in birds], args.world)
+            print(f"[drive_birds] run sidecar -> {sidecar}  "
+                  f"(label a clip: eval/annotate_real_clip.py --sidecar <that file>)")
+        except OSError as exc:
+            print(f"[drive_birds] WARNING: could not write run sidecar ({exc}) — note t0 by hand "
+                  f"or a clip recorded now cannot be labelled later", file=sys.stderr)
+
     t_start = time.monotonic()
     period = 1.0 / args.rate
     failures = 0
+    successes = 0
+    last_report = t_start
     try:
         while True:
             tick_begin = time.monotonic()
-            t = tick_begin - t_start
+            if t0_sim is not None:
+                now_sim = gz_sim_now_s()
+                if now_sim is None:
+                    time.sleep(period)  # hold this tick; transient /clock hiccup must not kill the run
+                    continue
+                t = now_sim - t0_sim
+            else:
+                t = tick_begin - t_start
             for b in birds:
-                if not gz_set_pose(args.world, b["bird_id"],
-                                   pose_at(t, b["waypoints"], b.get("loop", True))):
+                if gz_set_pose(args.world, b["bird_id"],
+                               pose_at(t, b["waypoints"], b.get("loop", True))):
+                    successes += 1
+                else:
                     failures += 1
-                    if failures == 5:
-                        print("[drive_birds] 5 failed calls — is Gazebo up and the world name "
-                              f"'{args.world}' right?", file=sys.stderr)
+                    if failures in (5, 25) or failures % 100 == 0:
+                        print(f"[drive_birds] {failures} failed set_pose calls so far "
+                              f"({successes} ok) — heavy load slows service round-trips; the birds "
+                              f"still track sim time, just at fewer updates", file=sys.stderr)
+            # Heartbeat every 30s wall so 'working' is visibly different from 'silently failing'.
+            if time.monotonic() - last_report >= 30.0:
+                last_report = time.monotonic()
+                print(f"[drive_birds] t_sim={t:7.1f}s  poses ok={successes}  failed={failures}")
             time.sleep(max(0.0, period - (time.monotonic() - tick_begin)))
     except KeyboardInterrupt:
         print(f"\n[drive_birds] stopped after {time.monotonic() - t_start:.1f}s "
-              f"({failures} failed calls)")
+              f"({successes} ok, {failures} failed calls)")
         return 0
 
 
