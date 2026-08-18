@@ -27,16 +27,21 @@ bridges):
 apt-get update && apt-get install -y ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs
 ```
 
-**🛑 HOLD on Gate 2's bird check — the bird actors DO NOT RENDER.** Verified live via the scene
-graph (`gz service -s /world/farmguard_field/scene/info ... | grep -c bird` → **0**): skinless
-`<actor>` link-visuals never enter the ogre2 render scene in Harmonic (the Shell-1 warnings
-`Actor skin mesh [__default__] not found` are this). Birds are therefore invisible to BOTH bands —
-a latent Week-2 world bug, never noticed because the avoidance demo injects bird *positions*
-(`--demo`), not pixels. **Gates 1 + 2's canopy/soil checks can proceed; the bird-pixel check and
-any real-render detection work CANNOT until the fix lands.** Designed fix (next session): birds
-become static **models** (same sphere/material/authored 273 K thermal — per-visual thermal works
-on model visuals, unlike actor skins), moved along the existing `config/birds/*.json` trajectories
-by a small `gz service /world/.../set_pose` driver script started alongside the mission shells.
+**✅ RESOLVED (ADR-012, verified live 2026-08-18): the bird-render bug is fixed.** The actors
+(which never rendered — skinless `<actor>` link-visuals don't enter Harmonic's ogre2 scene; 0 bird
+entities in `scene/info` all along) are now static **models** (same sphere/material/authored 273 K
+per-visual thermal), moved along the unchanged `config/birds/*.json` trajectories by
+`scripts/drive_birds.py`. Verified in-container on a renamed-world copy: 3 birds in the render
+scene, no actor warnings, and `--once 12` placed bird_0 at the trajectory-exact (20, 32.998, 8).
+
+**Session procedure change:** for Gate 2's bird check and ANY recorded flight, start the driver in
+its own shell first:
+```bash
+python3 /workspace/fieldguard/scripts/drive_birds.py            # 5 Hz until Ctrl-C
+python3 /workspace/fieldguard/scripts/drive_birds.py --once 12  # or: park birds at t=12s for a still shot
+```
+⚠️ **Restart Gazebo (Shell 1) before resuming** — the running instance predates the world change;
+the regenerated `farmguard_field.sdf` (birds as models) only takes effect on a fresh `gz sim` launch.
 
 ## Gates 1–3 are source/doc-verified only, not run
 

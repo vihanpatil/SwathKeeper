@@ -131,8 +131,14 @@ gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard
 failure modes docs/runbooks/SIM_BRINGUP.md §5 already documents for `iris_runway.sdf`; this world only adds
 inline primitives + one `model://iris_with_gimbal` include, so if it fails, it's almost certainly
 the same `GZ_SIM_RESOURCE_PATH` issue, not something new). `gz topic -l | grep model/tree_row0_0`
-or `gz model -m tree_row0_0 -p` (Gazebo Harmonic CLI) confirm a tree loaded where expected; a bird
-actor's pose changing over consecutive `gz model -m bird_0 -p` calls confirms it's actually moving.
+or `gz model -m tree_row0_0 -p` (Gazebo Harmonic CLI) confirm a tree loaded where expected.
+**Birds (ADR-012):** the 3 birds are static models moved by `scripts/drive_birds.py` (run it in
+its own shell whenever a flight needs visible moving birds — Gate 2, recordings). Confirm they
+render: `gz service -s /world/farmguard_field/scene/info --reqtype gz.msgs.Empty --reptype
+gz.msgs.Scene --timeout 3000 --req "" | grep -c bird` → expect > 0 (was 0 in the actor era);
+confirm motion (driver running) via the bird's entry changing in
+`gz topic -e -t /world/farmguard_field/pose/info -n 1` between calls — NOTE `scene/info` caches
+spawn poses and `dynamic_pose/info` excludes static models; `pose/info` is the live one.
 
 ```bash
 # Shell B — SITL, wired to Gazebo (identical to docs/runbooks/SIM_BRINGUP.md §6 -- vehicle model/pose is the

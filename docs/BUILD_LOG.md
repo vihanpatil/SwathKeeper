@@ -16,9 +16,12 @@ volume persists. Fixed live (3 apt packages), verified (bridge creates all 4 GZ�
 pinned into the Dockerfile. Then a live scene-graph query exposed a latent Week-2 bug: **the bird
 actors have never rendered** — skinless `<actor>` link-visuals don't enter Harmonic's ogre2 scene
 (0 bird entities in `scene/info`). Never noticed because the avoidance demo injects bird
-positions, not pixels. Gate 2's bird check + real-render detection are blocked on the designed
-fix: birds → static models (per-visual thermal works there) + a `set_pose` trajectory driver.
-Full details: `docs/runbooks/NDVI_VALIDATION.md` session log.
+positions, not pixels. Gate 2's bird check + real-render detection were blocked on the fix,
+which landed the same night (ADR-012): birds → static models (per-visual thermal works there,
+unlike actor skins) + `scripts/drive_birds.py` interpolating the unchanged trajectory JSON through
+`set_pose` at the camera rate. Verified in-container on a renamed-world copy: 3 birds in the
+render scene (was 0), driver placed bird_0 trajectory-exact. Gazebo must be relaunched to pick up
+the regenerated world. Full details: `docs/runbooks/NDVI_VALIDATION.md` session log.
 
 ## 2026-08-18 — The audit, the rename, and Phase A1 hardening
 

@@ -817,7 +817,9 @@
     </model>
 
     <!-- Scripted dynamic obstacles (2-3 birds, MVP scope); see config/birds/farm_world_birds.json for the trajectory source data. -->
-    <actor name="bird_0">
+    <model name="bird_0">
+      <static>true</static>
+      <pose>20.0 5.0 8.0 0 0 1.5708</pose>
       <link name="link">
         <visual name="visual">
           <geometry><sphere><radius>0.18</radius></sphere></geometry>
@@ -830,19 +832,11 @@
           </plugin>
         </visual>
       </link>
-      <script>
-        <loop>true</loop>
-        <delay_start>0.0</delay_start>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="fly">
-          <waypoint><time>0.00</time><pose>20.0 5.0 8.0 0 0 1.5708</pose></waypoint>
-          <waypoint><time>8.33</time><pose>20.0 55.0 8.0 0 0 1.5708</pose></waypoint>
-          <waypoint><time>16.67</time><pose>20.0 5.0 8.0 0 0 4.7124</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
+    </model>
 
-    <actor name="bird_1">
+    <model name="bird_1">
+      <static>true</static>
+      <pose>5.0 30.0 11.0 0 0 0.0000</pose>
       <link name="link">
         <visual name="visual">
           <geometry><sphere><radius>0.18</radius></sphere></geometry>
@@ -855,19 +849,11 @@
           </plugin>
         </visual>
       </link>
-      <script>
-        <loop>true</loop>
-        <delay_start>0.0</delay_start>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="fly">
-          <waypoint><time>0.00</time><pose>5.0 30.0 11.0 0 0 0.0000</pose></waypoint>
-          <waypoint><time>9.29</time><pose>70.0 30.0 11.0 0 0 0.0000</pose></waypoint>
-          <waypoint><time>18.57</time><pose>5.0 30.0 11.0 0 0 3.1416</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
+    </model>
 
-    <actor name="bird_2">
+    <model name="bird_2">
+      <static>true</static>
+      <pose>10.0 10.0 6.0 0 0 0.6283</pose>
       <link name="link">
         <visual name="visual">
           <geometry><sphere><radius>0.18</radius></sphere></geometry>
@@ -880,17 +866,7 @@
           </plugin>
         </visual>
       </link>
-      <script>
-        <loop>true</loop>
-        <delay_start>0.0</delay_start>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="fly">
-          <waypoint><time>0.00</time><pose>10.0 10.0 6.0 0 0 0.6283</pose></waypoint>
-          <waypoint><time>13.60</time><pose>65.0 50.0 6.0 0 0 0.6283</pose></waypoint>
-          <waypoint><time>27.20</time><pose>10.0 10.0 6.0 0 0 3.7699</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
+    </model>
 
   </world>
 </sdf>
