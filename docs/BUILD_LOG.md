@@ -6,6 +6,20 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-18 (evening) — First Gate-1 attempt: one blocker fixed live, one real bug found
+
+The batched Docker session started. Gazebo came up healthy (thermal on all 36 visuals, four
+`/fg/sensor/*` topics advertised), but the `ros_gz` bridge crashed on missing
+`libactuator_msgs...so`: the bridge's *optional* build-time deps are hard runtime deps, rosdep had
+installed them at workspace-build time, and apt state is container-ephemeral while the workspace
+volume persists. Fixed live (3 apt packages), verified (bridge creates all 4 GZ→ROS bridges),
+pinned into the Dockerfile. Then a live scene-graph query exposed a latent Week-2 bug: **the bird
+actors have never rendered** — skinless `<actor>` link-visuals don't enter Harmonic's ogre2 scene
+(0 bird entities in `scene/info`). Never noticed because the avoidance demo injects bird
+positions, not pixels. Gate 2's bird check + real-render detection are blocked on the designed
+fix: birds → static models (per-visual thermal works there) + a `set_pose` trajectory driver.
+Full details: `docs/runbooks/NDVI_VALIDATION.md` session log.
+
 ## 2026-08-18 — The audit, the rename, and Phase A1 hardening
 
 A 5-auditor sweep (docs / code / sim / eval-CI / state-vs-claims) after a 13-day pause found the

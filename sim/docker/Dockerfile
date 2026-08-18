@@ -61,6 +61,13 @@ RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pk
         gstreamer1.0-plugins-bad \
         gstreamer1.0-libav \
         gstreamer1.0-gl \
+        # ros_gz_bridge OPTIONAL deps that become hard RUNTIME deps once the bridge is compiled
+        # with them present (rosdep pulls them at workspace-build time, but apt state is
+        # container-ephemeral while /root/ardu_ws persists — learned live 2026-08-18 when Gate 1's
+        # parameter_bridge failed with libactuator_msgs...so: cannot open shared object file):
+        ros-humble-actuator-msgs \
+        ros-humble-gps-msgs \
+        ros-humble-vision-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 # --- OSRF Gazebo rosdep rules -------------------------------------------------
