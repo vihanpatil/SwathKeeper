@@ -42,12 +42,17 @@ ENV PATH="/usr/lib/ccache:${PATH}"
 WORKDIR /root/ardu_ws
 RUN mkdir -p src
 
-# --- Import at branch HEAD, then hard-pin to the EXACT commit SHAs from CLAUDE.md ------------------
+# --- Import at branch HEAD, then hard-pin the four CLAUDE.md-pinned repos to their EXACT SHAs -------
 # "Pinned commit SHAs (captured 2026-08-04 — first green Gazebo flight)". vcs import alone resolves
 # branch HEADs (fine for the Week 1 interactive image, where a human wants a fresh checkout each
-# bringup session) — this image instead checks out each repo to the pinned SHA, so the BAKED image is
-# reproducible byte-for-byte regardless of upstream activity after 2026-08-04, matching CLAUDE.md
-# "pin everything; a floating dependency is a future demo-day outage."
+# bringup session) — this image additionally checks out ardupilot, ardupilot_gazebo, ardupilot_gz and
+# ros_gz at the pinned SHAs, per CLAUDE.md "pin everything; a floating dependency is a future
+# demo-day outage."
+# HONEST LIMIT (do not upgrade this to "reproducible byte-for-byte"): three things here still float —
+# (1) the ros2_gz.repos manifest itself is fetched from ardupilot_gz `main` at build time, (2) the
+# other repos it imports (sdformat_urdf, micro_ros_agent, SITL_Models, …) stay at their branch HEADs
+# because CLAUDE.md pins no SHA for them, and (3) micro_ros_msgs is cloned at `humble` HEAD below.
+# Pinning those too is the follow-up that would make this claim true.
 RUN . /opt/ros/humble/setup.bash && \
     vcs import --input https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos \
         --recursive src && \
@@ -98,8 +103,12 @@ RUN cd /root/ardu_ws/src/ardupilot && \
 ENV PATH="/root/ardu_ws/src/ardupilot/Tools/autotest:${PATH}"
 ENV GZ_SIM_RESOURCE_PATH="/root/ardu_ws/install/ardupilot_gazebo/share"
 
-# Bake the workspace overlay into every non-interactive shell too (RUN/CMD in a derived image or a
-# `docker run ... bash -lc`), not just interactive .bashrc sourcing — CI steps are non-interactive.
+# Advertise WHERE the workspace overlay lives. This ENV does not source anything by itself (the base
+# image's .bashrc sources /opt/ros/humble/setup.bash but never this overlay, and CI steps are
+# non-interactive so .bashrc wouldn't run anyway) — scripts/ci_sim_smoke.sh explicitly
+# `source "${ROS_WS_SETUP:-/root/ardu_ws/install/setup.bash}"`. Since that consumer already hardcodes
+# the same default, this ENV is the documented override point for a relocated workspace, not a
+# load-bearing part of the bringup.
 ENV ROS_WS_SETUP="/root/ardu_ws/install/setup.bash"
 
 WORKDIR /workspace/fieldguard

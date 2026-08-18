@@ -126,6 +126,15 @@ python3 scripts/stitch_ndvi.py --clip eval/results/clips/<the dir Shell 7 printe
 ```
 *Look for:* `~700/720 cells imaged`, few stale-pose skips — and open `heatmap/heatmap.png`.
 
+## Performance rule: keep the host quiet during the flight
+
+The sim is CPU-starved by construction (software rendering in Docker). Measured 2026-08-18: with
+heavy host workloads running (builds, test suites, parallel agents), the camera pipeline drops
+frames per-band, the fusion pairing starves, and the recorder can lose >90% of the flight. Close
+heavy apps, pause CI-ish work, and don't run local builds while recording. Symptoms it's
+happening anyway: Shell 6's `fused_count` crawling, Shell 5's failed-call counter climbing past
+~20%, Shell 7 heartbeats minutes apart.
+
 ## The proof standard (what makes this demo honest)
 
 A pretty heatmap is not the bar. The bar: **the 18 trees appear at their 18 known positions**

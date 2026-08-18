@@ -89,8 +89,13 @@ jobs:
             --world-out /tmp/smoke_farm_world.sdf
           # check_mission_geofence.py intentionally exits 1 when it finds the documented, EXPECTED
           # XY-only overlap at leg 4 (safe: >11m of vertical separation at mission altitude -- see
-          # the script's own docstring / sim/README.md). We only want to catch import/CLI breakage
-          # here, not re-gate on that already-understood business-logic exit code.
+          # the script's own docstring / sim/README.md), so the real invocation below cannot be
+          # gated on its exit code. It used to be `|| true` on its OWN, which made the step
+          # unfailable: a syntax error, a bad import, or a deleted CLI flag all still "passed"
+          # (2026-08-18 audit finding). Split in two: --help is the REAL gate (argparse exits 0, so
+          # it only succeeds if the module imports and the parser still builds), and the
+          # business-logic exit 1 stays tolerated -- and only that.
+          python3 scripts/check_mission_geofence.py --help > /dev/null
           python3 scripts/check_mission_geofence.py || true
 
       - name: Regenerate spike clip (fixed seed 42 -- the reproducibility regression)

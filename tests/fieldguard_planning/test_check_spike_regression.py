@@ -1,0 +1,189 @@
+"""Tests for scripts/check_spike_regression.py -- the seed-42 ADR-003 regression gate.
+
+The gate used to assert ONE number (per-bird-track FNR == 0.0). With only 3 birds in the clip that
+metric moves in steps of 0.333, so detector quality could slide a long way and CI would still read
+green -- audit item 15. These tests pin the two secondary bars that close that hole (frame FNR
+<= 0.02, precision >= 0.40) and, crucially, pin that the REAL committed seed-42 numbers still pass
+them: a bar accidentally set ABOVE current performance would fail CI on day one.
+
+Synthetic score dicts throughout (the real harness is not run here -- eval/score.py owns that);
+the one exception reads the committed eval/results/spike_scores.json to keep the bars honest.
+
+stdlib unittest only. Run: python3 -m unittest discover -s tests/fieldguard_planning -v
+"""
+import io
+import json
+import sys
+import tempfile
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "scripts"))   # the checker lives in scripts/, not src/
+
+import check_spike_regression as checker  # noqa: E402
+
+# The measured 2026-08-04 seed-42 values for the NDVI-direct arm (eval/results/spike_scores.json,
+# quoted in ADR-003). Every "pass" case starts from these so the tests fail loudly if a bar is
+# ever moved past current performance.
+BASELINE = {
+    "TP": 53, "FP": 66, "FN": 1,
+    "precision": 0.44537815126050423,
+    "recall": 0.9814814814814815,
+    "fnr": 0.018518518518518517,
+    "per_bird_track_fnr": 0.0,
+}
+
+
+def make_scores(**overrides):
+    """A parsed spike_scores.json with the NDVI-direct arm at baseline, minus any overrides.
+
+    Pass a metric as None to DELETE it (the schema-drift case)."""
+    metrics = dict(BASELINE)
+    for key, value in overrides.items():
+        if value is None:
+            metrics.pop(key, None)
+        else:
+            metrics[key] = value
+    return {"approaches": {checker.APPROACH: metrics, "b_synthetic_rgb": dict(BASELINE)}}
+
+
+class TestBarsAreHonest(unittest.TestCase):
+    """The bars must sit BELOW measured performance -- not at or above it."""
+
+    def test_committed_seed42_scores_pass(self):
+        committed = json.loads((REPO_ROOT / "eval/results/spike_scores.json").read_text())
+        _, failures = checker.check_scores(committed)
+        self.assertEqual(failures, [], "the committed seed-42 baseline must clear its own bars")
+
+    def test_every_bar_leaves_margin_against_the_baseline(self):
+        for bar in checker.BARS:
+            with self.subTest(metric=bar.metric):
+                value = BASELINE[bar.metric]
+                self.assertFalse(checker._breaches(bar, value))
+                if bar.sense is checker.MAX and bar.bar > 0.0:
+                    self.assertGreater(bar.bar, value)   # room above the measured FNR
+                elif bar.sense is checker.MIN:
+                    self.assertLess(bar.bar, value)      # room below the measured precision
+
+    def test_secondary_bars_are_the_audited_values(self):
+        bars = {b.metric: (b.sense, b.bar) for b in checker.BARS}
+        self.assertEqual(bars["fnr"], (checker.MAX, 0.02))
+        self.assertEqual(bars["precision"], (checker.MIN, 0.40))
+        self.assertEqual(bars["per_bird_track_fnr"], (checker.MAX, 0.0))
+
+
+class TestCheckScores(unittest.TestCase):
+    def test_baseline_passes_and_reports_every_metric(self):
+        lines, failures = checker.check_scores(make_scores())
+        self.assertEqual(failures, [])
+        self.assertEqual(len(lines), len(checker.BARS))
+        for bar in checker.BARS:
+            self.assertTrue(any(bar.metric in line for line in lines), bar.metric)
+
+    def test_headline_per_bird_track_fnr_regression_fails(self):
+        _, failures = checker.check_scores(make_scores(per_bird_track_fnr=1.0 / 3.0))
+        self.assertEqual(len(failures), 1)
+        self.assertIn("per_bird_track_fnr", failures[0])
+        self.assertIn("safety-critical", failures[0])
+
+    def test_frame_fnr_above_bar_fails_while_headline_still_reads_zero(self):
+        # The exact hole audit item 15 named: all 3 birds still touched once (per-bird-track FNR
+        # 0.000) but frame-level catches collapsed -- must NOT pass.
+        _, failures = checker.check_scores(make_scores(fnr=0.25))
+        self.assertEqual(len(failures), 1)
+        self.assertIn("fnr = 0.2500", failures[0])
+        self.assertIn("reaction margin", failures[0])
+
+    def test_frame_fnr_exactly_at_bar_passes(self):
+        _, failures = checker.check_scores(make_scores(fnr=0.02))
+        self.assertEqual(failures, [])
+
+    def test_precision_below_bar_fails(self):
+        _, failures = checker.check_scores(make_scores(precision=0.20))
+        self.assertEqual(len(failures), 1)
+        self.assertIn("precision = 0.2000", failures[0])
+        self.assertIn("wasted dodges", failures[0])
+
+    def test_precision_exactly_at_bar_passes(self):
+        _, failures = checker.check_scores(make_scores(precision=0.40))
+        self.assertEqual(failures, [])
+
+    def test_improvement_never_fails(self):
+        _, failures = checker.check_scores(make_scores(fnr=0.0, precision=1.0))
+        self.assertEqual(failures, [])
+
+    def test_all_bars_report_independently(self):
+        _, failures = checker.check_scores(
+            make_scores(per_bird_track_fnr=1.0, fnr=0.9, precision=0.01))
+        self.assertEqual(len(failures), len(checker.BARS))
+
+
+class TestMissingKeys(unittest.TestCase):
+    def test_missing_approach_fails_once(self):
+        _, failures = checker.check_scores({"approaches": {"b_synthetic_rgb": dict(BASELINE)}})
+        self.assertEqual(len(failures), 1)
+        self.assertIn(checker.APPROACH, failures[0])
+        self.assertIn("b_synthetic_rgb", failures[0])   # says what WAS there, for the fixer
+
+    def test_missing_approaches_block_fails(self):
+        _, failures = checker.check_scores({})
+        self.assertEqual(len(failures), 1)
+        self.assertIn(checker.APPROACH, failures[0])
+
+    def test_each_missing_metric_fails_separately(self):
+        for bar in checker.BARS:
+            with self.subTest(metric=bar.metric):
+                _, failures = checker.check_scores(make_scores(**{bar.metric: None}))
+                self.assertEqual(len(failures), 1)
+                self.assertIn(bar.metric, failures[0])
+                self.assertIn("schema changed", failures[0])
+
+    def test_non_numeric_metric_fails_rather_than_crashing(self):
+        # A null/str where a float belongs is schema drift, not a pass -- and must not TypeError.
+        for value in (None, "0.0", True):
+            with self.subTest(value=value):
+                scores = make_scores()
+                scores["approaches"][checker.APPROACH]["fnr"] = value
+                _, failures = checker.check_scores(scores)
+                self.assertEqual(len(failures), 1)
+                self.assertIn("fnr", failures[0])
+
+
+class TestMainExitCodes(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = Path(self.tmp.name)
+
+    def _write(self, name, data):
+        p = self.dir / name
+        p.write_text(json.dumps(data))
+        return p
+
+    def _run(self, path):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = checker.main([str(path)])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_baseline_exits_zero(self):
+        code, out, _ = self._run(self._write("spike_scores.json", make_scores()))
+        self.assertEqual(code, 0)
+        self.assertIn("PASS", out)
+
+    def test_secondary_bar_breach_exits_one(self):
+        code, _, err = self._run(self._write("spike_scores.json", make_scores(precision=0.1)))
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL", err)
+        self.assertIn("precision", err)
+
+    def test_absent_file_exits_one(self):
+        code, _, err = self._run(self.dir / "no_such_scores.json")
+        self.assertEqual(code, 1)
+        self.assertIn("does not exist", err)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -66,14 +66,14 @@ PNG_CELL_PX = 16  # upscale factor: one 2.5 m cell -> 16x16 px, canonical grid -
 def load_clip_meta(clip_dir: Path) -> dict:
     meta = json.loads((clip_dir / "meta.json").read_text())
     cam = meta["camera"]
-    # Fail loudly on the known sample-fixture wart (fx/cx authored for a different image size)
+    # Fail loudly on internally-inconsistent intrinsics (fx/cx authored for a different image size)
     # rather than stitching every sample out of frame and "succeeding" with an empty map.
     if not (0.0 < cam["cx"] < cam["image_width_px"] and 0.0 < cam["cy"] < cam["image_height_px"]):
         raise ValueError(
             f"meta.json camera block is internally inconsistent: principal point "
             f"({cam['cx']}, {cam['cy']}) lies outside the {cam['image_width_px']}x"
             f"{cam['image_height_px']} image -- intrinsics were authored for a different "
-            f"resolution (known issue with sim/spike/sample/); fix the clip's meta.json")
+            f"resolution (seen once in the wild before sim/spike/sample was fixed); fix the clip's meta.json")
     return meta
 
 

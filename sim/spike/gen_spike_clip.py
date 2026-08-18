@@ -254,6 +254,14 @@ def generate(scenario: dict, out_dir: Path, width_px: int, height_px: int,
     rng = np.random.default_rng(seed)
 
     cam_cfg = dict(scenario["camera"])
+    # Scale intrinsics with any non-default frame size: fx/cx follow width, fy/cy follow height.
+    # Without this, --width/--height produced fixtures whose meta claimed fx=520/cx=320 on a
+    # 160-wide image (the committed sample's original wart, hand-fixed 2026-08-18) -- and
+    # stitch_ndvi.py rightly refuses such self-inconsistent clips.
+    sx = width_px / cam_cfg["image_width_px"]
+    sy = height_px / cam_cfg["image_height_px"]
+    cam_cfg["fx"], cam_cfg["cx"] = cam_cfg["fx"] * sx, cam_cfg["cx"] * sx
+    cam_cfg["fy"], cam_cfg["cy"] = cam_cfg["fy"] * sy, cam_cfg["cy"] * sy
     cam_cfg["image_width_px"] = width_px
     cam_cfg["image_height_px"] = height_px
     fx, fy, cx, cy = cam_cfg["fx"], cam_cfg["fy"], cam_cfg["cx"], cam_cfg["cy"]
