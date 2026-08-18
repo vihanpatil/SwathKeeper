@@ -38,6 +38,11 @@ class Detection:
     confidence: float = 1.0                    # detector confidence in [0, 1]
     track_id: Optional[str] = None             # stable id across frames if available (e.g. "bird_0")
     source: str = "ndvi_blob"                  # provenance tag for the event log
+    # Capture time in seconds, on the SAME clock the caller passes as `now_s` to the policy (sim
+    # clock or monotonic — the policy only ever subtracts them). None = unstamped: the --demo bird
+    # and scripted sources do not stamp yet, and the staleness gate deliberately fails OPEN for
+    # unstamped detections (see AvoidancePolicy `max_detection_age_s`).
+    stamp_s: Optional[float] = None
 
 
 @dataclass(frozen=True)

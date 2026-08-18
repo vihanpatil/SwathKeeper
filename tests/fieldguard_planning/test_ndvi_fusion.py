@@ -203,6 +203,46 @@ class TestStalePairGuard(unittest.TestCase):
         self.assertEqual(fuser.fused_count, 0)
 
 
+class TestNdviFuserConfigValidation(unittest.TestCase):
+    """Audit follow-up: nonsensical config must be rejected at construction, not fail silently
+    downstream (max_temp_k <= min_temp_k -> zero/negative span -> NaN pixels in rescale_nir;
+    update_rate_hz <= 0 -> ZeroDivisionError or a negative stale-pair bound that drops everything).
+    The ValueError message must name the bad value so a misconfigured run is diagnosable from the
+    traceback alone."""
+
+    def test_rejects_max_temp_not_greater_than_min_temp(self):
+        # equal (the exact silent-NaN path: span=0 -> 0/0 in rescale_nir) and inverted
+        for bad_max in (270.0, 260.0):
+            with self.assertRaises(ValueError) as ctx:
+                NdviFuser(update_rate_hz=5.0, min_temp_k=270.0, max_temp_k=bad_max,
+                          resolution_k_per_count=0.01)
+            self.assertIn(str(bad_max), str(ctx.exception))  # must name the bad value
+
+    def test_rejects_nonpositive_update_rate(self):
+        for bad_rate in (0.0, -5.0):
+            with self.assertRaises(ValueError) as ctx:
+                NdviFuser(update_rate_hz=bad_rate, min_temp_k=270.0, max_temp_k=330.0,
+                          resolution_k_per_count=0.01)
+            self.assertIn(str(bad_rate), str(ctx.exception))  # must name the bad value
+
+    def test_from_config_inherits_the_same_rejection(self):
+        # from_config delegates to __init__, so a bad config dict must raise identically -- pin
+        # that so a future from_config refactor can't bypass the guard.
+        bad_cfg = {"camera": {"update_rate_hz": 5.0},
+                   "thermal": {"min_temp_k": 330.0, "max_temp_k": 270.0,
+                               "resolution_k_per_count": 0.01}}
+        with self.assertRaises(ValueError):
+            NdviFuser.from_config(bad_cfg)
+
+    def test_minimal_valid_boundary_config_constructs(self):
+        # just-valid boundary: max_temp_k barely above min_temp_k, tiny positive update rate --
+        # must construct (the guards are strict >, not >=-with-margin).
+        fuser = NdviFuser(update_rate_hz=0.001, min_temp_k=270.0, max_temp_k=270.001,
+                          resolution_k_per_count=0.01)
+        self.assertEqual(fuser.max_temp_k, 270.001)
+        self.assertEqual(fuser.update_rate_hz, 0.001)
+
+
 class TestNearestIndex(unittest.TestCase):
     def test_picks_closest(self):
         self.assertEqual(nearest_index(10.08, [9.9, 10.0, 10.1, 10.2]), 2)

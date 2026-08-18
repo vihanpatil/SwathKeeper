@@ -119,5 +119,78 @@ class TestAvoidancePolicy(unittest.TestCase):
                 self.assertGreaterEqual(d, 3.0)
 
 
+class TestDetectionStaleness(unittest.TestCase):
+    """Staleness gate (`Detection.stamp_s` + `max_detection_age_s`): once the real detector replaces
+    the --demo bird behind the detection_source seam, an old frame must not be able to trigger a
+    phantom dodge or sit in the threat set masking a live threat. Gate is OFF by default so all
+    pre-existing behavior (and every unstamped source) is untouched."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.geo = GeofenceMap.from_file()  # the real farm geofence (18 trees)
+
+    def setUp(self):
+        # gate ON at 0.5 s for these tests; drone/bird geometry mirrors the clean-DIVERT case above
+        self.pol = AvoidancePolicy(max_detection_age_s=0.5)
+
+    def test_fresh_detection_still_triggers(self):
+        # stamped 0.1 s ago -- inside the 0.5 s budget -> normal threat handling (a DIVERT here)
+        det = Detection(position_enu=(33.0, 30.0, 15.0), frame_id=10, track_id="bird_0",
+                        stamp_s=100.0)
+        m = self.pol.decide(det, _drone(30, 30), self.geo, now_s=100.1)
+        self.assertIs(m.decision, Decision.DIVERT)
+
+    def test_stale_detection_treated_as_absent(self):
+        # stamped 1.0 s ago (> 0.5 s) -> ABSENT: PROCEED, no setpoint, and the drop is OBSERVABLE
+        # in both the reason and the debug dict (event-log instrumentation rule)
+        det = Detection(position_enu=(33.0, 30.0, 15.0), frame_id=10, track_id="bird_0",
+                        stamp_s=100.0)
+        m = self.pol.decide(det, _drone(30, 30), self.geo, now_s=101.0)
+        self.assertIs(m.decision, Decision.PROCEED)
+        self.assertIsNone(m.setpoint_enu)
+        self.assertIn("stale", m.reason)
+        self.assertEqual(m.debug.get("n_stale_dropped"), 1)
+        self.assertIn("bird_0", m.debug.get("stale_ids", []))
+
+    def test_unstamped_detection_with_gate_on_keeps_current_behavior(self):
+        """UNSTAMPED detection + gate ON -> gate fails OPEN (detection still triggers). Why: the
+        --demo bird and scripted sources do not stamp detections yet (`stamp_s` stays None), so
+        dropping unstamped input would silently disable avoidance for every current source -- the
+        exact opposite of the gate's safety intent. Once those sources stamp, the gate tightens
+        naturally with no code change here."""
+        det = _bird(33, 30)  # the shared helper builds an unstamped Detection
+        m = self.pol.decide(det, _drone(30, 30), self.geo, now_s=1000.0)
+        self.assertIs(m.decision, Decision.DIVERT)
+
+    def test_gate_off_by_default_ignores_stamps(self):
+        # default policy (max_detection_age_s=None): even an ancient stamp changes nothing
+        pol = AvoidancePolicy()
+        det = Detection(position_enu=(33.0, 30.0, 15.0), frame_id=10, track_id="bird_0",
+                        stamp_s=0.0)
+        m = pol.decide(det, _drone(30, 30), self.geo, now_s=1.0e6)
+        self.assertIs(m.decision, Decision.DIVERT)
+
+    def test_gate_on_without_now_s_keeps_current_behavior(self):
+        # gate configured but the caller supplied no clock -> age is uncomputable -> fail open
+        det = Detection(position_enu=(33.0, 30.0, 15.0), frame_id=10, track_id="bird_0",
+                        stamp_s=0.0)
+        m = self.pol.decide(det, _drone(30, 30), self.geo)
+        self.assertIs(m.decision, Decision.DIVERT)
+
+    def test_stale_bird_does_not_mask_fresh_bird(self):
+        # one stale + one fresh in-cylinder bird: the fresh one still triggers; the stale one is
+        # dropped from the threat set entirely (not just demoted) and shows up in the drop log
+        stale = Detection(position_enu=(33.0, 30.0, 15.0), frame_id=1, track_id="stale_bird",
+                          stamp_s=90.0)
+        fresh = Detection(position_enu=(30.0, 33.0, 15.0), frame_id=2, track_id="fresh_bird",
+                          stamp_s=99.9)
+        m = self.pol.decide_multi([stale, fresh], _drone(30, 30), self.geo, now_s=100.0)
+        self.assertIn(m.decision, (Decision.DIVERT, Decision.HOLD))
+        self.assertEqual(m.triggering_detection.track_id, "fresh_bird")
+        self.assertNotIn("stale_bird", m.debug.get("threat_ids", []))
+        self.assertEqual(m.debug.get("n_stale_dropped"), 1)
+        self.assertIn("stale_bird", m.debug.get("stale_ids", []))
+
+
 if __name__ == "__main__":
     unittest.main()

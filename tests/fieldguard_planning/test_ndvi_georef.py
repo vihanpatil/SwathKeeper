@@ -47,6 +47,25 @@ def yaw_quat(yaw_rad: float):
     return (0.0, 0.0, math.sin(yaw_rad / 2.0), math.cos(yaw_rad / 2.0))
 
 
+def pitch_quat(pitch_rad: float):
+    """(x, y, z, w) for a pure pitch (rotation about body/world Y) -- standard half-angle
+    quaternion, used only to BUILD test inputs. Sign convention (ROS REP-103 FLU, the module's
+    stated body frame): POSITIVE pitch is NOSE-DOWN -- R_y(t) maps body X (1,0,0) to
+    (cos t, 0, -sin t), i.e. forward tilts below the horizon for t > 0."""
+    return (0.0, math.sin(pitch_rad / 2.0), 0.0, math.cos(pitch_rad / 2.0))
+
+
+def yaw_pitch_quat(yaw_rad: float, pitch_rad: float):
+    """(x, y, z, w) for R = R_z(yaw) @ R_y(pitch) -- yaw about world Z composed with pitch about
+    the (already-yawed) body Y; ZY Euler with roll=0, the standard aircraft decomposition. The
+    Hamilton product yaw_quat (x) pitch_quat, expanded BY HAND (independent of the module):
+      w = cy*cp;  v = cy*(0,sp,0) + cp*(0,0,sy) + (0,0,sy)x(0,sp,0) = (-sy*sp, cy*sp, cp*sy)
+    with sy=sin(yaw/2), cy=cos(yaw/2), sp=sin(pitch/2), cp=cos(pitch/2)."""
+    sy, cy = math.sin(yaw_rad / 2.0), math.cos(yaw_rad / 2.0)
+    sp, cp = math.sin(pitch_rad / 2.0), math.cos(pitch_rad / 2.0)
+    return (-sy * sp, cy * sp, cp * sy, cy * cp)
+
+
 class TestCameraIntrinsicsFromConfig(unittest.TestCase):
     def test_matches_hand_derivation(self):
         # fx = (640/2) / tan(1.1033/2) -- computed independently with a calculator, not by calling
@@ -137,6 +156,72 @@ class TestPixelToLatLonHandFixtures(unittest.TestCase):
         self.assertFalse(math.isclose(wrong_ground[0], correct_ground[0], abs_tol=0.5))
 
 
+class TestPixelToLatLonPitchFixtures(unittest.TestCase):
+    """Nonzero-PITCH fixtures (4 and 5) -- closing the gap the first three left open: they are all
+    identity/yaw-only rotations, so the entire pitch/roll half of the body->world rotation matrix
+    (the sin-theta terms coupling X and Z) could carry a sign error and every fixture above would
+    still pass. A quadrotor flies TILTED whenever it translates, so that error would stitch a
+    plausible-but-wrong map -- the exact failure mode the module docstring warns about. Expected
+    grounds below are hand-derived in the comments, independent of the code under test, same
+    discipline as fixtures 1-3."""
+
+    def test_fixture_4_pure_pitch_nose_down_center_pixel(self):
+        """Hand derivation (pitch-only, center pixel -- clean closed form):
+          pitch = 10 deg NOSE-DOWN about body/world +Y:
+            R_y(10) = [[cos10, 0, sin10], [0, 1, 0], [-sin10, 0, cos10]]
+          center pixel (320,240): ray_cam=(0,0,1) -> ray_body=(+1*0, -1*0, -1*1)=(0,0,-1)
+          ray_world = R_y(10) @ (0,0,-1) = (-sin10, 0, -cos10)
+          mount offset body (0,0,-0.08) rotates to (-0.08*sin10, 0, -0.08*cos10) = 0.08*ray_world
+            -- PARALLEL to the ray, so it only slides the camera along its own optical axis and the
+            ground hit is IDENTICAL to a no-offset ray cast from the drone position itself.
+          drone at ENU (0,0,20): t = 20/cos10; ground = (t*(-sin10), 0) = (-20*tan(10deg), 0)
+            = (-3.5265396141692995, 0.0)
+          lat = home_lat + 0/111320 = -35.363262 (exactly home: the shift is pure-east)
+          lon = home_lon + (-3.5265396141692995)/(111320*cos(radians(home_lat)))
+            = 149.16519815348147
+        Physical sanity check: nose-down tilts the belly camera's footprint BEHIND the drone
+        (tail-ward = body -X = west at zero yaw) -- hence the negative east offset."""
+        lat, lon = pixel_to_latlon(320.0, 240.0, INTR, (0.0, 0.0, 20.0),
+                                   pitch_quat(math.radians(10.0)),
+                                   HOME_LAT, HOME_LON, HOME_ALT)
+        self.assertAlmostEqual(lat, -35.363262, places=8)
+        self.assertAlmostEqual(lon, 149.16519815348147, places=8)
+
+    def test_flipped_pitch_sign_would_fail_fixture_4(self):
+        """Teeth check, mirroring test_axis_or_sign_error_would_fail_fixture_3: the classic bug
+        this fixture exists to catch is a flipped pitch sign (nose-up/nose-down confusion, or a
+        transposed rotation applied as body->world -- both flip the sin-theta terms). Either lands
+        the ground point at +20*tan(10deg) east instead of -20*tan(10deg): 7.05 m of separation
+        (hand: 40*tan(10deg) = 7.0530792), far outside the fixture's assertion tolerance."""
+        wrong_ground = pixel_to_ground_enu(320.0, 240.0, INTR, (0.0, 0.0, 20.0),
+                                           pitch_quat(math.radians(-10.0)))
+        correct_ground = (-3.5265396141692995, 0.0)
+        dist = math.hypot(wrong_ground[0] - correct_ground[0], wrong_ground[1] - correct_ground[1])
+        self.assertGreater(dist, 5.0,
+                           "a flipped pitch sign must move the ground point by metres, not vanish "
+                           "into rounding -- otherwise fixture 4 couldn't catch it")
+
+    def test_fixture_5_combined_yaw_plus_pitch_center_pixel(self):
+        """Hand derivation (yaw=90 composed with pitch=10, R = R_z(90) @ R_y(10)):
+          after pitch (fixture 4's ray): ray = (-sin10, 0, -cos10)
+          after yaw 90 (R_z(90) = [[0,-1,0],[1,0,0],[0,0,1]]): ray_world = (0, -sin10, -cos10)
+            -- yaw swings the tail-ward footprint from -east to -north (nose now points +north)
+          mount offset transforms identically (same R applied), staying 0.08*ray_world -- parallel
+            again, so the ground hit comes straight from the drone position (50,-30,20):
+          t = 20/cos10; ground = (50 + t*0, -30 + t*(-sin10)) = (50, -30 - 20*tan(10deg))
+            = (50.0, -33.5265396141693)
+          lat = home_lat + (-33.5265396141693)/111320 = -35.36356317265194
+          lon = home_lon + 50/(111320*cos(radians(home_lat))) = 149.16578777388563
+        Teeth: a pitch sign error here moves NORTH by 7.05 m while a yaw sign error moves the
+        footprint to the wrong side entirely -- the two axes are decoupled in this fixture, so a
+        failure localizes which half of the rotation broke."""
+        q = yaw_pitch_quat(math.radians(90.0), math.radians(10.0))
+        lat, lon = pixel_to_latlon(320.0, 240.0, INTR, (50.0, -30.0, 20.0), q,
+                                   HOME_LAT, HOME_LON, HOME_ALT)
+        self.assertAlmostEqual(lat, -35.36356317265194, places=8)
+        self.assertAlmostEqual(lon, 149.16578777388563, places=8)
+
+
 class TestGroundIntersection(unittest.TestCase):
     def test_ray_pointing_up_never_intersects(self):
         # camera above ground, ray pointing UP (+Z) -- must not "intersect" behind the camera.
@@ -193,6 +278,39 @@ class TestInverseTransformRoundTrip(unittest.TestCase):
             u2, v2 = world_enu_to_pixel((ground[0], ground[1], 0.0), drone_pos, q, INTR)
             self.assertAlmostEqual(u2, u, places=4, msg=f"pixel round-trip failed for {drone_pos},{q}")
             self.assertAlmostEqual(v2, v, places=4, msg=f"pixel round-trip failed for {drone_pos},{q}")
+
+    def test_round_trip_combined_yaw_pitch_poses(self):
+        """Round-trips at TILTED poses -- the cases above are identity/yaw-only, so they never
+        exercise the pitch half of the rotation in the inverse direction. If forward and inverse
+        disagreed under tilt, NdviHeatmapGrid would sample pixels from a different footprint than
+        pixel_to_ground_enu claims to cover, exactly when the drone is translating (i.e. always)."""
+        q_90_10 = yaw_pitch_quat(math.radians(90.0), math.radians(10.0))
+        cases = [
+            ((50.0, -30.0, 20.0), q_90_10, 320.0, 240.0),        # fixture 5's pose, center pixel
+            ((50.0, -30.0, 20.0), q_90_10, 632.0035, 83.9983),   # same pose, off-nadir both axes
+            ((0.0, 0.0, 20.0), pitch_quat(math.radians(10.0)), 100.0, 400.0),  # pure pitch
+            ((30.0, 40.0, 18.0), yaw_pitch_quat(math.radians(-53.0), math.radians(-7.0)),
+             200.0, 350.0),                                       # negative yaw AND nose-up pitch
+        ]
+        for drone_pos, q, u, v in cases:
+            ground = pixel_to_ground_enu(u, v, INTR, drone_pos, q)
+            self.assertIsNotNone(ground)
+            u2, v2 = world_enu_to_pixel((ground[0], ground[1], 0.0), drone_pos, q, INTR)
+            self.assertAlmostEqual(u2, u, places=4, msg=f"pixel round-trip failed for {drone_pos},{q}")
+            self.assertAlmostEqual(v2, v, places=4, msg=f"pixel round-trip failed for {drone_pos},{q}")
+
+    def test_round_trip_through_latlon_combined_yaw_pitch(self):
+        """Same end-to-end loop as test_round_trip_through_latlon_and_back (pixel -> lat/lon ->
+        mission-side latlon_to_enu -> pixel), but at a tilted pose: the geodetic seam must also
+        hold when the pitch half of the rotation is live, not just under yaw."""
+        drone_pos = (50.0, -30.0, 20.0)
+        q = yaw_pitch_quat(math.radians(90.0), math.radians(10.0))
+        u, v = 500.0, 120.0
+        lat, lon = pixel_to_latlon(u, v, INTR, drone_pos, q, HOME_LAT, HOME_LON, HOME_ALT)
+        e, n = latlon_to_enu(lat, lon, HOME_LAT, HOME_LON)
+        u2, v2 = world_enu_to_pixel((e, n, 0.0), drone_pos, q, INTR)
+        self.assertAlmostEqual(u2, u, places=3)
+        self.assertAlmostEqual(v2, v, places=3)
 
     def test_round_trip_through_latlon_and_back(self):
         """Full loop: pixel -> lat/lon -> ENU (mission_waypoints.latlon_to_enu, the mission-side

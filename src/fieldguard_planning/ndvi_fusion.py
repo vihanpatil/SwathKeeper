@@ -166,6 +166,16 @@ class NdviFuser:
 
     def __init__(self, update_rate_hz: float, min_temp_k: float, max_temp_k: float,
                 resolution_k_per_count: float):
+        # Reject nonsensical config at construction (audit follow-up). Without these guards a bad
+        # config fails only downstream, and silently: max_temp_k <= min_temp_k gives rescale_nir a
+        # zero/negative span (0/0 -> NaN pixels, the exact silent-NaN path the audit found), and
+        # update_rate_hz <= 0 gives max_stamp_delta_s a ZeroDivisionError or a negative bound that
+        # drops every pair. Fail loud, name the bad value.
+        if update_rate_hz <= 0:
+            raise ValueError(f"update_rate_hz must be > 0, got {update_rate_hz}")
+        if max_temp_k <= min_temp_k:
+            raise ValueError(
+                f"max_temp_k ({max_temp_k}) must be > min_temp_k ({min_temp_k})")
         self.update_rate_hz = update_rate_hz
         self.min_temp_k = min_temp_k
         self.max_temp_k = max_temp_k
