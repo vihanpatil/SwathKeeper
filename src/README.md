@@ -28,7 +28,7 @@ interpreter with no sim/ROS 2 (55 tests in `tests/fieldguard_planning/`):
   behind a `VehicleCommandSink` seam; re-vets every setpoint; books coverage-debt from the flown path.
 - `ros2_adapter.py` + `avoidance_node.py` — the thin rclpy layer that binds the seam to the confirmed
   AP_DDS interface (`/ap/mode_switch`, `/ap/cmd_gps_pose`, `/ap/pose/filtered`) and runs the loop live.
-  **Demonstrated end-to-end on the real stack (2026-08-05)** — see `docs/WEEK3_AVOIDANCE_DEMO.md`.
+  **Demonstrated end-to-end on the real stack (2026-08-05)** — see `docs/runbooks/AVOIDANCE_DEMO.md`.
 
 **Not yet a colcon package** (no `package.xml`/`setup.py`): the pure modules import via `PYTHONPATH=src`
 and the node runs as `PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.avoidance_node`.

@@ -1,4 +1,4 @@
-# Week 3-4 — Live Avoidance-Loop Demo (ROS 2 adapter)
+# Avoidance Demo — the Live Reactive-Avoidance Loop *(runbook; born Weeks 3-4)*
 
 Run the tested reactive-avoidance loop **live** against ArduPilot SITL + Gazebo: a scripted bird
 forces the drone to leave its lane, dodge (3D-safe), and resume the survey — with coverage-debt
@@ -10,7 +10,7 @@ The loop logic (`avoidance_policy`, `avoidance_executor`, `geofence`) is sim-agn
 unit-tested; the rclpy parts are verified here, live.
 
 ## Prerequisites
-All three validation gates must be green first (`docs/WEEK3_VALIDATION.md`), brought up in THIS ORDER:
+All three validation gates must be green first (`docs/archive/WEEK3_VALIDATION.md`), brought up in THIS ORDER:
 **Shell A** Gazebo, **Shell B** the micro-ROS agent (`ros2 run micro_ros_agent micro_ros_agent udp4
 --port 2019`), **Shell C** SITL built `--enable-DDS`.
 

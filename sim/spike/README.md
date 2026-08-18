@@ -7,7 +7,7 @@ Owner: `robotics-sim-engineer` · Consumer: `perception-ml-engineer` (`eval/labe
 
 **This is a synthetic stand-in, NOT a Gazebo render.** The real Gazebo + `ardupilot_gazebo` +
 ArduPilot SITL + ROS 2 stack only runs inside the human-operated Docker/Ubuntu container
-(`docs/WEEK1_BRINGUP.md`), which was not available to generate this Week-2 deliverable. Rather than
+(`docs/runbooks/SIM_BRINGUP.md`), which was not available to generate this Week-2 deliverable. Rather than
 block the perception spike on that, this script code-generates a clip that emits data in the
 **exact directory layout and schema** the future Gazebo NDVI-camera render will emit — a drop-in
 input for `eval/label_from_sim.py` today, swapped for the real render later with (ideally) zero

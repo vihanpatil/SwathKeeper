@@ -22,7 +22,7 @@
     "horizontal_fov_rad": 1.1033,
     "horizontal_fov_note": "chosen to reproduce sim/spike/scenario_default.json's pinhole intrinsics (fx=fy=520px @ 640px width => hfov = 2*atan(320/520) = 1.10331 rad = 63.2 deg) for continuity with the ADR-003 spike/eval harness, which assumes this camera model.",
     "update_rate_hz": 5.0,
-    "update_rate_note": "modest on purpose: macOS Docker Desktop has no GPU passthrough (docs/WEEK1_BRINGUP.md gotcha #1, ogre2 falls back to llvmpipe software rendering) and this mount now renders TWO camera-type sensors per frame on top of 18 trees + 3 actors. Raise once Gate 1 confirms headroom; lower (or drop resolution) first if the render can't keep up.",
+    "update_rate_note": "modest on purpose: macOS Docker Desktop has no GPU passthrough (docs/runbooks/SIM_BRINGUP.md gotcha #1, ogre2 falls back to llvmpipe software rendering) and this mount now renders TWO camera-type sensors per frame on top of 18 trees + 3 actors. Raise once Gate 1 confirms headroom; lower (or drop resolution) first if the render can't keep up.",
     "clip_near_m": 0.1,
     "clip_far_m": 100.0,
     "topics": {

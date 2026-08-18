@@ -54,7 +54,7 @@ verbatim from `ardupilot_gz`'s own `iris_runway.sdf`/`iris_with_gimbal` model** 
 GitHub this session — `ardupilot_gazebo`/`ardupilot_gz` repos aren't vendored locally, only
 `vcs import`-ed inside the human's Docker container) rather than hand-reconstructed from memory —
 deliberately, since that exact combination is the one already proven to load per
-`docs/WEEK1_BRINGUP.md` §5-6, and reinventing it risks reopening the "world fails to load" class of
+`docs/runbooks/SIM_BRINGUP.md` §5-6, and reinventing it risks reopening the "world fails to load" class of
 bug that doc already fought through once. If `ardupilot_gz` upstream changes that world file
 significantly, re-diff before assuming this one still matches.
 

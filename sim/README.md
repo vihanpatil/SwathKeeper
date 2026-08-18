@@ -10,14 +10,14 @@ be added without code changes — see [Regenerating the world](#regenerating-the
   **Generated** by `scripts/gen_farm_world.py` — don't hand-edit; edit the `config/` inputs below
   and regenerate.
 - `bridge/fg_sensor_bridge.yaml` — ros_gz_bridge config for the four `/fg/sensor/*` topics
-  (ADR-007). See `docs/WEEK5_VALIDATION.md` Gate 1.
+  (ADR-007). See `docs/runbooks/NDVI_VALIDATION.md` Gate 1.
 - `models/` — reserved for future mesh/model assets. Still empty: the farm world (including the
   Week 5-6 NDVI sensor mount) uses only inline SDF primitives + first-class Gazebo sensor types, no
   external meshes, so it has no dependency on this directory or on `GZ_SIM_RESOURCE_PATH` beyond
-  what `ardupilot_gazebo` already requires (see docs/WEEK1_BRINGUP.md §5) — a deliberate choice to
+  what `ardupilot_gazebo` already requires (see docs/runbooks/SIM_BRINGUP.md §5) — a deliberate choice to
   avoid adding new resource-path risk.
 - `spike/` — the ADR-003 NDVI-vs-RGB spike clip generator (separate concern, see `spike/README.md`).
-- `docker/` — the Week 1 starter container (see `docs/WEEK1_BRINGUP.md`).
+- `docker/` — the Week 1 starter container (see `docs/runbooks/SIM_BRINGUP.md`).
 
 ## The farm world's config-driven inputs
 
@@ -31,7 +31,7 @@ be added without code changes — see [Regenerating the world](#regenerating-the
 ## NDVI sensor topics (ADR-007, Weeks 5-6)
 
 Locked contract, `docs/DECISIONS.md` ADR-007 — **not confirmed live yet**, see
-`docs/WEEK5_VALIDATION.md`:
+`docs/runbooks/NDVI_VALIDATION.md`:
 
 - `/fg/sensor/rgb/image` (`rgb8`) + `/fg/sensor/rgb/camera_info` — Red band; also the ADR-003
   NDVI+RGB comparison arm.
@@ -42,7 +42,7 @@ Locked contract, `docs/DECISIONS.md` ADR-007 — **not confirmed live yet**, see
 
 Bridge these four topics with `sim/bridge/fg_sensor_bridge.yaml`
 (`ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=sim/bridge/fg_sensor_bridge.yaml`).
-Validate with `scripts/check_ndvi_bands.py` — see `docs/WEEK5_VALIDATION.md` Gate 2.
+Validate with `scripts/check_ndvi_bands.py` — see `docs/runbooks/NDVI_VALIDATION.md` Gate 2.
 
 ### Regenerating the world
 
@@ -84,7 +84,7 @@ Gazebo model's collision sphere actually uses, the former already includes a saf
 Tree height (3.5m) is well below `config/field_polygon.json`'s `mission_altitude_m` (15m), so the
 existing boustrophedon mission physically clears every tree — this is why "the mission flies through
 the world" held even before the avoidance loop existed. (The reactive-avoidance loop is now built and
-demonstrated live — see `docs/WEEK3_AVOIDANCE_DEMO.md`; it adds its own 3D safety gate on top of this
+demonstrated live — see `docs/runbooks/AVOIDANCE_DEMO.md`; it adds its own 3D safety gate on top of this
 geofence for dodge maneuvers that may leave cruise altitude, `geofence.is_safe_3d`.)
 
 **Consumer implementation (Week 2, `flight-software-engineer`):** `src/fieldguard_planning/geofence.py`
@@ -106,7 +106,7 @@ and to `config/field_polygon.json`'s `home_lat`/`home_lon`, so `(0,0)` in this E
 SITL home and the field polygon's SW corner — no offset to track between the mission, the world, and
 the obstacle export.
 
-## Launching the world (human, inside the Docker container — see `docs/WEEK1_BRINGUP.md`)
+## Launching the world (human, inside the Docker container — see `docs/runbooks/SIM_BRINGUP.md`)
 
 **Quick start:** `scripts/run_farm_mission.sh` (run inside the container) packages Shell A below
 into one command and prints the exact Shell B recipe — added by `flight-software-engineer` in Week
@@ -115,10 +115,10 @@ comment for why Shell B stays manual). The manual two-shell flow below is still 
 ground truth if you want to run it by hand or the script needs debugging.
 
 Follow the same **two-shell flow** already proven for `iris_runway.sdf` in
-`docs/WEEK1_BRINGUP.md` §5-6, just pointing at this world file directly instead of relying on a ROS
+`docs/runbooks/SIM_BRINGUP.md` §5-6, just pointing at this world file directly instead of relying on a ROS
 2 launch file (`ardupilot_gz_bringup`'s launch files hardcode their own world path internally, so
 they can't point at a custom world without editing them — the two-shell flow sidesteps that and is
-also what WEEK1_BRINGUP.md already recommends as the more debuggable default):
+also what docs/runbooks/SIM_BRINGUP.md already recommends as the more debuggable default):
 
 ```bash
 # Shell A — start the world and leave it running:
@@ -128,14 +128,14 @@ gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard
 ```
 
 **Verify:** the world stays up — no `Unable to find uri` / `Failed to load a world` (the same
-failure modes WEEK1_BRINGUP.md §5 already documents for `iris_runway.sdf`; this world only adds
+failure modes docs/runbooks/SIM_BRINGUP.md §5 already documents for `iris_runway.sdf`; this world only adds
 inline primitives + one `model://iris_with_gimbal` include, so if it fails, it's almost certainly
 the same `GZ_SIM_RESOURCE_PATH` issue, not something new). `gz topic -l | grep model/tree_row0_0`
 or `gz model -m tree_row0_0 -p` (Gazebo Harmonic CLI) confirm a tree loaded where expected; a bird
 actor's pose changing over consecutive `gz model -m bird_0 -p` calls confirms it's actually moving.
 
 ```bash
-# Shell B — SITL, wired to Gazebo (identical to WEEK1_BRINGUP.md §6 -- vehicle model/pose is the
+# Shell B — SITL, wired to Gazebo (identical to docs/runbooks/SIM_BRINGUP.md §6 -- vehicle model/pose is the
 # same iris_with_gimbal at the same spawn pose, so nothing about the SITL side changes).
 # --enable-DDS + the param file are LOAD-BEARING (bringup bug #6): SITL builds DDS OUT by default,
 # so without them this recipe silently produces ZERO /ap topics and everything downstream starves:
@@ -145,7 +145,7 @@ sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --enable-DDS \
   --add-param-file=/workspace/fieldguard/config/sitl_params/dds_udp.parm
 ```
 
-Then fly the existing mission exactly as in `docs/WEEK1_BRINGUP.md` §8 (`wp load
+Then fly the existing mission exactly as in `docs/runbooks/SIM_BRINGUP.md` §8 (`wp load
 /workspace/fieldguard/config/missions/boustrophedon.waypoints`, `mode auto`, `arm throttle`) — no
 mission regeneration needed, since `config/field_polygon.json` (and therefore this world) matches
 the polygon that mission already sweeps.
@@ -177,12 +177,12 @@ Validated in this (non-Docker) session:
   (min clearance **-2.0 m**, i.e. 0 m lateral separation minus the 2.0 m `obstacle_radius_m`) —
   every other leg clears by ≥3.0 m. This is expected and safe *only* because of the ≥11.5 m
   vertical separation (15 m mission altitude − 3.5 m tree height); see
-  `docs/WEEK1_BRINGUP.md`-style framing above. Flagged for Week 3-4: tree row 0 is already primed
+  `docs/runbooks/SIM_BRINGUP.md`-style framing above. Flagged for Week 3-4: tree row 0 is already primed
   to be the "always-clips-in-XY" case if avoidance work later needs a forced dodge scenario
   (lower altitude / taller trees), whereas rows 1-2 sit 3-8 m off every lane by design.
 
 **NOT validated here (needs the human-operated Docker container, per this project's standing
-constraint — see `docs/WEEK1_BRINGUP.md`):**
+constraint — see `docs/runbooks/SIM_BRINGUP.md`):**
 - That `gz sim` actually loads this SDF end-to-end (semantic SDF validity beyond well-formed XML —
   e.g. whether Harmonic's actor system accepts a mesh-less `<visual>` exactly as written).
 - That the boustrophedon mission flies through the world without a physics-engine surprise (e.g.
@@ -192,7 +192,7 @@ constraint — see `docs/WEEK1_BRINGUP.md`):**
   that the SDF `<trajectory>` keyframes are well-formed).
 - Render/performance headroom for 3 actors + 18 static models on this project's known-slow
   llvmpipe software rendering path (macOS Docker Desktop, no GPU passthrough — see
-  `docs/WEEK1_BRINGUP.md` "Known macOS gotchas" #1). Not expected to be a problem (all primitive
+  `docs/runbooks/SIM_BRINGUP.md` "Known macOS gotchas" #1). Not expected to be a problem (all primitive
   geometry, no textures/meshes) but unconfirmed. Now also carries two camera-type sensors per frame
   (ADR-007) — see the next bullet.
 - **(Weeks 5-6, ADR-007)** Everything about the dual-band NDVI sensor mount: whether
@@ -200,10 +200,10 @@ constraint — see `docs/WEEK1_BRINGUP.md`):**
   ogre2 build, whether the `iris_with_gimbal_ndvi` wrapper model's fixed-joint sensor-mount
   attachment resolves, and whether the per-visual `<temperature>` calibration produces genuinely
   different canopy/soil/bird readings. This is a **separate, dedicated gate** —
-  `docs/WEEK5_VALIDATION.md` — not folded into the two-shell flow above.
+  `docs/runbooks/NDVI_VALIDATION.md` — not folded into the two-shell flow above.
 
 **Human next step:** run the two-shell flow above once, confirm the world stays up and the mission
 completes, then update this section (or `docs/ROADMAP.md`) with the result. If it fails, the most
 likely first suspect (per this project's own prior debugging history) is `GZ_SIM_RESOURCE_PATH`
 missing `ardupilot_gazebo`'s `share` dir — check that before anything else. Then run
-`docs/WEEK5_VALIDATION.md`'s three gates (Gate 0 is a hard kill-switch — do it first).
+`docs/runbooks/NDVI_VALIDATION.md`'s three gates (Gate 0 is a hard kill-switch — do it first).

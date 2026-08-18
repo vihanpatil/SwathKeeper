@@ -6,7 +6,7 @@ metadata:
 ---
 
 The developer's machine is confirmed Apple Silicon (arm64) macOS, using Docker Desktop. Full detail
-lives in `docs/WEEK1_BRINGUP.md` "Known macOS gotchas" — this memory is the condensed version worth
+lives in `docs/runbooks/SIM_BRINGUP.md` "Known macOS gotchas" — this memory is the condensed version worth
 recalling before debugging a fresh setup failure.
 
 1. **No GPU passthrough into Docker Desktop on macOS at all (Intel or Apple Silicon).** Gazebo's

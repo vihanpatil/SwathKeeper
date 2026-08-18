@@ -2,7 +2,7 @@
 """Evidence gate for flight-log JSONs (eval/results/*flight_log*.json) -- qa-safety-owned.
 
 WHY THIS EXISTS: eval/results/live_flight_log.json -- the only machine artifact of the 2026-08-05
-live end-to-end avoidance demo (docs/WEEK3_AVOIDANCE_DEMO.md) -- was silently OVERWRITTEN by a
+live end-to-end avoidance demo (docs/runbooks/AVOIDANCE_DEMO.md) -- was silently OVERWRITTEN by a
 later idle run: `flown_path_enu` = [] and all 720 cells at status "debt". Nothing validated the
 file, so nothing noticed. This script is that missing validation; avoidance_node.py now also writes
 timestamped filenames (live_flight_log_<UTCstamp>.json) so a new run can never clobber prior

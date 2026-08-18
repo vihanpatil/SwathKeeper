@@ -2,7 +2,7 @@
 """ADR-007 Gate 2: the canopy-vs-soil-vs-bird pixel smoke test.
 
 *** THIS IS THE GATE BEFORE ANY NDVI-STITCH WORK BEGINS. *** Not run yet -- see
-docs/WEEK5_VALIDATION.md. Everything in this file is source/doc-verified only until a human runs
+docs/runbooks/NDVI_VALIDATION.md. Everything in this file is source/doc-verified only until a human runs
 it inside the fieldguard-sim container.
 
 What this proves (and why it's the direct proof option (c) in ADR-007 could never produce): it
@@ -22,7 +22,7 @@ red-channel-based NDVI proxy is computed too (see --skip-ndvi-proxy) as a bonus 
 PASS/FAIL verdict is decided on the raw NIR band alone, which is the simpler and more direct claim.
 
 How to run (inside the fieldguard-sim container, ROS 2 sourced, AFTER Gate 0 and Gate 1 pass --
-see docs/WEEK5_VALIDATION.md):
+see docs/runbooks/NDVI_VALIDATION.md):
 
     1. Gazebo + the ros_gz bridge (sim/bridge/fg_sensor_bridge.yaml) must already be running.
     2. Fly the EXISTING boustrophedon mission (scripts/run_farm_mission.sh, unchanged from

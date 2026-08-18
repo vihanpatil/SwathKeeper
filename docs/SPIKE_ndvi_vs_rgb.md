@@ -1,8 +1,8 @@
 # Spike: NDVI-direct vs. synthetic-RGB detection (resolves ADR-003)
 
 Owner: `perception-ml-engineer` · Reviewer: `tech-lead` · Time-box: **3 working days (Week 1–2)**
-Status: **open** — decision + numbers land back in `docs/DECISIONS.md` ADR-003 and this file's
-"Outcome" section when done.
+Status: **CLOSED 2026-08-04** — decided (ADR-003: NDVI-direct); numbers recorded in `docs/DECISIONS.md` ADR-003 and this file's
+"Outcome" section.
 
 This is a **de-risking spike, not a research program.** The goal is one framing decision backed by
 one number, not a tuned detector. Do not design detector architecture beyond the classical-CV
@@ -216,4 +216,4 @@ Ran end-to-end on the Week-2 spike clip via the new `eval/` harness (`label_from
   render** before being treated as final. Strong enough to make the framing call **provisionally
   now** (default (a) was never in real danger of being falsified here); re-run `eval/run_spike.sh`
   on the real render to confirm.
-- **ADR-003 updated:** no — left for `tech-lead` to record (numbers + caveat above).
+- **ADR-003 updated:** yes — recorded 2026-08-04 with the numbers + synthetic-clip caveat.

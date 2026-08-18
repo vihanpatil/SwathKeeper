@@ -7,7 +7,7 @@ leg through the geofence exclusion check (`fieldguard_planning.geofence`). Repor
 clearance per leg and overall -- "no 'it works' without a number" (CLAUDE.md working conventions).
 
 This is a pure-logic / stdlib-only check (no Gazebo/ArduPilot/ROS 2 needed) -- see
-docs/WEEK1_BRINGUP.md and this task's Week 2 hand-off note on environment honesty: it validates
+docs/runbooks/SIM_BRINGUP.md and this task's Week 2 hand-off note on environment honesty: it validates
 mission-vs-geofence geometry, not that the mission actually flies in Gazebo (that needs the human
 Docker run, see sim/README.md "Launching the world").
 

@@ -3,7 +3,7 @@
 
 *** SYNTHETIC STAND-IN -- NOT A GAZEBO RENDER. ***
 The real Gazebo + ArduPilot + ROS 2 stack only runs inside the human-operated Docker/Ubuntu
-container (see docs/WEEK1_BRINGUP.md), which is not available in this environment. This script
+container (see docs/runbooks/SIM_BRINGUP.md), which is not available in this environment. This script
 produces a reproducible, code-generated clip that emits data in the EXACT file/schema shape the
 future Gazebo NDVI-camera render will emit, so `eval/label_from_sim.py` and the classical-CV
 baselines can be built and tested against it now. When the real render lands, it must write the

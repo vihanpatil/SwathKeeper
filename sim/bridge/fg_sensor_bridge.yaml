@@ -1,4 +1,4 @@
-# FieldGuard ADR-007 NDVI sensor bridge -- ros_gz_bridge parameter_bridge config file.
+# SwathKeeper ADR-007 NDVI sensor bridge -- ros_gz_bridge parameter_bridge config file.
 #
 # Bridges the four locked /fg/sensor/* topics (docs/DECISIONS.md ADR-007) from Gazebo to ROS 2.
 # GZ_TO_ROS only: these are camera outputs, nothing ever publishes back into Gazebo on these
@@ -7,7 +7,7 @@
 # file 1:1) -- this is a pure encoding/type bridge, not a rename.
 #
 # Run (inside the fieldguard-sim container, ROS 2 sourced, after Gazebo is up -- see
-# docs/WEEK5_VALIDATION.md Gate 1):
+# docs/runbooks/NDVI_VALIDATION.md Gate 1):
 #   ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml
 #
 # Manual/equivalent one-liner (same effect, no YAML file -- useful for a quick sanity check):
@@ -19,7 +19,7 @@
 #
 # YAML field names (ros_topic_name/gz_topic_name/ros_type_name/gz_type_name/direction) verified
 # against the pinned ros_gz `ros2` branch's parameter_bridge README -- NOT run live yet, see
-# docs/WEEK5_VALIDATION.md Gate 1.
+# docs/runbooks/NDVI_VALIDATION.md Gate 1.
 
 - ros_topic_name: "/fg/sensor/rgb/image"
   gz_topic_name: "/fg/sensor/rgb/image"

@@ -1,4 +1,4 @@
-# Week 1 Bringup — Zero to a No-Obstacle Boustrophedon Mission
+# Sim Bringup — Zero to a No-Obstacle Boustrophedon Mission *(runbook; born Week 1)*
 
 Owner: `robotics-sim-engineer`. Gate: **a boustrophedon mission flies end-to-end in Gazebo with
 ArduPilot SITL, no obstacles, over ROS 2** — this is the Week 1-2 gate for the whole project. Don't
@@ -96,7 +96,7 @@ cd /root/ardu_ws
 vcs import --input https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos --recursive src
 
 # ros2_gz.repos pulls micro_ros_agent but NOT its runtime dependency micro_ros_msgs. Without it the
-# agent BUILDS fine but dies at runtime (Week-3 bringup, docs/WEEK3_VALIDATION.md Gate 2):
+# agent BUILDS fine but dies at runtime (Week-3 bringup, docs/archive/WEEK3_VALIDATION.md Gate 2):
 #   micro_ros_agent: error while loading shared libraries:
 #   libmicro_ros_msgs__rosidl_typesupport_cpp.so: cannot open shared object file: No such file or directory
 # Clone it explicitly (branch humble, matching CLAUDE.md's micro-ROS pin) so colcon builds + installs it:
@@ -282,7 +282,7 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
 > flows** (a consumer sees a frozen pose). Correct bringup order: **Gazebo → agent → SITL**. If you
 > started SITL first and see that message, start the agent, and if the spam doesn't stop within ~15 s,
 > restart SITL (`pkill -9 -f build/sitl/bin/arducopter`, then re-run it) with the agent already up.
-> Learned live during the Week-3 avoidance demo (`docs/WEEK3_AVOIDANCE_DEMO.md`).
+> Learned live during the Week-3 avoidance demo (`docs/runbooks/AVOIDANCE_DEMO.md`).
 
 **Verify:** with Gazebo, the agent, and SITL (`--add-param-file` above) all up:
 

@@ -51,7 +51,7 @@ scripts/run_farm_mission.sh
 cd /root/ardu_ws/src/ardupilot && export PATH="$PWD/Tools/autotest:$PATH"
 sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON \
   --add-param-file=/workspace/fieldguard/config/sitl_params/dds_udp.parm
-# wait for the EKF-ready message (WEEK1_BRINGUP.md §6), THEN:
+# wait for the EKF-ready message (docs/runbooks/SIM_BRINGUP.md §6), THEN:
 mode rtl                  # land any hover; wait for DISARMED
 wp load /workspace/fieldguard/config/missions/boustrophedon.waypoints
 wp list                   # confirm 15 items

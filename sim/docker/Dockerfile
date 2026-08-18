@@ -1,8 +1,8 @@
-# FieldGuard — Week 1 starter sim image.
+# SwathKeeper — Week 1 starter sim image.
 #
 # This is intentionally a "get it green" sketch, not a hardened/CI image. It gets ROS 2 Humble +
 # Gazebo Harmonic + the ArduPilot toolchain installed and buildable inside one container so the
-# Week 1 bringup checklist in docs/WEEK1_BRINGUP.md can run end to end on macOS via Docker Desktop.
+# Week 1 bringup checklist in docs/runbooks/SIM_BRINGUP.md can run end to end on macOS via Docker Desktop.
 #
 # devops-reliability-engineer owns turning this into the production image (multi-stage build,
 # non-root user, exact commit SHAs baked in rather than resolved at container-start time, CI
@@ -14,7 +14,7 @@
 #
 # Build (from repo root):
 #   docker build -t fieldguard-sim:week1 -f sim/docker/Dockerfile .
-# On Apple Silicon, if arm64 package resolution breaks (see WEEK1_BRINGUP.md gotcha #2), retry with:
+# On Apple Silicon, if arm64 package resolution breaks (see docs/runbooks/SIM_BRINGUP.md gotcha #2), retry with:
 #   docker build --platform linux/amd64 -t fieldguard-sim:week1 -f sim/docker/Dockerfile .
 
 FROM ubuntu:22.04
@@ -84,7 +84,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # sim_vehicle.py launches `mavproxy.py` for the interactive wp/mode/arm prompt. Without it SITL
 # starts but the run is immediately killed ("[Errno 2] No such file or directory: 'mavproxy.py'")
 # and the wp/mode/arm commands have nowhere to go. NOT a default ArduPilot build dep, so it must be
-# installed explicitly. Pinned to the version verified in the Week-3 bringup (docs/WEEK3_VALIDATION.md).
+# installed explicitly. Pinned to the version verified in the Week-3 bringup (docs/archive/WEEK3_VALIDATION.md).
 # `future` is a MAVProxy runtime import (MAVProxy/modules/lib/rline.py: `from future.builtins import
 # input`) that its wheel does not pull in on this platform — without it mavproxy.py dies with
 # "No module named 'future'". Pin it explicitly alongside MAVProxy.
@@ -103,7 +103,7 @@ ENV PATH="/opt/Micro-XRCE-DDS-Gen/scripts:${PATH}"
 WORKDIR /root
 
 # NOTE: the ros2_gz.repos import + colcon build + ArduPilot ./waf build are deliberately NOT baked
-# into this image yet — do them interactively per docs/WEEK1_BRINGUP.md §3-4 against a named volume
+# into this image yet — do them interactively per docs/runbooks/SIM_BRINGUP.md §3-4 against a named volume
 # (/root/ardu_ws) so first-run failures are visible and fixable step by step. Once Week 1 is green,
 # devops-reliability-engineer should bake the resolved SHAs + build into this image for CI.
 

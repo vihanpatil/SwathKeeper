@@ -7,7 +7,7 @@
     </physics>
 
     <!-- World-level plugin set copied verbatim from ardupilot_gz's iris_runway.sdf: this exact
-         combination is already proven to load in this project (docs/WEEK1_BRINGUP.md Section 5-6);
+         combination is already proven to load in this project (docs/runbooks/SIM_BRINGUP.md Section 5-6);
          not reinvented here on purpose. -->
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"></plugin>
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">

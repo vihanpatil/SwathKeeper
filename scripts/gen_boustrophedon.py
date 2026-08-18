@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Generate a boustrophedon (lawnmower) coverage mission for ArduPilot AUTO mode.
 
-FieldGuard Week-1 MVP coverage planner: a standalone .waypoints generator over a rectangular field.
+SwathKeeper Week-1 MVP coverage planner: a standalone .waypoints generator over a rectangular field.
 The production planner (arbitrary field polygon, coverage-debt tracking, a ROS 2 node in
 fieldguard_planning) is future work; this proves the end-to-end AUTO mission loop for §8 of
-docs/WEEK1_BRINGUP.md. Output is QGC WPL 110, loadable with MAVProxy `wp load`.
+docs/runbooks/SIM_BRINGUP.md. Output is QGC WPL 110, loadable with MAVProxy `wp load`.
 
 Example:
     python3 scripts/gen_boustrophedon.py --width 80 --height 60 --spacing 15 --alt 15

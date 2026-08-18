@@ -1,4 +1,4 @@
-# Week 5 — Human Docker Validation Session (ADR-007 NDVI sensor gate)
+# NDVI Validation — the Batched Docker Gate Session *(runbook; ADR-007 gates, born Week 5)*
 
 Owner: **human** (you), with `robotics-sim-engineer` on standby for failures.
 
@@ -39,13 +39,13 @@ Gates 0 and 2 below exist specifically to answer those two questions before any 
 
 ## Prerequisites (macOS host)
 
-Same as `docs/WEEK3_VALIDATION.md`: Docker Desktop running, the `fieldguard-sim` image built
+Same as `docs/archive/WEEK3_VALIDATION.md`: Docker Desktop running, the `fieldguard-sim` image built
 (`scripts/sim_docker_build.sh`), the container up (`scripts/sim_docker_run.sh`). All commands below
 run **inside the container** at `/workspace/fieldguard`.
 
 If `sim/worlds/farmguard_field.sdf` was regenerated since your last container session, nothing new
 needs rebuilding on the Gazebo side — it's a plain SDF file, no colcon package involved. Just make
-sure the checked-out repo inside the container (bind-mounted, per `docs/WEEK1_BRINGUP.md` §2) has
+sure the checked-out repo inside the container (bind-mounted, per `docs/runbooks/SIM_BRINGUP.md` §2) has
 the current version.
 
 ---
@@ -156,7 +156,7 @@ rationale — samples the **raw NIR band directly**, deliberately does not build
 which is flight-software's downstream scope).
 
 **Shell D** — fly the existing, already-proven boustrophedon mission exactly as in
-`docs/WEEK3_VALIDATION.md` Gate 1 (`scripts/run_farm_mission.sh` prints the recipe). No mission or
+`docs/archive/WEEK3_VALIDATION.md` Gate 1 (`scripts/run_farm_mission.sh` prints the recipe). No mission or
 world regeneration needed — reusing the proven flight is deliberate, see the script's docstring for
 why lane x=15m is expected to put bird_0 in frame.
 
@@ -206,7 +206,7 @@ and a final PASS/FAIL verdict; exit code 0 = PASS.
 (config/ndvi_camera.json's "mount" block) — two new rendering sensors (RGB + thermal cameras) and
 40 per-visual thermal plugins added on top of the world Weeks 1-4 already proved out. Added render
 load can drop the real-time factor or perturb FDM/sensor timing; the Week-3 avoidance loop
-(`docs/WEEK3_AVOIDANCE_DEMO.md`) was specifically sensitive to this class of problem (a stalled or
+(`docs/runbooks/AVOIDANCE_DEMO.md`) was specifically sensitive to this class of problem (a stalled or
 delayed `/ap/pose/filtered` stream reads as a frozen drone to the control loop). This gate exists to
 catch a regression **before** trusting any NDVI number gathered on top of a maybe-broken avoidance
 loop — same "previous work must keep working" discipline as every other regression gate in this
@@ -216,7 +216,7 @@ Run this AFTER Gates 0-2 pass (so the NDVI sensors are confirmed instantiating a
 it reuses that same running Gazebo instance, model, and world.
 
 **Shell A** (Gazebo, already up from Gate 0) + **Shell B** (micro-ROS agent, started BEFORE SITL —
-see `docs/WEEK3_AVOIDANCE_DEMO.md`'s "Agent BEFORE SITL" warning, it applies identically here) +
+see `docs/runbooks/AVOIDANCE_DEMO.md`'s "Agent BEFORE SITL" warning, it applies identically here) +
 **Shell C** (SITL, `--enable-DDS`) + **Shell D** (the avoidance node):
 
 ```bash
@@ -226,7 +226,7 @@ cd /workspace/fieldguard
 PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.avoidance_node --demo
 ```
 
-Then in Shell C's MAVProxy prompt, exactly as in `docs/WEEK3_AVOIDANCE_DEMO.md`:
+Then in Shell C's MAVProxy prompt, exactly as in `docs/runbooks/AVOIDANCE_DEMO.md`:
 ```
 param set MIS_RESTART 0
 wp load /workspace/fieldguard/config/missions/boustrophedon.waypoints
@@ -244,16 +244,16 @@ gz topic -e -t /world/farmguard_field/stats -n 1   # one-shot sample of the worl
 
 - ✅ PASS, ALL of the following:
   1. Shell D's log shows the same `takeover` -> `maneuver` -> `resume` sequence as
-     `docs/WEEK3_AVOIDANCE_DEMO.md` documents (`set_mode GUIDED` -> `cmd_gps_pose <- ENU(...)` ->
+     `docs/runbooks/AVOIDANCE_DEMO.md` documents (`set_mode GUIDED` -> `cmd_gps_pose <- ENU(...)` ->
      `set_mode AUTO`) as the drone reaches the demo bird near lane x=30 — dodge -> hold -> resume
      completes cleanly, same as the pre-NDVI-model Week-3 run.
   2. The mission continues and completes its remaining lanes after the resume (not just the one
      dodge) — confirms the render load isn't causing a LATER stall once the two extra cameras are a
      few tens of seconds into continuous operation, not just at t=0.
   3. Real-time factor stays in a broadly comparable range to the Week-3 baseline (`docs/
-     WEEK3_VALIDATION.md`'s recorded number, if captured there — otherwise treat any RTF that stays
+     docs/archive/WEEK3_VALIDATION.md`'s recorded number, if captured there — otherwise treat any RTF that stays
      bounded and non-collapsing, e.g. doesn't trend toward 0, as passing) for the duration of the
-     dodge. A software-rendering (`llvmpipe`, no GPU passthrough — `docs/WEEK1_BRINGUP.md` gotcha
+     dodge. A software-rendering (`llvmpipe`, no GPU passthrough — `docs/runbooks/SIM_BRINGUP.md` gotcha
      #1) machine is already slow; the question is whether the TWO NEW CAMERAS make it categorically
      worse, not whether it's fast in absolute terms.
   4. `eval/results/live_flight_log_<UTCstamp>.json` (written on Shell D's `Ctrl-C`; timestamped since 2026-08-18 so runs can never clobber prior evidence) shows the same shape as a

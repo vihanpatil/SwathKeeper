@@ -1,4 +1,7 @@
-# FieldGuard — Decision Log (ADR-lite)
+# SwathKeeper — Decision Log (ADR-lite)
+
+*(Project renamed FieldGuard → SwathKeeper 2026-08-18, ADR-011. Entries below keep their original
+wording — "FieldGuard" in an older ADR is historically accurate, not stale.)*
 
 Owner: `tech-lead` (with `product-lead` for scope calls). **Every non-trivial choice goes here** with
 the alternative rejected and a one-sentence reason. Per the playbook's escalation rule, when two
@@ -78,7 +81,7 @@ Owner / roles: perception-ml-engineer (decided on metric), tech-lead (recorded).
 ## ADR-004: Pin the simulation toolchain versions  (2026-07-27, status: ACCEPTED)
 Confirmed by `robotics-sim-engineer` against ArduPilot's `ardupilot_gz` docs and the
 `aerial-autonomy-stack` reference (both pin the same stack); no landscape shift as of mid-2026.
-Exact pins live in `CLAUDE.md` "Pinned versions" and the bringup steps in `docs/WEEK1_BRINGUP.md`.
+Exact pins live in `CLAUDE.md` "Pinned versions" and the bringup steps in `docs/runbooks/SIM_BRINGUP.md`.
 Note: `ardupilot_gazebo` uses the `ros2` branch (not `main`), and ArduPilot firmware tracks `master`
 (not a stable Copter tag) because the AP_DDS/ROS 2 bridge surface tracks master — the one remaining
 open item is capturing the exact firmware commit SHA once the Week 1 build is green.
@@ -100,13 +103,13 @@ Owner / roles: robotics-sim-engineer (research + confirm exact branch/tags), dev
 `CLAUDE.md` once robotics-sim-engineer confirms compatibility.
 
 ## ADR-005: Enable AP_DDS explicitly + lock the /ap/* topic/service/frame contract to the pinned ArduPilot SHA   (2026-08-04, status: ACCEPTED — CONFIRMED live 2026-08-05)
-**CONFIRMED 2026-08-05 (Week-3 Gate 2, `docs/WEEK3_VALIDATION.md`):** all 18 `/ap/*` topics enumerated
+**CONFIRMED 2026-08-05 (Week-3 Gate 2, `docs/archive/WEEK3_VALIDATION.md`):** all 18 `/ap/*` topics enumerated
 below appeared on the running bridge, exactly matching this source-verified list (14 publishers + 4 `/ap`
 subscribers; the 5th subscriber is the bare `/clock`). **Correction to the original enablement claim:**
 AP_DDS is **compiled OUT of SITL by default** (`-DAP_DDS_ENABLED=0`) — SITL must be built with
 `sim_vehicle.py --enable-DDS` first, or the `DDS_ENABLE` param does not even exist and no `/ap/*` topics
 appear. The param file alone is NOT sufficient. (An earlier draft implied DDS was compiled-in by default;
-that conflated the `AP_DDS_ENABLED` compile gate with the `DDS_ENABLE` param value — see WEEK1_BRINGUP §6b.)
+that conflated the `AP_DDS_ENABLED` compile gate with the `DDS_ENABLE` param value — see docs/runbooks/SIM_BRINGUP.md §6b.)
 Decision: Build SITL with `--enable-DDS`, **then** enable the bridge via an explicit param file
 (`config/sitl_params/dds_udp.parm`: DDS_ENABLE=1, DDS_UDP_PORT=2019), loaded through
 `sim_vehicle.py --add-param-file` rather than relying on `ardupilot_gz_bringup`'s launch file. Keep DDS_USE_NS=0 (compiled default) so
@@ -136,7 +139,7 @@ perception/planner ROS 2 nodes code against:
 Alternative(s) rejected:
   (a) Use `ardupilot_gz_bringup`'s default DDS enablement (auto-loads dds_udp.parm + dds_use_ns.parm,
       auto-spawns micro_ros_agent). Rejected — that launch file hardcodes its own world path (already
-      rejected project-wide, sim/README.md / WEEK1_BRINGUP.md), and its default DDS_USE_NS=1 would
+      rejected project-wide, sim/README.md / docs/runbooks/SIM_BRINGUP.md), and its default DDS_USE_NS=1 would
       namespace every topic under /v<sysid>/ for no benefit in a single-vehicle project.
   (b) Trust the compiled-in ENABLED_BY_DEFAULT=1 and skip explicit enablement. Rejected — a SITL
       instance's eeprom.bin (persisted on our named Docker volume) keeps whatever DDS_ENABLE value was
@@ -157,7 +160,7 @@ appear with these names/types before treating ADR-005 as fully validated (same p
 Owner / roles: flight-software-engineer (verified source + drafted), tech-lead (records).
 
 ## ADR-006: Reactive-avoidance executor = AUTO->GUIDED->AUTO, we own the maneuver policy   (2026-08-05, status: ACCEPTED — CONFIRMED live 2026-08-05)
-**CONFIRMED 2026-08-05 (Week-3 Gate 3, `docs/WEEK3_VALIDATION.md`):** with `MIS_RESTART=0`, AUTO→GUIDED→AUTO
+**CONFIRMED 2026-08-05 (Week-3 Gate 3, `docs/archive/WEEK3_VALIDATION.md`):** with `MIS_RESTART=0`, AUTO→GUIDED→AUTO
 resumed the interrupted leg (reached #3, took control heading to #4, handed back → resumed at #4, continued
 #5→#8), no restart at #1. The resume mechanism the executor depends on works on the real stack.
 Decision: On a dynamic bird detection during the AUTO boustrophedon mission, **our** executor node
@@ -303,7 +306,7 @@ spike re-run + ADR-005 live-topic + ADR-006 live-resume checks — one Docker se
   4. Confirm the pinned Harmonic build exposes the thermal sensor on `ogre2` (Sensors system already
      runs `ogre2`, world line 13-15) — thermal is ogre2-only; verify `gz-sim-thermal-system` loads.
   5. **Principal point (cx,cy) unpinned** — georef defaults cx,cy to image-center (`CameraIntrinsics.from_config`);
-     CONFIRM empirically against the real `/fg/*/camera_info` once Gate 1 publishes it (log in WEEK5_VALIDATION.md).
+     CONFIRM empirically against the real `/fg/*/camera_info` once Gate 1 publishes it (log in docs/runbooks/NDVI_VALIDATION.md).
   6. **Georef anchor rule (DECIDED, from stitch build):** anchor to the **live `/ap/gps_global_origin/filtered`**
      (WGS-84 EKF origin, ADR-005) at runtime — authoritative; `config/field_polygon.json` home is used **only**
      for offline/test. `home_lat/lon/alt` is a transform param, sourced live and config-defaulted offline.
@@ -315,7 +318,7 @@ robotics-sim-engineer (builds the two-sensor mount + per-model temperature autho
 perception-ml-engineer (ADR-003 re-run on `/fg/ndvi/image`), flight-software-engineer (georef stitch
 consumes `/fg/ndvi/*` + ADR-005 pose/origin).
 
-## ADR-008: Hosted-runner Gazebo-render CI is unproven — the sim CI job pulls a prebuilt image and stays manual-dispatch until one green run   (2026-08-05, status: ACCEPTED; promoted to ADR 2026-08-18 from docs/WEEK5_CI_GAZEBO.md "Feasibility verdict")
+## ADR-008: Hosted-runner Gazebo-render CI is unproven — the sim CI job pulls a prebuilt image and stays manual-dispatch until one green run   (2026-08-05, status: ACCEPTED; promoted to ADR 2026-08-18 from docs/runbooks/SIM_CI.md "Feasibility verdict")
 Decision: Split sim CI into (1) a prebuilt GHCR image (`sim-image.yml`, built manually / on
 Dockerfile change, never from scratch per push) and (2) a headless smoke-flight job
 (`build-test-sim`) gated to `workflow_dispatch` until a human confirms one green run. Full
@@ -326,7 +329,7 @@ headless rendering works because SITL-only CI does — upstream's own evidence s
 `ardupilot_gazebo`'s CI is build/lint-only, and ArduPilot's SITL autotests fly with NO Gazebo.
 Why: The teams that own these exact components don't run live Gazebo on hosted runners — that's the
 strongest available signal; we bake the build into an image (fixing the resource math) and claim
-green only when a run IS green. Timeboxed with a documented cut-list (WEEK5_CI_GAZEBO.md).
+green only when a run IS green. Timeboxed with a documented cut-list (docs/runbooks/SIM_CI.md).
 Owner / roles: devops-reliability-engineer, robotics-sim-engineer.
 
 ## ADR-009: Real-detector evidence contract — stamped detections with a policy staleness gate; bird position from apparent-size ray, never ground-plane projection   (2026-08-18, status: ACCEPTED — implementation lands with the Week-6 detector)
@@ -368,3 +371,19 @@ Why: One Docker session must produce the demo heatmap; the runner existing BEFOR
 what makes that single session sufficient (record the flight → stitch on the host afterward).
 Owner / roles: flight-software-engineer, tech-lead; perception-ml-engineer consumes the same clip
 for the ADR-003 real-render re-run.
+
+## ADR-011: Rename the project FieldGuard → SwathKeeper; code identifiers deliberately keep the old name   (2026-08-18, status: ACCEPTED — user decision)
+Decision: The project is **SwathKeeper** (one word, capital K): "swath" is the coverage-path domain
+term (one pass of a survey), "keeper" carries the thesis (the survey stays intact through dodges).
+All branding, docs, agent definitions, and workflow names renamed. **Code identifiers keep the old
+name**: the `fieldguard_planning` package, the `fg_`/`/fg/*` topic prefix, `farmguard_field.sdf`,
+the `fieldguard-sim` image/container, and `/workspace/fieldguard` container paths.
+Alternative(s) rejected: (a) FieldGuard — reads as crop security/intrusion detection; the system
+protects the *survey*, not the field. (b) FieldScan — names the commodity half, inert.
+(c) Renaming the code identifiers too — the `/fg/*` topic contract is embedded in ADR-007 and
+partially live-verified (Gate 0), the image name is baked into every runbook and the CI chain, and
+re-opening confirmed interfaces for cosmetics is churn with zero functional gain. Deferred, not
+forgotten: if ever done, it's a single mechanical PR after the sim CI chain is green.
+Why: The name should point at the differentiator — keeping the swath — and the rename must not
+invalidate verified state three sessions before the demo.
+Owner / roles: user (final call), product-lead, gtm-narrative-lead.

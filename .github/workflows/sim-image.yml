@@ -1,12 +1,12 @@
-name: FieldGuard sim image (build + push)
+name: SwathKeeper sim image (build + push)
 
-# ⚠️ UNVERIFIED (Weeks 5-6 devops task, 2026-08-05) — see docs/WEEK5_CI_GAZEBO.md for the honest
+# ⚠️ UNVERIFIED (Weeks 5-6 devops task, 2026-08-05) — see docs/runbooks/SIM_CI.md for the honest
 # feasibility verdict. Written and actionlint-checked, but never actually run: this session had no
 # live GitHub Actions runner / GHCR credentials to execute it against. The first run needs a human to
 # watch, in this order: (1) does `docker build` fit GH-hosted disk (14GB SSD on public ubuntu-latest —
 # tight, see the Dockerfile.ci header), (2) does the colcon build OOM even at -j2, (3) does the job
 # finish inside the runner's time budget. If any of those fail, the documented fallback is a
-# self-hosted runner (docs/WEEK5_CI_GAZEBO.md "Fallback"), not a bigger hosted-runner tier.
+# self-hosted runner (docs/runbooks/SIM_CI.md "Fallback"), not a bigger hosted-runner tier.
 #
 # Deliberately DECOUPLED from ci.yml's per-push jobs: this build is heavy (a from-scratch ROS 2 +
 # Gazebo + ArduPilot workspace compile) and does not need to run on every push/PR — only when the

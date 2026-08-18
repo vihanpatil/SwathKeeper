@@ -11,7 +11,7 @@ version of this memory (kept the still-true parts, corrected/extended the rest).
 
 ## Package layout (`src/fieldguard_planning/`)
 Still **not a real colcon/ament package** (no `package.xml`/`setup.py`) as of Weeks 5-6 —
-`docs/WEEK3_AVOIDANCE_DEMO.md` flags this as "a small follow-up." Everything runs via
+`docs/runbooks/AVOIDANCE_DEMO.md` flags this as "a small follow-up." Everything runs via
 `PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.<node>` (note: **prepend**, don't
 replace — a bare `PYTHONPATH=src` inside the container wipes out ROS 2's own Python path and gives
 `ModuleNotFoundError: No module named 'rclpy'`). If this ever gets promoted to a colcon package,
@@ -55,7 +55,7 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
 - Demo: `python3 -m fieldguard_planning.avoidance_node --demo` injects a scripted bird at ENU
   (30,30,15) via `proximity_bird_source` (triggers within 10m, lingers 12s) — tightened from an
   earlier wider trigger radius specifically so it doesn't fire on adjacent lanes (< lane spacing).
-  Full recipe: `docs/WEEK3_AVOIDANCE_DEMO.md`.
+  Full recipe: `docs/runbooks/AVOIDANCE_DEMO.md`.
 - `current_waypoint()` is DERIVED (nearest mission waypoint to current pose), not read from AP_DDS —
   no mission-current service exists at the pinned SHA (ADR-006 "why no waypoint-index juggling").
   Fine for resume bookkeeping since ArduPilot's own `MIS_RESTART=0` owns the actual resume.
@@ -109,11 +109,11 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
   coverage-debt ledger) rather than inventing a second grid — a cell never imaged is `None` in
   `mean_grid()`, the NDVI-mapping analog of an explicit coverage-debt cell.
 - **Nothing here has run against the real render yet.** `/fg/sensor/*` topics don't exist until a
-  human runs Gates 0-2 of `docs/WEEK5_VALIDATION.md` (Docker + real Gazebo thermal-sensor render).
+  human runs Gates 0-2 of `docs/runbooks/NDVI_VALIDATION.md` (Docker + real Gazebo thermal-sensor render).
   All 39 new tests (`test_ndvi_fusion.py`, `test_ndvi_georef.py`) validate against synthetic/
   hand-computed fixtures only — same "built ahead of Docker validation" pattern as the avoidance
   policy/executor were before Week-3's Gate 2.
-- Added **Gate 3** to `docs/WEEK5_VALIDATION.md`: re-fly the Week-3 avoidance demo against the new
+- Added **Gate 3** to `docs/runbooks/NDVI_VALIDATION.md`: re-fly the Week-3 avoidance demo against the new
   `iris_with_gimbal_ndvi` vehicle model (2 new cameras + 40 thermal plugins added render load) and
   confirm dodge->hold->resume still completes + RTF doesn't collapse — a regression check, not a
   new ADR-007 claim.
