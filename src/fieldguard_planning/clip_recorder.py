@@ -12,13 +12,19 @@ Two contract details that MUST NOT drift (both regression-tested against the act
   * poses.jsonl records quaternions in **wxyz** order (spike schema); ROS geometry_msgs delivers
     **xyzw**. The conversion lives HERE, in exactly one place (`add_frame`), mirroring how
     `stitch_ndvi._pose_from_line` owns the reverse conversion.
-  * CLOCK DOMAINS (the honesty extras): camera stamps are Gazebo sim time; `/ap/pose/filtered`
-    stamps are ArduPilot's own clock (SITL runs `use_sim_time=false` -- its DDS log literally says
-    "Skipping subscription to /clock"). The two cannot be compared, so the recorder pairs each
-    frame with the LATEST pose by ARRIVAL and records `pose_age_wall_s` (wall seconds between pose
-    arrival and frame arrival) per frame -- at ~3 m/s sim ground speed and the measured RTF~0.17,
-    a 0.2 s-wall-stale pose is ~0.1 m of georef error: acceptable for 2.5 m cells, and QUANTIFIED
-    in the artifact rather than hidden. `meta.json` carries the same caveat for future readers.
+  * CLOCK DOMAINS + PAIRING: camera stamps are Gazebo sim time; `/ap/pose/filtered` stamps are
+    ArduPilot's own clock (SITL runs `use_sim_time=false` -- its DDS log literally says "Skipping
+    subscription to /clock"). The first recorder version therefore paired each frame with the pose
+    at ARRIVAL -- which the 2026-08-18 real flight proved wrong: the software render STALLS AND
+    BURSTS (instantaneous RTF 0.0016..0.48), so a burst delivers frames rendered sim-seconds apart
+    within wall-milliseconds, and arrival-pairing stamped canopy frames with poses meters
+    down-track (0/18 trees showed in the first heatmap; the canopy blobs sat over empty soil).
+    The fix is `PoseBuffer`: the node bridges Gazebo's own clock in as `/fg/gz_clock`, TAGS every
+    arriving pose with gz-now, and each frame selects the pose whose gz tag is nearest the frame's
+    own gz stamp -- one clock domain, burst-proof. Per-frame `pose_pair_residual_s` (tag minus
+    stamp) and `frame_age_sim_s` (gz-now at arrival minus stamp) are recorded so mislabeling is
+    MEASURABLE, and `pose_pair_stale` flags any frame whose best residual exceeds the bound --
+    `stitch_ndvi.py` skips flagged frames rather than painting them somewhere plausible-but-wrong.
 
 The rclpy wiring lives in `record_node.py` (same thin-adapter split as ndvi_node/avoidance_node).
 Dependency: numpy (same scoped exception as the other ndvi_* modules); PNG writing is INJECTED as
@@ -36,7 +42,38 @@ import numpy as np
 Vec3 = Tuple[float, float, float]
 QuatXYZW = Tuple[float, float, float, float]
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
+
+# A frame whose best pose-pair residual exceeds this (in SIM seconds) is recorded but flagged
+# pose_pair_stale -- at ~3 m/s sim ground speed, 0.35 s is ~1 m of georef error, under half a cell.
+STALE_PAIR_BOUND_S = 0.35
+
+
+class PoseBuffer:
+    """Ring buffer of poses tagged with GAZEBO-clock arrival times. `nearest(stamp)` returns the
+    pose whose gz tag is closest to a frame's gz stamp -- pairing in ONE clock domain, immune to
+    render bursts (see module docstring). Pure and unit-tested; the node feeds it."""
+
+    def __init__(self, maxlen: int = 4000):
+        self._buf: list = []  # (gz_tag_s, pos, quat_xyzw) -- appended in arrival order
+        self._maxlen = maxlen
+
+    def tag(self, gz_now_s: float, pos: Vec3, quat_xyzw: QuatXYZW) -> None:
+        self._buf.append((gz_now_s, tuple(pos), tuple(quat_xyzw)))
+        if len(self._buf) > self._maxlen:
+            del self._buf[: len(self._buf) - self._maxlen]
+
+    def __len__(self) -> int:
+        return len(self._buf)
+
+    def nearest(self, stamp_s: float):
+        """(pos, quat_xyzw, residual_s) for the buffered pose gz-tagged closest to `stamp_s`,
+        or None if the buffer is empty. residual = tag - stamp (signed; positive = pose is from
+        after the frame)."""
+        if not self._buf:
+            return None
+        tag, pos, quat = min(self._buf, key=lambda e: abs(e[0] - stamp_s))
+        return pos, quat, tag - stamp_s
 
 
 class ClipWriter:
@@ -56,18 +93,25 @@ class ClipWriter:
         (self.out_dir / "frames" / "ndvi").mkdir(parents=True, exist_ok=True)
         if png_writer is not None:
             (self.out_dir / "frames" / "rgb").mkdir(parents=True, exist_ok=True)
+        if png_writer is not None:
+            (self.out_dir / "frames" / "rgb_raw").mkdir(parents=True, exist_ok=True)
         self._poses_fh = (self.out_dir / "poses.jsonl").open("w")
         self.n_frames = 0
         self.n_rgb = 0
+        self.n_stale = 0
         self._t0_stamp_s: Optional[float] = None
         self.origin: Optional[dict] = None  # /ap/gps_global_origin/filtered, set once by the node
+        self.pairing_mode = "gz_clock_stamp"  # node overrides to 'arrival_fallback' if no /fg/gz_clock
 
     def add_frame(self, stamp_s: float, ndvi: np.ndarray,
                   drone_pos_enu: Vec3, drone_quat_xyzw: QuatXYZW,
-                  pose_age_wall_s: float,
+                  pose_pair_residual_s: float,
+                  frame_age_sim_s: Optional[float] = None,
                   rgb: Optional[np.ndarray] = None) -> str:
-        """One fused NDVI frame + the latest pose. `stamp_s` is the frame's own (gz sim) stamp;
-        t_s in poses.jsonl is made relative to the first frame, spike-style. Returns ndvi_path."""
+        """One fused NDVI frame + its stamp-paired pose. `stamp_s` is the frame's own (gz sim)
+        stamp; t_s in poses.jsonl is made relative to the first frame, spike-style. A residual
+        beyond STALE_PAIR_BOUND_S flags the line pose_pair_stale (stitch skips it). Returns
+        ndvi_path."""
         if self._t0_stamp_s is None:
             self._t0_stamp_s = stamp_s
         fid = self.n_frames
@@ -88,12 +132,23 @@ class ClipWriter:
             "ndvi_path": ndvi_rel,
             # honesty extras (consumers ignore unknown keys; humans/QA read them):
             "stamp_sim_s": round(stamp_s, 6),
-            "pose_age_wall_s": round(pose_age_wall_s, 4),
+            # NaN residual = arrival-fallback pairing (no gz clock) -> null in JSON, whole-clip
+            # degradation already recorded in meta.pose_pairing.
+            "pose_pair_residual_s": (None if pose_pair_residual_s != pose_pair_residual_s
+                                     else round(pose_pair_residual_s, 4)),
         }
+        if frame_age_sim_s is not None:
+            line["frame_age_sim_s"] = round(frame_age_sim_s, 4)
+        if pose_pair_residual_s == pose_pair_residual_s and \
+                abs(pose_pair_residual_s) > STALE_PAIR_BOUND_S:
+            line["pose_pair_stale"] = True
+            self.n_stale += 1
         if rgb is not None and self.png_writer is not None:
-            rgb_rel = f"frames/rgb/frame_{fid:06d}.png"
-            self.png_writer(self.out_dir / rgb_rel, np.asarray(rgb, dtype=np.uint8))
-            line["rgb_path"] = rgb_rel
+            # Raw .npy during flight (~ms); PNG conversion happens in finalize() -- per-frame PNG
+            # encoding in the callback path is load we don't spend while frames are arriving.
+            raw_rel = f"frames/rgb_raw/frame_{fid:06d}.npy"
+            np.save(self.out_dir / raw_rel, np.asarray(rgb, dtype=np.uint8))
+            line["rgb_path"] = f"frames/rgb/frame_{fid:06d}.png"  # the finalize()-produced path
             self.n_rgb += 1
         self._poses_fh.write(json.dumps(line) + "\n")
         self._poses_fh.flush()  # a crash mid-flight must not lose the recorded prefix
@@ -102,6 +157,13 @@ class ClipWriter:
 
     def finalize(self) -> dict:
         self._poses_fh.close()
+        # Convert the raw in-flight RGB dumps to schema PNGs now that no frames are arriving.
+        raw_dir = self.out_dir / "frames" / "rgb_raw"
+        if self.png_writer is not None and raw_dir.exists():
+            for raw in sorted(raw_dir.glob("frame_*.npy")):
+                self.png_writer(self.out_dir / "frames" / "rgb" / (raw.stem + ".png"), np.load(raw))
+                raw.unlink()
+            raw_dir.rmdir()
         meta = {
             "schema_version": SCHEMA_VERSION,
             "synthetic": False,
@@ -110,6 +172,9 @@ class ClipWriter:
             "seed": None,
             "num_frames": self.n_frames,
             "num_rgb_frames": self.n_rgb,
+            "num_stale_pose_pairs": self.n_stale,
+            "pose_pairing": self.pairing_mode,
+            "stale_pair_bound_s": STALE_PAIR_BOUND_S,
             "image_width_px": self.camera_info["image_width_px"],
             "image_height_px": self.camera_info["image_height_px"],
             "coordinate_frame": "world ENU meters (x=East, y=North, z=Up), REP-103 convention",
@@ -120,8 +185,9 @@ class ClipWriter:
             },
             "gps_global_origin": self.origin,
             "clock_note": ("camera stamps are Gazebo sim time; /ap/pose/filtered stamps are "
-                           "ArduPilot's clock (use_sim_time=false) -- poses paired by ARRIVAL, "
-                           "per-frame staleness in poses.jsonl pose_age_wall_s"),
+                           "ArduPilot's clock (use_sim_time=false) -- poses gz-tagged via "
+                           "/fg/gz_clock and paired to each frame's stamp; per-frame residual in "
+                           "poses.jsonl pose_pair_residual_s, stale pairs flagged pose_pair_stale"),
             "ndvi_dtype": "float32, numpy.save (.npy), values in [-1, 1]",
         }
         (self.out_dir / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")

@@ -408,3 +408,17 @@ stack, the committed trajectory data stays untouched (reproducibility unchanged)
 is 150 lines of stdlib instead of a new Gazebo plugin.
 Owner / roles: robotics-sim-engineer, perception-ml-engineer (consumer), qa-safety-reviewer
 (bird trajectories are safety-scenario inputs — interpolation is unit-tested).
+
+### ADR-007 amendment (2026-08-18, real-render findings from the first recorded flight)
+1. **Sun shadows OFF in the farm world** (`gen_farm_world.py`): the thermal band (synthetic NIR)
+   ignores illumination but the RGB Red band does not, so a cast shadow darkens Red alone and
+   reads as FALSE VEGETATION (NDVI rises). Real NIR is reflective and darkens *with* Red in
+   shadow; shadowless is therefore the MORE faithful choice for this two-band emulation, not a
+   cosmetic cut. Found via the drone's own moving shadow reading NDVI-positive.
+2. **Frame↔pose pairing must be stamp-based in the Gazebo clock domain** (`/fg/gz_clock` added to
+   the sensor bridge; `clip_recorder.PoseBuffer`): the software render STALLS AND BURSTS
+   (instantaneous RTF 0.0016–0.48), so pairing frames with poses "at arrival" mislabels a burst's
+   frames by meters — the first recorded flight put 0/18 trees at their true positions while
+   producing a plausible-looking map (the exact failure mode this module's tests warn about).
+   Per-frame pairing residuals are now recorded and out-of-bound frames are flagged
+   (`pose_pair_stale`) and SKIPPED by the stitch rather than painted somewhere wrong.

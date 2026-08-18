@@ -107,6 +107,7 @@ def stitch_clip(clip_dir: Path, cells: Sequence[CoverageCell]) -> Tuple[NdviHeat
     grid = NdviHeatmapGrid(cells, intr, mount_offset_body_m=mount_offset_from_meta(meta))
 
     zero_update_frames: List[int] = []
+    stale_pose_frames: List[int] = []
     n_frames = 0
     with (clip_dir / "poses.jsonl").open() as fh:
         for raw in fh:
@@ -114,6 +115,12 @@ def stitch_clip(clip_dir: Path, cells: Sequence[CoverageCell]) -> Tuple[NdviHeat
             if not raw:
                 continue
             line = json.loads(raw)
+            if line.get("pose_pair_stale"):
+                # The recorder flagged this frame's pose pairing as beyond bound (render-burst
+                # mislabeling, the 2026-08-18 lesson) — skipping is honest; painting it somewhere
+                # plausible-but-wrong is exactly what this pipeline exists to prevent.
+                stale_pose_frames.append(int(line["frame_id"]))
+                continue
             ndvi = np.load(clip_dir / line["ndvi_path"])
             if ndvi.shape != (intr.height_px, intr.width_px):
                 raise ValueError(f"frame {line['frame_id']}: NDVI shape {ndvi.shape} != meta.json "
@@ -132,6 +139,7 @@ def stitch_clip(clip_dir: Path, cells: Sequence[CoverageCell]) -> Tuple[NdviHeat
 
     stats = {
         "frames_total": n_frames,
+        "frames_stale_pose_skipped": stale_pose_frames,
         "frames_zero_update": zero_update_frames,
         "cells_total": len(cells),
         "cells_imaged": n_imaged,
@@ -203,8 +211,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     src_kind = "SYNTHETIC" if stats["clip_synthetic"] else "real render"
     print(f"stitched {stats['frames_total']} frames ({src_kind}, seed={stats['clip_seed']}) -> "
           f"{stats['cells_imaged']}/{stats['cells_total']} cells imaged "
-          f"({stats['cells_unimaged']} unimaged, {len(stats['frames_zero_update'])} zero-update "
-          f"frames) -> {out_dir}/heatmap.json + heatmap.png")
+          f"({stats['cells_unimaged']} unimaged, {len(stats['frames_zero_update'])} zero-update, "
+          f"{len(stats['frames_stale_pose_skipped'])} stale-pose skipped) -> "
+          f"{out_dir}/heatmap.json + heatmap.png")
     return 0
 
 

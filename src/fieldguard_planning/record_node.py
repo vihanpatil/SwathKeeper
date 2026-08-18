@@ -32,7 +32,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from .clip_recorder import ClipWriter
+from .clip_recorder import ClipWriter, PoseBuffer
 from .ndvi_fusion import load_camera_config
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -55,6 +55,7 @@ def build_node(out_dir: Path):
     from rclpy.node import Node
     from rclpy.qos import qos_profile_sensor_data
     from geometry_msgs.msg import PoseStamped
+    from rosgraph_msgs.msg import Clock
     from sensor_msgs.msg import CameraInfo, Image
 
     class RecordNode(Node):
@@ -67,10 +68,15 @@ def build_node(out_dir: Path):
             self.writer: Optional[ClipWriter] = None  # created on first camera_info (live intrinsics)
             self._out_dir = out_dir
             self._png_writer = _spike_png_writer()
-            self._latest_pose = None           # (pos, quat_xyzw, arrival_wall_s)
-            self._rgb_by_stamp: dict = {}       # (sec, nanosec) -> np rgb array (bounded, see below)
+            self._pose_buf = PoseBuffer()
+            self._gz_now: Optional[float] = None   # latest /fg/gz_clock reading (gz sim seconds)
+            self._latest_pose = None               # arrival-fallback only (no gz clock bridged)
+            self._rgb_by_stamp: dict = {}          # (sec, nanosec) -> np rgb array (bounded)
             self._dropped_no_pose = 0
+            self._warned_no_clock = False
 
+            self.create_subscription(Clock, "/fg/gz_clock", self._on_clock,
+                                     qos_profile_sensor_data)
             self.create_subscription(CameraInfo, topics["rgb_camera_info"], self._on_info,
                                      qos_profile_sensor_data)
             self.create_subscription(Image, topics["rgb_image"], self._on_rgb,
@@ -82,7 +88,11 @@ def build_node(out_dir: Path):
             self.create_subscription(PoseStamped, "/ap/gps_global_origin/filtered", self._on_origin,
                                      qos_profile_sensor_data)
             self.get_logger().info(f"recording to {out_dir} (waiting for camera_info + frames; "
-                                   f"ndvi_node must be running)")
+                                   f"ndvi_node must be running; /fg/gz_clock expected from the "
+                                   f"bridge for stamp-paired poses)")
+
+        def _on_clock(self, msg) -> None:
+            self._gz_now = msg.clock.sec + msg.clock.nanosec * 1e-9
 
         def _on_info(self, msg) -> None:
             if self.writer is not None:
@@ -99,7 +109,10 @@ def build_node(out_dir: Path):
 
         def _on_pose(self, msg) -> None:
             p, o = msg.pose.position, msg.pose.orientation
-            self._latest_pose = ((p.x, p.y, p.z), (o.x, o.y, o.z, o.w), time.monotonic())
+            pos, quat = (p.x, p.y, p.z), (o.x, o.y, o.z, o.w)
+            if self._gz_now is not None:
+                self._pose_buf.tag(self._gz_now, pos, quat)  # gz-domain tag: the burst-proof pairing key
+            self._latest_pose = (pos, quat, time.monotonic())
 
         def _on_origin(self, msg) -> None:
             if self.writer is not None and self.writer.origin is None:
@@ -117,22 +130,41 @@ def build_node(out_dir: Path):
         def _on_ndvi(self, msg) -> None:
             if self.writer is None:
                 return  # no intrinsics yet
-            if self._latest_pose is None:
+            stamp_s = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+            ndvi = np.frombuffer(msg.data, dtype=np.float32).reshape(msg.height, msg.width)
+            rgb = self._rgb_by_stamp.pop((msg.header.stamp.sec, msg.header.stamp.nanosec), None)
+            frame_age = None if self._gz_now is None else self._gz_now - stamp_s
+
+            paired = self._pose_buf.nearest(stamp_s)
+            if paired is not None:
+                pos, quat_xyzw, residual = paired
+            elif self._latest_pose is not None:
+                # Arrival fallback — only reachable with no /fg/gz_clock on the bridge. Loudly
+                # degraded: this is the mode that mislabeled the 2026-08-18 flight.
+                if not self._warned_no_clock:
+                    self._warned_no_clock = True
+                    self.writer.pairing_mode = "arrival_fallback"
+                    self.get_logger().warn(
+                        "no /fg/gz_clock — falling back to ARRIVAL pose pairing (render bursts "
+                        "will mislabel frames; update sim/bridge/fg_sensor_bridge.yaml and "
+                        "restart the bridge)")
+                pos, quat_xyzw, _ = self._latest_pose
+                residual = float("nan")
+            else:
                 self._dropped_no_pose += 1
                 if self._dropped_no_pose in (1, 10):
                     self.get_logger().warn(
                         f"NDVI frame with no /ap/pose/filtered yet (x{self._dropped_no_pose}) -- "
                         f"is SITL up with DDS enabled?")
                 return
-            stamp_s = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-            ndvi = np.frombuffer(msg.data, dtype=np.float32).reshape(msg.height, msg.width)
-            pos, quat_xyzw, pose_arrival = self._latest_pose
-            rgb = self._rgb_by_stamp.pop((msg.header.stamp.sec, msg.header.stamp.nanosec), None)
+
             self.writer.add_frame(stamp_s, ndvi, pos, quat_xyzw,
-                                  pose_age_wall_s=time.monotonic() - pose_arrival, rgb=rgb)
+                                  pose_pair_residual_s=residual, frame_age_sim_s=frame_age,
+                                  rgb=rgb)
             if self.writer.n_frames % 25 == 1:
-                self.get_logger().info(f"recorded {self.writer.n_frames} frames "
-                                       f"({self.writer.n_rgb} with rgb)")
+                self.get_logger().info(
+                    f"recorded {self.writer.n_frames} frames ({self.writer.n_rgb} with rgb, "
+                    f"{self.writer.n_stale} stale-pose flagged)")
 
     if not rclpy.ok():
         rclpy.init()
@@ -158,7 +190,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print("\n[record_node] NOTHING RECORDED — no camera_info ever arrived "
                   "(bridge or ndvi_node down?)", file=sys.stderr)
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():  # Ctrl-C may have already shut the context down; a second call raises
+            rclpy.shutdown()
     return 0 if node.writer is not None and node.writer.n_frames > 0 else 1
 
 

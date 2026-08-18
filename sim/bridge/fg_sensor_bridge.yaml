@@ -44,3 +44,14 @@
   ros_type_name: "sensor_msgs/msg/CameraInfo"
   gz_type_name: "gz.msgs.CameraInfo"
   direction: GZ_TO_ROS
+
+# Gazebo sim clock (added 2026-08-18 for the clip recorder's stamp-based pose pairing — see
+# clip_recorder.py "CLOCK DOMAINS"): camera stamps are gz sim time but /ap/pose/filtered stamps
+# are ArduPilot's clock, so the recorder needs the gz clock IN ROS to tag pose arrivals and pair
+# frames by stamp in ONE clock domain. Namespaced /fg/gz_clock (NOT /clock) on purpose: nothing
+# here opts ROS nodes into use_sim_time semantics.
+- ros_topic_name: "/fg/gz_clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS

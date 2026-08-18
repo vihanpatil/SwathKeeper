@@ -144,7 +144,12 @@ def sdf_world_header(field_cfg: dict) -> str:
     </spherical_coordinates>
 
     <light type="directional" name="sun">
-      <cast_shadows>true</cast_shadows>
+      <cast_shadows>false</cast_shadows>
+      <!-- Shadows OFF (2026-08-18, real-render finding): the thermal band (synthetic NIR) ignores
+           illumination but the RGB Red band does not, so a cast shadow darkens Red only and reads
+           as FALSE VEGETATION (NDVI = (NIR-Red)/(NIR+Red) rises). Real NIR is reflective and
+           darkens WITH red in shadow; shadowless is therefore the MORE faithful choice for this
+           two-band emulation. See DECISIONS.md ADR-007 amendment. -->
       <pose>0 0 10 0 0 0</pose>
       <diffuse>0.8 0.8 0.8 1</diffuse>
       <specular>0.8 0.8 0.8 1</specular>
