@@ -2,13 +2,20 @@
 
 Owner: **human** (you), with `robotics-sim-engineer` on standby for failures.
 
-## ✅ GATE 0 PASSED GREEN (2026-08-05) — Gates 1–3 still to run
+## ✅ ALL FOUR GATES PASSED — this runbook is now a RECORD, not a to-do
 
-**Gate 0 (the thermal-system kill-switch) executed live 2026-08-05 and passed**: the thermal
-system loads on the pinned Harmonic+ogre2 stack, the world loads with the sensor mount (after the
-joint-parent fix recorded below — see "The fixed-joint parent name"), and all four `/fg/sensor/*`
-topics are present on the gz side. **Do NOT re-run Gate 0; the batched session resumes at
-Gate 1.** Everything below about Gates 1–3 remains source-verified only.
+| Gate | Result | Evidence |
+|---|---|---|
+| 0 — thermal system loads | ✅ 2026-08-05 | world + mount load on pinned Harmonic+ogre2; 4 `/fg/sensor/*` gz topics |
+| 1 — bridge, encodings, rate | ✅ 2026-08-18 | 4 ROS topics, rgb8/mono16, 5 Hz sim-time (wall = 5 Hz × RTF) |
+| 2 — pixel smoke test | ✅ 2026-08-18 | canopy 0.854 > soil 0.212 > bird 0.040, gaps 0.643/0.171 — `eval/results/gate2_summary.json` |
+| 3 — avoidance regression | ✅ 2026-08-18 | clean takeover→maneuver→resume on the NDVI model — `eval/results/live_flight_log_20260818T144711Z.json` |
+
+Re-run a gate only if the world, sensor mount, or pinned stack changes — and after ANY mount/
+georef change also run the GEOMETRY gate (`scripts/verify_mount_geometry.sh`), which post-dates
+these gates and exists because they measure values, not geometry (ADR-007 amendment 5: the mount
+faced the horizon through all four passes). Next steps live in `docs/ROADMAP.md`; the recording
+procedure in `docs/runbooks/FULL_PIPELINE_DEMO.md`.
 
 ## ⚠️ Session log 2026-08-18 — Gate 1 attempted; read this before resuming
 
@@ -42,18 +49,6 @@ python3 /workspace/fieldguard/scripts/drive_birds.py --once 12  # or: park birds
 ```
 ⚠️ **Restart Gazebo (Shell 1) before resuming** — the running instance predates the world change;
 the regenerated `farmguard_field.sdf` (birds as models) only takes effect on a fresh `gz sim` launch.
-
-## Gates 1–3 are source/doc-verified only, not run
-
-Nothing about Gates 1–3 has executed against the real Gazebo/ogre2 render yet. Every claim about the
-thermal sensor, the bridge, and the sensor-mount attachment was checked against the pinned-branch
-**source** (gz-sim8 == Harmonic, ros_gz `ros2` branch, ArduPilot/ardupilot_gazebo `main`), not
-memory or guesswork — but source-reading is not the same as a live render. This session is what
-converts "source-verified" into "confirmed." **Do the remaining gates in order, starting at
-Gate 1** (Gate 0, the hard kill-switch, already passed — banner above). (Gate 3, added by
-flight-software-engineer 2026-08-05, is a regression check — the NDVI sensor mount changed the
-vehicle model the already-proven Week-3 avoidance loop flies with, not a new ADR-007 render claim —
-but it belongs in the same session since it reuses Gates 0-2's running Gazebo instance.)
 
 ## Why this exists
 

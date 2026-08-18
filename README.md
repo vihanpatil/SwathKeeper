@@ -6,15 +6,18 @@
 > complete even when the flight plan doesn't survive contact with the world.
 > *(Renamed from the working title FieldGuard, 2026-08-18.)*
 
-**Status (2026-08-18):** Weeks 1–4 complete; Week 5 in flight. The **reactive-avoidance loop — the
-core differentiator — has been demonstrated end-to-end, live, on the real ArduPilot SITL + Gazebo +
-ROS 2 stack**: during a boustrophedon survey the drone detects a dynamic obstacle, takes control,
-flies a 3D-safe dodge, holds clear, and resumes coverage without silently dropping a cell. The NDVI
-pipeline's kill-switch gate passed live (thermal-as-NIR renders on the pinned stack, ADR-007) and
-the offline georeferenced stitch (`scripts/stitch_ndvi.py`, ADR-010) is built and proven on
-synthetic clips — one batched Docker validation session stands between here and a real-render
-health map. This is a **simulation-only portfolio project** (no live hardware, ADR-000). Docs map:
-[`docs/README.md`](docs/README.md); live status: `docs/ROADMAP.md`; system spec: `docs/SPEC.md`.
+**Status (2026-08-18, end of a very long day):** Weeks 1-4 complete; Week 5's validation is
+DONE — all four ADR-007 gates passed live on the pinned stack, and the day's real-render work
+caught and fixed five deep bugs the value-gates couldn't see (poses mislabeled under render
+bursts; a bridged sim-clock starving the image pipeline; a degraded long-lived render instance;
+a fusion pairing queue too shallow for bursty delivery; and the sensor mount itself, which had
+faced the horizon upside-down since authoring — Gazebo cameras look along +X). Each fix shipped
+with the gate that makes its bug class impossible to repeat, ending with
+`scripts/verify_mount_geometry.sh`: the camera's view now provably agrees with the georef
+transform to 2.2 px. The first **tree-verified** heatmaps are committed evidence: everywhere the
+recording looked, the 18 known trees appear at their true positions (+0.87 NDVI lift over soil).
+Open: fused-frame recording throughput (limits per-flight coverage), then the ADR-003
+real-render re-run and the dashboard. Docs map: [`docs/README.md`](docs/README.md).
 
 ## Why this is interesting
 Commercial ag-drone platforms (DJI, DroneDeploy, Sentera/John Deere, Trimble) fly **pre-surveyed
@@ -27,8 +30,8 @@ cell — is a documented stretch goal, ADR-002; v1 ships "avoid, return to next 
 ## Headline metrics (from the `eval/` harness)
 - **Detection:** per-bird-track FNR **0.000** (every bird seen before closest approach) on the fixed-seed
   spike clip; the classical-CV blob baseline clears the safety bar, so no trained model is justified yet
-  (ADR-003). _Caveat: the deciding clip is a **synthetic** stand-in; ADR-003 is re-confirmed on the real
-  NDVI render in Weeks 5–6._
+  (ADR-003). _Caveat: the deciding clip is a **synthetic** stand-in; the real-render re-run is next
+  (ground-truth tooling ready, waiting on a full-coverage recording)._
 - **Avoidance loop:** demonstrated live — one clean AUTO→GUIDED→AUTO takeover/resume per encounter, the
   dodge setpoint 3D-vetted against the tree geofence, coverage-debt ledger honest by construction.
 - **Coverage integrity:** the ledger partition invariant (`coverage.check_ledger`) makes a
@@ -37,7 +40,7 @@ cell — is a documented stretch goal, ADR-002; v1 ships "avoid, return to next 
   2026-08-18 audit found the ledger itself understating debt (commanded dodge setpoints recorded as
   flown — up to 32 cells falsely COVERED per scenario), the fix + regression test + honestly-regenerated
   logs shipped the same day; the decision log records it. **The honesty is the product.**
-- **Automated tests:** 131 (`tests/fieldguard_planning`, via `python3 -m unittest discover -s
+- **Automated tests:** 248 (`tests/fieldguard_planning`, via `python3 -m unittest discover -s
   tests/fieldguard_planning` or `pytest tests/`), green in CI, which also gates on: the seed-42
   per-bird-track-FNR regression, scenario-log drift (regenerate + byte-diff), and committed
   flight-log evidence validity. The avoidance/coverage/geofence core is stdlib-only; the NDVI

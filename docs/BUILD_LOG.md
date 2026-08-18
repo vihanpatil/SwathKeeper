@@ -6,6 +6,34 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-18 (night) — Gates 1-3 green, five bugs deep, and the first honest heatmap
+
+The batched session ran to the end — and became the project's best story. Gates 1-3 all passed
+live (bridge; canopy 0.854 > soil 0.212 > bird 0.040 across 996 frames with the ADR-012 birds
+moving; clean avoidance takeover/resume on the NDVI model, ledger valid at 513/207). Then six
+recorded flights peeled five real bugs off the pipeline, each invisible to the value-gates:
+1. **Arrival-paired poses** mislabeled frames under render bursts (0/18 trees despite a
+   plausible map) → gz-clock stamp pairing + per-frame residuals + stitch skipping flagged frames.
+2. **Bridging the sim clock** (~350 msg/s) starved image serialization ~8× → native gz-transport
+   clock stream.
+3. A **shallow fusion pairing queue** (10) flushed stamps before partners arrived under load →
+   queue 60 + the host-quiet rule (parallel agent workloads on the host were eating the sim).
+4. A **long-lived render instance silently degraded** to sky-flat frames in both bands →
+   `scripts/check_render_alive.py` pre-flight probe + restart-Gazebo-per-flight rule.
+5. **The sensor mount had faced the horizon, upside-down, since ADR-007 was authored** — Gazebo
+   cameras look along sensor +X; the rpy was derived Z-forward. Found by the tree-position check;
+   root-caused with a landmark-oracle world (after learning `<static>` doesn't propagate into
+   nested includes — crash-tumbling test vehicles produced hours of contradictions);
+   fixed and now GATED: `scripts/verify_mount_geometry.sh`, canopy centroid within 2.2 px of the
+   georef prediction.
+Flights 6-7 on the corrected mount produced the first heatmaps that survive cross-examination:
+every imaged tree at its true position, +0.87 typical NDVI lift, soil dead on the physics
+prediction. Evidence committed past the gitignore (level-by-level exceptions). Remaining:
+fused-frame recording THROUGHPUT (truth proven; coverage per flight still partial — first lever:
+camera 5→2 Hz), then the ADR-003 real-render re-run (annotator needs a pre-driver-start clamp).
+The meta-lesson, now everywhere in the docs: gates that measure values cannot catch geometry;
+every artifact needs a check against ground truth it cannot fake.
+
 ## 2026-08-18 (evening) — First Gate-1 attempt: one blocker fixed live, one real bug found
 
 The batched Docker session started. Gazebo came up healthy (thermal on all 36 visuals, four

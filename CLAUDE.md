@@ -47,11 +47,15 @@ paths. Do NOT "helpfully" rename them; the `/fg/*` contract is live-verified (AD
 - MVP obstacle density = **2-3 scripted bird trajectories**, not a flock. Keep the loop debuggable.
 - NDVI-vs-RGB detection = **DECIDED (ADR-003): NDVI-direct** — the classical blob baseline hit
   per-bird-track FNR 0.000 on the spike, so no trained model is justified yet; re-confirmation on
-  the real Gazebo render is the still-pending item (rides in the Week-5 batched Docker session).
+  the real Gazebo render is the still-pending item (tooling ready; needs a full-coverage recording).
 - NDVI render mechanism = **ADR-007: RGB camera Red channel + Gazebo thermal sensor repurposed as
-  synthetic NIR**, fused in a ROS 2 node. Gate 0 (thermal loads on pinned Harmonic+ogre2) passed
-  GREEN live 2026-08-05; Gates 1-3 (bridge, pixel bands, avoidance regression) still pending
-  (`docs/runbooks/NDVI_VALIDATION.md` — resume at Gate 1).
+  synthetic NIR**, fused in a ROS 2 node. **All four gates GREEN live** (Gate 0 2026-08-05;
+  Gates 1-3 2026-08-18: bridge, bands canopy 0.854 > soil 0.212 > bird 0.040, avoidance
+  regression). Sensor mount corrected same day (was horizon-facing since authoring — Gazebo
+  cameras look along +X; ADR-007 amendment 5) and geometry is now GATED:
+  `scripts/verify_mount_geometry.sh` (2.2 px). First tree-verified real-render heatmaps committed.
+  Open: recording throughput (fused-frame delivery limits per-flight coverage) + the ADR-003
+  real-render re-run.
 - Real-detector contract = **ADR-009**: detections carry `stamp_s` (policy staleness gate); bird
   position from apparent-size ray, **never** ground-plane projection (fail-dangerous at altitude).
 - Coverage-ledger honesty = commanded setpoints are **never** recorded as flown
