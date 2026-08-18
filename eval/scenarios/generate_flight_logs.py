@@ -81,8 +81,24 @@ def run(name: str, cfg: dict) -> dict:
     log = ex.flight_log(name, cfg["seed"], cell_size_m=CELL_M)
     out = REPO / "eval" / "scenarios" / name / "flight_log.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(log, indent=2))
+    out.write_text(json.dumps(_round_floats(log), indent=2))
     return log
+
+
+def _round_floats(obj, ndigits: int = 9):
+    """Recursively round every float to `ndigits` before serializing. CI's regenerate+diff gate
+    demands BYTE-identical logs, and 2026-08-18 taught us byte-identity only held per-platform:
+    macOS and glibc libm disagree in the last ulp of the policy's bearing-sweep trig (one divert
+    setpoint differed at the 15th decimal), so the same code produced different bytes on the two
+    platforms. 1e-9 m is nanometer precision -- far below anything physical in this sim -- and
+    CPython's shortest-repr float serialization is platform-independent once values are equal."""
+    if isinstance(obj, float):
+        return round(obj, ndigits)
+    if isinstance(obj, dict):
+        return {k: _round_floats(v, ndigits) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):  # tuple too: event setpoint_enu/position_enu are tuples
+        return [_round_floats(v, ndigits) for v in obj]
+    return obj
 
 
 def main() -> int:

@@ -4589,8 +4589,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        8.414953921314819,
-        42.474233052931226,
+        8.414953921,
+        42.474233053,
         15.0
       ],
       "verdict": "accepted",
@@ -4648,8 +4648,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        7.4074339763470345,
-        45.492086265440314,
+        7.407433976,
+        45.492086265,
         15.0
       ],
       "verdict": "accepted",
@@ -4879,8 +4879,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        35.144957554275265,
-        47.42507074287456,
+        35.144957554,
+        47.425070743,
         15.0
       ],
       "verdict": "accepted",
@@ -4947,8 +4947,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        38.94427190999916,
-        49.52786404500042,
+        38.94427191,
+        49.527864045,
         15.0
       ],
       "verdict": "accepted",
@@ -5065,8 +5065,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        37.071067811865476,
-        42.928932188134524,
+        37.071067812,
+        42.928932188,
         15.0
       ],
       "verdict": "accepted",

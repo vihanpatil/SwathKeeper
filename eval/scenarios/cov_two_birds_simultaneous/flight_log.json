@@ -6401,8 +6401,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        37.928932188134524,
-        33.071067811865476,
+        37.928932188,
+        33.071067812,
         15.0
       ],
       "verdict": "accepted",
@@ -6586,8 +6586,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        52.071067811865476,
-        24.928932188134524,
+        52.071067812,
+        24.928932188,
         15.0
       ],
       "verdict": "accepted",

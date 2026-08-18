@@ -5766,8 +5766,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        20.000000000067462,
-        29.999963267948964,
+        20.0,
+        29.999963268,
         15.0
       ],
       "verdict": "accepted",
