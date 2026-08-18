@@ -15,6 +15,10 @@ check or recorded flight that needs visible birds:
     python3 /workspace/fieldguard/scripts/drive_birds.py --once 12  # place birds at t=12s, exit
                                                                      # (deterministic Gate-2 shots)
 
+Every continuous run drops a run sidecar (`eval/results/bird_drive_<UTCstamp>.json`) recording the
+sim-time anchor t0 — that anchor is the ONLY thing `eval/annotate_real_clip.py` needs to reconstruct
+bird ground truth for a clip recorded during the run, and console scrollback is not a storage medium.
+
 Mechanism: one `gz service /world/<world>/set_pose` call per bird per tick (subprocess, gz CLI —
 no gz-transport Python bindings needed in the container). At the default 5 Hz x 3 birds this is
 ~15 short-lived processes/sec, comfortably within budget, and matches the camera's 5 Hz
@@ -45,6 +49,9 @@ from typing import List, Optional, Sequence, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BIRDS_CONFIG = REPO_ROOT / "config" / "birds" / "farm_world_birds.json"
 DEFAULT_WORLD = "farmguard_field"
+DEFAULT_SIDECAR_DIR = REPO_ROOT / "eval" / "results"  # gitignored, same home as the flight logs
+
+SIDECAR_SCHEMA_VERSION = "1.0"
 
 Pose = Tuple[float, float, float, float]  # (x_m, y_m, z_m, yaw_rad)
 
@@ -77,6 +84,48 @@ def pose_at(t_s: float, waypoints: Sequence[dict], loop: bool = True) -> Pose:
                 math.radians(a["yaw_deg"] + f * (b["yaw_deg"] - a["yaw_deg"])),
             )
     raise AssertionError(f"unreachable: t_s={t_s} not bracketed by waypoints")  # pragma: no cover
+
+
+def write_run_sidecar(sidecar_dir: Path, t0_sim_s: Optional[float], rate_hz: float,
+                      config_path: Path, bird_ids: Sequence[str], world: str) -> Path:
+    """Record this run's timing anchor to `<sidecar_dir>/bird_drive_<UTCstamp>.json` and return
+    the path.
+
+    A clip recorded while this driver runs has no bird ground truth of its own (nothing in the ROS 2
+    graph publishes bird poses), but it is fully recoverable: bird position at a frame =
+    `pose_at(frame.stamp_sim_s - t0_sim)`. Without this file that anchor exists ONLY in the console
+    scrollback of whichever terminal started the driver -- one closed tab and the clip is unlabelable.
+    Written once at startup and flushed immediately, so a Ctrl-C'd or crashed run still leaves it.
+    Consumed by `eval/annotate_real_clip.py --sidecar`."""
+    sidecar_dir = Path(sidecar_dir)
+    sidecar_dir.mkdir(parents=True, exist_ok=True)
+    path = sidecar_dir / f"bird_drive_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json"
+    payload = {
+        "schema_version": SIDECAR_SCHEMA_VERSION,
+        "driver": "scripts/drive_birds.py",
+        "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "world": world,
+        # "sim" = RTF-proof gz /clock timing; "wall" = wall clock, which leaves NO sim anchor
+        # (t0_sim_s null) and therefore no way to label a clip afterwards.
+        "clock": "wall" if t0_sim_s is None else "sim",
+        "t0_sim_s": t0_sim_s,
+        "rate_hz": rate_hz,
+        # Recorded as passed: the driver runs at /workspace/fieldguard inside the container while
+        # the annotator usually runs from the host checkout, so this path may not resolve there --
+        # it is provenance, not a lookup key (the annotator defaults to its own repo's config and
+        # cross-checks bird_ids).
+        "config": str(config_path),
+        "config_name": Path(config_path).name,
+        "bird_ids": list(bird_ids),
+        "note": ("bird trajectory time for a recorded frame = frame.stamp_sim_s - t0_sim_s; "
+                 "label a clip with: python3 eval/annotate_real_clip.py --clip <dir> --sidecar "
+                 "<this file>"),
+    }
+    with path.open("w") as fh:
+        json.dump(payload, fh, indent=1)
+        fh.write("\n")
+        fh.flush()
+    return path
 
 
 def parse_sim_time_s(clock_text: str) -> Optional[float]:
@@ -140,6 +189,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     help="time trajectories on wall clock instead of Gazebo /clock sim time "
                          "(only correct at RTF~1; sim time is the default because software "
                          "rendering runs this stack well below realtime)")
+    ap.add_argument("--sidecar-dir", type=Path, default=DEFAULT_SIDECAR_DIR,
+                    help="where to write the run sidecar recording t0_sim (default eval/results/) "
+                         "— it is what lets eval/annotate_real_clip.py label a clip recorded "
+                         "during this run")
+    ap.add_argument("--no-sidecar", action="store_true",
+                    help="skip the run sidecar (any clip recorded during this run then depends on "
+                         "console scrollback for its bird ground truth)")
     args = ap.parse_args(argv)
 
     birds = json.loads(args.config.read_text())["birds"]
@@ -160,6 +216,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                   "(trajectory timing only correct at RTF~1)", file=sys.stderr)
         else:
             print(f"[drive_birds] sim-time mode, t0={t0_sim:.2f}s (RTF-proof)")
+
+    if not args.no_sidecar:
+        # Never fatal: a read-only mount must not stop a flight that is otherwise fine.
+        try:
+            sidecar = write_run_sidecar(args.sidecar_dir, t0_sim, args.rate, args.config,
+                                        [b["bird_id"] for b in birds], args.world)
+            print(f"[drive_birds] run sidecar -> {sidecar}  "
+                  f"(label a clip: eval/annotate_real_clip.py --sidecar <that file>)")
+        except OSError as exc:
+            print(f"[drive_birds] WARNING: could not write run sidecar ({exc}) — note t0 by hand "
+                  f"or a clip recorded now cannot be labelled later", file=sys.stderr)
 
     t_start = time.monotonic()
     period = 1.0 / args.rate
