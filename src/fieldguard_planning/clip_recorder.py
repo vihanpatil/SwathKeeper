@@ -19,7 +19,8 @@ Two contract details that MUST NOT drift (both regression-tested against the act
     BURSTS (instantaneous RTF 0.0016..0.48), so a burst delivers frames rendered sim-seconds apart
     within wall-milliseconds, and arrival-pairing stamped canopy frames with poses meters
     down-track (0/18 trees showed in the first heatmap; the canopy blobs sat over empty soil).
-    The fix is `PoseBuffer`: the node bridges Gazebo's own clock in as `/fg/gz_clock`, TAGS every
+    The fix is `PoseBuffer`: the node streams Gazebo's own clock natively (a `gz topic` subprocess — NOT
+    bridged: at ~350 msgs/s the bridged clock starved the image pipeline), TAGS every
     arriving pose with gz-now, and each frame selects the pose whose gz tag is nearest the frame's
     own gz stamp -- one clock domain, burst-proof. Per-frame `pose_pair_residual_s` (tag minus
     stamp) and `frame_age_sim_s` (gz-now at arrival minus stamp) are recorded so mislabeling is
@@ -47,6 +48,42 @@ SCHEMA_VERSION = "1.1"
 # A frame whose best pose-pair residual exceeds this (in SIM seconds) is recorded but flagged
 # pose_pair_stale -- at ~3 m/s sim ground speed, 0.35 s is ~1 m of georef error, under half a cell.
 STALE_PAIR_BOUND_S = 0.35
+
+
+class StreamingClockParser:
+    """Incremental parser for `gz topic -e -t /clock` text output. Feed it lines; it returns the
+    sim time (seconds) each time a `sim { sec: N nsec: M }` block completes, else None.
+
+    Why a subprocess text stream and not a bridged ROS topic: Gazebo publishes /clock at ~350
+    msgs/s, and routing that through ros_gz_bridge starved the image serialization on the
+    CPU-saturated stack (measured live 2026-08-18: the fused frame rate collapsed ~8x with the
+    clock bridged, recovering when removed). Native gz-transport via the CLI costs the bridge
+    nothing and the recorder a line parse."""
+
+    def __init__(self):
+        self._in_sim = False
+        self._sec: Optional[int] = None
+        self._nsec: int = 0
+
+    def feed(self, line: str) -> Optional[float]:
+        s = line.strip()
+        if s.startswith("sim {"):
+            self._in_sim, self._sec, self._nsec = True, None, 0
+            return None
+        if not self._in_sim:
+            return None
+        if s.startswith("sec:"):
+            self._sec = int(s.split(":", 1)[1])
+            return None
+        if s.startswith("nsec:"):
+            self._nsec = int(s.split(":", 1)[1])
+            return None
+        if s.startswith("}"):
+            self._in_sim = False
+            if self._sec is None:
+                return None
+            return self._sec + self._nsec * 1e-9
+        return None
 
 
 class PoseBuffer:
@@ -101,7 +138,7 @@ class ClipWriter:
         self.n_stale = 0
         self._t0_stamp_s: Optional[float] = None
         self.origin: Optional[dict] = None  # /ap/gps_global_origin/filtered, set once by the node
-        self.pairing_mode = "gz_clock_stamp"  # node overrides to 'arrival_fallback' if no /fg/gz_clock
+        self.pairing_mode = "gz_clock_stamp"  # node overrides to 'arrival_fallback' if no clock stream
 
     def add_frame(self, stamp_s: float, ndvi: np.ndarray,
                   drone_pos_enu: Vec3, drone_quat_xyzw: QuatXYZW,
@@ -185,8 +222,8 @@ class ClipWriter:
             },
             "gps_global_origin": self.origin,
             "clock_note": ("camera stamps are Gazebo sim time; /ap/pose/filtered stamps are "
-                           "ArduPilot's clock (use_sim_time=false) -- poses gz-tagged via "
-                           "/fg/gz_clock and paired to each frame's stamp; per-frame residual in "
+                           "ArduPilot's clock (use_sim_time=false) -- poses gz-tagged via a "
+                           "native gz clock stream and paired to each frame's stamp; residual in "
                            "poses.jsonl pose_pair_residual_s, stale pairs flagged pose_pair_stale"),
             "ndvi_dtype": "float32, numpy.save (.npy), values in [-1, 1]",
         }

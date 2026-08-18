@@ -25,6 +25,7 @@ recording logic lives in the unit-tested clip_recorder.ClipWriter.
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -32,7 +33,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from .clip_recorder import ClipWriter, PoseBuffer
+from .clip_recorder import ClipWriter, PoseBuffer, StreamingClockParser
 from .ndvi_fusion import load_camera_config
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -55,7 +56,6 @@ def build_node(out_dir: Path):
     from rclpy.node import Node
     from rclpy.qos import qos_profile_sensor_data
     from geometry_msgs.msg import PoseStamped
-    from rosgraph_msgs.msg import Clock
     from sensor_msgs.msg import CameraInfo, Image
 
     class RecordNode(Node):
@@ -69,14 +69,13 @@ def build_node(out_dir: Path):
             self._out_dir = out_dir
             self._png_writer = _spike_png_writer()
             self._pose_buf = PoseBuffer()
-            self._gz_now: Optional[float] = None   # latest /fg/gz_clock reading (gz sim seconds)
-            self._latest_pose = None               # arrival-fallback only (no gz clock bridged)
+            self._gz_now: Optional[float] = None   # latest gz sim seconds (native clock stream)
+            self._latest_pose = None               # arrival-fallback only (no clock stream)
             self._rgb_by_stamp: dict = {}          # (sec, nanosec) -> np rgb array (bounded)
             self._dropped_no_pose = 0
             self._warned_no_clock = False
+            self._start_clock_stream()
 
-            self.create_subscription(Clock, "/fg/gz_clock", self._on_clock,
-                                     qos_profile_sensor_data)
             self.create_subscription(CameraInfo, topics["rgb_camera_info"], self._on_info,
                                      qos_profile_sensor_data)
             self.create_subscription(Image, topics["rgb_image"], self._on_rgb,
@@ -88,11 +87,28 @@ def build_node(out_dir: Path):
             self.create_subscription(PoseStamped, "/ap/gps_global_origin/filtered", self._on_origin,
                                      qos_profile_sensor_data)
             self.get_logger().info(f"recording to {out_dir} (waiting for camera_info + frames; "
-                                   f"ndvi_node must be running; /fg/gz_clock expected from the "
-                                   f"bridge for stamp-paired poses)")
+                                   f"ndvi_node must be running; gz clock streamed natively for "
+                                   f"stamp-paired poses)")
 
-        def _on_clock(self, msg) -> None:
-            self._gz_now = msg.clock.sec + msg.clock.nanosec * 1e-9
+        def _start_clock_stream(self) -> None:
+            """Native gz-transport clock via a `gz topic -e` subprocess + reader thread — NOT
+            bridged through ros_gz (Gazebo's /clock is ~350 msgs/s; bridging it starved the image
+            pipeline, measured live 2026-08-18). Failure here degrades to arrival pairing, loudly."""
+            import threading
+
+            def _reader():
+                parser = StreamingClockParser()
+                try:
+                    proc = subprocess.Popen(["gz", "topic", "-e", "-t", "/clock"],
+                                            stdout=subprocess.PIPE, text=True, bufsize=1)
+                    for line in proc.stdout:
+                        t = parser.feed(line)
+                        if t is not None:
+                            self._gz_now = t
+                except Exception as exc:  # pragma: no cover -- environment-dependent
+                    self.get_logger().warn(f"gz clock stream died: {exc} — arrival fallback")
+
+            threading.Thread(target=_reader, daemon=True).start()
 
         def _on_info(self, msg) -> None:
             if self.writer is not None:
@@ -139,15 +155,15 @@ def build_node(out_dir: Path):
             if paired is not None:
                 pos, quat_xyzw, residual = paired
             elif self._latest_pose is not None:
-                # Arrival fallback — only reachable with no /fg/gz_clock on the bridge. Loudly
+                # Arrival fallback — only reachable if the native gz clock stream never produced. Loudly
                 # degraded: this is the mode that mislabeled the 2026-08-18 flight.
                 if not self._warned_no_clock:
                     self._warned_no_clock = True
                     self.writer.pairing_mode = "arrival_fallback"
                     self.get_logger().warn(
-                        "no /fg/gz_clock — falling back to ARRIVAL pose pairing (render bursts "
-                        "will mislabel frames; update sim/bridge/fg_sensor_bridge.yaml and "
-                        "restart the bridge)")
+                        "no gz clock reading yet — falling back to ARRIVAL pose pairing (render "
+                        "bursts will mislabel frames; is the gz CLI on PATH inside the "
+                        "container?)")
                 pos, quat_xyzw, _ = self._latest_pose
                 residual = float("nan")
             else:

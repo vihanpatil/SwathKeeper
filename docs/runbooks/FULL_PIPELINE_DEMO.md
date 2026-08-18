@@ -40,9 +40,10 @@ models, the drone with its ADR-007 dual-band camera pair (RGB Red + thermal-as-s
 docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml'
 ```
 *What's happening:* the locked `/fg/*` contract crosses into ROS 2.
-*Look for:* **five** `Creating GZ->ROS Bridge` lines — four sensor topics **plus `/fg/gz_clock`**
-(the sim clock the recorder pairs poses with; four lines means a stale yaml). A missing-library
-crash here means the Shell-0 apt step was skipped.
+*Look for:* **four** `Creating GZ->ROS Bridge` lines (the sensor topics only — the recorder reads
+the sim clock natively via gz-transport, deliberately NOT through this bridge: Gazebo's /clock is
+~350 msgs/s and bridging it starved the image pipeline, measured live). A missing-library crash
+here means the Shell-0 apt step was skipped.
 
 ## Shell 3 — the micro-ROS agent (start BEFORE SITL — the golden rule)
 
@@ -80,10 +81,12 @@ docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash 
 docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
 ```
 *What's happening:* every fused frame is written in the spike schema with a pose selected by
-**gz-clock stamp pairing** (render bursts can't mislabel frames — the lesson of the first
-recorded flight, whose canopy landed meters down-track and put 0/18 trees at their true spots).
+**gz-clock stamp pairing** — the recorder streams Gazebo's clock natively (a `gz topic`
+subprocess, zero bridge load) and matches each frame's own stamp against gz-tagged poses, so
+render bursts can't mislabel frames (the lesson of the first recorded flight, whose canopy landed
+meters down-track and put 0/18 trees at their true spots).
 *Look for:* `live intrinsics locked` (that line is ADR-007 follow-up-5 evidence) and the
-**absence** of `no /fg/gz_clock — falling back to ARRIVAL pairing`. Heartbeats:
+**absence** of the arrival-fallback warning. Heartbeats:
 `recorded N frames (M with rgb, K stale-pose flagged)` — K near zero.
 
 ## Fly it — Shell 4's MAVProxy prompt

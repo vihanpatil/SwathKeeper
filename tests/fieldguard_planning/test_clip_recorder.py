@@ -19,12 +19,42 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from fieldguard_planning.clip_recorder import ClipWriter, PoseBuffer, STALE_PAIR_BOUND_S  # noqa: E402
+from fieldguard_planning.clip_recorder import (  # noqa: E402
+    ClipWriter, PoseBuffer, STALE_PAIR_BOUND_S, StreamingClockParser,
+)
 from fieldguard_planning.coverage import build_grid, load_field_polygon  # noqa: E402
 import stitch_ndvi  # noqa: E402
 
 CAM = {"image_width_px": 64, "image_height_px": 48, "fx": 52.0, "fy": 52.0, "cx": 32.0, "cy": 24.0}
 IDENTITY_XYZW = (0.0, 0.0, 0.0, 1.0)
+
+
+class TestStreamingClockParser(unittest.TestCase):
+    """The native gz clock stream parser (replaced the bridged /fg/gz_clock topic, which at ~350
+    msgs/s starved the image pipeline — measured live 2026-08-18)."""
+
+    def test_full_message_stream(self):
+        p = StreamingClockParser()
+        lines = ["system {", "  sec: 1", "}", "real {", "  sec: 99", "  nsec: 5", "}",
+                 "sim {", "  sec: 123", "  nsec: 500000000", "}", ""]
+        out = [t for t in (p.feed(l) for l in lines) if t is not None]
+        self.assertEqual(out, [123.5])
+
+    def test_consecutive_messages(self):
+        p = StreamingClockParser()
+        stream = ["sim {", "  sec: 10", "  nsec: 0", "}", "sim {", "  sec: 11", "  nsec: 250000000", "}"]
+        out = [t for t in (p.feed(l) for l in stream) if t is not None]
+        self.assertEqual(out, [10.0, 11.25])
+
+    def test_sim_block_without_nsec(self):
+        p = StreamingClockParser()
+        out = [t for t in (p.feed(l) for l in ["sim {", "  sec: 42", "}"]) if t is not None]
+        self.assertEqual(out, [42.0])
+
+    def test_non_sim_blocks_yield_nothing(self):
+        p = StreamingClockParser()
+        out = [t for t in (p.feed(l) for l in ["real {", "  sec: 9", "}"]) if t is not None]
+        self.assertEqual(out, [])
 
 
 class TestPoseBuffer(unittest.TestCase):
