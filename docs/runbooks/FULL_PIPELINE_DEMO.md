@@ -45,6 +45,19 @@ the sim clock natively via gz-transport, deliberately NOT through this bridge: G
 ~350 msgs/s and bridging it starved the image pipeline, measured live). A missing-library crash
 here means the Shell-0 apt step was skipped.
 
+## Pre-flight probe — is the render actually alive? (30 seconds, do NOT skip)
+
+```bash
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
+```
+*What's happening:* one RGB frame is checked for the sky-flat render-degradation signature
+(channel-balanced near-white). A long-lived Gazebo instance can silently degrade after hours of
+software rendering + reconnects — topics stay alive, pixels go blank, and a whole flight records
+plausible-looking nothing (it happened; the 2026-08-18 session lost a flight to it).
+*Look for:* `ALIVE: green-dominant world in view`. On `DEGRADED`: restart Shell 1, re-probe.
+**Rule of thumb: restart Gazebo before every recording flight rather than trusting an instance
+that has been up for hours.**
+
 ## Shell 3 — the micro-ROS agent (start BEFORE SITL — the golden rule)
 
 ```bash
