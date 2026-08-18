@@ -13,7 +13,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from drive_birds import pose_at, set_pose_request  # noqa: E402
+from drive_birds import parse_sim_time_s, pose_at, set_pose_request  # noqa: E402
 
 WPS = [
     {"t_s": 0.0, "x_m": 0.0, "y_m": 0.0, "z_m": 10.0, "yaw_deg": 0.0},
@@ -54,6 +54,22 @@ class TestPoseAt(unittest.TestCase):
     def test_empty_waypoints_raise(self):
         with self.assertRaises(ValueError):
             pose_at(0.0, [])
+
+
+class TestParseSimTime(unittest.TestCase):
+    """The sim-clock parse (RTF-proof timing — a wall-clock driver flies birds 1/RTF too fast on
+    this software-rendered stack, where measured RTF << 1)."""
+
+    def test_full_clock_message(self):
+        txt = "system {\n  sec: 1\n}\nreal {\n  sec: 99\n  nsec: 5\n}\nsim {\n  sec: 123\n  nsec: 500000000\n}\n"
+        self.assertAlmostEqual(parse_sim_time_s(txt), 123.5)
+
+    def test_sim_block_without_nsec(self):
+        self.assertEqual(parse_sim_time_s("sim {\n  sec: 42\n}"), 42.0)
+
+    def test_missing_sim_block_returns_none(self):
+        self.assertIsNone(parse_sim_time_s("real {\n  sec: 99\n}"))
+        self.assertIsNone(parse_sim_time_s(""))
 
 
 class TestSetPoseRequest(unittest.TestCase):

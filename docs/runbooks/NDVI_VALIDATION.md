@@ -157,7 +157,13 @@ ros2 topic list | grep '^/fg/sensor'
 # expect exactly 4: /fg/sensor/rgb/image  /fg/sensor/rgb/camera_info
 #                    /fg/sensor/nir/image  /fg/sensor/nir/camera_info
 
-ros2 topic hz /fg/sensor/rgb/image     # steady ~5 Hz (config/ndvi_camera.json update_rate_hz), not zero
+ros2 topic hz /fg/sensor/rgb/image     # WALL rate ≈ 5 Hz × RTF, not zero. Measured 2026-08-18:
+                                        # RTF ≈ 0.17 on this software-rendered ARM stack → ~0.8 Hz
+                                        # wall is CORRECT for the 5 Hz sim-time camera
+                                        # (config/ndvi_camera.json update_rate_hz). Confirm the
+                                        # SIM rate via header stamps: consecutive frames must be
+                                        # ~0.2 s of sim time apart. Budget note: recordings take
+                                        # ~1/RTF wall time (a 5-min mission ≈ 30 min wall).
 ros2 topic hz /fg/sensor/nir/image     # same rate, same cadence as rgb
 
 ros2 topic echo --field encoding /fg/sensor/rgb/image --once   # expect: rgb8
