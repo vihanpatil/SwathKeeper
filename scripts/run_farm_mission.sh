@@ -80,13 +80,14 @@ cat <<EOF
   ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
 
   # Then, from any shell with ROS 2 sourced:
-  ros2 topic list | grep '^/ap'      # expect ~19 topics
+  ros2 topic list | grep '^/ap'      # expect 18 topics (the ADR-005 locked contract)
   ros2 topic hz /ap/pose/filtered    # steady rate, not zero
 
 [run_farm_mission] Open a FOURTH shell (docker exec -it fieldguard-sim bash) for the ADR-007 NDVI
   sensor bridge -- Gazebo now also carries /fg/sensor/rgb/* and /fg/sensor/nir/* (dual-band NDVI
-  camera, see docs/DECISIONS.md ADR-007 and sim/README.md). NOT confirmed live yet -- run
-  docs/WEEK5_VALIDATION.md's Gate 0 BEFORE Gate 1 flying above (thermal-sensor kill-switch check):
+  camera, see docs/DECISIONS.md ADR-007 and sim/README.md). Gate 0 (thermal kill-switch + mount
+  joint) passed GREEN 2026-08-05; the ros_gz BRIDGE below is still unconfirmed -- that is
+  docs/WEEK5_VALIDATION.md Gate 1, next in the batched session:
 
   source /root/ardu_ws/install/setup.bash
   ros2 run ros_gz_bridge parameter_bridge --ros-args \\

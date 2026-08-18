@@ -52,7 +52,7 @@ Runs in Docker (the stack isn't practically supported natively on macOS, ADR-004
 1. **Bring up the sim** — `docs/WEEK1_BRINGUP.md` (build the image, then Gazebo → micro-ROS agent →
    SITL, *in that order* — the agent must be listening before SITL's DDS client starts).
 2. **Reproduce the live avoidance demo** — `docs/WEEK3_AVOIDANCE_DEMO.md` (runs the loop against a
-   scripted bird; writes a flight log to `eval/results/live_flight_log.json`).
+   scripted bird; writes a flight log to `eval/results/live_flight_log_<UTCstamp>.json`).
 3. **Run the tests / eval harness (no Docker needed)** —
    `python3 -m unittest discover -s tests/fieldguard_planning` and `bash eval/run_spike.sh` (needs the
    pinned deps in `requirements-eval.txt`). Both run in CI (`.github/workflows/ci.yml`).

@@ -2,14 +2,22 @@
 
 Owner: **human** (you), with `robotics-sim-engineer` on standby for failures.
 
-## Everything below is source/doc-verified only, not run
+## ✅ GATE 0 PASSED GREEN (2026-08-05) — Gates 1–3 still to run
 
-Nothing in this doc has executed against the real Gazebo/ogre2 render yet. Every claim about the
+**Gate 0 (the thermal-system kill-switch) executed live 2026-08-05 and passed**: the thermal
+system loads on the pinned Harmonic+ogre2 stack, the world loads with the sensor mount (after the
+joint-parent fix recorded below — see "The fixed-joint parent name"), and all four `/fg/sensor/*`
+topics are present on the gz side. **Do NOT re-run Gate 0; the batched session resumes at
+Gate 1.** Everything below about Gates 1–3 remains source-verified only.
+
+## Gates 1–3 are source/doc-verified only, not run
+
+Nothing about Gates 1–3 has executed against the real Gazebo/ogre2 render yet. Every claim about the
 thermal sensor, the bridge, and the sensor-mount attachment was checked against the pinned-branch
 **source** (gz-sim8 == Harmonic, ros_gz `ros2` branch, ArduPilot/ardupilot_gazebo `main`), not
 memory or guesswork — but source-reading is not the same as a live render. This session is what
-converts "source-verified" into "confirmed." **Do the four gates below in order — Gate 0 is a
-hard kill-switch, do it FIRST, before looking at anything else.** (Gate 3, added by
+converts "source-verified" into "confirmed." **Do the remaining gates in order, starting at
+Gate 1** (Gate 0, the hard kill-switch, already passed — banner above). (Gate 3, added by
 flight-software-engineer 2026-08-05, is a regression check — the NDVI sensor mount changed the
 vehicle model the already-proven Week-3 avoidance loop flies with, not a new ADR-007 render claim —
 but it belongs in the same session since it reuses Gates 0-2's running Gazebo instance.)
@@ -248,7 +256,7 @@ gz topic -e -t /world/farmguard_field/stats -n 1   # one-shot sample of the worl
      dodge. A software-rendering (`llvmpipe`, no GPU passthrough — `docs/WEEK1_BRINGUP.md` gotcha
      #1) machine is already slow; the question is whether the TWO NEW CAMERAS make it categorically
      worse, not whether it's fast in absolute terms.
-  4. `eval/results/live_flight_log.json` (written on Shell D's `Ctrl-C`) shows the same shape as a
+  4. `eval/results/live_flight_log_<UTCstamp>.json` (written on Shell D's `Ctrl-C`; timestamped since 2026-08-18 so runs can never clobber prior evidence) shows the same shape as a
      Week-3 flight log: a `takeover`/`maneuver`/`resume` triplet in `events`, and `finalize()`'s
      coverage ledger has no cell missing (per `coverage.check_ledger`'s P1 partition invariant) —
      i.e. the coverage-debt guarantee still holds with the heavier vehicle model, not just the

@@ -314,3 +314,57 @@ Owner / roles: tech-lead (decided + verified against Gazebo Harmonic sensor docs
 robotics-sim-engineer (builds the two-sensor mount + per-model temperature authoring + bridge),
 perception-ml-engineer (ADR-003 re-run on `/fg/ndvi/image`), flight-software-engineer (georef stitch
 consumes `/fg/ndvi/*` + ADR-005 pose/origin).
+
+## ADR-008: Hosted-runner Gazebo-render CI is unproven — the sim CI job pulls a prebuilt image and stays manual-dispatch until one green run   (2026-08-05, status: ACCEPTED; promoted to ADR 2026-08-18 from docs/WEEK5_CI_GAZEBO.md "Feasibility verdict")
+Decision: Split sim CI into (1) a prebuilt GHCR image (`sim-image.yml`, built manually / on
+Dockerfile change, never from scratch per push) and (2) a headless smoke-flight job
+(`build-test-sim`) gated to `workflow_dispatch` until a human confirms one green run. Full
+Gazebo-render CI on GitHub-hosted runners is treated as UNPROVEN, not assumed.
+Alternative(s) rejected: (a) Build the Gazebo+ArduPilot+ROS 2 stack in CI per push — disqualified by
+resource math (hosted runners: 4 vCPU / 14GB SSD vs the documented ≥40GB workspace); (b) assume
+headless rendering works because SITL-only CI does — upstream's own evidence says otherwise:
+`ardupilot_gazebo`'s CI is build/lint-only, and ArduPilot's SITL autotests fly with NO Gazebo.
+Why: The teams that own these exact components don't run live Gazebo on hosted runners — that's the
+strongest available signal; we bake the build into an image (fixing the resource math) and claim
+green only when a run IS green. Timeboxed with a documented cut-list (WEEK5_CI_GAZEBO.md).
+Owner / roles: devops-reliability-engineer, robotics-sim-engineer.
+
+## ADR-009: Real-detector evidence contract — stamped detections with a policy staleness gate; bird position from apparent-size ray, never ground-plane projection   (2026-08-18, status: ACCEPTED — implementation lands with the Week-6 detector)
+Decision: Two contract rules locked BEFORE the real NDVI-blob detector replaces the `--demo` bird on
+the `detection_source` seam:
+  1. **Staleness (IMPLEMENTED 2026-08-18):** `Detection.stamp_s` (same clock as the policy's new
+     `now_s` argument) + `PolicyParams.max_detection_age_s`. A stale detection is treated as ABSENT
+     (observable in the maneuver reason/debug), never as a live threat or a dodge constraint.
+     Unstamped detections fail OPEN (current behavior) because the demo/scripted sources don't stamp
+     — dropping them would silently disable avoidance in every existing runbook.
+  2. **Range/altitude (CONTRACT, Week-6 implementation):** a monocular NDVI blob has no depth; naive
+     ground-plane projection puts a flying bird at z=0 — OUTSIDE the ±6 m threat cylinder at 15 m
+     cruise, i.e. it would SUPPRESS real threats (fail-dangerous). The detector must instead place
+     the bird along the pixel ray at range Zc = f·R_phys/r_px from apparent size (physical radius
+     prior ~0.15 m, the value the sim ground truth already records as `range_m`), with a
+     conservative inflation factor to be tuned against GT range error on the eval harness.
+Alternative(s) rejected: ground-plane projection (fail-dangerous, above); treating every in-frame
+detection as at-drone-altitude regardless of size (fail-safe but dodge-happy — it would manufacture
+avoidance events and wreck the coverage story); waiting for the depth-sensor comparison arm (that
+arm QUANTIFIES what depth buys over this monocular estimate — it can't be the v1 dependency).
+Why: The seam's data shape is a one-line change today and a three-surface breaking change after the
+detector exists; and the residual monocular range error becomes the measured argument for the
+second sensor — the comparison arm's whole point.
+Owner / roles: tech-lead, perception-ml-engineer (Week-6 implementation), qa-safety-reviewer
+(staleness + range-error scenarios).
+
+## ADR-010: v1 NDVI stitch is OFFLINE, post-flight, over a recorded clip — not a live in-node accumulator   (2026-08-18, status: ACCEPTED — implemented, scripts/stitch_ndvi.py)
+Decision: The georeferenced heatmap (Weeks 5-6 exit criterion 1) is produced by
+`scripts/stitch_ndvi.py`: a recorded spike-schema clip (real render or synthetic) → per-cell mean
+NDVI on the SAME canonical 2.5 m / 720-cell grid the coverage ledger uses (joinable by `cell_id`) →
+`heatmap.json` + false-color `heatmap.png`. Refuses to succeed on an empty stitch (a "ran but
+carries no data" result exits nonzero — same discipline as the flat-NDVI gate).
+Alternative(s) rejected: live in-node stitching during flight — days of extra work and new failure
+modes (pose-at-stamp buffering, partial-map states, node lifecycle) for identical exit-criterion
+output; offline over a recorded flight is rerunnable and debuggable against the same committed
+evidence artifact it consumes. Promotable to a live accumulator later if the dashboard ever needs
+in-flight NDVI (it doesn't for v1).
+Why: One Docker session must produce the demo heatmap; the runner existing BEFORE the session is
+what makes that single session sufficient (record the flight → stitch on the host afterward).
+Owner / roles: flight-software-engineer, tech-lead; perception-ml-engineer consumes the same clip
+for the ADR-003 real-render re-run.

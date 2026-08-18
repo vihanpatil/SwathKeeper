@@ -136,10 +136,13 @@ actor's pose changing over consecutive `gz model -m bird_0 -p` calls confirms it
 
 ```bash
 # Shell B — SITL, wired to Gazebo (identical to WEEK1_BRINGUP.md §6 -- vehicle model/pose is the
-# same iris_with_gimbal at the same spawn pose, so nothing about the SITL side changes):
+# same iris_with_gimbal at the same spawn pose, so nothing about the SITL side changes).
+# --enable-DDS + the param file are LOAD-BEARING (bringup bug #6): SITL builds DDS OUT by default,
+# so without them this recipe silently produces ZERO /ap topics and everything downstream starves:
 cd /root/ardu_ws/src/ardupilot
 export PATH="$PWD/Tools/autotest:$PATH"
-sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
+sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --enable-DDS \
+  --add-param-file=/workspace/fieldguard/config/sitl_params/dds_udp.parm
 ```
 
 Then fly the existing mission exactly as in `docs/WEEK1_BRINGUP.md` §8 (`wp load

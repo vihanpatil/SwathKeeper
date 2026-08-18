@@ -216,8 +216,9 @@ def sdf_vehicle_with_ndvi_sensor(ndvi_cfg: dict) -> str:
     model composition -- the same pattern iris_with_gimbal/model.sdf itself uses to attach its own
     gimbal to iris_with_standoffs) rather than forking the external, pinned-SHA vehicle model. See
     config/ndvi_camera.json ("mount") for the full derivation/verification notes on the
-    parent-link scoped name -- this is the one piece of this world NOT confirmed live yet
-    (docs/WEEK5_VALIDATION.md Gate 1 troubleshooting has the fallback to try if it fails to spawn).
+    parent-link scoped name -- CONFIRMED live 2026-08-05 (Gate 0 GREEN): the originally-authored
+    nested name was rejected by gz sim, the correct value is iris_with_gimbal::base_link
+    (docs/WEEK5_VALIDATION.md "The fixed-joint parent name" has the full failure/fix record).
     """
     m = ndvi_cfg["mount"]
     cam = ndvi_cfg["camera"]
@@ -243,7 +244,7 @@ def sdf_vehicle_with_ndvi_sensor(ndvi_cfg: dict) -> str:
       </include>
 
       <!-- ADR-007: co-located RGB (Red band) + thermal (synthetic NIR) camera pair, ONE rigid
-           nadir mount (no gimbal), rigidly fixed to the airframe (iris_with_standoffs::base_link),
+           nadir mount (no gimbal), rigidly fixed to the airframe ({m['parent_link_scoped_from_wrapper']}),
            NOT the 3-axis RC gimbal. Both sensors live on this SAME link at the SAME zero-offset
            pose, so intrinsics/pose/rate are identical by construction: pixel-wise fusion needs no
            resampling. See config/ndvi_camera.json for the source values and calibration notes. -->

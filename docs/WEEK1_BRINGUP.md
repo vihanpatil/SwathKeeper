@@ -287,7 +287,7 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
 **Verify:** with Gazebo, the agent, and SITL (`--add-param-file` above) all up:
 
 ```bash
-ros2 topic list | grep '^/ap'      # expect ~19 topics, see docs/DECISIONS.md for the locked list
+ros2 topic list | grep '^/ap'      # expect 18 topics, see docs/DECISIONS.md for the locked list
 ros2 topic hz /ap/pose/filtered    # steady rate, not zero
 ros2 service list | grep '^/ap'    # expect 6 services (arm_motors, mode_switch, ...)
 ```

@@ -86,7 +86,7 @@
       </include>
 
       <!-- ADR-007: co-located RGB (Red band) + thermal (synthetic NIR) camera pair, ONE rigid
-           nadir mount (no gimbal), rigidly fixed to the airframe (iris_with_standoffs::base_link),
+           nadir mount (no gimbal), rigidly fixed to the airframe (iris_with_gimbal::base_link),
            NOT the 3-axis RC gimbal. Both sensors live on this SAME link at the SAME zero-offset
            pose, so intrinsics/pose/rate are identical by construction: pixel-wise fusion needs no
            resampling. See config/ndvi_camera.json for the source values and calibration notes. -->

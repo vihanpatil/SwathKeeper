@@ -74,7 +74,7 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
 ```
 With Shells A (Gazebo), B (SITL, armed/flying), and C (agent) all up, from any ROS 2-sourced shell:
 ```bash
-ros2 topic list   | grep '^/ap'            # expect ~19 topics
+ros2 topic list   | grep '^/ap'            # expect 18 topics (ADR-005 locked contract)
 ros2 service list | grep '^/ap'            # expect 6 services
 ros2 topic hz   /ap/pose/filtered          # steady rate, not zero
 ros2 topic echo /ap/pose/filtered --once   # sanity-check values
