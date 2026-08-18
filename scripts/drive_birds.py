@@ -112,7 +112,10 @@ def set_pose_request(name: str, pose: Pose) -> str:
             f'orientation: {{z: {math.sin(yaw / 2):.6f}, w: {math.cos(yaw / 2):.6f}}}')
 
 
-def gz_set_pose(world: str, name: str, pose: Pose, timeout_ms: int = 500) -> bool:
+def gz_set_pose(world: str, name: str, pose: Pose, timeout_ms: int = 2000) -> bool:
+    # 2000ms, not 500: with SITL + MAVProxy + software rendering sharing the CPU, service
+    # round-trips beyond 500ms are routine (learned live 2026-08-18 — the first in-mission run
+    # failed every call while the idle-world test had passed).
     """One set_pose service call via the gz CLI. Returns True on success; a failed call is
     reported but never raises — one dropped tick must not kill the driver mid-flight."""
     cmd = ["gz", "service", "-s", f"/world/{world}/set_pose",
@@ -161,6 +164,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     t_start = time.monotonic()
     period = 1.0 / args.rate
     failures = 0
+    successes = 0
+    last_report = t_start
     try:
         while True:
             tick_begin = time.monotonic()
@@ -173,16 +178,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             else:
                 t = tick_begin - t_start
             for b in birds:
-                if not gz_set_pose(args.world, b["bird_id"],
-                                   pose_at(t, b["waypoints"], b.get("loop", True))):
+                if gz_set_pose(args.world, b["bird_id"],
+                               pose_at(t, b["waypoints"], b.get("loop", True))):
+                    successes += 1
+                else:
                     failures += 1
-                    if failures == 5:
-                        print("[drive_birds] 5 failed calls — is Gazebo up and the world name "
-                              f"'{args.world}' right?", file=sys.stderr)
+                    if failures in (5, 25) or failures % 100 == 0:
+                        print(f"[drive_birds] {failures} failed set_pose calls so far "
+                              f"({successes} ok) — heavy load slows service round-trips; the birds "
+                              f"still track sim time, just at fewer updates", file=sys.stderr)
+            # Heartbeat every 30s wall so 'working' is visibly different from 'silently failing'.
+            if time.monotonic() - last_report >= 30.0:
+                last_report = time.monotonic()
+                print(f"[drive_birds] t_sim={t:7.1f}s  poses ok={successes}  failed={failures}")
             time.sleep(max(0.0, period - (time.monotonic() - tick_begin)))
     except KeyboardInterrupt:
         print(f"\n[drive_birds] stopped after {time.monotonic() - t_start:.1f}s "
-              f"({failures} failed calls)")
+              f"({successes} ok, {failures} failed calls)")
         return 0
 
 

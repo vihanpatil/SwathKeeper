@@ -325,10 +325,33 @@ to patch it live.
 
 Flip ADR-007 in `docs/DECISIONS.md` from "confirmation-pending" to confirmed, with the date and a
 one-line pointer to this doc's results (mirroring how ADR-005/ADR-006 were closed out in Week 3).
-Then Weeks 5-6's remaining scope — the ADR-003 real-render re-confirmation and pointing the
-`ndvi_node`/`ndvi_georef` pipeline (already built + unit-tested against synthetic fixtures,
-`src/fieldguard_planning/ndvi_node.py` / `ndvi_fusion.py` / `ndvi_georef.py`) at the real `/fg/*`
-topics — is unblocked. The real-render re-confirmation is explicitly **out of scope for this
-session and this doc** (perception-ml-engineer, downstream of a green Gate 2); running the
-already-built `ndvi_node` live and confirming the georef stitch against real telemetry is
-flight-software-engineer's next step once Gate 3 is also green.
+Then run **the recorded flight** — the artifact every remaining exit criterion consumes.
+
+### The recorded flight (same session, gates green)
+
+Shell order (1-5 as the gates already have them): Gazebo, bridge, agent, SITL, birds
+(`drive_birds.py --rate 2`, started AFTER arming — its service traffic adds jitter the EKF can't
+tolerate while aligning). Then:
+
+**Shell 6 — the fusion node** (must be up before the recorder; its `/fg/ndvi/image` stamp is the
+georef anchor):
+```bash
+source /root/ardu_ws/install/setup.bash
+PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node
+```
+
+**Shell 7 — the recorder** (writes the spike-schema clip live; Ctrl-C AFTER the mission RTLs):
+```bash
+source /root/ardu_ws/install/setup.bash
+PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 -m fieldguard_planning.record_node \
+  --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)
+```
+Watch for "live intrinsics locked" (that line IS the ADR-007 follow-up-5 evidence) and the
+`recorded N frames` heartbeats. On Ctrl-C it finalizes `meta.json` (`synthetic: false`) and prints
+the exact stitch command. Budget ~1/RTF wall time for the full boustrophedon.
+
+**Afterwards, on the host** (no container needed): `python3 scripts/stitch_ndvi.py --clip <dir>`
+→ the georeferenced heatmap (exit criterion 1); `eval/run_spike.sh` pointed at the same clip → the
+ADR-003 real-render re-confirmation (criterion 3). COMMIT the clip's `meta.json` + `poses.jsonl` +
+`heatmap.*` + a handful of sample frames (not all ~GBs of `.npy`) — evidence, per the 2026-08-18
+clobber lesson.
