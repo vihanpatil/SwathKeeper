@@ -4615,7 +4615,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 10.63,
         "n_threats": 1,
@@ -4673,7 +4674,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 9.22,
         "n_threats": 1,
@@ -4785,7 +4787,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 7.0,
         "n_threats": 1,
@@ -4843,7 +4846,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 8.0,
         "n_threats": 1,
@@ -4910,7 +4914,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 8.246,
         "n_threats": 1,
@@ -4968,7 +4973,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 8.944,
         "n_threats": 1,
@@ -5026,7 +5032,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 10.0,
         "n_threats": 1,
@@ -5084,7 +5091,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 11.314,
         "n_threats": 1,

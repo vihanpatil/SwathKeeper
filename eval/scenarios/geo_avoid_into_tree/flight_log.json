@@ -5863,7 +5863,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 10.05,
         "n_threats": 1,
@@ -5921,7 +5922,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 8.062,
         "n_threats": 1,
@@ -5979,7 +5981,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 6.083,
         "n_threats": 1,
@@ -6037,7 +6040,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 4.123,
         "n_threats": 1,
@@ -6095,7 +6099,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 2.236,
         "n_threats": 1,
@@ -6153,7 +6158,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 1.0,
         "n_threats": 1,
@@ -6211,7 +6217,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 2.236,
         "n_threats": 1,
@@ -6269,7 +6276,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 4.123,
         "n_threats": 1,
@@ -6327,7 +6335,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 6.083,
         "n_threats": 1,
@@ -6385,7 +6394,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 8.062,
         "n_threats": 1,
@@ -6443,7 +6453,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 10.05,
         "n_threats": 1,
