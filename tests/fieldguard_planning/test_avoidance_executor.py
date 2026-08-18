@@ -1,8 +1,9 @@
 """Tests for the reactive-avoidance executor (avoidance_executor.py) — ADR-006.
 
-Covers the two guarantees the module exists to make impossible-by-construction:
-  1. never fly an unvetted setpoint (safety backstop re-vets is_safe_3d -> HOLD on reject), and
-  2. never silently drop a coverage cell (finalize's ledger satisfies the partition invariant).
+Covers the guarantees the module exists to make impossible-by-construction:
+  1. never fly an unvetted setpoint (safety backstop re-vets is_safe_3d -> HOLD on reject),
+  2. never silently drop a coverage cell (finalize's ledger satisfies the partition invariant), and
+  3. command ONE dodge point per encounter (the setpoint latch + its re-latch escape hatch).
 Plus the ADR-006 AUTO->GUIDED->AUTO takeover/resume flow. Stdlib unittest, bare python.
 """
 import sys
@@ -15,7 +16,7 @@ from fieldguard_planning.avoidance_types import (  # noqa: E402
     AvoidanceManeuver, Decision, Detection, DroneState,
 )
 from fieldguard_planning.avoidance_executor import (  # noqa: E402
-    AvoidanceExecutor, SimulatedVehicleSink, MODE_AUTO, MODE_GUIDED,
+    AvoidanceExecutor, SimulatedVehicleSink, MODE_AUTO, MODE_GUIDED, RELATCH_THRESHOLD_M,
 )
 from fieldguard_planning.geofence import GeofenceMap  # noqa: E402
 from fieldguard_planning.coverage import CoverageCell, check_ledger, CELL_DEBT, CELL_COVERED  # noqa: E402
@@ -45,6 +46,15 @@ def _exec(sink=None, cells=None):
 
 def _events(ex, kind):
     return [e for e in ex.event_log if e["kind"] == kind]
+
+
+def _divert(setpoint, track_id="bird_0", frame_id=1, reason="test divert"):
+    """A DIVERT maneuver whose bird sits 3 m east of the dodge target (contents irrelevant to the
+    executor -- it only ever reads decision/setpoint/detection-for-logging)."""
+    bird = (setpoint[0] + 3.0, setpoint[1], setpoint[2])
+    return AvoidanceManeuver(decision=Decision.DIVERT, setpoint_enu=setpoint, reason=reason,
+                             triggering_detection=Detection(bird, frame_id=frame_id,
+                                                            track_id=track_id))
 
 
 class TestAvoidanceExecutor(unittest.TestCase):
@@ -82,6 +92,86 @@ class TestAvoidanceExecutor(unittest.TestCase):
         resume = _events(ex, "resume")
         self.assertEqual(len(resume), 1)
         self.assertTrue(resume[-1]["resumed_same_waypoint"])
+
+    # -- setpoint latch: ONE commanded dodge point per encounter --------------
+    def test_setpoint_latches_so_policy_drift_is_not_recommanded(self):
+        """The policy recomputes its dodge every tick, so consecutive DIVERTs carry slightly
+        different setpoints. The executor must keep flying the FIRST vetted one -- otherwise the
+        commanded point walks around every tick (jumpy on film; a live log showed a 6 m outlier)."""
+        ex, sink = _exec()
+        first = (30.0, 30.0, 15.0)
+        drift = (30.4, 30.3, 15.0)   # 0.5 m away -- recompute drift, well under the threshold
+        self.assertLess(((drift[0] - first[0]) ** 2 + (drift[1] - first[1]) ** 2) ** 0.5,
+                        RELATCH_THRESHOLD_M)
+        ex.step(_drone(30.0, 20.0, wp=3), _divert(first))
+        ex.step(_drone(30.0, 22.0, wp=3), _divert(drift, frame_id=2))
+        self.assertEqual(sink.setpoints_sent, [first, first])   # same point commanded twice
+        self.assertEqual(len(set(sink.setpoints_sent)), 1)
+        self.assertNotIn(drift, sink.setpoints_sent)            # the drifted point never flew
+        self.assertEqual(len(_events(ex, "latch")), 1)          # latched once...
+        self.assertEqual(_events(ex, "relatch"), [])            # ...and never re-latched
+        # both ticks still commanded a dodge, and the log keeps the ignored policy point on record
+        maneuvers = _events(ex, "maneuver")
+        self.assertEqual([m["latch_action"] for m in maneuvers], ["latch", "recommand_latched"])
+        self.assertEqual(maneuvers[1]["policy_setpoint_enu"], drift)
+        self.assertEqual(maneuvers[1]["setpoint_enu"], first)
+
+    def test_policy_setpoint_beyond_threshold_relatches(self):
+        """Escape hatch: a genuinely moving threat pushes the policy's dodge far enough that the
+        latch must yield -- re-vetted, re-latched, and logged as such."""
+        ex, sink = _exec()
+        first = (30.0, 30.0, 15.0)
+        moved = (34.5, 30.0, 15.0)   # 4.5 m away -- past the threshold, and safe
+        self.assertGreater(moved[0] - first[0], RELATCH_THRESHOLD_M)
+        self.assertTrue(ex.geofence.is_safe_3d(moved, alt_bounds=(2.0, 30.0)))
+        ex.step(_drone(30.0, 20.0, wp=3), _divert(first))
+        ex.step(_drone(30.0, 22.0, wp=3), _divert(moved, frame_id=2))
+        self.assertEqual(sink.setpoints_sent, [first, moved])   # the new point really flew
+        relatch = _events(ex, "relatch")
+        self.assertEqual(len(relatch), 1)
+        self.assertEqual(relatch[0]["setpoint_enu"], moved)
+        self.assertEqual(relatch[0]["previous_setpoint_enu"], first)
+        self.assertAlmostEqual(relatch[0]["offset_m"], 4.5)
+        self.assertEqual(len(_events(ex, "takeover")), 1)       # still ONE takeover (no thrash)
+        # a third tick back near the new latch is absorbed by it, not re-commanded
+        ex.step(_drone(30.0, 24.0, wp=3), _divert((34.7, 30.0, 15.0), frame_id=3))
+        self.assertEqual(sink.setpoints_sent, [first, moved, moved])
+
+    def test_unsafe_relatch_candidate_holds_and_keeps_the_latch(self):
+        """A re-latch candidate that fails the 3D re-vet must not weaken the backstop: HOLD per the
+        existing behavior, never command it -- and the already-vetted latch survives for later ticks."""
+        ex, sink = _exec()
+        first = (18.0, 5.0, 15.0)    # safe, above the tree row
+        unsafe = (15.0, 5.0, 2.0)    # inside tree_row0_0's canopy band, and >threshold from `first`
+        self.assertTrue(ex.geofence.is_safe_3d(first, alt_bounds=(2.0, 30.0)))
+        self.assertFalse(ex.geofence.is_safe_3d(unsafe, alt_bounds=(2.0, 30.0)))
+        ex.step(_drone(21.0, 5.0, wp=4), _divert(first))
+        ex.step(_drone(20.0, 5.0, wp=4), _divert(unsafe, frame_id=2))
+        self.assertNotIn(unsafe, sink.setpoints_sent)           # rejected point NEVER commanded
+        self.assertEqual(len(_events(ex, "gate_reject")), 1)
+        self.assertEqual(len(_events(ex, "hold")), 1)           # fell back to HOLD as before
+        self.assertEqual(_events(ex, "relatch"), [])            # rejection did not re-latch
+        # the latch survived: the next in-threshold DIVERT re-commands the ORIGINAL vetted point
+        ex.step(_drone(20.0, 5.0, wp=4), _divert((18.5, 5.0, 15.0), frame_id=3))
+        self.assertEqual(sink.setpoints_sent[-1], first)
+        self.assertEqual(len(_events(ex, "latch")), 1)          # still the one original latch
+
+    def test_latch_is_cleared_on_resume_so_the_next_encounter_latches_fresh(self):
+        """Latch lifecycle == the encounter (same as `_wp_at_takeover`): a second encounter must
+        latch its own point, not inherit the stale one from the first."""
+        ex, sink = _exec()
+        first = (30.0, 30.0, 15.0)
+        second = (30.5, 30.0, 15.0)  # within the threshold of `first` -- would be swallowed by a
+                                     # stale latch, so commanding it proves the latch really cleared
+        ex.step(_drone(30.0, 20.0, wp=3), _divert(first))
+        ex.step(_drone(30.0, 22.0, wp=3), AvoidanceManeuver(decision=Decision.PROCEED))  # resume
+        self.assertEqual(sink.mode, MODE_AUTO)
+        self.assertEqual(_events(ex, "resume")[0]["latched_setpoint_enu"], first)  # logged on the way out
+        ex.step(_drone(30.0, 24.0, wp=3), _divert(second, frame_id=9))             # 2nd encounter
+        self.assertEqual(sink.setpoints_sent, [first, second])          # PROCEED commands nothing
+        self.assertEqual(len(_events(ex, "latch")), 2)
+        self.assertEqual(_events(ex, "relatch"), [])
+        self.assertEqual(len(_events(ex, "takeover")), 2)               # one takeover per encounter
 
     # -- safety backstop: unsafe setpoint -> HOLD, never sent -----------------
     def test_unsafe_divert_setpoint_is_rejected_and_never_sent(self):
