@@ -84,6 +84,13 @@ class PolicyParams:
     alt_max_m: float = 30.0             # altitude envelope ceiling
     field_margin_m: float = 1.0         # inward margin from the field polygon boundary for a setpoint
     min_confidence: float = 0.0         # ignore detections below this confidence (0.0 = trust all)
+    # Staleness gate: a stamped detection older than this (vs the `now_s` passed to decide) is
+    # treated as ABSENT — a frame from the past is not evidence about the world now, and acting on
+    # it can trigger a phantom dodge or mask a live threat. None = gate OFF (v1 default: the --demo
+    # bird and scripted sources do not stamp yet). The gate only fires when it can actually compute
+    # an age (gate on AND now_s given AND detection stamped); otherwise it fails OPEN, because
+    # silently dropping unstamped detections would disable avoidance for every current source.
+    max_detection_age_s: Optional[float] = None
 
     @property
     def alt_bounds(self) -> Tuple[float, float]:
@@ -161,6 +168,7 @@ class AvoidancePolicy:
         alt_max_m: float = 30.0,
         field_margin_m: float = 1.0,
         min_confidence: float = 0.0,
+        max_detection_age_s: Optional[float] = None,
         field_polygon: Optional[Sequence[XY]] = None,
     ) -> None:
         self.params = PolicyParams(
@@ -175,6 +183,7 @@ class AvoidancePolicy:
             alt_max_m=alt_max_m,
             field_margin_m=field_margin_m,
             min_confidence=min_confidence,
+            max_detection_age_s=max_detection_age_s,
         )
         self.field_polygon: Optional[List[XY]] = (
             [(float(x), float(y)) for x, y in field_polygon] if field_polygon else None
@@ -186,50 +195,102 @@ class AvoidancePolicy:
         detection: Optional[Detection],
         drone: DroneState,
         geofence: GeofenceMap,
+        *,
+        now_s: Optional[float] = None,
         **overrides,
     ) -> AvoidanceManeuver:
         """Decide the maneuver for a single detection (or None). Convenience wrapper over
-        `decide_multi`. `overrides` may set any `PolicyParams` field for this call only."""
+        `decide_multi`. `overrides` may set any `PolicyParams` field for this call only. `now_s` is
+        the caller's current time on the same clock as `Detection.stamp_s` (only used by the
+        staleness gate; None = gate cannot fire)."""
         detections = [detection] if detection is not None else []
-        return self.decide_multi(detections, drone, geofence, **overrides)
+        return self.decide_multi(detections, drone, geofence, now_s=now_s, **overrides)
 
     def decide_multi(
         self,
         detections: Sequence[Detection],
         drone: DroneState,
         geofence: GeofenceMap,
+        *,
+        now_s: Optional[float] = None,
         **overrides,
     ) -> AvoidanceManeuver:
         """Decide the maneuver given zero or more simultaneous detections. The nearest in-cylinder
         bird is the trigger and sets the dodge direction; every in-cylinder bird constrains which
-        candidate setpoints are acceptable (a dodge away from bird A must not steer into bird B)."""
+        candidate setpoints are acceptable (a dodge away from bird A must not steer into bird B).
+
+        `now_s` is passed IN rather than read from a wall clock so `decide` stays pure (same inputs
+        -> same maneuver) and staleness decisions replay exactly from a flight log."""
         p = replace(self.params, **overrides) if overrides else self.params
 
-        threats = self._threats(detections, drone, p)
+        # Staleness gate first: a known-stale detection is treated as ABSENT before any threat
+        # geometry runs, so an old frame can neither trigger a phantom dodge nor sit in the threat
+        # set constraining the dodge away from a live bird.
+        fresh, stale = self._split_stale(detections, now_s, p)
+
+        threats = self._threats(fresh, drone, p)
         if not threats:
-            return AvoidanceManeuver(
+            if detections and not fresh:
+                # Every detection this frame was dropped as stale -> detection-free frame. Called
+                # out explicitly so the event log shows WHY the policy proceeded.
+                reason = (f"all detection(s) stale (age > {p.max_detection_age_s:g} s) "
+                          f"-- treated as absent")
+            elif fresh:
+                reason = "detection(s) outside threat cylinder"
+            else:
+                reason = "no in-cylinder threat"
+            maneuver = AvoidanceManeuver(
                 decision=Decision.PROCEED,
-                reason="no in-cylinder threat" if not detections else "detection(s) outside threat cylinder",
+                reason=reason,
                 debug={
                     "n_detections": len(detections),
                     "threat_radius_m": p.threat_radius_m,
                     "vertical_threat_m": p.vertical_threat_m,
                 },
             )
-
-        # Trigger = nearest threat (smallest horizontal range).
-        trigger, trigger_range = min(threats, key=lambda t: t[1])
-        maneuver = self._plan_divert(trigger, [t for t, _ in threats], drone, geofence, p)
-        # Attach shared diagnostics for the event log (CLAUDE.md instrumentation rule).
-        maneuver.triggering_detection = trigger
-        maneuver.debug.setdefault("trigger_range_m", round(trigger_range, 3))
-        maneuver.debug.setdefault("n_threats", len(threats))
-        maneuver.debug.setdefault(
-            "threat_ids", [t.track_id or f"det@{t.frame_id}" for t, _ in threats]
-        )
+        else:
+            # Trigger = nearest threat (smallest horizontal range).
+            trigger, trigger_range = min(threats, key=lambda t: t[1])
+            maneuver = self._plan_divert(trigger, [t for t, _ in threats], drone, geofence, p)
+            # Attach shared diagnostics for the event log (CLAUDE.md instrumentation rule).
+            maneuver.triggering_detection = trigger
+            maneuver.debug.setdefault("trigger_range_m", round(trigger_range, 3))
+            maneuver.debug.setdefault("n_threats", len(threats))
+            maneuver.debug.setdefault(
+                "threat_ids", [t.track_id or f"det@{t.frame_id}" for t, _ in threats]
+            )
+        if stale:
+            # Always log what the staleness gate dropped, whatever the decision -- a stale frame
+            # silently vanishing is exactly the observability gap this gate exists to close.
+            maneuver.debug.setdefault("n_stale_dropped", len(stale))
+            maneuver.debug.setdefault(
+                "stale_ids", [t.track_id or f"det@{t.frame_id}" for t in stale]
+            )
+            maneuver.debug.setdefault("max_detection_age_s", p.max_detection_age_s)
         return maneuver
 
     # -- internals -----------------------------------------------------------
+    @staticmethod
+    def _split_stale(
+        detections: Sequence[Detection], now_s: Optional[float], p: PolicyParams
+    ) -> Tuple[List[Detection], List[Detection]]:
+        """Split detections into (fresh, stale) under the staleness gate. The gate only fires when
+        it can actually compute an age: `max_detection_age_s` set (gate on) AND `now_s` supplied AND
+        the detection stamped. An UNSTAMPED detection is kept even with the gate on -- the --demo
+        bird and scripted sources do not stamp yet (`Detection.stamp_s` is None), and dropping them
+        would silently disable avoidance for every current source. Fail OPEN on missing data, fail
+        SAFE (treat as absent) only on provably stale data."""
+        if p.max_detection_age_s is None or now_s is None:
+            return list(detections), []
+        fresh: List[Detection] = []
+        stale: List[Detection] = []
+        for det in detections:
+            if det.stamp_s is not None and (now_s - det.stamp_s) > p.max_detection_age_s:
+                stale.append(det)
+            else:
+                fresh.append(det)
+        return fresh, stale
+
     def _threats(
         self, detections: Sequence[Detection], drone: DroneState, p: PolicyParams
     ) -> List[Tuple[Detection, float]]:
@@ -359,4 +420,5 @@ def _params_dict(p: PolicyParams) -> dict:
         "alt_bounds": list(p.alt_bounds),
         "field_margin_m": p.field_margin_m,
         "min_confidence": p.min_confidence,
+        "max_detection_age_s": p.max_detection_age_s,
     }

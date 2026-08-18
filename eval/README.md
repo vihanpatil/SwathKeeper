@@ -15,5 +15,5 @@ Runs scripted scenarios headless and emits metrics — no "it works" without a n
 - `scenarios/` — the QA safety scenarios (spec + coverage-debt invariant); `generate_flight_logs.py`
   drives the real avoidance loop to produce each scenario's `flight_log.json`, activating its assertion.
 
-`results/` is gitignored (raw runs, incl. the live demo's `live_flight_log.json`); commit summary
+`results/` is gitignored (raw runs, incl. the live demo's timestamped `live_flight_log_<UTCstamp>.json`); commit summary
 metrics into reports, not raw runs.

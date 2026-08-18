@@ -26,6 +26,7 @@ pure modules without a ROS 2 environment.
 from __future__ import annotations
 
 import math
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
@@ -173,6 +174,7 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             import json
             self.avoidance_executor.finalize()
             log = self.avoidance_executor.flight_log("live_run", seed=0, cell_size_m=2.5)
+            out_path.parent.mkdir(parents=True, exist_ok=True)  # eval/results/ is gitignored -- may not exist
             out_path.write_text(json.dumps(log, indent=2))
             self.get_logger().info(f"wrote flight log -> {out_path}")
 
@@ -197,7 +199,13 @@ def main(argv=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.dump_flight_log(REPO_ROOT / "eval" / "results" / "live_flight_log.json")
+        # EVIDENCE PROTECTION: timestamped filename so a later run can NEVER clobber a prior run's
+        # log -- the 2026-08-05 live demo's unsuffixed live_flight_log.json was silently overwritten
+        # by an idle run (empty path, all-cells-debt) and nothing noticed. No code reads the
+        # unsuffixed path (docs reference it for humans only), so we write ONLY timestamped files;
+        # scripts/check_live_flight_log.py validates eval/results/*flight_log*.json.
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        node.dump_flight_log(REPO_ROOT / "eval" / "results" / f"live_flight_log_{stamp}.json")
         node.destroy_node()
         rclpy.shutdown()
 

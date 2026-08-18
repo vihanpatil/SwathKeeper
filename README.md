@@ -29,7 +29,11 @@ cell — is a documented stretch goal, ADR-002; v1 ships "avoid, return to next 
 - **Coverage integrity:** the ledger partition invariant (`coverage.check_ledger`) makes a
   silently-skipped cell a **test failure**; 5 previously-pending safety assertions (coverage-integrity +
   avoid-into-tree, across 4 scenarios) now pass against real flight logs the loop produced.
-- **Automated tests:** 55 (stdlib-only planning/safety suite + the eval spike harness), green in CI.
+- **Automated tests:** 94 (`tests/fieldguard_planning`, run via `PYTHONPATH=src python3 -m unittest
+  discover -s tests/fieldguard_planning`, + the eval spike harness), green in CI. The avoidance-loop/
+  coverage/geofence suite is stdlib-only (zero installs); the Weeks 5-6 NDVI fusion + georef-stitch
+  tests (`test_ndvi_fusion.py`, `test_ndvi_georef.py`) need numpy (already pinned in
+  `requirements-eval.txt`) — a scoped, documented exception, not a project-wide dependency change.
 
 ## Architecture (short version)
 ```
@@ -48,7 +52,7 @@ Runs in Docker (the stack isn't practically supported natively on macOS, ADR-004
 1. **Bring up the sim** — `docs/WEEK1_BRINGUP.md` (build the image, then Gazebo → micro-ROS agent →
    SITL, *in that order* — the agent must be listening before SITL's DDS client starts).
 2. **Reproduce the live avoidance demo** — `docs/WEEK3_AVOIDANCE_DEMO.md` (runs the loop against a
-   scripted bird; writes a flight log to `eval/results/live_flight_log.json`).
+   scripted bird; writes a flight log to `eval/results/live_flight_log_<UTCstamp>.json`).
 3. **Run the tests / eval harness (no Docker needed)** —
    `python3 -m unittest discover -s tests/fieldguard_planning` and `bash eval/run_spike.sh` (needs the
    pinned deps in `requirements-eval.txt`). Both run in CI (`.github/workflows/ci.yml`).

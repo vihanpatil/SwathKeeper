@@ -60,7 +60,7 @@ arm throttle
   reaches lane x=30 near the bird — a takeover, a vetted dodge setpoint, and a resume.
 - **Gazebo**: the drone leaves the straight lane, sidesteps away from the bird, then returns and
   continues the lawnmower pattern (MIS_RESTART=0 resumes the same waypoint — ADR-006).
-- **On `Ctrl-C` (Shell D)**: writes `eval/results/live_flight_log.json` — the same flight-log contract
+- **On `Ctrl-C` (Shell D)**: writes `eval/results/live_flight_log_<UTCstamp>.json` (timestamped since 2026-08-18 — a new run can never clobber prior evidence; validate with `scripts/check_live_flight_log.py`) — the same flight-log contract
   the QA scenarios consume, so you can score/validate the real run afterward.
 
 ## Honest caveats

@@ -38,8 +38,12 @@ recording them.
 - v1 replanning = **"avoid, return to next waypoint"** first; full coverage-debt reconciliation is a
   documented **stretch goal**, not a v1 blocker.
 - MVP obstacle density = **2-3 scripted bird trajectories**, not a flock. Keep the loop debuggable.
-- NDVI-vs-RGB detection = **decide after a Week 1-2 spike**; recommended starting point is detecting
-  directly on NDVI-rendered frames. Don't over-plan this before the spike.
+- NDVI-vs-RGB detection = **DECIDED (ADR-003): NDVI-direct** — the classical blob baseline hit
+  per-bird-track FNR 0.000 on the spike, so no trained model is justified yet; re-confirmation on
+  the real Gazebo render is the still-pending item (rides in the Week-5 batched Docker session).
+- NDVI render mechanism = **ADR-007: RGB camera Red channel + Gazebo thermal sensor repurposed as
+  synthetic NIR**, fused in a ROS 2 node. Gate 0 (thermal loads on pinned Harmonic+ogre2) passed
+  GREEN live 2026-08-05; Gates 1-3 (bridge, pixel bands, avoidance regression) still pending.
 
 ## Reference to read before building
 **`aerial-autonomy-stack`** (Feb 2026): autopilot-agnostic ROS 2 framework wiring Gazebo +

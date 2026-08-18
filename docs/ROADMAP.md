@@ -7,9 +7,37 @@ The `product-lead` re-cuts scope rather than moving the deadline. Full detail: `
 |---|---|---|---|
 | **1-2** | Gazebo + ArduPilot SITL running; custom farm world; basic boustrophedon mission flies end-to-end, **no obstacles yet**. Run the NDVI-vs-RGB detection spike. | `robotics-sim-engineer`, `flight-software-engineer`, `perception-ml-engineer` | A mission flies the full field in sim; detection-approach decision recorded in DECISIONS.md with the metric that decided it. |
 | **3-4** | Detector + **reactive avoidance + coverage-debt-tracking loop** in the Week-2 farm world (obstacles already built in Week 2). **The core — the differentiator.** | `tech-lead` (ADR-006), `perception-ml-engineer`, `flight-software-engineer`, `qa-safety-reviewer` | Drone detects a bird → avoids (3D-safe, no dodge into a geofenced tree) → returns to next waypoint, **demonstrated in sim** (needs the human Docker run); every detection/takeover/maneuver/resume + any uncovered cell (logged as coverage-**debt**) instrumented; QA's no-silent-skip scenarios green. v1 = return-to-next-waypoint (ADR-002); full requeue/reconciliation = stretch. |
-| **5-6** | NDVI rendering pipeline; per-frame vegetation index; georeferenced stitching into a health map. Second-sensor comparison arm quantified. | `robotics-sim-engineer`, `perception-ml-engineer`, `flight-software-engineer` | A georeferenced NDVI heatmap for a full flight; comparison-arm numbers (what a 2nd sensor buys) written up. |
+| **5-6** | **NDVI phase UNBLOCKED (ADR-007 landed 2026-08-05, passed external review).** NDVI rendering pipeline; per-frame vegetation index; georeferenced stitching into a health map. Second-sensor comparison arm quantified. | `robotics-sim-engineer`, `perception-ml-engineer`, `flight-software-engineer` | A georeferenced NDVI heatmap for a full flight; comparison-arm numbers (what a 2nd sensor buys) written up; ADR-003 re-confirmed on the real render. |
 | **7** | Dashboard, demo video, README, resume bullets. | `gtm-narrative-lead`, `flight-software-engineer`, `devops-reliability-engineer` | Light dashboard (replay + avoidance log + NDVI overlay); recorded 60-90s demo; README readable in 90s; metric-backed resume bullets. |
 | **8** | Buffer / polish. | all | Green CI from clean clone; tagged demo-ready commit; safety sign-off from `qa-safety-reviewer`. |
+
+## Status update (2026-08-18 — Phase A1 hardening, from the full-repo audit)
+
+A 5-auditor sweep (docs / code / sim / eval-CI / state-vs-claims) found the project **frozen for 13
+days with CI silently RED** the whole time (tests ran before the numpy install — the seed-42 FNR
+safety gate never executed in CI on this branch). This session repaired committed scope; nothing
+was added without a cut (scope guard held):
+- **CI un-redded** (install-before-test; the ordering is now marked load-bearing in ci.yml) + two
+  new gates: scenario-log drift (regenerate + `git diff --exit-code`) and flight-log evidence
+  validation (`scripts/check_live_flight_log.py`).
+- **Coverage-ledger honesty bug fixed**: `avoidance_executor` recorded *commanded* divert setpoints
+  into `flown_path` as if flown — a never-visited cell could finalize COVERED. Regenerated scenario
+  logs now book the honest debt (`cov_bird_at_turnaround` 118→144, `geo_avoid_into_tree` 112→144).
+  Regression test pins it dead.
+- **The stitch has its consumer**: `scripts/stitch_ndvi.py` (offline, spike-schema clip → per-cell
+  heatmap on the canonical 720-cell grid, ADR-010) — exit criterion 1 is now producible in ONE
+  Docker session. Georef pitch/roll verified correct by new hand-derived tilted-pose fixtures.
+- **Detector contract locked ahead of Week 6** (ADR-009): `Detection.stamp_s` + policy staleness
+  gate; bird position via apparent-size ray, never ground-plane projection.
+- **Evidence protected**: the 2026-08-05 live-demo log was found silently clobbered by an idle run
+  (machine evidence lost); flight logs are timestamped now and CI-validated.
+- Test suite **94 → 131** (all green; pytest un-broken repo-wide). Session-critical runbooks
+  de-staled (Gate-0 banner, DDS flags in sim/README, 18-topic counts, parent-link comment).
+- **Project renamed FieldGuard → SwathKeeper** (2026-08-18, user decision); branding sweep lands as
+  its own PR after PR #13 merges (code identifiers deferred — see the ADR-009/010 session notes).
+
+**NEXT: merge PR #13 (CI green), then the ONE batched Docker session (Gates 1-3 + full recorded
+NDVI flight) — see `docs/WEEK5_VALIDATION.md`. The stitch runner is ready for its output.**
 
 ## ⚠️ Reality check & brutally honest status (2026-08-05, product-lead — no sweet talk, by request)
 
@@ -100,8 +128,11 @@ ran end-to-end on the real ArduPilot SITL + Gazebo + ROS 2 stack: during a boust
 drone detected the (scripted, `--demo`) bird on lane x=30, took over (`/ap/mode_switch`→GUIDED),
 commanded a 3D-vetted dodge (`/ap/cmd_gps_pose`), held clear, then resumed AUTO and finished the survey
 — one clean takeover/resume, no thrash. ROS 2 adapter: `src/fieldguard_planning/ros2_adapter.py` +
-`avoidance_node.py` (PR #10); runbook `docs/WEEK3_AVOIDANCE_DEMO.md`; run artifact
-`eval/results/live_flight_log.json`. Test suite 34→55. See memory `week3-avoidance-loop-live`.
+`avoidance_node.py` (PR #10); runbook `docs/WEEK3_AVOIDANCE_DEMO.md`; run artifact was
+`eval/results/live_flight_log.json` — **since silently clobbered by a later idle run** (discovered
+in the 2026-08-18 audit; logs are timestamped + CI-validated now so this cannot recur, but the
+2026-08-05 machine evidence is lost — the Phase-B session must commit its artifacts). Test suite
+34→55. See memory `week3-avoidance-loop-live`.
 - _Open polish (non-blocking):_ dodge setpoints are jumpy (policy recomputes each tick — commit to one
   point per encounter); package the node as a colcon package for `ros2 run`.
 - **NEXT → Weeks 5-6:** NDVI rendering pipeline → real blob detector plugged into the SAME
@@ -120,6 +151,52 @@ commanded a 3D-vetted dodge (`/ap/cmd_gps_pose`), held clear, then resumed AUTO 
 - **Deferred, non-blocking:** bake the workspace build into the image + stand up the Docker/Gazebo CI
   job (devops); merge the `fix/week1-bringup` PR. _(AP_DDS moved into Week 2 as goal D — the ROS 2
   control path needs it.)_
+
+## Weeks 5-6 plan — the NDVI phase (2026-08-05 — re-cut at Week 5 standup after external review; product-lead owns)
+**The one architecture risk is retired.** ADR-007 (thermal-sensor-as-synthetic-NIR, ACCEPTED —
+confirmation-pending) landed 2026-08-05 and **passed external review**. The Weeks 5-6 phase is
+**UNBLOCKED and building** — but "unblocked on paper" is not "renders on the pinned stack," and the
+whole phase is dead if the thermal system doesn't load. Hence the ordering below is not negotiable.
+
+**Session goal (one sentence):** prove the NDVI render is real on the pinned Harmonic+ogre2 stack and
+close the batched live-verification debt (ADR-003 real-render + ADR-007's four `/fg/*` render checks),
+then lock the headless Docker/Gazebo CI job — so Week 7 arrives with a demoable, georeferenced health
+map instead of a rendering science project.
+**Failure condition:** Weeks 5-6 slip on the unproven render + georeferenced stitch + still-deferred
+ADR-003 + comparison arm, and **Week 7 arrives with no demo video and no dashboard.** Per the review,
+that — not "the scope is too small" — is the #1 risk to the whole project. This is what we are steering
+around.
+
+**Committed Week-5 ordering (the review's exact sequence — do them in this order, no reordering):**
+
+| # | Workstream | Lead | Support | Exit criterion / silent-failure mode |
+|---|---|---|---|---|
+| 1 | **Kill-switch: does `gz-sim-thermal-system` load?** Verify the thermal system plugin loads on the **pinned Harmonic + ogre2** render path in the **first** Docker session, **BEFORE** authoring any temperatures. | `robotics-sim-engineer` | `devops-reliability-engineer` | Plugin loads and a thermal image publishes on the pinned stack. **If it doesn't load, everything downstream is dead — stop and re-open ADR-007 before spending a day on temperature authoring.** |
+| 2 | **Two-sensor mount + pixel smoke test.** Build the NDVI (Red + thermal-as-NIR) + comparison-arm sensor mount; run the canopy/soil/bird pixel smoke test. | `robotics-sim-engineer` | `perception-ml-engineer` | Canopy, soil, and bird pixels produce **distinguishable NDVI** values. **Silent failure mode: flat NDVI** (all pixels ~equal) — a render that "works" but carries no signal. Test for it explicitly. |
+| 3 | **Close ADR-003 on the REAL render.** Re-run `eval/run_spike.sh` against the real Gazebo NDVI render to finally re-confirm ADR-003 (the deferred re-confirmation riding since Week 2 — the deciding clip was a synthetic stand-in). | `perception-ml-engineer` | `robotics-sim-engineer` | Spike re-runs on real render frames; ADR-003 moves from "confirmation-pending" to confirmed **or** the metric moves and we say so. **Synthetic-clip** blob precision was **0.445** (the real render has produced no numbers yet — corrected 2026-08-18; an earlier revision misattributed this to the real render) — that number is the honest bar (see scope guard 4a). |
+| 4 | **Headless Docker/Gazebo CI job — PROMOTED from deferred to COMMITTED.** Stand up the headless container CI job. **Timebox: 2-3 days, hard.** | `devops-reliability-engineer` | `robotics-sim-engineer` | The `build-test-sim` job runs headless in CI from a clean image. **Timeboxed hard** — if it blows the box, cut it back to a smoke build, don't let it eat the render work. **That is the CI/CD line on the resume.** |
+
+**Then (Weeks 5-6 body, after the Week-5 gate above):** per-frame NDVI = (NIR−Red)/(NIR+Red) →
+georeferenced stitch into a heatmap grid from SITL telemetry → comparison-arm write-up (what the 2nd
+sensor buys) → real blob detector plugged into the **same** `detection_source` seam (replacing the
+`--demo` bird from Weeks 3-4).
+
+**Batched live-verification debt (same discipline as the Week-3 gates — one Docker session, batched):**
+ADR-003 real-render re-confirmation + ADR-007's four `/fg/*` render checks all land in the **same**
+human Docker session:
+1. `/fg/*` render topics present;
+2. canopy/soil/bird NDVI values differ (not flat);
+3. `eval/run_spike.sh` re-confirms ADR-003 on the real frames;
+4. `gz-sim-thermal-system` loads on ogre2 (item 1 above — the kill-switch, run first).
+Do not author temperatures or build the stitch on top of an unverified render. Batch, then build.
+
+**⚠️ STANDING SCOPE GUARD (product-lead, 2026-08-05 — in force for the rest of the project): DO NOT ADD
+SCOPE. GUARD THE EXITS.** The external review is blunt: the scope is **already at the outer edge** of
+what one person finishes in the ~4-5 weeks left. The failure mode is **not** "too small" — it is Weeks
+5-6 slipping (unproven render + georeferenced stitch + deferred ADR-003 + comparison arm) so Week 7
+arrives with no demo and no dashboard. **Nothing gets added to scope without something else being cut in
+the same breath.** This is the product-lead's standing call; every `/standup` for the rest of the
+project is measured against protecting the Week-7 demo + dashboard exit, not against feature count.
 
 ### Earlier (kickoff)
 - **Week:** 1 (planning done; execution is the human's to run). Both lanes scoped in parallel.
@@ -143,3 +220,24 @@ commanded a 3D-vetted dodge (`/ap/cmd_gps_pose`), held clear, then resumed AUTO 
 
 ## Cut / deferred log
 _(product-lead records anything cut here, with the date and the reason — this is interview material.)_
+
+### Weeks 5-6 scope guards (2026-08-05, product-lead — from the external review; both are HELD OUT of scope)
+
+- **(a) No YOLOv8 bolt-on for resume keywords — CUT.** The temptation is to bolt a learned detector on
+  for the "deep learning / YOLO" keyword. We don't. The current story is *stronger* as a metric-driven ML
+  answer: **a classical-CV blob baseline cleared the safety bar, and any learned model must beat it on the
+  same eval harness — none has yet.** That is the disciplined answer an interviewer respects. **The one
+  legitimate opening for a learned detector:** IF one beats the blob baseline on the **real render**
+  (whose numbers don't exist yet — the **synthetic-clip** blob precision of **0.445** is the standing
+  bar until the real render re-run replaces it; provenance corrected 2026-08-18) — that would be an
+  honest before/after on the same harness, and only then does it earn its place. Adding it
+  speculatively for keywords loses the metric-driven story; adding it to beat a measured 0.445 gains one. _Alternative (add YOLOv8 now) rejected: converts a rigorous "baseline first,
+  earn the model" narrative into keyword-chasing._
+
+- **(b) No retrofitted startup / "billion-dollar" narrative — CUT.** The honest framing already written at
+  the reality-check above (see "Reality check on the ambition," ~line 34) stands: this is a sim-only,
+  solo, ~7-8-week portfolio project built **to get the engineer hired**, demonstrating the hardest
+  practically-unsolved loop in ag-drone autonomy with metrics and a decision log. The review reinforces
+  it: **inflating a sim-only solo portfolio project into a business pitch converts the project's single
+  best asset — the honesty in every ADR — into an interview red flag.** Not re-arguing line 34; just
+  anchoring the decision. The honest framing is the asset. Keep it.

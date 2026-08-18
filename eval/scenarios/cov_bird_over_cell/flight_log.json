@@ -196,17 +196,7 @@
     ],
     [
       30.0,
-      52.0,
-      15.0
-    ],
-    [
-      30.0,
       40.0,
-      15.0
-    ],
-    [
-      30.0,
-      50.0,
       15.0
     ],
     [
@@ -216,17 +206,7 @@
     ],
     [
       30.0,
-      48.0,
-      15.0
-    ],
-    [
-      30.0,
       36.0,
-      15.0
-    ],
-    [
-      30.0,
-      46.0,
       15.0
     ],
     [
@@ -236,27 +216,12 @@
     ],
     [
       30.0,
-      44.0,
-      15.0
-    ],
-    [
-      30.0,
       32.0,
       15.0
     ],
     [
       30.0,
-      42.0,
-      15.0
-    ],
-    [
       30.0,
-      30.0,
-      15.0
-    ],
-    [
-      20.000000000067462,
-      29.999963267948964,
       15.0
     ],
     [
@@ -266,17 +231,7 @@
     ],
     [
       30.0,
-      18.0,
-      15.0
-    ],
-    [
-      30.0,
       26.0,
-      15.0
-    ],
-    [
-      30.0,
-      16.0,
       15.0
     ],
     [
@@ -286,17 +241,7 @@
     ],
     [
       30.0,
-      14.0,
-      15.0
-    ],
-    [
-      30.0,
       22.0,
-      15.0
-    ],
-    [
-      30.0,
-      12.0,
       15.0
     ],
     [
@@ -306,17 +251,7 @@
     ],
     [
       30.0,
-      10.0,
-      15.0
-    ],
-    [
-      30.0,
       18.0,
-      15.0
-    ],
-    [
-      30.0,
-      8.0,
       15.0
     ],
     [
@@ -5503,7 +5438,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 12.0,
         "n_threats": 1,
@@ -5561,7 +5497,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 10.0,
         "n_threats": 1,
@@ -5619,7 +5556,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 8.0,
         "n_threats": 1,
@@ -5677,7 +5615,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 6.0,
         "n_threats": 1,
@@ -5735,7 +5674,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 4.0,
         "n_threats": 1,
@@ -5793,7 +5733,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 2.0,
         "n_threats": 1,
@@ -5825,8 +5766,8 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        20.000000000067462,
-        29.999963267948964,
+        20.0,
+        29.999963268,
         15.0
       ],
       "verdict": "accepted",
@@ -5851,7 +5792,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 0.0,
         "n_threats": 1,
@@ -5909,7 +5851,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 2.0,
         "n_threats": 1,
@@ -5967,7 +5910,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 4.0,
         "n_threats": 1,
@@ -6025,7 +5969,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 6.0,
         "n_threats": 1,
@@ -6083,7 +6028,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 8.0,
         "n_threats": 1,
@@ -6141,7 +6087,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 10.0,
         "n_threats": 1,
@@ -6199,7 +6146,8 @@
             30.0
           ],
           "field_margin_m": 1.0,
-          "min_confidence": 0.0
+          "min_confidence": 0.0,
+          "max_detection_age_s": null
         },
         "trigger_range_m": 12.0,
         "n_threats": 1,

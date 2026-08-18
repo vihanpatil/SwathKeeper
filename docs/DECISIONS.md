@@ -218,3 +218,153 @@ resumes to the intended waypoint — must be **confirmed in the human Docker run
 validated (same pattern as ADR-003 real-render and ADR-005 live-topic checks; batch all three).
 Owner / roles: tech-lead (decided + verified source@SHA), flight-software-engineer (builds executor +
 3D geofence), perception-ml-engineer (detection trigger), qa-safety-reviewer (`geo_avoid_into_tree`).
+
+## ADR-007: Produce the dual-band NDVI frame with an RGB camera (Red) + Gazebo's thermal sensor repurposed as synthetic NIR; NDVI computed in a ROS 2 node   (2026-08-05, status: ACCEPTED — confirmation-pending; render mechanism unproven live)
+Decision: Render the two NDVI bands as **two co-located Gazebo Harmonic sensors on one rigid nadir
+mount**, and compute the index in ROS 2, not in the render:
+  - **Red band** = the **R channel of a standard `type="camera"` (R8G8B8) sensor**. That same RGB
+    image is *also* the ADR-003 comparison arm (NDVI+RGB), so the Red-band source doubles as the
+    second-sensor arm — zero extra cameras for the comparison.
+  - **NIR band** = a **`type="thermal"` sensor (L16) repurposed as synthetic NIR**. Gazebo's thermal
+    camera reads a *per-object scalar signature you author in SDF* (via `gz-sim-thermal-system`'s
+    `<temperature>` / `<heat_signature>` on each visual), **independent of visible color and
+    lighting** — which is exactly the "per-model reflectance property so vegetation reads high-NIR,
+    soil/water/birds low" that option (a) calls for, delivered by a **first-class documented sensor
+    instead of a hand-written shader**. Each world material carries a `<temperature>` that encodes its
+    NIR reflectance, calibrated into the sensor's `[min_temp,max_temp]` so the bridged `mono16` maps
+    **linearly to NIR reflectance ρ_nir∈[0,1]** (the one calibration knob; lives in the camera pkg,
+    not this ADR).
+  - **NDVI** is computed in a dedicated ROS 2 node (`ndvi_node`), **not** baked into the render:
+    it pairs the two bridged images by nearest sim-time stamp
+    (`message_filters` ApproximateTime), rescales R/255→ρ_red∈[0,1] and mono16→ρ_nir∈[0,1], and
+    publishes **NDVI=(NIR−Red)/(NIR+Red)** per pixel as `32FC1`∈[−1,1]. Rationale: Gazebo keeps
+    emitting raw bands (honest), the index math stays unit-tested and offline-reproducible (the eval
+    harness already consumes `float32` NDVI `.npy`), and the ROS contract is stable per ADR-005
+    discipline. **Hard build requirement:** the RGB and thermal sensors MUST share identical
+    intrinsics (width/height/hfov), pose (co-located nadir, matching the spike extrinsic
+    `quat_wxyz=(0,1,0,0)`) and `update_rate`, so the node combines pixel-wise with no resampling.
+    `use_sim_time=true`; the NDVI frame inherits the **RGB image stamp** (the georef anchor).
+  - **Stale-pair guard (amendment 2026-08-05):** the node MUST enforce a **max stamp-delta of 25%
+    of one frame period** when pairing Red↔NIR (default **25 ms** at the spike's 10 Hz anchor;
+    scales as `0.25/update_rate`). Since both sensors share `update_rate` by construction, a correct
+    pair is stamp-aligned to within render jitter and only a *dropped frame* pushes the nearest match
+    toward a full period; 25% sits well above jitter yet well below the half-period point where the
+    match flips to the wrong neighbor. On exceed: **drop the frame and increment a logged
+    `dropped_pair` counter** (instrumentation per CLAUDE.md) rather than emit a mispaired NDVI — a
+    persistently rising count is itself the signal that band rates are drifting under load.
+**Locked topic/message contract** (perception + stitch code against these names, same as ADR-005):
+  - `/fg/sensor/rgb/image` — `sensor_msgs/Image` (`rgb8`)  [Red band = ch0; also the NDVI+RGB arm]
+  - `/fg/sensor/rgb/camera_info` — `sensor_msgs/CameraInfo`
+  - `/fg/sensor/nir/image` — `sensor_msgs/Image` (`mono16`, thermal→NIR proxy)
+  - `/fg/sensor/nir/camera_info` — `sensor_msgs/CameraInfo`
+  - `/fg/ndvi/image` — `sensor_msgs/Image` (`32FC1`, values ∈[−1,1]) ← **authoritative frame ADR-003
+    detects on and the stitch georeferences** (via ADR-005 `/ap/pose/filtered` +
+    `/ap/gps_global_origin/filtered` + this stamp + `camera_info`)
+  - `/fg/ndvi/camera_info` — `sensor_msgs/CameraInfo` (pass-through intrinsics for the stitch)
+  - `/fg/ndvi/preview` — `sensor_msgs/Image` (`rgb8`, false-color, HUMAN-ONLY, non-authoritative)
+Second-sensor comparison arm (concrete): **NDVI+RGB, reusing the RGB camera already needed for the
+Red band.** A `type="depth"` camera (NDVI+depth) is a documented **stretch**, not v1 — we get the RGB
+arm for free, depth costs a third sensor for no v1 detection benefit (ADR-003 already chose NDVI-direct).
+Alternative(s) rejected:
+  (b) Single camera + a **shader/material-encoded** synthetic NIR band. Rejected — it means writing and
+      maintaining custom OGRE2 render passes/materials: clever but hard to explain and fragile against
+      Gazebo rendering-engine updates, and the thermal sensor already gives the identical
+      per-model-reflectance capability as a supported, documented sensor. Boring-but-explainable wins.
+  (c) **Post-process synthetic NIR derived from RGB + a vegetation mask.** Rejected — the NIR would be a
+      *function of the visible render*, so NDVI carries **no independent second-band information**; this
+      is essentially what the Week-2 synthetic spike clip already did (`meta.json synthetic:true`), so
+      choosing it would make the ADR-003 "re-confirm on the REAL render" step **circular and meaningless**
+      — you'd re-validate the detector on a frame whose NIR is manufactured from its own RGB. The whole
+      point of a real render is a genuinely independent NIR band; (c) throws that away.
+Why: One normal RGB camera gives me the Red band and doubles as the comparison arm; I repurpose Gazebo's
+thermal sensor — which reads an author-controlled per-object signature, not visible color — as an
+**independent** synthetic NIR band; a small ROS 2 node combines them into a georeferenced NDVI frame.
+It's a two-camera render (option (a)) built entirely from documented, first-class Gazebo sensors on the
+already-proven `ogre2` Sensors system, so nothing about it is exotic to explain — and because the NIR
+band is genuinely independent of the visible render, the ADR-003 real-render re-confirmation actually
+tests something.
+Known-honest caveat (say it out loud): this is a **synthetic sim NDVI**, not radiometric truth — Red
+comes from a lit visible render while NIR is an illumination-independent scalar, so shadowed canopy can
+spuriously raise NDVI. Mitigation: render with a fixed high sun + dominantly diffuse sky to suppress
+shadows; if the ADR-003 re-run shows lighting artifacts break detection, fall back to authoring the
+**Red band as a second thermal-style reflectance scalar** (both bands illumination-independent, matching
+the spike's material-property NDVI model) — documented fallback, not built up front.
+Open follow-up (do not silently forget): the render only comes up in the **human Docker run**, so the
+whole mechanism is unproven live. Concrete re-verification targets (batch with the ADR-003 real-render
+spike re-run + ADR-005 live-topic + ADR-006 live-resume checks — one Docker session):
+  1. `ros2 topic list` shows the six `/fg/*` topics; `ros2 topic hz /fg/ndvi/image` at camera rate;
+     `ros2 topic echo --field encoding` returns `rgb8`, `mono16`, `32FC1` respectively.
+  2. Sample a canopy pixel vs. bare-soil vs. bird pixel on `/fg/ndvi/image`: canopy high-positive, soil
+     near-zero/low, bird negative — this is the direct proof the NIR band is **independent** of RGB
+     (the thing (c) cannot produce); if soil and canopy NDVI are indistinguishable the temperature
+     authoring is wrong (every object returning ambient = flat NDVI).
+  3. Point `eval/run_spike.sh` at the real render's output dir (drop-in per `sim/spike/README.md` schema)
+     → re-confirm ADR-003 numbers hold on the real render.
+  4. Confirm the pinned Harmonic build exposes the thermal sensor on `ogre2` (Sensors system already
+     runs `ogre2`, world line 13-15) — thermal is ogre2-only; verify `gz-sim-thermal-system` loads.
+  5. **Principal point (cx,cy) unpinned** — georef defaults cx,cy to image-center (`CameraIntrinsics.from_config`);
+     CONFIRM empirically against the real `/fg/*/camera_info` once Gate 1 publishes it (log in WEEK5_VALIDATION.md).
+  6. **Georef anchor rule (DECIDED, from stitch build):** anchor to the **live `/ap/gps_global_origin/filtered`**
+     (WGS-84 EKF origin, ADR-005) at runtime — authoritative; `config/field_polygon.json` home is used **only**
+     for offline/test. `home_lat/lon/alt` is a transform param, sourced live and config-defaulted offline.
+  7. **Dependency boundary (DECIDED, from stitch build):** `fieldguard_planning` stays **stdlib-only** for the
+     planning/avoidance core; **numpy** is permitted **only** in the NDVI image-math modules (`ndvi_fusion.py`,
+     `ndvi_georef.py`) — genuine array math, already project-blessed via `requirements-eval.txt`.
+Owner / roles: tech-lead (decided + verified against Gazebo Harmonic sensor docs + ros_gz bridge),
+robotics-sim-engineer (builds the two-sensor mount + per-model temperature authoring + bridge),
+perception-ml-engineer (ADR-003 re-run on `/fg/ndvi/image`), flight-software-engineer (georef stitch
+consumes `/fg/ndvi/*` + ADR-005 pose/origin).
+
+## ADR-008: Hosted-runner Gazebo-render CI is unproven — the sim CI job pulls a prebuilt image and stays manual-dispatch until one green run   (2026-08-05, status: ACCEPTED; promoted to ADR 2026-08-18 from docs/WEEK5_CI_GAZEBO.md "Feasibility verdict")
+Decision: Split sim CI into (1) a prebuilt GHCR image (`sim-image.yml`, built manually / on
+Dockerfile change, never from scratch per push) and (2) a headless smoke-flight job
+(`build-test-sim`) gated to `workflow_dispatch` until a human confirms one green run. Full
+Gazebo-render CI on GitHub-hosted runners is treated as UNPROVEN, not assumed.
+Alternative(s) rejected: (a) Build the Gazebo+ArduPilot+ROS 2 stack in CI per push — disqualified by
+resource math (hosted runners: 4 vCPU / 14GB SSD vs the documented ≥40GB workspace); (b) assume
+headless rendering works because SITL-only CI does — upstream's own evidence says otherwise:
+`ardupilot_gazebo`'s CI is build/lint-only, and ArduPilot's SITL autotests fly with NO Gazebo.
+Why: The teams that own these exact components don't run live Gazebo on hosted runners — that's the
+strongest available signal; we bake the build into an image (fixing the resource math) and claim
+green only when a run IS green. Timeboxed with a documented cut-list (WEEK5_CI_GAZEBO.md).
+Owner / roles: devops-reliability-engineer, robotics-sim-engineer.
+
+## ADR-009: Real-detector evidence contract — stamped detections with a policy staleness gate; bird position from apparent-size ray, never ground-plane projection   (2026-08-18, status: ACCEPTED — implementation lands with the Week-6 detector)
+Decision: Two contract rules locked BEFORE the real NDVI-blob detector replaces the `--demo` bird on
+the `detection_source` seam:
+  1. **Staleness (IMPLEMENTED 2026-08-18):** `Detection.stamp_s` (same clock as the policy's new
+     `now_s` argument) + `PolicyParams.max_detection_age_s`. A stale detection is treated as ABSENT
+     (observable in the maneuver reason/debug), never as a live threat or a dodge constraint.
+     Unstamped detections fail OPEN (current behavior) because the demo/scripted sources don't stamp
+     — dropping them would silently disable avoidance in every existing runbook.
+  2. **Range/altitude (CONTRACT, Week-6 implementation):** a monocular NDVI blob has no depth; naive
+     ground-plane projection puts a flying bird at z=0 — OUTSIDE the ±6 m threat cylinder at 15 m
+     cruise, i.e. it would SUPPRESS real threats (fail-dangerous). The detector must instead place
+     the bird along the pixel ray at range Zc = f·R_phys/r_px from apparent size (physical radius
+     prior ~0.15 m, the value the sim ground truth already records as `range_m`), with a
+     conservative inflation factor to be tuned against GT range error on the eval harness.
+Alternative(s) rejected: ground-plane projection (fail-dangerous, above); treating every in-frame
+detection as at-drone-altitude regardless of size (fail-safe but dodge-happy — it would manufacture
+avoidance events and wreck the coverage story); waiting for the depth-sensor comparison arm (that
+arm QUANTIFIES what depth buys over this monocular estimate — it can't be the v1 dependency).
+Why: The seam's data shape is a one-line change today and a three-surface breaking change after the
+detector exists; and the residual monocular range error becomes the measured argument for the
+second sensor — the comparison arm's whole point.
+Owner / roles: tech-lead, perception-ml-engineer (Week-6 implementation), qa-safety-reviewer
+(staleness + range-error scenarios).
+
+## ADR-010: v1 NDVI stitch is OFFLINE, post-flight, over a recorded clip — not a live in-node accumulator   (2026-08-18, status: ACCEPTED — implemented, scripts/stitch_ndvi.py)
+Decision: The georeferenced heatmap (Weeks 5-6 exit criterion 1) is produced by
+`scripts/stitch_ndvi.py`: a recorded spike-schema clip (real render or synthetic) → per-cell mean
+NDVI on the SAME canonical 2.5 m / 720-cell grid the coverage ledger uses (joinable by `cell_id`) →
+`heatmap.json` + false-color `heatmap.png`. Refuses to succeed on an empty stitch (a "ran but
+carries no data" result exits nonzero — same discipline as the flat-NDVI gate).
+Alternative(s) rejected: live in-node stitching during flight — days of extra work and new failure
+modes (pose-at-stamp buffering, partial-map states, node lifecycle) for identical exit-criterion
+output; offline over a recorded flight is rerunnable and debuggable against the same committed
+evidence artifact it consumes. Promotable to a live accumulator later if the dashboard ever needs
+in-flight NDVI (it doesn't for v1).
+Why: One Docker session must produce the demo heatmap; the runner existing BEFORE the session is
+what makes that single session sufficient (record the flight → stitch on the host afterward).
+Owner / roles: flight-software-engineer, tech-lead; perception-ml-engineer consumes the same clip
+for the ADR-003 real-render re-run.
