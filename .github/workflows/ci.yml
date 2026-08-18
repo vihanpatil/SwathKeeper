@@ -1,4 +1,4 @@
-name: FieldGuard CI
+name: SwathKeeper CI
 
 # Runs on GitHub's servers on every push and pull request. You don't run this —
 # GitHub does, in a fresh Ubuntu VM, and reports a green check or red X on each commit.
@@ -118,7 +118,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # PROMOTED Weeks 5-6 (2026-08-05, devops-reliability-engineer) from "deferred until the image
-  # exists" to committed -- see docs/WEEK5_CI_GAZEBO.md for the full plan, the honest feasibility
+  # exists" to committed -- see docs/runbooks/SIM_CI.md for the full plan, the honest feasibility
   # verdict on GitHub-hosted-runner Gazebo rendering (short version: NOT proven even by the upstream
   # ardupilot_gazebo/ardupilot projects' own CI, which build/lint-only on hosted runners -- see that
   # doc's "Feasibility verdict"), and the cut-list.
@@ -131,7 +131,7 @@ jobs:
   # sensor pair (landed uncommitted mid-Week-5 by robotics-sim-engineer), so Gazebo's Sensors system
   # still renders it every frame regardless. Per docs/ROADMAP.md's Week-5 ordering, this job should run
   # AFTER the human's batched render-verification session (items 1-3: thermal kill-switch, pixel smoke
-  # test, ADR-003 real-render re-confirm) -- see docs/WEEK5_CI_GAZEBO.md "Eval-gate hook" and its cut-
+  # test, ADR-003 real-render re-confirm) -- see docs/runbooks/SIM_CI.md "Eval-gate hook" and its cut-
   # list item 6 (a camera-free CI-only world) if rendering makes this job unreliable. Flip the trigger
   # to `pull_request`/`push` only after a confirmed-green run -- do NOT flip it blind.
   # ---------------------------------------------------------------------------
@@ -179,7 +179,7 @@ jobs:
             /tmp/ci_smoke_sitl.log
           if-no-files-found: warn
 
-  # NEXT (not built yet -- see docs/WEEK5_CI_GAZEBO.md "Eval-gate hook"): once the ADR-007 real NDVI
+  # NEXT (not built yet -- see docs/runbooks/SIM_CI.md "Eval-gate hook"): once the ADR-007 real NDVI
   # render exists in sim/worlds/farmguard_field.sdf, extend build-test-sim to run eval/run_spike.sh
   # against the REAL render's output (drop-in per sim/spike/README.md's schema) and gate on FNR
   # regression the same way scripts/check_spike_regression.py already gates the synthetic clip.

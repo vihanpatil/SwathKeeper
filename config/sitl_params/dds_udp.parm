@@ -5,12 +5,12 @@
 # (9895756d874ec9128d50918f6747a83706f4e221 -- see CLAUDE.md "Pinned commit SHAs"), which is what
 # ardupilot_gz_bringup's iris.launch.py loads by default. We load it explicitly here because this
 # project's bringup deliberately does NOT use that launch file (it hardcodes its own world path --
-# see sim/README.md "Launching the world" / docs/WEEK1_BRINGUP.md for why), so nothing else in our
+# see sim/README.md "Launching the world" / docs/runbooks/SIM_BRINGUP.md for why), so nothing else in our
 # flow sets these params for us.
 #
 # Deliberately does NOT also load ardupilot_gz_bringup's dds_use_ns.parm (DDS_USE_NS=1): that adds
 # a "/v<SYSID_THISMAV>" segment to every topic/service name (e.g. /ap/v1/pose/filtered). We're
 # single-vehicle, so we keep the plain /ap/<name> form already documented and expected in
-# docs/WEEK1_BRINGUP.md and docs/DECISIONS.md's AP_DDS interface-lock entry.
+# docs/runbooks/SIM_BRINGUP.md and docs/DECISIONS.md's AP_DDS interface-lock entry.
 DDS_ENABLE 1
 DDS_UDP_PORT 2019

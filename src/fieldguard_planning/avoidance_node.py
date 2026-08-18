@@ -12,8 +12,8 @@ Wires the confirmed AP_DDS interface (ADR-005) to the tested loop:
 
 Everything except THIS node and `ros2_adapter.py` is sim-agnostic and unit-tested. This is the thin,
 verify-in-container layer. Run it inside the fieldguard-sim container with ROS 2 sourced and AP_DDS
-up (WEEK1_BRINGUP §6b), as the 4th shell alongside Gazebo + SITL + the micro-ROS agent — see
-docs/WEEK3_AVOIDANCE_DEMO.md.
+up (docs/runbooks/SIM_BRINGUP.md §6b), as the 4th shell alongside Gazebo + SITL + the micro-ROS agent — see
+docs/runbooks/AVOIDANCE_DEMO.md.
 
 DETECTION SOURCE is intentionally pluggable and defaults to "none": the real NDVI blob detector on
 the gimbal camera is the Weeks 5-6 pipeline (ADR-003 on the real render). Until then, pass a

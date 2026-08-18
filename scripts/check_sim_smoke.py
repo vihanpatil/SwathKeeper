@@ -11,7 +11,7 @@ to decide pass/fail -- keeps the driver's exit code meaning "did I crash unexpec
 This is deliberately a narrow structural check (all N waypoints reached, no crash/timeout) -- not a
 flight-quality metric (e.g. cross-track error). If Weeks 5-6 wires the real NDVI render into this same
 CI image, the natural next gate here is avoidance-loop success / coverage-debt completeness on a real
-(not synthetic) flight log -- that hook is intentionally NOT built yet (see docs/WEEK5_CI_GAZEBO.md
+(not synthetic) flight log -- that hook is intentionally NOT built yet (see docs/runbooks/SIM_CI.md
 "Eval-gate hook" -- the render this would score doesn't exist in the sim yet).
 
 Usage:

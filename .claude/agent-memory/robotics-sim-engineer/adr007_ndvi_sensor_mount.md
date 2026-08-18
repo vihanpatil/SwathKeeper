@@ -8,7 +8,7 @@ metadata:
 Built 2026-08-05 (Weeks 5-6) per ADR-007 (`docs/DECISIONS.md`, ACCEPTED, external-review-passed).
 Source: `config/ndvi_camera.json` (single source of truth for all numbers below) +
 `scripts/gen_farm_world.py` (generator) + `sim/worlds/farmguard_field.sdf` (output, 20 models incl.
-the sensor mount, 40 per-visual `<temperature>` plugins). Gate runbook: `docs/WEEK5_VALIDATION.md`.
+the sensor mount, 40 per-visual `<temperature>` plugins). Gate runbook: `docs/runbooks/NDVI_VALIDATION.md`.
 Related: [[farm_world_layout]] (the base world this extends), [[toolchain_version_pins]].
 
 **Everything below was verified against the PINNED-BRANCH SOURCE this session (gz-sim8 == Harmonic,
@@ -52,7 +52,7 @@ file, not guessed. **This exact scoped name is NOT run/confirmed live yet** — 
 this build riskier than the review's own named kill-switch (Gate 0/thermal loading). If `gz sim`
 can't resolve the parent link on this joint, the documented fallback is dropping the
 `iris_with_gimbal::` prefix (`iris_with_standoffs::base_link`) in `config/ndvi_camera.json`'s
-`mount.parent_link_scoped_from_wrapper`, regenerate, retry. See `docs/WEEK5_VALIDATION.md` Gate 0's
+`mount.parent_link_scoped_from_wrapper`, regenerate, retry. See `docs/runbooks/NDVI_VALIDATION.md` Gate 0's
 troubleshooting section for the full writeup.
 - A `<joint>` as a **direct child of `<world>`** (not nested in a `<model>`) is technically SDF-legal
   since 1.8 but explicitly **not supported by Gazebo or any other known software**
@@ -67,7 +67,7 @@ troubleshooting section for the full writeup.
   phrased differently), with less-transparent runtime matching heuristics than a plain declarative
   `<joint>`. Went with the plain joint for "boring but explainable."
 
-**Gate structure (mirrors Week 3's pattern, `docs/WEEK5_VALIDATION.md`):** Gate 0 = kill switch
+**Gate structure (mirrors Week 3's pattern, `docs/runbooks/NDVI_VALIDATION.md`):** Gate 0 = kill switch
 (does `gz-sim-thermal-system` load on ogre2 — must run FIRST, before trusting anything else), Gate 1
 = the four `/fg/sensor/*` topics present/correctly-encoded/rate (via `sim/bridge/fg_sensor_bridge.yaml`,
 a ros_gz_bridge YAML config, GZ_TO_ROS-only, `ros_topic_name`==`gz_topic_name` since I made them
@@ -94,5 +94,5 @@ consequence correctly: Gazebo renders every attached sensor unconditionally ever
 of ROS subscribers, so their DDS-free CI smoke job now pays the ogre2 render cost too — they've
 already scoped a fallback (a camera-free CI-only world copy) as a documented, NOT-YET-BUILT
 cut-list item, correctly deferred until a real CI run shows it's needed. Don't build that fallback
-speculatively if asked to touch CI world variants later — check `docs/WEEK5_CI_GAZEBO.md`'s cut-list
+speculatively if asked to touch CI world variants later — check `docs/runbooks/SIM_CI.md`'s cut-list
 item 6 first, it's already scoped.

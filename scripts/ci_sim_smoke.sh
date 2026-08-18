@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Headless, non-interactive smoke flight for CI (Weeks 5-6 devops task, 2026-08-05).
 #
-# ⚠️ UNVERIFIED LIVE -- see docs/WEEK5_CI_GAZEBO.md for the honest feasibility verdict. Orchestrates
-# the SAME two pieces docs/WEEK3_VALIDATION.md Gate 1 proves interactively (Gazebo + the farm world,
+# ⚠️ UNVERIFIED LIVE -- see docs/runbooks/SIM_CI.md for the honest feasibility verdict. Orchestrates
+# the SAME two pieces docs/archive/WEEK3_VALIDATION.md Gate 1 proves interactively (Gazebo + the farm world,
 # then ArduPilot SITL flying the boustrophedon mission through it) but scripted end-to-end: no human
 # at a MAVProxy prompt, no gzclient GUI, fixed timeouts throughout. Deliberately reuses the same world
 # (sim/worlds/farmguard_field.sdf) and the same mission generator (scripts/gen_boustrophedon.py) as
@@ -13,7 +13,7 @@
 # the ADR-007 RGB+thermal sensor mount (landed by a parallel robotics-sim-engineer session). This
 # script doesn't consume those topics (no DDS here), but Gazebo still renders both sensors every
 # frame regardless of subscribers -- this smoke job no longer avoids the ogre2 rendering path just by
-# skipping DDS. See docs/WEEK5_CI_GAZEBO.md's "Update, discovered mid-session" callout and cut-list
+# skipping DDS. See docs/runbooks/SIM_CI.md's "Update, discovered mid-session" callout and cut-list
 # item 6 (a camera-free CI-only world) if that turns out to make this job unreliable/too slow.
 #
 # NOT run from sim/docker/Dockerfile (the Week 1 interactive image) -- this needs the BAKED workspace
@@ -107,7 +107,7 @@ echo "[ci_sim_smoke.sh] Gazebo world up (process alive, no load-failure strings 
 
 echo "[ci_sim_smoke.sh] Starting ArduPilot SITL (JSON backend, gazebo-iris, no --enable-DDS -- see"
 echo "  sim/docker/Dockerfile.ci header for why DDS is out of scope for this smoke job). Log: $SITL_LOG"
-# Reuses sim_vehicle.py -- the SAME entry point docs/WEEK1_BRINGUP.md §6 and docs/WEEK3_VALIDATION.md
+# Reuses sim_vehicle.py -- the SAME entry point docs/runbooks/SIM_BRINGUP.md §6 and docs/archive/WEEK3_VALIDATION.md
 # Gate 1 already prove works, just with --no-mavproxy added so nothing tries to open an interactive
 # console (sim_vehicle.py's documented flag to skip launching MAVProxy; still builds/launches the
 # arducopter SITL binary itself). Deliberately NOT hand-constructing a raw `arducopter` binary

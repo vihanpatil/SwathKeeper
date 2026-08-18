@@ -1,8 +1,8 @@
 ---
-description: Run the FieldGuard tiger-team standup to open a work session
+description: Run the SwathKeeper tiger-team standup to open a work session
 ---
 
-Run a tight, 10-minute-max tiger-team standup for the FieldGuard project. Do NOT let this become
+Run a tight, 10-minute-max tiger-team standup for the SwathKeeper project. Do NOT let this become
 theater — keep it short and decision-oriented. Follow these steps in order:
 
 1. **Product Lead sets the goal.** Adopt the `product-lead` lens (read `docs/ROADMAP.md` and the

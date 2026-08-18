@@ -4,7 +4,7 @@
 # Usage:
 #   scripts/sim_docker_build.sh            # native platform
 #   scripts/sim_docker_build.sh --amd64    # force linux/amd64 (fallback if arm64 apt/build breaks,
-#                                           # see docs/WEEK1_BRINGUP.md gotcha #2)
+#                                           # see docs/runbooks/SIM_BRINGUP.md gotcha #2)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -2,23 +2,23 @@
 """Non-interactive headless smoke flight driver for CI (Weeks 5-6 devops task, 2026-08-05).
 
 ⚠️ UNVERIFIED LIVE. Written against the documented, human-confirmed bringup sequence in
-docs/WEEK1_BRINGUP.md §4/§6 and docs/WEEK3_VALIDATION.md Gate 1 (the same farm-world flight those
+docs/runbooks/SIM_BRINGUP.md §4/§6 and docs/archive/WEEK3_VALIDATION.md Gate 1 (the same farm-world flight those
 docs prove works interactively via MAVProxy) but has never itself been run against a live SITL/Gazebo
 process — this session had no live Docker/Gazebo runner. Treat every "per docs/WEEK*" comment below as
 "best-effort translation of an interactive, human-watched recipe into a non-interactive one," not as
 independently proven. The first CI run of this script needs a human watching the raw log on failure.
 
-Replaces MAVProxy's interactive prompt (docs/WEEK1_BRINGUP.md deliberately keeps that manual — see
+Replaces MAVProxy's interactive prompt (docs/runbooks/SIM_BRINGUP.md deliberately keeps that manual — see
 scripts/run_farm_mission.sh's header on why) with a scripted pymavlink client, because CI has no human
 to watch for the EKF-ready message or type `mode auto`. Talks to a SITL instance already started by
 scripts/ci_sim_smoke.sh (this script does not itself launch SITL or Gazebo).
 
-What it does, in order (mirrors docs/WEEK1_BRINGUP.md §6 + §8 exactly, just scripted):
+What it does, in order (mirrors docs/runbooks/SIM_BRINGUP.md §6 + §8 exactly, just scripted):
   1. Connect, wait for a HEARTBEAT (SITL alive).
   2. Wait for EKF3-ready (via SYS_STATUS / a bounded timeout — MAVProxy shows this as a STATUSTEXT,
      "EKF3 IMU0 is using GPS"; this script waits on the equivalent EKF_STATUS_REPORT healthy flags,
      falling back to a fixed settle delay if that message never arrives, logged either way).
-  3. One-time FRAME_CLASS=1 / FRAME_TYPE=1 + reboot dance (docs/WEEK1_BRINGUP.md §6 point 1: the
+  3. One-time FRAME_CLASS=1 / FRAME_TYPE=1 + reboot dance (docs/runbooks/SIM_BRINGUP.md §6 point 1: the
      gazebo-iris default params load but only take effect after a reboot on first boot).
   4. DISARM_DELAY=0, AUTO_OPTIONS=3 (bit0 allow-arm-in-AUTO, bit1 auto-takeoff).
   5. Upload the mission (QGC WPL file) via the MAVLink mission protocol.
@@ -94,7 +94,7 @@ def main():
     ap.add_argument("--connect-timeout", type=float, default=60.0)
     ap.add_argument("--reboot-settle-s", type=float, default=20.0,
                      help="fallback fixed delay after the FRAME_CLASS/TYPE reboot if no heartbeat "
-                          "reconnect is observed sooner (docs/WEEK1_BRINGUP.md §6 point 1: ~15s)")
+                          "reconnect is observed sooner (docs/runbooks/SIM_BRINGUP.md §6 point 1: ~15s)")
     args = ap.parse_args()
 
     summary = {
@@ -141,7 +141,7 @@ def main():
                                     name.encode("utf-8"), float(value),
                                     mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
-        # --- Step 3: one-time FRAME_CLASS/TYPE + reboot (docs/WEEK1_BRINGUP.md §6 point 1) ---------
+        # --- Step 3: one-time FRAME_CLASS/TYPE + reboot (docs/runbooks/SIM_BRINGUP.md §6 point 1) ---------
         set_param("FRAME_CLASS", 1)
         set_param("FRAME_TYPE", 1)
         time.sleep(1.0)  # let the param sets land before reboot, matching the interactive pacing
@@ -182,7 +182,7 @@ def main():
             raise RuntimeError(f"mission upload not accepted (ack={ack})")
         print(f"[ci_sim_smoke] Mission uploaded + accepted: {len(mission_items)} items")
 
-        # --- Step 6: AUTO + arm (Copter auto-starts the mission on arm, per docs/WEEK1_BRINGUP.md §8) ---
+        # --- Step 6: AUTO + arm (Copter auto-starts the mission on arm, per docs/runbooks/SIM_BRINGUP.md §8) ---
         mav.set_mode_apm("AUTO")
         time.sleep(1.0)
         mav.mav.command_long_send(mav.target_system, mav.target_component,

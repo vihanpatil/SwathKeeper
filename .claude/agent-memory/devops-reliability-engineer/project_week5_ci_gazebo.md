@@ -1,13 +1,13 @@
 ---
 name: project-week5-ci-gazebo
-description: Weeks 5-6 headless Docker/Gazebo CI job — promoted from deferred to committed 2026-08-05; feasibility verdict, what's built vs unverified, full plan in docs/WEEK5_CI_GAZEBO.md
+description: Weeks 5-6 headless Docker/Gazebo CI job — promoted from deferred to committed 2026-08-05; feasibility verdict, what's built vs unverified, full plan in docs/runbooks/SIM_CI.md
 metadata:
   type: project
 ---
 
 An external review promoted the deferred "headless Docker/Gazebo CI job" to committed Weeks 5-6 scope
 (2026-08-05), hard-timeboxed at 2-3 days, explicit instruction to not add scope. Full committed plan,
-timebox breakdown, and cut-list: `docs/WEEK5_CI_GAZEBO.md` — read that file before touching this
+timebox breakdown, and cut-list: `docs/runbooks/SIM_CI.md` — read that file before touching this
 workstream again, this memory is a pointer + the parts worth not re-deriving.
 
 **Feasibility verdict on GitHub-hosted-runner Gazebo rendering (the crux question), grounded in actual
@@ -19,7 +19,7 @@ research, not a guess:**
   that's plain built-in-physics SITL, **no Gazebo, no rendering**. So "SITL alone on hosted runners":
   proven feasible (by upstream's own CI). "SITL + Gazebo + rendering on hosted runners": **no known
   precedent anywhere**, including upstream.
-- Resource math: `docs/WEEK1_BRINGUP.md`'s own documented minimum is ≥6 CPU/≥8GB RAM/≥40GB disk, and
+- Resource math: `docs/runbooks/SIM_BRINGUP.md`'s own documented minimum is ≥6 CPU/≥8GB RAM/≥40GB disk, and
   the workspace build has already OOM'd once on a MORE generous local Docker Desktop config than that
   minimum. GitHub-hosted public `ubuntu-latest` is 4 vCPU/16GB RAM/**14GB SSD** — the disk figure alone
   is close to disqualifying.
@@ -38,7 +38,7 @@ research, not a guess:**
 - `scripts/gen_boustrophedon.py` reused UNCHANGED (`--width 20 --height 30 --spacing 15 --alt 15` → 2
   lanes, 4 coverage waypoints) — no new CLI flags needed, confirmed by actually running it.
 - `scripts/ci_sim_smoke.py` — non-interactive pymavlink driver (mirrors the human-proven
-  `docs/WEEK1_BRINGUP.md` §6 sequence: FRAME_CLASS/TYPE+reboot dance, DISARM_DELAY, AUTO_OPTIONS=3,
+  `docs/runbooks/SIM_BRINGUP.md` §6 sequence: FRAME_CLASS/TYPE+reboot dance, DISARM_DELAY, AUTO_OPTIONS=3,
   mission upload, poll `MISSION_ITEM_REACHED`, wait disarm). QGC-WPL parsing + waypoint-counting logic
   ACTUALLY RUN and verified locally; the live MAVLink control flow is unverified (no SITL available).
   **Single riskiest unverified assumption, flagged inline**: default connection is
@@ -68,7 +68,7 @@ pixel smoke test, ADR-003 real-render re-confirm) — don't gate on real-render 
 lands scored output; (2) because the sensor mount is on the vehicle this smoke job flies, Gazebo
 renders it every frame regardless of whether DDS/the topics are consumed — the "no camera needed"
 scope-reduction this task originally leaned on no longer avoids the ogre2 render path, only the ROS2
-bridge. See `docs/WEEK5_CI_GAZEBO.md`'s "Update, discovered mid-session" callout + cut-list item 6
+bridge. See `docs/runbooks/SIM_CI.md`'s "Update, discovered mid-session" callout + cut-list item 6
 (camera-free CI-only world, escape hatch if rendering makes the smoke job unreliable).
 **Takeaway for next time**: this repo's working tree can have concurrent uncommitted changes from
 other tiger-team agents mid-session — re-check assumptions (e.g. `grep` a file) if a task runs long
@@ -76,5 +76,5 @@ enough that another agent could plausibly have touched the same asset.
 
 **Next time this comes up**: check whether a human has actually run `sim-image.yml` /
 `build-test-sim` since 2026-08-05 — if so, this memory's "unverified" framing is stale and
-`docs/WEEK5_CI_GAZEBO.md` should have been updated with real results (check that file's own status
+`docs/runbooks/SIM_CI.md` should have been updated with real results (check that file's own status
 line first).

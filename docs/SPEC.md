@@ -1,92 +1,75 @@
-# FieldGuard — Project Spec (working title, rename freely)
+# SwathKeeper — System Spec
 
-Autonomous drone survey system: reactive obstacle avoidance + NDVI-based crop health
-mapping, built in simulation on the ArduPilot stack.
+Autonomous drone survey system, built **entirely in simulation** (ADR-000): live reactive obstacle
+avoidance + NDVI crop-health mapping on ArduPilot SITL + Gazebo Harmonic + ROS 2 Humble.
+*(Originally written 2026-07-27 under the working title FieldGuard; rewritten 2026-08-18 as the
+current-state spec. The original phased plan and resolved open questions moved to
+`docs/BUILD_LOG.md` and `docs/DECISIONS.md` — this file describes the system, not the schedule.)*
 
----
+## Priorities (confirmed, in order — do not reorder)
 
-## Priorities (confirmed)
+1. **Flight autonomy + reactive obstacle avoidance** — the differentiator. Commercial ag-drone
+   platforms (DJI, DroneDeploy, Sentera/John Deere, Trimble) fly pre-surveyed static missions;
+   live reactive avoidance of *unplanned* obstacles, with coverage integrity, is what they don't do.
+2. **NDVI health mapping** — real and useful, powered by the same pipeline.
+3. **Farmer-facing dashboard** — built last, kept light. It's the proof, not the point.
 
-1. **Flight autonomy + reactive obstacle avoidance** — primary engineering depth. This is
-   the software-skill differentiator; nobody in the commercial ag-drone space
-   (DJI, DroneDeploy, Sentera/John Deere, Trimble) does live reactive avoidance —
-   they fly pre-surveyed static missions.
-2. **NDVI-based health mapping** — real, useful, powered by the same flight/camera
-   pipeline. Not the headline, but not an afterthought either.
-3. **Farmer-facing dashboard** — deferred. Build last, keep it light. It's an easy add-on
-   once the pipeline produces real data to display.
+## The core guarantee
 
-## Sensor strategy
+A survey is only valid if every cell was imaged — so a dodge that skips cells must never be
+silent. Every canonical grid cell (2.5 m, 720 cells over the field polygon) terminates in exactly
+one state: `covered` or `debt`. Absence from the ledger IS the bug, and the partition invariant
+(`coverage.check_ledger`) makes it a test failure. A *commanded* position is never recorded as a
+*flown* position (regression-pinned after the 2026-08-18 ledger-honesty bug). v1 ships
+avoid-then-resume + honest debt (ADR-002); full debt reconciliation (requeue missed cells) is the
+documented stretch goal.
 
-- **Real hardware today:** single NDVI camera. Hardware team temporarily unavailable to
-  add sensors.
-- **Simulation approach:** don't let the hardware constraint limit the sim. Build the
-  primary pipeline around the single-NDVI-camera configuration (matches reality), but
-  also simulate a second-sensor configuration (NDVI + depth, or NDVI + RGB) as a
-  comparison arm. This quantifies what a second sensor would actually buy you —
-  genuinely useful output for the hardware engineer when they're back, not just an
-  academic exercise.
-- **Open technical question, solve early (Weeks 1–2):** NDVI cameras capture red + NIR,
-  not RGB. Off-the-shelf detectors (YOLO, etc.) assume RGB. Two paths:
-  - (a) Build detection directly on NDVI-rendered frames — vegetation-index contrast
-    becomes the detection signal (low-vegetation anomalies = birds/objects against
-    high-vegetation canopy). Matches real hardware. Recommended starting point.
-  - (b) Render a separate synthetic RGB pass in sim purely for perception, keep NDVI
-    for health only. Easier to prototype, less faithful to the real constraint.
-  - Decide after a short Week 1–2 spike, not before — don't over-plan this one.
+## Architecture (as built)
 
-## Architecture
+1. **Simulation:** Gazebo Harmonic + `ardupilot_gazebo` + ROS 2 Humble, pinned to SHAs (ADR-004,
+   `CLAUDE.md`), in Docker on Ubuntu 22.04. Custom farm world generated from config
+   (`scripts/gen_farm_world.py` → `sim/worlds/farmguard_field.sdf`, byte-reproducible): bounded
+   field polygon, 18 static trees in rows, 3 scripted bird actors.
+2. **Sensing (ADR-007):** dual-band NDVI camera = RGB camera (Red channel) + Gazebo **thermal
+   sensor repurposed as synthetic NIR** (per-visual `<temperature>` authoring from the calibration
+   table in `config/ndvi_camera.json`), co-located on one rigid nadir mount so fusion needs no
+   resampling. Topics `/fg/sensor/*` → `ros_gz` bridge. A second-sensor configuration (NDVI+depth)
+   is simulated as a **comparison arm** to quantify what a second sensor buys — measured against
+   the ADR-009 monocular range estimate, not assumed.
+3. **Perception:** classical blob detector directly on NDVI frames (ADR-003 — NDVI-direct beat the
+   bar: per-bird-track FNR 0.000 on the fixed-seed clip; any learned model must beat the same
+   harness before it earns a place). Trees are a **pre-known static-obstacle map** (ADR-001,
+   geofenced from a pre-flight boundary survey — a legitimate real-ag assumption), which isolates
+   the genuinely hard problem: the unplanned dynamic obstacle. Detector evidence contract:
+   ADR-009 (stamped detections + staleness gate; position via apparent-size ray, never
+   ground-plane projection).
+4. **Coverage planning:** boustrophedon (lawnmower) over the field polygon
+   (`scripts/gen_boustrophedon.py`) — standard, not reinvented.
+5. **Reactive avoidance + replanning (the core):** sim-agnostic policy + executor
+   (`src/fieldguard_planning/`), bound to ArduPilot through a thin ROS 2 adapter over the AP_DDS
+   `/ap/*` contract (ADR-005). Maneuver shape fixed by ADR-006: `AUTO → GUIDED → one 3D-vetted
+   setpoint → GUIDED → AUTO`, latching (one takeover/resume per encounter), `MIS_RESTART=0` resumes
+   the interrupted leg. Every DIVERT setpoint is re-vetted 3D against the geofence at the executor
+   (the safety backstop); rejection falls back to HOLD. Every detection, takeover, maneuver,
+   resume, and debt cell is logged.
+6. **Health mapping:** NDVI = (NIR − Red)/(NIR + Red) per frame (`ndvi_fusion.py`), georeferenced
+   from SITL telemetry (`ndvi_georef.py`, hand-fixture-tested incl. tilted poses), stitched
+   **offline post-flight** (ADR-010, `scripts/stitch_ndvi.py`) into a per-cell heatmap on the SAME
+   canonical grid as the coverage ledger — heatmap cell and ledger cell join by `cell_id`.
+7. **Dashboard (last, light):** flight replay + avoidance event log + NDVI overlay, joined on the
+   shared cell grid.
 
-1. **Simulation environment:** Gazebo Harmonic (pinned, ADR-004) + `ardupilot_gazebo` plugin +
-   ROS 2. Custom "farm world": bounded field polygon, rows of trees as static obstacles,
-   scripted bird actors as dynamic obstacles (Gazebo actor plugins).
-2. **Sensing:** simulated NDVI camera (dual-band render: red + synthetic NIR pass).
-   Second sensor configuration simulated in parallel for comparison (see above).
-3. **Perception:** lightweight object/anomaly detector on NDVI-rendered frames, plus a
-   pre-known static-obstacle map. Trees are geofenced from a pre-flight boundary survey
-   — a legitimate real-world assumption (ag operators map field boundaries in advance
-   anyway) that also cleanly separates "known static obstacle" from "genuinely
-   unplanned dynamic obstacle," which is the actual hard problem.
-4. **Coverage planning:** boustrophedon (lawnmower) path generator over the field
-   polygon — standard, well-understood, don't reinvent it.
-5. **Reactive avoidance + replanning:** on dynamic-obstacle detection, trigger a local
-   avoidance maneuver, then reconcile against the coverage plan so no field cells get
-   silently skipped. Track "coverage debt" and requeue missed cells. This loop is the
-   core of the whole project — most of your engineering time should live here.
-6. **Health mapping:** NDVI = (NIR − Red) / (NIR + Red), computed per frame,
-   georeferenced from SITL telemetry (pose/GPS), stitched post-flight into a simple
-   heatmap grid.
-7. **Dashboard (last):** flight path replay, avoidance event log, NDVI heatmap overlay.
-   Simple. It's the proof, not the point.
+## Evaluation discipline
 
-**Reference implementation worth reading before you start:** a Feb 2026 paper released
-an autopilot-agnostic ROS2 framework ("aerial-autonomy-stack") that already wires
-together Gazebo, ArduPilot/PX4, a simulated camera through YOLOv8, and simulated LiDAR
-for obstacle avoidance — close enough to your use case to save you real setup time.
+No "it works" without a metric or a reproducible scenario. The `eval/` harness is deterministic
+(fixed seeds, pinned numpy); CI gates on the seed-42 per-bird-track FNR, scenario-log byte-drift,
+and flight-log evidence validity. Adversarial safety scenarios (`eval/scenarios/`) encode the
+no-silent-skip invariant; live-run evidence is timestamped and validated so it cannot be silently
+overwritten. Sim-side claims are verified in batched human Docker sessions with written gate
+records (`docs/runbooks/`, `docs/archive/`).
 
-## Phased plan (~7–8 weeks, targeting done before your Europe trip)
+## Reference
 
-| Weeks | Goal |
-|---|---|
-| 1–2 | Gazebo + ArduPilot SITL running; custom farm world; basic boustrophedon mission flying end-to-end, no obstacles yet. Spike the NDVI-vs-RGB detection question here. |
-| 3–4 | Static tree obstacles (geofence) + scripted dynamic bird obstacles; detector + reactive avoidance + coverage-debt replanning loop. |
-| 5–6 | NDVI rendering pipeline; per-frame vegetation index; georeferenced stitching into a health map. |
-| 7 | Dashboard, demo video, README, resume bullets (this is where the GTM/Narrative Lead role from the playbook earns its keep). |
-| 8 | Buffer / polish. |
-
-## Open questions to pin down as you build (not before)
-
-_All three are now RESOLVED (2026-08-05) — kept here as the original framing; see `docs/DECISIONS.md`
-and `docs/ROADMAP.md` for outcomes._
-
-- **Obstacle density for the MVP demo:** start with 2–3 scripted bird trajectories, not
-  a flock. Keep the avoidance loop debuggable before you scale complexity. — **Resolved:** the farm
-  world ships 3 scripted bird actors; the live demo uses a single scripted bird (MVP scope).
-- **Replanning sophistication for v1:** ship "avoid, return to next waypoint" first.
-  Document full coverage-debt reconciliation as an explicit stretch goal — good
-  interview material either way, and you don't want to block v1 on it. — **Resolved (ADR-002):** v1
-  ships avoid-then-resume + honest coverage-debt tracking; full reconciliation is the stretch goal.
-- **NDVI-only detection viability:** decide after the Week 1–2 spike whether the
-  vegetation-index signal alone is enough for reliable dynamic-obstacle detection, or
-  whether a synthetic RGB pass earns its complexity. — **Resolved (ADR-003):** NDVI-direct — the blob
-  baseline hit per-bird-track FNR 0.000 on the spike; re-confirm on the real render in Weeks 5–6.
+**`aerial-autonomy-stack`** (Feb 2026): autopilot-agnostic ROS 2 framework wiring Gazebo +
+ArduPilot/PX4 + simulated camera (YOLOv8) + simulated LiDAR avoidance. Mined for setup time;
+adapted, not adopted wholesale.

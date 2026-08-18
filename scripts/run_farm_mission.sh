@@ -7,13 +7,13 @@
 # add a new launch path, a new GZ_SIM_RESOURCE_PATH dependency, or a ros2-launch-file wrapper --
 # sim/README.md explains why the two-shell flow (not ardupilot_gz_bringup's launch files, which
 # hardcode their own world path) is the right way to point at a custom world, and
-# docs/WEEK1_BRINGUP.md's whole point is not reopening that class of bug.
+# docs/runbooks/SIM_BRINGUP.md's whole point is not reopening that class of bug.
 #
-# Shell B (SITL) stays a manual, interactive step on purpose: docs/WEEK1_BRINGUP.md §6 requires
+# Shell B (SITL) stays a manual, interactive step on purpose: docs/runbooks/SIM_BRINGUP.md §6 requires
 # watching for the EKF-ready message and the one-time FRAME_CLASS/TYPE reboot before it's safe to
 # arm, and blindly scripting past that has already cost this project debugging time once -- see
-# docs/WEEK1_BRINGUP.md gotchas. This script prints the exact Shell B recipe (unchanged from
-# sim/README.md / docs/WEEK1_BRINGUP.md §8) so it doesn't have to be re-found across docs.
+# docs/runbooks/SIM_BRINGUP.md gotchas. This script prints the exact Shell B recipe (unchanged from
+# sim/README.md / docs/runbooks/SIM_BRINGUP.md §8) so it doesn't have to be re-found across docs.
 #
 # Run this INSIDE the fieldguard-sim container (scripts/sim_docker_run.sh), not on the macOS host.
 #
@@ -62,7 +62,7 @@ cat <<EOF
   # --enable-DDS is REQUIRED: AP_DDS is compiled OUT of SITL by default (AP_DDS_ENABLED=0), so without
   # it the DDS_ENABLE param does not even exist and no /ap/* topics ever appear (WEEK3_VALIDATION Gate 2).
 
-  # At the MAVProxy prompt, wait for the EKF-ready message first (docs/WEEK1_BRINGUP.md §6), then:
+  # At the MAVProxy prompt, wait for the EKF-ready message first (docs/runbooks/SIM_BRINGUP.md §6), then:
   mode rtl                  # land any current hover; wait for DISARMED
   wp load $MISSION
   wp list                   # confirm 15 items loaded
@@ -73,7 +73,7 @@ cat <<EOF
 
 [run_farm_mission] Open a THIRD shell (docker exec -it fieldguard-sim bash) for the AP_DDS agent --
   needed for /ap/* ROS 2 topics (Week 3-4 perception/planner nodes), not for flying the mission
-  itself (that's plain MAVLink). See docs/WEEK1_BRINGUP.md §6b / docs/DECISIONS.md for the locked
+  itself (that's plain MAVLink). See docs/runbooks/SIM_BRINGUP.md §6b / docs/DECISIONS.md for the locked
   /ap/* topic+frame contract:
 
   source /root/ardu_ws/install/setup.bash
@@ -87,7 +87,7 @@ cat <<EOF
   sensor bridge -- Gazebo now also carries /fg/sensor/rgb/* and /fg/sensor/nir/* (dual-band NDVI
   camera, see docs/DECISIONS.md ADR-007 and sim/README.md). Gate 0 (thermal kill-switch + mount
   joint) passed GREEN 2026-08-05; the ros_gz BRIDGE below is still unconfirmed -- that is
-  docs/WEEK5_VALIDATION.md Gate 1, next in the batched session:
+  docs/runbooks/NDVI_VALIDATION.md Gate 1, next in the batched session:
 
   source /root/ardu_ws/install/setup.bash
   ros2 run ros_gz_bridge parameter_bridge --ros-args \\

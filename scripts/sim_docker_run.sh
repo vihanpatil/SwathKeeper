@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start (or attach to) the Week 1 sim container: repo mounted read/write, colcon workspace on a
 # named volume (bind-mounting build/install on macOS Docker Desktop is slow — see
-# docs/WEEK1_BRINGUP.md gotcha #5), and MAVLink UDP ports published for an optional host-side GCS.
+# docs/runbooks/SIM_BRINGUP.md gotcha #5), and MAVLink UDP ports published for an optional host-side GCS.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

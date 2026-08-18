@@ -18,7 +18,7 @@ importable (and testable) on a bare interpreter with no ROS 2 environment.
 
 STATUS: NOT RUN LIVE. The render this node depends on (`/fg/sensor/rgb/image`,
 `/fg/sensor/nir/image`) has not rendered yet -- gated on the human Docker session,
-`docs/WEEK5_VALIDATION.md` Gates 0-2. This file is written and ready to run the moment those topics
+`docs/runbooks/NDVI_VALIDATION.md` Gates 0-2. This file is written and ready to run the moment those topics
 exist; do not treat anything here as exercised against the real render until Gate 2 is green and
 this node has actually been run against it (mirrors how `avoidance_node.py` was written ahead of
 its own Week-3 Docker validation).
@@ -27,7 +27,7 @@ VERIFY-IN-CONTAINER items (cannot be checked outside Docker/ROS 2, same category
 `ros2_adapter.py`'s note):
   * `message_filters` is a standard ROS 2 Humble package (`ros-humble-message-filters`) but is not
     used anywhere else in this repo yet -- confirm it's on the container's install line
-    (`docs/WEEK1_BRINGUP.md` / the Dockerfile) before first run; add it if missing.
+    (`docs/runbooks/SIM_BRINGUP.md` / the Dockerfile) before first run; add it if missing.
   * `use_sim_time` is NOT hardcoded here (matches `avoidance_node.py`'s convention) -- launch with
     `--ros-args -p use_sim_time:=true` per ADR-007's "use_sim_time=true" requirement, or the NDVI
     frame's stamp arithmetic (delta vs. the stale-pair guard) will compare wall-clock stamps against

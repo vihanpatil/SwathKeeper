@@ -1,7 +1,7 @@
-# FieldGuard Tiger Team — Setup, Use & Maintenance Guide
+# SwathKeeper Tiger Team — Setup, Use & Maintenance Guide
 
 This guide turns the generic solo-founder tiger-team playbook into a **working, version-controlled
-Claude Code team tailored to FieldGuard**. It covers what was built, how to set it up, how to run
+Claude Code team tailored to SwathKeeper**. It covers what was built, how to set it up, how to run
 the team day to day, how to maintain it as the project grows, and the improvements made over the
 raw playbook (with reasons).
 
@@ -12,14 +12,14 @@ If you read nothing else: run `/standup` to start a session, then talk to roles 
 
 ## 0. What this is (and what changed from the playbook)
 
-The playbook is a generic 7-role solo-founder team written for a RAG/agent web app. FieldGuard is a
+The playbook is a generic 7-role solo-founder team written for a RAG/agent web app. SwathKeeper is a
 ROS 2 / Gazebo / ArduPilot **robotics simulation** project. So the roles were **retargeted, not
 pasted**, and the team was wired up as real Claude Code subagents per the current
 [sub-agents docs](https://code.claude.com/docs/en/sub-agents) (schema verified July 2026).
 
 **The eight agents** (`.claude/agents/`):
 
-| Agent | Playbook origin | What changed for FieldGuard |
+| Agent | Playbook origin | What changed for SwathKeeper |
 |---|---|---|
 | `product-lead` | Product/Program Lead | Tailored to the 7-8 week deadline, the confirmed priority order, and the "decide as you build" spikes. Holds `docs/ROADMAP.md`; wins scope ties. |
 | `tech-lead` | Tech Lead/Architect | Owns the ROS 2 node/topic interface contracts and `docs/DECISIONS.md`; points at the `aerial-autonomy-stack` reference. |
@@ -28,7 +28,7 @@ pasted**, and the team was wired up as real Claude Code subagents per the curren
 | `flight-software-engineer` | **Full-Stack Engineer** | Retargeted from React/Node to ROS 2 app code: coverage planner, the reactive avoidance + coverage-debt loop (the core), NDVI mapping, and the light dashboard last. |
 | `devops-reliability-engineer` | DevOps/Reliability | Retargeted from cloud-free-tier cost to **local-sim reproducibility, headless CI, and demo-artifact recording**. |
 | `qa-safety-reviewer` | QA/Security & Safety | Given teeth for a safety-relevant autonomous system: false negatives, silently-skipped cells, geofence breaches, confidently-wrong perception. |
-| `gtm-narrative-lead` | GTM/Narrative | Tailored to the FieldGuard story, metric-backed resume bullets, and mining `docs/DECISIONS.md` for interview answers. |
+| `gtm-narrative-lead` | GTM/Narrative | Tailored to the SwathKeeper story, metric-backed resume bullets, and mining `docs/DECISIONS.md` for interview answers. |
 
 Plus: `/standup` slash command, `CLAUDE.md` project context (loads into every agent), a permission
 allowlist, a living roadmap, a decision log, a README skeleton, and a project directory scaffold.
@@ -50,11 +50,11 @@ allowlist, a living roadmap, a decision log, a README skeleton, and a project di
    Claude Code's file watcher only covers directories that existed at session start, so the agents
    load reliably after one restart. (New files added to an already-watched dir are picked up live.)
 2. **Verify the team loaded.** In a fresh session, ask:
-   `List the FieldGuard subagents available and their models.`
+   `List the SwathKeeper subagents available and their models.`
    You should see all eight. If any are missing, restart once more.
 3. **Optional — make the first commit** (the scaffold is ready to version):
    ```bash
-   git add -A && git commit -m "Scaffold FieldGuard tiger team + project structure"
+   git add -A && git commit -m "Scaffold SwathKeeper tiger team + project structure"
    ```
    (`git commit` is set to *ask* for permission in `.claude/settings.json`, so nothing commits
    without your say-so.)
@@ -71,7 +71,7 @@ CLAUDE.md                always-loaded project context (every agent reads this)
 docs/SPEC.md             the full project spec (copied in so agents can read it)
 docs/ROADMAP.md          living phased plan — product-lead updates each standup
 docs/DECISIONS.md        ADR-lite tradeoff log — interview material
-docs/tiger_team_playbook.md   the original playbook, for reference
+docs/archive/tiger_team_playbook.md   the original playbook, for reference
 README.md                public-facing readme (gtm-narrative-lead owns it)
 src/ sim/ config/ scripts/ eval/ tests/   project scaffold with per-dir READMEs
 ```
@@ -137,9 +137,9 @@ pin versions, change architecture, or move phase, update it. It is intentionally
 bloating it; deep detail belongs in `docs/`.
 
 ### 3.2 Agent memory (`memory: project`)
-Six agents have persistent per-project memory (`product-lead`, `tech-lead`, `perception-ml-engineer`,
-`robotics-sim-engineer`, `flight-software-engineer`, `devops-reliability-engineer`, `qa-safety-reviewer`,
-`gtm-narrative-lead` — all of them). Memory lives in `.claude/agent-memory/<agent-name>/` and is
+All eight agents have persistent per-project memory (`memory: project` in each agent's frontmatter;
+a given agent's `.claude/agent-memory/<name>/` directory appears on its first write — as of
+2026-08-18, `gtm-narrative-lead` simply hasn't written yet). Memory lives in `.claude/agent-memory/<agent-name>/` and is
 committed to version control, so knowledge (pinned versions, gotchas, metric baselines, safety
 scenarios) persists across sessions and is reviewable in diffs.
 - Prompt them to use it: *"Check your memory for what we decided about X."* / *"Save what you learned."*
@@ -178,13 +178,13 @@ matches the schema as of July 2026.
 
 ### 4.1 Improvements already baked in (with the reason)
 1. **Retargeted the AI/ML role from RAG to robotics perception.** The playbook's role assumed vector
-   RAG; FieldGuard needs NDVI-frame detection, an avoidance decision policy, and an eval harness.
+   RAG; SwathKeeper needs NDVI-frame detection, an avoidance decision policy, and an eval harness.
    Leaving it RAG-shaped would have produced confidently-wrong advice — the single most important fix.
 2. **Added a dedicated `robotics-sim-engineer`.** The Gazebo/SITL/world/sensor setup is a large,
    distinct workstream; folding it into "full-stack" would have overloaded one role and hurt parallelism.
 3. **Split engineering into three lanes (sim / perception / flight-software)** so independent work runs
    in parallel with stable interface contracts — this is what makes the team *scalable*.
-4. **Elevated `qa-safety-reviewer` for a safety-critical system** with FieldGuard-specific failure modes
+4. **Elevated `qa-safety-reviewer` for a safety-critical system** with SwathKeeper-specific failure modes
    (false negatives, silently-skipped cells, geofence breaches) instead of generic QA.
 5. **Retargeted DevOps to reproducibility + headless CI + demo recording** — a local sim has no cloud
    bill, but it absolutely has environment-drift and demo-day-flakiness risk.
@@ -205,7 +205,7 @@ matches the schema as of July 2026.
 - **A `/eval` command** that runs the harness and prints the metric table, once `eval/` exists —
   makes "show me the numbers" a one-liner.
 - **A `/demo` command** that runs the recorded demo scenario end to end before an interview.
-- **Rename the project** from the working title "FieldGuard" if a better name emerges — the spec
+- **Rename the project** from the working title "SwathKeeper" if a better name emerges — the spec
   invites this; do it before the README goes public.
 - **Diagram the architecture** (the tech-lead can produce a Mermaid diagram for the README) — hiring
   managers read diagrams faster than prose.
@@ -235,5 +235,5 @@ quality. There's no wrong answer — it's a cost/quality dial.
 
 ---
 
-*Built from `docs/tiger_team_playbook.md`, tailored to `docs/SPEC.md`. Subagent schema verified
+*Built from `docs/archive/tiger_team_playbook.md`, tailored to `docs/SPEC.md`. Subagent schema verified
 against the official Claude Code sub-agents documentation, July 2026.*

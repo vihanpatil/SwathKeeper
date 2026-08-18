@@ -6,7 +6,7 @@ metadata:
 ---
 
 Week 1 bringup artifacts and their locations, established 2026-07-27:
-- `docs/WEEK1_BRINGUP.md` — the ordered, macOS-friendly setup + bringup checklist, owned by
+- `docs/runbooks/SIM_BRINGUP.md` — the ordered, macOS-friendly setup + bringup checklist, owned by
   `robotics-sim-engineer`. Each step has an explicit verification command; don't skip a step's
   check to "move faster" — this stack fails in different, easily-confused ways at each layer
   (SITL-only vs Gazebo-plugin vs ROS 2/DDS bridge), and the doc is structured to isolate which

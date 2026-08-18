@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the FieldGuard farm world SDF + regenerate the static-obstacle geofence export.
+"""Generate the SwathKeeper farm world SDF + regenerate the static-obstacle geofence export.
 
 Single generator, run once, produces two artifacts from one in-memory tree list so they can never
 drift apart (ADR-001: the geofence export IS the contract flight-software consumes, and it must
@@ -26,11 +26,11 @@ Reads (all data-driven, no code changes needed for a new scenario):
 
 World-level plugin set, spherical_coordinates, and the vehicle <include>/pose are copied verbatim
 from ardupilot_gz's own iris_runway.sdf (the world already proven to load in this project's
-docs/WEEK1_BRINGUP.md) -- deliberately not reinvented, to avoid reopening the exact "world fails to
+docs/runbooks/SIM_BRINGUP.md) -- deliberately not reinvented, to avoid reopening the exact "world fails to
 load" class of bug that doc already fought through. Trees and the ground plane are inline SDF
 primitives (box/cylinder/sphere, flat-color materials) with no external model:// or mesh
 references, so this world introduces zero new GZ_SIM_RESOURCE_PATH risk beyond what iris_runway.sdf
-already requires (ardupilot_gazebo's share dir, per WEEK1_BRINGUP.md Section 5).
+already requires (ardupilot_gazebo's share dir, per docs/runbooks/SIM_BRINGUP.md Section 5).
 
 Usage:
     python3 scripts/gen_farm_world.py
@@ -116,7 +116,7 @@ def sdf_world_header(field_cfg: dict) -> str:
     </physics>
 
     <!-- World-level plugin set copied verbatim from ardupilot_gz's iris_runway.sdf: this exact
-         combination is already proven to load in this project (docs/WEEK1_BRINGUP.md Section 5-6);
+         combination is already proven to load in this project (docs/runbooks/SIM_BRINGUP.md Section 5-6);
          not reinvented here on purpose. -->
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"></plugin>
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
@@ -218,7 +218,7 @@ def sdf_vehicle_with_ndvi_sensor(ndvi_cfg: dict) -> str:
     config/ndvi_camera.json ("mount") for the full derivation/verification notes on the
     parent-link scoped name -- CONFIRMED live 2026-08-05 (Gate 0 GREEN): the originally-authored
     nested name was rejected by gz sim, the correct value is iris_with_gimbal::base_link
-    (docs/WEEK5_VALIDATION.md "The fixed-joint parent name" has the full failure/fix record).
+    (docs/runbooks/NDVI_VALIDATION.md "The fixed-joint parent name" has the full failure/fix record).
     """
     m = ndvi_cfg["mount"]
     cam = ndvi_cfg["camera"]

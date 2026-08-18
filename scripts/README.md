@@ -2,7 +2,7 @@
 
 Bringup, generation, and eval helpers. Owned by devops + sim.
 
-**Sim bringup (run inside the Docker container, see `docs/WEEK1_BRINGUP.md`):**
+**Sim bringup (run inside the Docker container, see `docs/runbooks/SIM_BRINGUP.md`):**
 - `sim_docker_build.sh` — build the `fieldguard-sim` image.
 - `sim_docker_run.sh` — start/attach the container (repo bind-mounted, colcon workspace on a volume).
 - `run_farm_mission.sh` — start Gazebo (headless) with the custom farm world; prints the SITL + agent
@@ -21,6 +21,6 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
 - `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses (ADR-003).
 - `check_ndvi_bands.py` — ADR-007 Gate 2 (Weeks 5-6): samples the raw `/fg/sensor/nir/image` band and
   asserts canopy/soil/bird read back materially different, well-separated values (see
-  `docs/WEEK5_VALIDATION.md`, needs a running Docker sim + `--out` for a JSON summary; `--print-calibration`
+  `docs/runbooks/NDVI_VALIDATION.md`, needs a running Docker sim + `--out` for a JSON summary; `--print-calibration`
   works standalone, no ROS 2 needed).
 - `validate_agents.py` — validates the tiger-team config + repo structure (the `validate-config` CI job).

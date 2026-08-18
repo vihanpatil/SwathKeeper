@@ -1,4 +1,4 @@
-# Weeks 5-6 — Headless Docker/Gazebo CI Job (devops-reliability-engineer, 2026-08-05)
+# Sim CI — the Headless Docker/Gazebo CI Chain *(runbook; born Weeks 5-6, devops-reliability-engineer)*
 
 **Status: committed, hard-timeboxed at 2-3 days.** Promoted from the Weeks 3-4 "deferred, non-blocking"
 line (`docs/ROADMAP.md`) by an external review: *"The genuinely impressive missing piece is the
@@ -24,7 +24,7 @@ it's grounded in three checks run before writing any YAML:
    rendering**, in a prebuilt `ardupilot-dev-base` container with `ccache` and a test matrix split into
    groups to fit the time budget. This is good evidence that **SITL flight alone is hosted-runner
    feasible**; it says nothing about Gazebo rendering.
-3. **Resource math**: `docs/WEEK1_BRINGUP.md`'s own documented minimum spec is **≥6 CPUs, ≥8GB RAM,
+3. **Resource math**: `docs/runbooks/SIM_BRINGUP.md`'s own documented minimum spec is **≥6 CPUs, ≥8GB RAM,
    ≥40GB disk**, and the workspace build has **already OOM'd once** at higher parallelism on a Docker
    Desktop config *more generously resourced* than that minimum. GitHub-hosted public `ubuntu-latest`
    runners are **4 vCPU / 16GB RAM / 14GB SSD** — the disk figure alone (14GB vs. a documented 40GB
@@ -47,7 +47,7 @@ of writing). Two things follow from that, both making the render crux **more** r
 1. `docs/ROADMAP.md`'s new Weeks 5-6 table explicitly sequences this CI job (item 4) **after** a
    thermal-system "kill switch" check, the two-sensor pixel smoke test, and the ADR-003 real-render
    re-confirmation (items 1-3) — all in one batched human Docker session, same discipline as
-   `docs/WEEK3_VALIDATION.md`'s gates. **This CI job should not be the first thing that touches the
+   `docs/archive/WEEK3_VALIDATION.md`'s gates. **This CI job should not be the first thing that touches the
    real render** — let items 1-3 prove the render works at all before layering CI automation on top of
    it. If item 1 (does `gz-sim-thermal-system` even load on the pinned Harmonic+ogre2 stack) fails, this
    whole plan doc's scope shrinks to "flight only, camera sensors physically removed from the CI
@@ -62,7 +62,7 @@ of writing). Two things follow from that, both making the render crux **more** r
    which is exactly why item 6 below exists as an escape hatch.
 
 **Realistic fallback if hosted runners can't do it:** a **self-hosted runner** registered against the
-same machine/Docker config already proven in `docs/WEEK3_VALIDATION.md` (the human's own Docker
+same machine/Docker config already proven in `docs/archive/WEEK3_VALIDATION.md` (the human's own Docker
 Desktop session, or a cloud VM with the documented minimum spec). This sidesteps the resource ceiling
 entirely because it's the same environment already known to work — the cost is an operational one (a
 machine has to be online to pick up the job), which is a reasonable tradeoff to document for a
@@ -76,7 +76,7 @@ human's call, not a code change.
 | `sim/docker/Dockerfile.ci` | Bakes ROS 2 Humble + Gazebo Harmonic + `ardupilot_gazebo`/`ardupilot_gz` + ArduPilot SITL (pinned to the **exact commit SHAs** in `CLAUDE.md`, not floating branches) into image layers, `--enable-DDS` deliberately **excluded** (see cut-list #1) | Manual review only. **Not built** in this session — see "What needs the human" |
 | `.github/workflows/sim-image.yml` | Builds `Dockerfile.ci`, pushes to GHCR (`ghcr.io/<owner>/fieldguard-sim`). Manual dispatch or on Dockerfile/pin changes — **decoupled from every push**, which is the direct fix for "CI shouldn't rebuild from scratch every run" | `actionlint` clean. Never executed (no live runner/GHCR credentials in this session) |
 | `scripts/gen_boustrophedon.py` (reused, unchanged) | Generates the short scripted mission: `--width 20 --height 30 --spacing 15 --alt 15` → 2 lanes, 4 coverage waypoints, 7 mission items | **Executed locally**: confirmed exact output (`/tmp/ci_smoke_test.waypoints`), byte-identical geometry to the existing 6-lane mission's first 2 lanes (same generator, same seed home lat/lon — deterministic, no RNG involved in this planner) |
-| `scripts/ci_sim_smoke.py` | Non-interactive pymavlink driver: connect → EKF settle → one-time FRAME_CLASS/TYPE+reboot (the documented `docs/WEEK1_BRINGUP.md` §6 gotcha) → upload mission → AUTO+arm → poll `MISSION_ITEM_REACHED` → wait disarm → write a JSON summary | **QGC-WPL parser + waypoint-counting logic executed and checked locally** against the real generated mission file (4/4 coverage waypoints, correctly excluding the home placeholder row). **The live MAVLink control flow itself is UNVERIFIED** — no SITL to connect to in this session |
+| `scripts/ci_sim_smoke.py` | Non-interactive pymavlink driver: connect → EKF settle → one-time FRAME_CLASS/TYPE+reboot (the documented `docs/runbooks/SIM_BRINGUP.md` §6 gotcha) → upload mission → AUTO+arm → poll `MISSION_ITEM_REACHED` → wait disarm → write a JSON summary | **QGC-WPL parser + waypoint-counting logic executed and checked locally** against the real generated mission file (4/4 coverage waypoints, correctly excluding the home placeholder row). **The live MAVLink control flow itself is UNVERIFIED** — no SITL to connect to in this session |
 | `scripts/ci_sim_smoke.sh` | Orchestrates `gz sim --headless-rendering` + `sim_vehicle.py --no-mavproxy` (reuses the exact entry point already proven interactively, not a hand-rolled binary invocation) + the Python driver, with timeouts and cleanup traps | `bash -n` syntax-checked. **Never run** — needs a live container |
 | `scripts/check_sim_smoke.py` | Regression gate: reads the JSON summary, fails the build on any missed waypoint, un-armed, un-disarmed, timeout, or driver error | **Fully unit-verified locally** — 5 fixture JSONs (clean pass, missed waypoint, driver error, never-disarmed/timeout, missing file) all produce the expected exit code and failure reasons. This is the one artifact in this list with the same "run it, don't just write it" discipline applied to every other CI gate in this repo |
 | `.github/workflows/ci.yml` `build-test-sim` job | Pulls the GHCR image, runs the smoke script + gate, uploads artifacts. **Gated to `workflow_dispatch` only** — will not run on every push until a human confirms one green run | `actionlint` clean. Never executed |
@@ -94,7 +94,7 @@ port for SITL without MAVProxy — flagged as the first thing to check if the dr
    (`docker build -f sim/docker/Dockerfile.ci -t fieldguard-sim:ci .`, after building
    `sim/docker/Dockerfile` first). Watch for: disk usage, whether the colcon build OOMs at `-j2`, and
    whether the non-interactive `./waf configure --board sitl && ./waf copter` step produces a binary
-   that boots and flies like the one already proven in `docs/WEEK3_VALIDATION.md`.
+   that boots and flies like the one already proven in `docs/archive/WEEK3_VALIDATION.md`.
 2. **Run `scripts/ci_sim_smoke.sh` inside that image**, manually, watching the raw logs. This is where
    the unverified assumptions (SITL's default port, the FRAME_CLASS/TYPE reboot timing, `gz sim
    --headless-rendering` actually initializing on this host) get resolved. Fix forward in the script
@@ -130,7 +130,7 @@ whole point was "Weeks 5-6 slipping is the #1 project risk."
 ## Cut-list (apply in this order if the timebox runs long)
 
 1. **Cut the CI job from running automatically at all.** Ship `Dockerfile.ci` + the scripts as
-   documented, human-runnable infrastructure (`docs/WEEK1_BRINGUP.md`-style, run by hand in the
+   documented, human-runnable infrastructure (`docs/runbooks/SIM_BRINGUP.md`-style, run by hand in the
    container) without a working hosted-runner CI trigger. The resume-relevant claim becomes "a
    reproducible headless-sim image + a scripted regression-gated smoke test exist and run
    reproducibly" rather than "GitHub Actions runs it on every push" — still real, still defensible,
@@ -181,7 +181,7 @@ render-verification session is `docs/ROADMAP.md` items 1-3, owned by `robotics-s
 
 ## Resource sanity (for whoever runs this next)
 
-Restating `docs/WEEK1_BRINGUP.md`'s minimum spec here because it's the actual gating fact for this
+Restating `docs/runbooks/SIM_BRINGUP.md`'s minimum spec here because it's the actual gating fact for this
 task: **≥6 CPUs, ≥8GB RAM, ≥40GB disk** for the interactive bringup. `Dockerfile.ci`'s baked build adds
 image-layer overhead on top of that (a full ROS 2 Humble desktop install + Gazebo Harmonic + a compiled
 ArduPilot binary easily reaches several GB even before any world assets) — budget a full local build at
@@ -192,7 +192,7 @@ Week 3 Docker session alone). Don't schedule this as the last thing done before 
 ## One-paragraph status for `product-lead` to paste into `docs/ROADMAP.md`
 
 > **Weeks 5-6 CI (2026-08-05, devops-reliability-engineer):** promoted from deferred to committed per
-> external review, hard-timeboxed at 2-3 days (`docs/WEEK5_CI_GAZEBO.md`). Implemented everything
+> external review, hard-timeboxed at 2-3 days (`docs/runbooks/SIM_CI.md`). Implemented everything
 > verifiable without a live Docker/Gazebo runner: `sim/docker/Dockerfile.ci` (pinned-SHA workspace
 > baked into image layers, DDS/ROS2-avoidance-loop deliberately excluded from this scope),
 > `.github/workflows/sim-image.yml` (GHCR publish, decoupled from per-push cadence), a non-interactive

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the FieldGuard tiger-team configuration.
+"""Validate the SwathKeeper tiger-team configuration.
 
 Checks agent frontmatter (name/description/model/color/memory), settings.json validity,
 and that the expected project structure exists. Run locally (`python scripts/validate_agents.py`)
@@ -81,10 +81,10 @@ for d in EXPECTED_DIRS:
         errors.append(f"missing expected directory: {d}/")
 
 if errors:
-    print("FieldGuard config validation FAILED:")
+    print("SwathKeeper config validation FAILED:")
     for e in errors:
         print(f"  ::error::{e}")
     sys.exit(1)
 
-print(f"FieldGuard config OK: {len(agent_files)} agents validated, "
+print(f"SwathKeeper config OK: {len(agent_files)} agents validated, "
       f"settings.json valid, project structure present.")
