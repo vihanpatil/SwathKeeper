@@ -445,3 +445,18 @@ the pure decision function to actuation history.
    raw bands looked alive. queue_size is now 60 — this tolerates ARRIVAL skew only; the stamp
    bound (slop = 25% of frame period) is unchanged. Operational corollary in the demo runbook:
    keep the host machine quiet during recording flights.
+
+### ADR-007 amendment (2026-08-18, late): the sensor mount was NEVER nadir — and the gate that now proves it is
+5. **Mount rpy corrected (π,0,0 → −π/2,+π/2,0): the camera faced the horizon, upside-down, from
+   the day it was authored.** Gazebo camera sensors look along the sensor frame's **+X axis**
+   (optical z = sensor +X, u+ = sensor −Y, v+ = sensor −Z — established empirically with a
+   landmark-oracle world after crash-tumbling test vehicles produced hours of self-contradictory
+   probes: `<static>` on a wrapper model does NOT propagate to a nested `<include>`, so every
+   in-place camera test free-fell). The original rpy was derived under a pinhole Z-forward mental
+   model. Every prior gate passed anyway because every gate measured VALUES (band separation,
+   rates, topics) and none measured GEOMETRY — five recorded flights were lost to it. The missing
+   gate now exists: `scripts/verify_mount_geometry.sh` (physics-free world copy, vehicle parked
+   1 m from a known tree, canopy centroid must land within 15 px of the
+   `ndvi_georef.world_enu_to_pixel` prediction; measured 2.2 px). Run it after ANY change to the
+   mount, the vehicle SDF, or the georef extrinsics. Gate 2's band-separation PASS remains valid
+   (same materials, same calibration — measured from a different viewpoint).

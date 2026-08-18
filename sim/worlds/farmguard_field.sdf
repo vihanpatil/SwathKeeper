@@ -96,7 +96,7 @@
            pose, so intrinsics/pose/rate are identical by construction: pixel-wise fusion needs no
            resampling. See config/ndvi_camera.json for the source values and calibration notes. -->
       <link name="fg_sensor_mount">
-        <pose>0.0 0.0 -0.08 3.141592653589793 0.0 0.0</pose>
+        <pose>0.0 0.0 -0.08 -1.5707963267948966 1.5707963267948966 0.0</pose>
         <inertial>
           <mass>0.05</mass>
           <inertia>

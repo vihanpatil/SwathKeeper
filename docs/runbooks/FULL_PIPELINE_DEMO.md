@@ -45,6 +45,15 @@ the sim clock natively via gz-transport, deliberately NOT through this bridge: G
 ~350 msgs/s and bridging it starved the image pipeline, measured live). A missing-library crash
 here means the Shell-0 apt step was skipped.
 
+## One-time gate after mount/world/georef changes: geometry
+
+```bash
+docker exec -it fieldguard-sim bash /workspace/fieldguard/scripts/verify_mount_geometry.sh
+```
+Asserts the camera's actual view agrees with the georef transform to within 15 px (canopy of a
+known tree vs its predicted pixel). The mount flew FIVE flights aimed at the horizon before this
+gate existed — values-only gates cannot catch geometry.
+
 ## Pre-flight probe — is the render actually alive? (30 seconds, do NOT skip)
 
 ```bash
