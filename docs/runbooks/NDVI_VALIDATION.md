@@ -10,6 +10,34 @@ joint-parent fix recorded below — see "The fixed-joint parent name"), and all 
 topics are present on the gz side. **Do NOT re-run Gate 0; the batched session resumes at
 Gate 1.** Everything below about Gates 1–3 remains source-verified only.
 
+## ⚠️ Session log 2026-08-18 — Gate 1 attempted; read this before resuming
+
+**What happened:** Shell 1 (Gazebo) came up healthy — thermal systems on all 36 visuals, all four
+`/fg/sensor/*` topics advertised gz-side (Gate 0 behavior re-confirmed incidentally). Shell 2's
+`parameter_bridge` failed to start: `error while loading shared libraries:
+libactuator_msgs__rosidl_typesupport_cpp.so`.
+
+**Root cause + fix (APPLIED LIVE in container `dafb3e095140`, and pinned in
+`sim/docker/Dockerfile` for future image rebuilds):** `ros_gz_bridge` was compiled with three
+*optional* deps present (rosdep installed them at workspace-build time), which makes them hard
+runtime deps — but apt state is **container-ephemeral** while `/root/ardu_ws` persists, so a
+recreated container loses them. Fix, verified working (bridge starts, creates all 4 GZ→ROS
+bridges):
+```bash
+apt-get update && apt-get install -y ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs
+```
+
+**🛑 HOLD on Gate 2's bird check — the bird actors DO NOT RENDER.** Verified live via the scene
+graph (`gz service -s /world/farmguard_field/scene/info ... | grep -c bird` → **0**): skinless
+`<actor>` link-visuals never enter the ogre2 render scene in Harmonic (the Shell-1 warnings
+`Actor skin mesh [__default__] not found` are this). Birds are therefore invisible to BOTH bands —
+a latent Week-2 world bug, never noticed because the avoidance demo injects bird *positions*
+(`--demo`), not pixels. **Gates 1 + 2's canopy/soil checks can proceed; the bird-pixel check and
+any real-render detection work CANNOT until the fix lands.** Designed fix (next session): birds
+become static **models** (same sphere/material/authored 273 K thermal — per-visual thermal works
+on model visuals, unlike actor skins), moved along the existing `config/birds/*.json` trajectories
+by a small `gz service /world/.../set_pose` driver script started alongside the mission shells.
+
 ## Gates 1–3 are source/doc-verified only, not run
 
 Nothing about Gates 1–3 has executed against the real Gazebo/ogre2 render yet. Every claim about the
