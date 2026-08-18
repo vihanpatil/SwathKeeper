@@ -6,7 +6,7 @@ drift apart (ADR-001: the geofence export IS the contract flight-software consum
 always describe exactly what's physically in the Gazebo world):
 
   1. sim/worlds/farmguard_field.sdf      -- the Gazebo world (field ground plane, orchard tree
-                                             rows as static models, scripted bird actors as
+                                             rows as static models, scripted bird models as
                                              dynamic obstacles, the iris_with_gimbal vehicle plus
                                              the ADR-007 dual-band NDVI sensor mount, and a
                                              per-visual <temperature> plugin on every visual in the
@@ -353,19 +353,23 @@ def sdf_tree(obstacle: dict, defaults: dict, ndvi_cfg: dict) -> str:
 """
 
 
-def sdf_bird_actor(bird: dict, ndvi_cfg: dict) -> str:
+def sdf_bird_model(bird: dict, ndvi_cfg: dict) -> str:
+    """ADR-012: birds are static MODELS moved externally by scripts/drive_birds.py (set_pose
+    service), NOT <actor>s with <script><trajectory>. The actor version NEVER RENDERED: a skinless
+    <actor>'s link-visuals don't enter Harmonic's ogre2 scene at all (verified live 2026-08-18 —
+    scene/info had 0 bird entities; 'Actor skin mesh [__default__] not found'), which made birds
+    invisible to BOTH NDVI bands. A model's visuals render normally and, unlike an actor skin,
+    accept the per-visual thermal plugin (ADR-007), so the authored bird temperature survives.
+    <static> keeps physics out of it (the actor was physics-less too); the trajectory stays in
+    config/birds/*.json, consumed by the driver at runtime. Spawn pose = first waypoint."""
     r = bird["physical_radius_m"]
     rgba = " ".join(str(c) for c in bird["color_rgba"])
-    loop = "true" if bird.get("loop", True) else "false"
     bird_temp = ndvi_cfg["temperature_calibration"]["bird"]["temperature_k"]
-    waypoints = "\n".join(
-        f'          <waypoint><time>{wp["t_s"]:.2f}</time>'
-        f'<pose>{wp["x_m"]} {wp["y_m"]} {wp["z_m"]} 0 0 {math.radians(wp["yaw_deg"]):.4f}</pose>'
-        f"</waypoint>"
-        for wp in bird["waypoints"]
-    )
+    wp0 = bird["waypoints"][0]
     return f"""
-    <actor name="{bird['bird_id']}">
+    <model name="{bird['bird_id']}">
+      <static>true</static>
+      <pose>{wp0["x_m"]} {wp0["y_m"]} {wp0["z_m"]} 0 0 {math.radians(wp0["yaw_deg"]):.4f}</pose>
       <link name="link">
         <visual name="visual">
           <geometry><sphere><radius>{r}</radius></sphere></geometry>
@@ -375,15 +379,7 @@ def sdf_bird_actor(bird: dict, ndvi_cfg: dict) -> str:
           </material>{sdf_temperature_plugin(bird_temp)}
         </visual>
       </link>
-      <script>
-        <loop>{loop}</loop>
-        <delay_start>0.0</delay_start>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="fly">
-{waypoints}
-        </trajectory>
-      </script>
-    </actor>
+    </model>
 """
 
 
@@ -400,7 +396,7 @@ def build_sdf(field_cfg, static_cfg, birds_cfg, ndvi_cfg, obstacles) -> str:
     parts.append("\n    <!-- Scripted dynamic obstacles (2-3 birds, MVP scope); see "
                   "config/birds/farm_world_birds.json for the trajectory source data. -->")
     for bird in birds_cfg["birds"]:
-        parts.append(sdf_bird_actor(bird, ndvi_cfg))
+        parts.append(sdf_bird_model(bird, ndvi_cfg))
     parts.append("\n  </world>\n</sdf>\n")
     return "".join(parts)
 
@@ -442,7 +438,7 @@ def main():
     args.world_out.write_text(sdf_text)
     n_temp_visuals = 1 + 2 * len(obstacles) + len(birds_cfg["birds"])  # ground + trunk/canopy + birds
     print(f"[gen_farm_world] well-formed XML confirmed; wrote world "
-          f"({len(birds_cfg['birds'])} bird actors, {len(obstacles)} trees, "
+          f"({len(birds_cfg['birds'])} bird models (driven by scripts/drive_birds.py, ADR-012), {len(obstacles)} trees, "
           f"ADR-007 NDVI sensor mount, {n_temp_visuals} calibrated <temperature> visuals) "
           f"-> {args.world_out}")
 

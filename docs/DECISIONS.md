@@ -387,3 +387,24 @@ forgotten: if ever done, it's a single mechanical PR after the sim CI chain is g
 Why: The name should point at the differentiator — keeping the swath — and the rename must not
 invalidate verified state three sessions before the demo.
 Owner / roles: user (final call), product-lead, gtm-narrative-lead.
+
+## ADR-012: Birds are static models driven by an external set_pose script — not SDF actors   (2026-08-18, status: ACCEPTED — verified live in-container)
+Decision: The 3 scripted birds are emitted by `gen_farm_world.py` as **static `<model>`s** (sphere
+visual + ADR-007 per-visual thermal, spawned at their first waypoint) and moved at runtime by
+`scripts/drive_birds.py`, which piecewise-linearly interpolates the unchanged
+`config/birds/farm_world_birds.json` waypoints and teleports each bird via
+`/world/<world>/set_pose` at ~5 Hz (= the camera rate, so the render never sees a stale hop).
+Alternative(s) rejected: (a) Keep `<actor>` + `<script><trajectory>` — **it never worked**: a
+skinless actor's link-visuals never enter Harmonic's ogre2 render scene (verified live 2026-08-18,
+0 bird entities in scene/info since Week 2; unnoticed because the avoidance demo injects
+positions, not pixels). (b) Actor with a `<skin>` mesh — renders, but the per-visual thermal
+plugin doesn't attach to actor skins, so the authored 273 K bird signature (the NIR contrast the
+detector needs) is lost. (c) `gz-sim-trajectory-follower-system` — planar, force-based, built for
+surface vessels; wrong tool for a 3D flight path. Trade-off accepted: bird motion now needs the
+driver process running (recorded in the runbooks) and assumes RTF ≈ 1.0 (true in every runbook;
+Gate 3 checks RTF).
+Why: Models render and take per-visual thermal exactly like the 18 trees already proven on this
+stack, the committed trajectory data stays untouched (reproducibility unchanged), and the driver
+is 150 lines of stdlib instead of a new Gazebo plugin.
+Owner / roles: robotics-sim-engineer, perception-ml-engineer (consumer), qa-safety-reviewer
+(bird trajectories are safety-scenario inputs — interpolation is unit-tested).
