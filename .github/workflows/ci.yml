@@ -36,10 +36,13 @@ jobs:
   # The real headless-sim job is `build-test-sim` below (added Weeks 5-6, 2026-08-05) -- it needs the
   # Docker/Gazebo image and is manual-dispatch-only until a human confirms it runs green.
   #
-  # Dependency policy (CLAUDE.md "pin everything"): tests/fieldguard_planning is stdlib-only by
-  # design (zero install step). Only the eval/ spike harness needs numpy+scipy, pinned in
-  # requirements-eval.txt to the exact versions verified locally on Python 3.12.12
-  # (see .claude/agent-memory/devops-reliability-engineer for the reference run).
+  # Dependency policy (CLAUDE.md "pin everything"): the avoidance/planning core is stdlib-only by
+  # design, but the Week-5 NDVI tests (test_ndvi_fusion.py, test_ndvi_georef.py) use numpy, so the
+  # pinned requirements-eval.txt install MUST come before the test suite. (2026-08-18: it didn't --
+  # tests ran first, ImportError'd on numpy, and this job was red for 12 days while the seed-42 FNR
+  # safety gate never executed. Install-before-test is load-bearing; don't reorder.)
+  # numpy+scipy are pinned in requirements-eval.txt to the exact versions verified locally on
+  # Python 3.12.12 (see .claude/agent-memory/devops-reliability-engineer for the reference run).
   # ---------------------------------------------------------------------------
   planning-and-eval:
     name: Planning tests + eval spike harness (numpy/scipy)
@@ -50,15 +53,32 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Planning test suite (stdlib only, no install step)
+      - name: Install eval harness dependencies (pinned; needed by the NDVI tests below)
+        run: |
+          set -euo pipefail
+          pip install -r requirements-eval.txt
+
+      - name: Planning test suite
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests/fieldguard_planning -v
 
-      - name: Install eval harness dependencies (pinned)
+      - name: Scenario flight logs are current (regenerate + diff -- catches silent rot)
         run: |
           set -euo pipefail
-          pip install -r requirements-eval.txt
+          python3 eval/scenarios/generate_flight_logs.py
+          git diff --exit-code eval/scenarios/
+
+      - name: Validate committed flight-log evidence (idle-run clobber guard)
+        run: |
+          set -euo pipefail
+          # eval/results/ is gitignored, so this normally SKIPs (an unmatched glob passes through as
+          # a literal path and the checker exits 0 on absent files -- by design). It exists because
+          # the 2026-08-05 live demo's live_flight_log.json was silently clobbered by an idle run
+          # (empty flown_path_enu, 720/720 debt) and nothing noticed: if flight-log evidence IS ever
+          # committed, this gate proves it records a real flight (ledger partition invariant,
+          # nonzero flown path, not-all-cells-debt).
+          python3 scripts/check_live_flight_log.py eval/results/*flight_log*.json
 
       - name: Smoke-run stdlib generator scripts (catch import/CLI breakage)
         run: |
