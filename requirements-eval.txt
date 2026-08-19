@@ -19,3 +19,8 @@
 # tests/fieldguard_planning/test_ndvi_fusion.py + test_ndvi_georef.py (numpy only, no scipy).
 numpy==2.5.1
 scipy==1.18.0
+# Docs-site generator (scripts/build_docs_site.py, ADR-014) -- the second scoped exception, same
+# policy as numpy above: one pinned dep, one consumer, declared here rather than a second
+# requirements file. CI's docs-site job installs from THIS file so the pin has one home.
+# Verified: markdown 3.9 on macOS (Python 3.9, 2026-08-18) and targeted at CI's python 3.12.
+markdown==3.9
