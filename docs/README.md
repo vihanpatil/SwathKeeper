@@ -15,7 +15,7 @@ Three kinds of documents live here. Know which kind you're holding:
 - [`runbooks/FULL_PIPELINE_DEMO.md`](runbooks/FULL_PIPELINE_DEMO.md) — THE showpiece: survey + birds + live NDVI + recording + heatmap, shell by shell
 - [`runbooks/SIM_CI.md`](runbooks/SIM_CI.md) — the headless sim-CI chain: image build, dispatch, cut-list
 
-**Historical** (`archive/` — records, deliberately frozen; also `SPIKE_ndvi_vs_rgb.md`, the closed
-ADR-003 spike kept in place because the ADR cites it):
+**Historical** (`archive/` — records, deliberately frozen; plus `docs/SPIKE_ndvi_vs_rgb.md` — the
+closed ADR-003 spike, left outside `archive/` because ADR-003 links it by that path):
 - [`archive/WEEK3_VALIDATION.md`](archive/WEEK3_VALIDATION.md) — the Week-3 gate session record (all 3 gates passed 2026-08-05)
 - [`archive/tiger_team_playbook.md`](archive/tiger_team_playbook.md) — the original pre-project playbook

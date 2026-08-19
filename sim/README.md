@@ -4,13 +4,16 @@ Owned by `robotics-sim-engineer`. Scenario parameters are data-driven (`config/`
 be added without code changes — see [Regenerating the world](#regenerating-the-world).
 
 - `worlds/farmguard_field.sdf` — the custom farm world: bounded field polygon (green ground plane),
-  3 orchard tree rows (18 trees, static/geofenced obstacles), 3 scripted bird actors (dynamic
-  obstacles), the `iris_with_gimbal` vehicle, and (ADR-007, Weeks 5-6) the dual-band NDVI sensor
+  3 orchard tree rows (18 trees, static/geofenced obstacles), 3 birds as **static models** driven
+  at runtime by `scripts/drive_birds.py` (dynamic obstacles, ADR-012 — SDF `<actor>`s never entered
+  the ogre2 render scene), the `iris_with_gimbal` vehicle, and (ADR-007) the dual-band NDVI sensor
   mount (`iris_with_gimbal_ndvi`) plus a calibrated `<temperature>` on every visual in the world.
   **Generated** by `scripts/gen_farm_world.py` — don't hand-edit; edit the `config/` inputs below
   and regenerate.
 - `bridge/fg_sensor_bridge.yaml` — ros_gz_bridge config for the four `/fg/sensor/*` topics
-  (ADR-007). See `docs/runbooks/NDVI_VALIDATION.md` Gate 1.
+  (ADR-007), and deliberately only those: Gazebo's `/clock` runs at ~350 msg/s and bridging it
+  starved the image pipeline, so the recorder reads the sim clock natively over gz-transport
+  instead. See `docs/runbooks/NDVI_VALIDATION.md` Gate 1.
 - `models/` — reserved for future mesh/model assets. Still empty: the farm world (including the
   Week 5-6 NDVI sensor mount) uses only inline SDF primitives + first-class Gazebo sensor types, no
   external meshes, so it has no dependency on this directory or on `GZ_SIM_RESOURCE_PATH` beyond
@@ -25,20 +28,21 @@ be added without code changes — see [Regenerating the world](#regenerating-the
 |---|---|---|
 | `config/field_polygon.json` | field boundary (home lat/lon, ENU polygon), mission altitude | `scripts/gen_boustrophedon.py` (mission) and `scripts/gen_farm_world.py` (world) — **the reason both stay geometrically consistent** |
 | `config/static_obstacles.json` | tree row layout (input) + the flattened per-tree obstacle list (generated output) | `scripts/gen_farm_world.py` (world); **flight-software's geofence/planner** (see contract below) |
-| `config/birds/farm_world_birds.json` | 3 scripted bird actor trajectories (piecewise-linear waypoints, there-and-back loops) | `scripts/gen_farm_world.py` (world) |
+| `config/birds/farm_world_birds.json` | 3 scripted bird trajectories (piecewise-linear waypoints, there-and-back loops), replayed at runtime by `scripts/drive_birds.py` (ADR-012) | `scripts/gen_farm_world.py` (world) |
 | `config/ndvi_camera.json` | ADR-007 dual-band NDVI sensor mount: intrinsics/rate, the sensor-mount attachment (parent link + pose), and the per-material-class `<temperature>` calibration table | `scripts/gen_farm_world.py` (world); `scripts/check_ndvi_bands.py` (Gate 2 smoke test) |
 
 ## NDVI sensor topics (ADR-007, Weeks 5-6)
 
-Locked contract, `docs/DECISIONS.md` ADR-007 — **not confirmed live yet**, see
-`docs/runbooks/NDVI_VALIDATION.md`:
+Locked contract, `docs/DECISIONS.md` ADR-007 — **confirmed live 2026-08-18** (Gates 0-3;
+`docs/runbooks/NDVI_VALIDATION.md`):
 
 - `/fg/sensor/rgb/image` (`rgb8`) + `/fg/sensor/rgb/camera_info` — Red band; also the ADR-003
   NDVI+RGB comparison arm.
 - `/fg/sensor/nir/image` (`mono16`) + `/fg/sensor/nir/camera_info` — Gazebo's thermal sensor
   repurposed as synthetic NIR, per-visual `<temperature>` authored from `config/ndvi_camera.json`.
-- `/fg/ndvi/image` + `/fg/ndvi/camera_info` + `/fg/ndvi/preview` — **not built yet**; the fused
-  NDVI node is `flight-software-engineer`'s downstream Weeks 5-6 scope.
+- `/fg/ndvi/image` (`32FC1`, authoritative) + `/fg/ndvi/camera_info` + `/fg/ndvi/preview` (`rgb8`,
+  human-only) — published by `src/fieldguard_planning/ndvi_node.py` over the tested
+  `ndvi_fusion.py` core; ran live for a full flight 2026-08-18.
 
 Bridge these four topics with `sim/bridge/fg_sensor_bridge.yaml`
 (`ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=sim/bridge/fg_sensor_bridge.yaml`).
@@ -64,7 +68,7 @@ a 4th bird, or resize the field by editing the `config/` inputs and rerunning �
 y=North, z=Up), origin = `config/field_polygon.json`'s `home_lat`/`home_lon` — same convention as
 `sim/spike/README.md`. Per ADR-001 (`docs/DECISIONS.md`), these are **known static obstacles from a
 pre-flight boundary survey** — geofence against them directly, do not run detection on them; the
-runtime perception/avoidance loop is reserved for the bird actors (genuinely unplanned dynamic
+runtime perception/avoidance loop is reserved for the birds (genuinely unplanned dynamic
 obstacles).
 
 Each entry:
@@ -161,10 +165,10 @@ the polygon that mission already sweeps.
 Validated in this (non-Docker) session:
 - `sim/worlds/farmguard_field.sdf` is well-formed XML (`xml.etree.ElementTree`, cross-checked with
   `xmllint --noout`).
-- Structural sanity: 20 `<model>` elements (1 ground plane + 18 trees + 1 `iris_with_gimbal_ndvi`
-  vehicle/sensor-mount wrapper), 3 `<actor>` elements, no duplicate model/actor names, and exactly
-  40 per-visual `gz::sim::systems::Thermal` plugins (1 ground + 18×2 tree trunk/canopy + 3 birds —
-  every visual in the world, ADR-007 Weeks 5-6).
+- Structural sanity: 23 `<model>` elements (1 ground plane + 18 trees + 3 birds + 1
+  `iris_with_gimbal_ndvi` vehicle/sensor-mount wrapper), **0 `<actor>` elements** (ADR-012), no
+  duplicate model names, and exactly 40 per-visual `gz::sim::systems::Thermal` plugins (1 ground +
+  18×2 tree trunk/canopy + 3 birds — every visual in the world, ADR-007).
 - Every computed tree position falls inside `config/field_polygon.json`'s polygon (generator
   raises otherwise).
 - `config/static_obstacles.json`'s `obstacles` array numerically matches the tree `<pose>` values
@@ -172,9 +176,6 @@ Validated in this (non-Docker) session:
 - World-level plugins, `spherical_coordinates`, and the vehicle `<include>`/pose are copied
   verbatim from `ardupilot_gz`'s own `iris_runway.sdf`/`iris_with_gimbal` model (fetched and
   diffed against upstream during this session) — not hand-guessed.
-- The actor `<script><trajectory>` syntax (simple sphere visual + waypoint keyframes, no skin/mesh,
-  `auto_start`, `loop`) matches Gazebo Harmonic's documented actor pattern and the `gz-sim`
-  `examples/worlds/actor.sdf` reference example (also fetched this session).
 - **(Week 2, `flight-software-engineer`)** The mission's flight path checked numerically against
   the geofence export with `scripts/check_mission_geofence.py` (uses the new
   `src/fieldguard_planning/geofence.py` + `mission_waypoints.py`, stdlib-only, no Docker needed):
@@ -187,29 +188,23 @@ Validated in this (non-Docker) session:
   to be the "always-clips-in-XY" case if avoidance work later needs a forced dodge scenario
   (lower altitude / taller trees), whereas rows 1-2 sit 3-8 m off every lane by design.
 
-**NOT validated here (needs the human-operated Docker container, per this project's standing
-constraint — see `docs/runbooks/SIM_BRINGUP.md`):**
-- That `gz sim` actually loads this SDF end-to-end (semantic SDF validity beyond well-formed XML —
-  e.g. whether Harmonic's actor system accepts a mesh-less `<visual>` exactly as written).
-- That the boustrophedon mission flies through the world without a physics-engine surprise (e.g.
-  collision margins, ground-plane friction) — geometrically (XY + Z together) it clears every tree,
-  but "should" isn't "confirmed" until it's flown.
-- That the bird actors visibly move along their trajectories in a running simulation (not just
-  that the SDF `<trajectory>` keyframes are well-formed).
-- Render/performance headroom for 3 actors + 18 static models on this project's known-slow
-  llvmpipe software rendering path (macOS Docker Desktop, no GPU passthrough — see
-  `docs/runbooks/SIM_BRINGUP.md` "Known macOS gotchas" #1). Not expected to be a problem (all primitive
-  geometry, no textures/meshes) but unconfirmed. Now also carries two camera-type sensors per frame
-  (ADR-007) — see the next bullet.
-- **(Weeks 5-6, ADR-007)** Everything about the dual-band NDVI sensor mount: whether
+**Now validated live** (2026-08-05 Week-3 gates, `docs/archive/WEEK3_VALIDATION.md`; 2026-08-18
+NDVI gates, `docs/runbooks/NDVI_VALIDATION.md`): `gz sim` loads this SDF end-to-end, the
+boustrophedon mission flies it without physics surprises, and the thermal/NDVI sensor mount works
+(Gate 0 loads on pinned Harmonic+ogre2, Gate 2 reads canopy 0.854 > soil 0.212 > bird 0.040).
+
+**Still unvalidated:**
+- Render/performance headroom is confirmed *poor but workable*: the software-rendered path runs at
+  RTF ≈ 0.2 and stalls-and-bursts (instantaneous RTF 0.0016–0.48), which is why frame↔pose pairing
+  is stamp-based (ADR-007 amendment 2).
+- **(ADR-007)** Everything about the dual-band NDVI sensor mount: whether
   `gz-sim-thermal-system`/`gz-sim-thermal-sensor-system` actually load on this pinned Harmonic +
   ogre2 build, whether the `iris_with_gimbal_ndvi` wrapper model's fixed-joint sensor-mount
   attachment resolves, and whether the per-visual `<temperature>` calibration produces genuinely
   different canopy/soil/bird readings. This is a **separate, dedicated gate** —
   `docs/runbooks/NDVI_VALIDATION.md` — not folded into the two-shell flow above.
 
-**Human next step:** run the two-shell flow above once, confirm the world stays up and the mission
-completes, then update this section (or `docs/ROADMAP.md`) with the result. If it fails, the most
-likely first suspect (per this project's own prior debugging history) is `GZ_SIM_RESOURCE_PATH`
-missing `ardupilot_gazebo`'s `share` dir — check that before anything else. Then run
-`docs/runbooks/NDVI_VALIDATION.md`'s three gates (Gate 0 is a hard kill-switch — do it first).
+**Status (2026-08-18):** done. The world flies, the ADR-007 gates are green, and a full flight has
+been recorded end to end — `docs/runbooks/FULL_PIPELINE_DEMO.md` is the current showpiece recipe (7
+shells: Gazebo, bridge, agent, SITL, birds, fusion node, recorder). The only live-verification debt
+left is the ADR-003 scored re-run on a real clip; see `docs/ROADMAP.md`.

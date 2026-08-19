@@ -18,7 +18,7 @@ nothing gets added to scope without something else being cut in the same breath,
 | Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009); implementation gated on the batched session |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
-Test suite: **270 green, 2 skipped** — 246 in `tests/fieldguard_planning` plus 24 host-side launcher
+Test suite: **279 green, 2 skipped** — 248 in `tests/fieldguard_planning` plus 33 host-side launcher
 tests in `tests/test_fly_pipeline.py`, which need neither Docker nor tmux. CI discovers both (it ran
 only the first until 2026-08-18) and also gates seed-42 FNR, scenario-log drift, flight-log evidence.
 Public main: current as of PR #17 (2026-08-18). Full narrative of how we got here:
@@ -27,7 +27,8 @@ Public main: current as of PR #17 (2026-08-18). Full narrative of how we got her
 ## Next up, in order
 
 1. **Recording throughput** (the last quality gap; truth is proven, coverage is not): fused-frame
-   delivery captures only a fraction of each flight (105 frames / 228-586 of 720 cells).
+   delivery captures only a fraction of each flight (best valid clips: 105 frames, 228-291 of 720
+   cells — the higher counts on record come from clips since marked `INVALID_DO_NOT_USE`).
    **Lever 1 — `camera.update_rate_hz` 5 → 2 — MEASURED 2026-08-19 and REVERTED.** It made delivery
    16× worse, not better: 3 frames / 1 of 720 cells at 2 Hz against 48 / 291 at 5 Hz over a
    comparable sim-time window (1.2 % vs 7.2 % of frames delivered), with RTF unchanged (0.585 vs

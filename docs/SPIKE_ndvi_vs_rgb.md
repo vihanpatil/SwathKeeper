@@ -4,6 +4,10 @@ Owner: `perception-ml-engineer` · Reviewer: `tech-lead` · Time-box: **3 workin
 Status: **CLOSED 2026-08-04** — decided (ADR-003: NDVI-direct); numbers recorded in `docs/DECISIONS.md` ADR-003 and this file's
 "Outcome" section.
 
+> **FROZEN RECORD — do not edit.** Kept for the decision trail: this is what was asked, how it was
+> measured, and what came back. The one open item it leaves behind — re-running the same harness on
+> the real Gazebo render — is tracked in ADR-003 and `docs/ROADMAP.md`, not here.
+
 This is a **de-risking spike, not a research program.** The goal is one framing decision backed by
 one number, not a tuned detector. Do not design detector architecture beyond the classical-CV
 baseline described here until this question is answered.
@@ -74,6 +78,9 @@ matching detection = **false negative**; a detection matching no GT bird = false
 
 ### Ground truth: how we label it from sim
 We do **not** hand-label pixels. The birds are scripted Gazebo actors, so ground truth is free:
+*[2026-08-18: superseded — per ADR-012 the birds are static SDF models teleported along the same
+committed waypoints by `scripts/drive_birds.py`; the trajectories, and therefore this
+free-ground-truth argument, are unchanged.]*
 - Log each bird actor's world pose per frame from the sim.
 - Project it through the (known, simulated) camera intrinsics + the drone pose from SITL telemetry
   into image coordinates → a GT box per visible bird per frame.

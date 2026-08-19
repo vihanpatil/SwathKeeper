@@ -21,10 +21,10 @@ pasted**, and the team was wired up as real Claude Code subagents per the curren
 
 | Agent | Playbook origin | What changed for SwathKeeper |
 |---|---|---|
-| `product-lead` | Product/Program Lead | Tailored to the 7-8 week deadline, the confirmed priority order, and the "decide as you build" spikes. Holds `docs/ROADMAP.md`; wins scope ties. |
+| `product-lead` | Product/Program Lead | Tailored to the confirmed priority order and the "decide as you build" spikes (the original 7-8-week deadline was dropped 2026-08-18 — the scope guard survives it). Holds `docs/ROADMAP.md`; wins scope ties. |
 | `tech-lead` | Tech Lead/Architect | Owns the ROS 2 node/topic interface contracts and `docs/DECISIONS.md`; points at the `aerial-autonomy-stack` reference. |
 | `perception-ml-engineer` | **AI/ML Engineer (was RAG-centric)** | **Fully retargeted** from RAG pipelines to robotics perception: NDVI-frame detection, the NDVI-vs-RGB spike, avoidance decision policy, and the evaluation harness. |
-| `robotics-sim-engineer` | **NEW (supplemental)** | Added because the sim environment (Gazebo world, `ardupilot_gazebo`, SITL bringup, NDVI camera, bird actors) is big enough to need a dedicated owner. |
+| `robotics-sim-engineer` | **NEW (supplemental)** | Added because the sim environment (Gazebo world, `ardupilot_gazebo`, SITL bringup, NDVI camera, the bird models + `drive_birds.py` driver) is big enough to need a dedicated owner. |
 | `flight-software-engineer` | **Full-Stack Engineer** | Retargeted from React/Node to ROS 2 app code: coverage planner, the reactive avoidance + coverage-debt loop (the core), NDVI mapping, and the light dashboard last. |
 | `devops-reliability-engineer` | DevOps/Reliability | Retargeted from cloud-free-tier cost to **local-sim reproducibility, headless CI, and demo-artifact recording**. |
 | `qa-safety-reviewer` | QA/Security & Safety | Given teeth for a safety-relevant autonomous system: false negatives, silently-skipped cells, geofence breaches, confidently-wrong perception. |
@@ -45,7 +45,7 @@ allowlist, a living roadmap, a decision log, a README skeleton, and a project di
 - The actual robotics toolchain (ROS 2, Gazebo, ArduPilot SITL) is **not needed to use the team** —
   the agents will help you install and pin it. It's needed to run the drone sim they build.
 
-### 1.2 One-time steps
+### 1.2 One-time steps *(all completed for this repo on 2026-07-27 — kept as the reproduction recipe)*
 1. **Restart Claude Code once.** The `.claude/agents/` directory was created during this session.
    Claude Code's file watcher only covers directories that existed at session start, so the agents
    load reliably after one restart. (New files added to an already-watched dir are picked up live.)
@@ -68,7 +68,9 @@ allowlist, a living roadmap, a decision log, a README skeleton, and a project di
 .claude/commands/standup.md   the /standup session opener
 .claude/settings.json    permission allowlist + subagent nesting cap
 CLAUDE.md                always-loaded project context (every agent reads this)
-docs/SPEC.md             the full project spec (copied in so agents can read it)
+docs/SPEC.md             living system spec — what the system IS, as built (not a schedule)
+docs/BUILD_LOG.md        chronological narrative — what shipped, what broke, what it taught
+docs/runbooks/           operational Docker-session procedures (bringup, demos, the ADR-007 gates)
 docs/ROADMAP.md          living phased plan — product-lead updates each standup
 docs/DECISIONS.md        ADR-lite tradeoff log — interview material
 docs/archive/tiger_team_playbook.md   the original playbook, for reference
@@ -99,7 +101,9 @@ Per the docs, these escalate from suggestion to guarantee:
    ```
    Useful for a dedicated safety-review pass.
 
-### 2.3 A typical week, mapped to roles
+### 2.3 The phases, mapped to roles
+_(Phase labels keep the original week numbers; the calendar deadline was dropped 2026-08-18 — the
+ordering still holds. Weeks 1-4 are complete.)_
 - **Weeks 1-2 (stand up the sim + spike):** `robotics-sim-engineer` pins versions and gets a mission
   flying; `perception-ml-engineer` runs the NDVI-vs-RGB spike and records the decision;
   `flight-software-engineer` builds the boustrophedon planner. `tech-lead` locks the interface contracts.
@@ -108,8 +112,8 @@ Per the docs, these escalate from suggestion to guarantee:
   `qa-safety-reviewer` attacks it continuously.
 - **Weeks 5-6 (NDVI mapping + comparison arm):** mapping and the second-sensor quantification.
 - **Week 7 (narrative):** `gtm-narrative-lead` writes the README, resume bullets, and demo;
-  `devops-reliability-engineer` records the demo and greens CI.
-- **Week 8:** buffer, safety sign-off, tagged demo-ready commit.
+  `devops-reliability-engineer` records the demo and greens CI; then safety sign-off and a tagged
+  demo-ready commit.
 
 ### 2.4 Working the tradeoff/escalation rule (free interview material)
 When two roles disagree, the `product-lead` decides for v1 — **but write the disagreement into
@@ -164,7 +168,8 @@ team settles into real commands, add the ones you trust to `allow`. Keep anythin
 
 ### 3.5 Keep the docs alive
 - `docs/ROADMAP.md` — update "Current status" and the cut/deferred log each standup.
-- `docs/DECISIONS.md` — append an ADR whenever a real choice is made; fill in ADR-003 after the spike.
+- `docs/DECISIONS.md` — append an ADR whenever a real choice is made. **Append-only**: amend an
+  accepted entry with a dated note, never rewrite it (that log is interview material).
 - These aren't bureaucracy — they're the artifacts that make the project interview-defensible.
 
 ### 3.6 Re-verify the schema periodically
@@ -177,38 +182,27 @@ matches the schema as of July 2026.
 ## 4. Improvement suggestions (made, and optional)
 
 ### 4.1 Improvements already baked in (with the reason)
-1. **Retargeted the AI/ML role from RAG to robotics perception.** The playbook's role assumed vector
-   RAG; SwathKeeper needs NDVI-frame detection, an avoidance decision policy, and an eval harness.
-   Leaving it RAG-shaped would have produced confidently-wrong advice — the single most important fix.
-2. **Added a dedicated `robotics-sim-engineer`.** The Gazebo/SITL/world/sensor setup is a large,
-   distinct workstream; folding it into "full-stack" would have overloaded one role and hurt parallelism.
-3. **Split engineering into three lanes (sim / perception / flight-software)** so independent work runs
-   in parallel with stable interface contracts — this is what makes the team *scalable*.
-4. **Elevated `qa-safety-reviewer` for a safety-critical system** with SwathKeeper-specific failure modes
-   (false negatives, silently-skipped cells, geofence breaches) instead of generic QA.
-5. **Retargeted DevOps to reproducibility + headless CI + demo recording** — a local sim has no cloud
-   bill, but it absolutely has environment-drift and demo-day-flakiness risk.
-6. **Made evaluation a first-class mandate** ("no 'it works' without a metric") and gave it a home in
-   `eval/` — this rigor is the strongest interview signal and directly serves the second-sensor arm.
-7. **Formalized the escalation rule into `docs/DECISIONS.md`** so documented tradeoffs actually get
-   captured as interview material instead of being lost in chat.
-8. **Turned the standup cadence into a `/standup` command**, project context into `CLAUDE.md`, and the
-   plan into a living `ROADMAP.md` — repeatable and version-controlled rather than ad hoc.
-9. **Assigned models by role** (opus for judgment/architecture/safety, sonnet for execution) to balance
-   quality against cost — the playbook's own DevOps ethos applied to the team itself.
-10. **Persistent per-project memory** on every agent so the team compounds knowledge across sessions.
+1. **Retargeted the AI/ML role from RAG to robotics perception** — the playbook's vector-RAG framing
+   would have produced confidently-wrong advice; the role now owns NDVI-frame detection, the avoidance
+   policy, and the eval harness.
+2. **Split engineering into three lanes (sim / perception / flight-software)** — the Gazebo/SITL/sensor
+   workstream is too large to fold into "full-stack"; separate lanes with stable interface contracts
+   run in parallel.
+3. **Gave `qa-safety-reviewer` teeth and retargeted DevOps** — SwathKeeper-specific failure modes (false
+   negatives, silently-skipped cells, geofence breaches) instead of generic QA; DevOps aimed at sim
+   reproducibility, headless CI, and demo recording rather than cloud cost.
+4. **Made evaluation a first-class mandate** ("no 'it works' without a metric") with a home in `eval/` —
+   the strongest interview signal in the repo.
+5. **Made the process version-controlled** — `/standup`, `CLAUDE.md`, a living `ROADMAP.md`, the
+   `DECISIONS.md` escalation rule, per-role model assignment (opus for judgment, sonnet for execution),
+   and persistent per-agent memory.
 
 ### 4.2 Optional next steps you might consider
-- **CI provider now vs later:** stand up a minimal GitHub Actions workflow (build + headless smoke +
-  eval) as soon as the sim runs headless — green CI on a portfolio repo is a strong signal.
-  `devops-reliability-engineer` can scaffold it.
-- **A `/eval` command** that runs the harness and prints the metric table, once `eval/` exists —
-  makes "show me the numbers" a one-liner.
+- **A `/eval` command** that runs the harness and prints the metric table — makes "show me the
+  numbers" a one-liner.
 - **A `/demo` command** that runs the recorded demo scenario end to end before an interview.
-- **Rename the project** from the working title "SwathKeeper" if a better name emerges — the spec
-  invites this; do it before the README goes public.
-- **Diagram the architecture** (the tech-lead can produce a Mermaid diagram for the README) — hiring
-  managers read diagrams faster than prose.
+- **Upgrade the README's ASCII architecture diagram to Mermaid** (tech-lead) — hiring managers read
+  diagrams faster than prose.
 
 ### 4.3 If you want to change model assignments
 Edit the `model:` line in any agent file. Valid values: `opus`, `sonnet`, `haiku`, `fable`, a full

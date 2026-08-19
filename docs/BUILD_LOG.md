@@ -23,11 +23,12 @@ Then the one scripted flight mode this ADR allows — `fly_pipeline.sh test-flig
 amendment 2), a regression gate, not a flight path — ran for real and **PASSED on its first attempt**:
 `eval/results/testflight_gate_20260818T222031Z.json` — 253 s unattended, every gate green, the
 birds pane self-started at its altitude gate (15.0 m), teardown went recorder-first, the host-side
-stitch exited 0 over a 48-frame clip with 0 stale-pose pairs. Suite 246 → 270 green (the 24 launcher
-tests in `tests/test_fly_pipeline.py`) — and CI was not running any of them: `discover -s
+stitch exited 0 over a 48-frame clip with 0 stale-pose pairs. Suite 246 → 270 green (24 launcher
+tests in `tests/test_fly_pipeline.py`, later 33 as the evidence floor landed — **279 green, 2
+skipped** by session end) — and CI was not running any of them: `discover -s
 tests/fieldguard_planning` never walks `tests/`, so a second discover was added. The ROADMAP's
 test-count line said **131**, a number last true on 2026-08-05 and carried unchanged through the
-sessions that tripled it; corrected to 270 in the same pass, and worth naming rather than quietly
+sessions that tripled it; corrected in the same pass, and worth naming rather than quietly
 overwriting — a stale metric in a living doc is the failure mode this repo claims not to have.
 Docs decision: against a four-direction options artifact, the user picked **D · Heatmap Neutral**,
 built by an in-repo generator rather than an external tool (ADR-014). An adversarial QA pass on the

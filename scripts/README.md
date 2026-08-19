@@ -50,8 +50,32 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
 - `check_mission_geofence.py` — min XY clearance of the mission path vs. the tree geofence (exits 1 on
   the documented, altitude-safe row-0 overlap — expected, not a failure).
 - `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses, or frame FNR / precision slip past their calibrated floors (ADR-003).
-- `check_ndvi_bands.py` — ADR-007 Gate 2 (Weeks 5-6): samples the raw `/fg/sensor/nir/image` band and
-  asserts canopy/soil/bird read back materially different, well-separated values (see
+- `check_ndvi_bands.py` — ADR-007 Gate 2: samples the raw `/fg/sensor/nir/image` band and asserts
+  canopy/soil/bird read back materially different, well-separated values (see
   `docs/runbooks/NDVI_VALIDATION.md`, needs a running Docker sim + `--out` for a JSON summary; `--print-calibration`
-  works standalone, no ROS 2 needed).
+  works standalone, no ROS 2 needed). **Passed live 2026-08-18** (canopy 0.854 > soil 0.212 > bird
+  0.040 over 996 frames); it is a regression check now, not a pending experiment.
+- `check_render_alive.py` — the render-sanity probe `fly_pipeline.sh` runs before every flight
+  (`--gate-geometry` wires in `verify_mount_geometry.sh` below); a degraded long-lived Gazebo
+  instance previously cost a whole recorded flight before this existed.
+- `verify_mount_geometry.sh` — the geometry gate ADR-007 amendment 5 added: parks the vehicle 1 m
+  from a known tree in a physics-free world copy and checks the canopy centroid lands within 15 px
+  of `ndvi_georef`'s prediction (measured 2.2 px). Run after any change to the mount, the vehicle
+  SDF, or the georef extrinsics.
+- `check_live_flight_log.py` — evidence gate for `eval/results/*flight_log*.json`: parses the log,
+  runs the `check_ledger` partition invariant against the canonical grid, and rejects an empty
+  `flown_path_enu`. Exists because the 2026-08-05 demo log was silently clobbered by a later idle
+  run and nothing noticed.
+- `check_sim_smoke.py` / `ci_sim_smoke.py` / `ci_sim_smoke.sh` — the headless CI smoke flight and
+  its regression gate (ADR-008). **Unverified live** — the job stays `workflow_dispatch` until one
+  green run (`docs/runbooks/SIM_CI.md`).
 - `validate_agents.py` — validates the tiger-team config + repo structure (the `validate-config` CI job).
+
+**Flight-session helpers (run alongside a live sim):**
+- `drive_birds.py` — supplies the bird motion the removed `<actor>` scripts used to promise
+  (ADR-012): interpolates `config/birds/farm_world_birds.json` and teleports each bird via
+  `set_pose` at 5 Hz on the **Gazebo sim clock**. Must be running for any Gate-2 bird check or
+  recorded flight; `--once <t>` parks the birds for a deterministic still.
+- `stitch_ndvi.py` — the offline post-flight stitch (ADR-010): a spike-schema clip → per-cell mean
+  NDVI on the same canonical 2.5 m / 720-cell grid as the coverage ledger, joinable by `cell_id` →
+  `heatmap.json` + `heatmap.png`. Exits nonzero on an empty stitch.

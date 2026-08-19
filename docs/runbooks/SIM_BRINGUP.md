@@ -1,15 +1,20 @@
 # Sim Bringup — Zero to a No-Obstacle Boustrophedon Mission *(runbook; born Week 1)*
 
-Owner: `robotics-sim-engineer`. Gate: **a boustrophedon mission flies end-to-end in Gazebo with
-ArduPilot SITL, no obstacles, over ROS 2** — this is the Week 1-2 gate for the whole project. Don't
-move on to Week 3-4 (trees/birds/avoidance) until every step below is green.
+Owner: `robotics-sim-engineer`. **Status: green since 2026-08-04** — a boustrophedon mission flies
+end-to-end in Gazebo with ArduPilot SITL, no obstacles, over ROS 2. This is no longer a gate to
+pass; it is the **from-scratch rebuild procedure** for the image and the colcon workspace, and the
+reference for this stack's bringup gotchas. Follow it when recreating the environment, not before
+every session.
 
 This doc assumes the dev machine is **macOS (Apple Silicon)**. Native ROS 2 + Gazebo + ArduPilot
 SITL is not a practical target on macOS — everything below runs inside a Docker/Ubuntu container.
-See `docs/DECISIONS.md` ADR-004 for why, and the "Pinned versions" section of `CLAUDE.md` for the
-versions once the human has confirmed them (this doc references them but does not set them).
+See `docs/DECISIONS.md` ADR-004 for why, and `CLAUDE.md`'s "Pinned versions" + "Pinned commit SHAs"
+sections for the confirmed stack (this doc references them, it does not set them).
 
-## 0. Definition of done for this doc
+## 0. Definition of done for a rebuild
+
+All six were green on 2026-08-04; the boxes stay unticked because this is the checklist you re-run
+against a freshly rebuilt environment, not a record of a one-time milestone.
 
 - [ ] `colcon build` succeeds with zero errors inside the container.
 - [ ] ArduPilot SITL boots standalone (no Gazebo) and can arm/takeoff/land via MAVProxy.
@@ -35,16 +40,15 @@ and the ROS 2 bridge each fail in different, easily-confused ways, and conflatin
 - Optional, only if you want a live Gazebo GUI window instead of pure headless: install XQuartz.
   Not required for Week 1 — see the rendering gotcha below for why headless is the recommended
   default.
-- Confirm Docker is actually running before anything else: `docker info` should return cleanly
-  (it errored with no daemon response when last checked in this session — start Docker Desktop
-  first).
+- Confirm Docker is actually running before anything else: `docker info` should return cleanly — if
+  it errors with no daemon response, start Docker Desktop first.
 
 ## 2. Build the container image (produces a repo file: `sim/docker/Dockerfile`)
 
-A starter Dockerfile sketch lives at `sim/docker/Dockerfile` in this repo. It is intentionally
-minimal — a Week 1 "get it green" image, not a hardened/CI-ready one. `devops-reliability-engineer`
-owns turning this into the production image (multi-stage build, non-root user, exact SHA pins
-baked in, CI wiring) once the versions below are confirmed and Week 1 is green.
+`sim/docker/Dockerfile` is the interactive dev image: single-stage, root, unpinned branches — but it
+now bakes in every hard-won runtime dep (`libdebuginfod1`, `microxrceddsgen`, MAVProxy, the three
+`ros_gz_bridge` message packages) and the ROS/Gazebo env in `.bashrc`. The pinned-SHA, CI-oriented
+sibling is `sim/docker/Dockerfile.ci` (`docs/runbooks/SIM_CI.md`).
 
 Build it (run locally on the Mac host):
 
@@ -60,7 +64,7 @@ the image, and using a **named volume** for the colcon workspace (see gotcha #3 
 ```bash
 docker volume create fieldguard_ardu_ws
 
-docker run -it --rm \
+docker run -it \
   --name fieldguard-sim \
   -v "$(pwd)":/workspace/fieldguard \
   -v fieldguard_ardu_ws:/root/ardu_ws \
@@ -69,6 +73,18 @@ docker run -it --rm \
   fieldguard-sim:week1 \
   bash
 ```
+
+**In practice, use the maintained wrappers** — they run the exact `docker build` / `docker run`
+above:
+```bash
+scripts/sim_docker_build.sh          # add --amd64 to force linux/amd64 (gotcha #2)
+scripts/sim_docker_run.sh            # creates, or re-attaches to, the 'fieldguard-sim' container
+```
+Note the deliberate absence of `--rm`: the container is kept, so `docker start -ai` (or
+`docker exec -it fieldguard-sim bash` for extra shells) preserves anything apt-installed live inside
+it. A `--rm` container throws that away on every exit — including the three `ros_gz_bridge` runtime
+deps the later runbooks assume are present (`NDVI_VALIDATION.md` session log, `FULL_PIPELINE_DEMO.md`
+Shell 0).
 
 **Verify:** the shell prompt comes up inside the container, and `ls /opt/ros/humble/setup.bash` and
 `gz sim --version` both resolve. (Check the setup file with `ls`, not `printenv ROS_DISTRO` — the
@@ -132,7 +148,7 @@ colcon build --packages-up-to ardupilot_gz_bringup
 ```
 
 **Verify:** `colcon build` finishes with `Summary: N packages finished [..]` and **0 packages
-failed**. If arm64 apt/rosdep resolution breaks here (see gotcha #1), that's the first thing to
+failed**. If arm64 apt/rosdep resolution breaks here (see gotcha #2), that's the first thing to
 chase before touching anything else.
 
 Record whatever the actual checked-out commit SHAs end up being once this succeeds (see §7) — that
@@ -143,9 +159,10 @@ snapshot is the real reproducibility pin, not just the branch names.
 ```bash
 cd /root/ardu_ws/src/ardupilot
 
-# MAVProxy gives you the SITL command console. This is lighter than the full first-time setup
-# (Tools/environment_install/install-prereqs-ubuntu.sh -y), which also works but installs a lot.
-python3 -m pip install --upgrade MAVProxy pymavlink future   # 'future' is a MAVProxy runtime dep
+# MAVProxy gives you the SITL command console; it is baked into the image at a pin
+# (sim/docker/Dockerfile: MAVProxy==1.8.74, future==1.0.0 — 'future' is a MAVProxy runtime dep).
+# Only if you're on an older image:  pip3 install MAVProxy==1.8.74 future==1.0.0
+# Do NOT run --upgrade here — it silently bumps off the pin this stack was proven against.
 
 # HEADLESS (macOS Docker): do NOT pass --map/--console — those open wxPython GUI windows that need an
 # X display the container doesn't have. Plain sim_vehicle.py runs MAVProxy as a text prompt right here.
@@ -272,7 +289,9 @@ Docker port mapping needed (AP_DDS's default UDP peer is `127.0.0.1` for non-Chi
 `libraries/AP_DDS/AP_DDS_config.h`):
 
 ```bash
-# Agent shell:
+# Shell C — the micro-ROS agent (start it BEFORE SITL; see the warning below).
+# Note: AVOIDANCE_DEMO.md / NDVI_VALIDATION.md label shells in start order (A=Gazebo, B=agent,
+# C=SITL), so their "Shell B" is this shell.
 source /root/ardu_ws/install/setup.bash
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
 ```
@@ -309,9 +328,9 @@ for d in ardupilot ardupilot_gazebo ardupilot_gz ros_gz sdformat_urdf; do
 done
 ```
 
-Paste these SHAs (plus the branch names from §8 below) into `CLAUDE.md`'s "Pinned versions"
-section. **This is the human's call to accept, not mine to write** — see the summary at the end of
-this task for the exact values to paste.
+The accepted values are already recorded — see `CLAUDE.md` → "Pinned commit SHAs (captured
+2026-08-04)". Re-run the loop above only after a workspace re-import, and update `CLAUDE.md` if
+anything moved.
 
 ## 8. Fly a boustrophedon mission end-to-end, no obstacles
 
@@ -340,8 +359,8 @@ arm throttle             # arms AND auto-starts the mission: NAV_TAKEOFF, the la
 ```
 
 **Verify:** the vehicle flies the full lawnmower in Gazebo and returns/lands (the mission's RTL) with
-no manual input after `rc 3 1500`. MAVProxy prints `Reached command #N` as it hits each waypoint, and
-the Gazebo model pose sweeps the field.
+no manual input after `arm throttle` — `AUTO_OPTIONS 3` auto-starts the mission on arm. MAVProxy
+prints `Reached command #N` as it hits each waypoint, and the Gazebo model pose sweeps the field.
 
 Proof capture (no ROS 2 bridge/DDS needed for v1): MAVProxy already writes a telemetry log
 (`mav.tlog`) — keep it as the Week 1 reference run. Once AP_DDS is enabled (deferred), a
@@ -396,6 +415,7 @@ Proof capture (no ROS 2 bridge/DDS needed for v1): MAVProxy already writes a tel
 
 ## Next (out of scope for this doc)
 
-Week 3-4: swap the placeholder runway world for the real farm world (field polygon, tree rows,
-scripted bird actors) under `sim/worlds/`, and wire the reactive avoidance loop. Not blocked on
-anything above except this gate being green.
+The farm world (`sim/worlds/farmguard_field.sdf`) and the avoidance loop both shipped. Once this
+doc's steps are green, go to: `AVOIDANCE_DEMO.md` (the reactive loop), `NDVI_VALIDATION.md` (the
+ADR-007 gate record), `FULL_PIPELINE_DEMO.md` (the full survey + NDVI + heatmap flight, and the
+`scripts/fly_pipeline.sh` launcher that wraps it).
