@@ -32,6 +32,12 @@
 
 FROM fieldguard-sim:week1
 
+# Every ROS-sourcing RUN below (`. /opt/ros/humble/setup.bash && ...`) requires bash — ROS setup
+# files use bash-isms (BASH_SOURCE, `builtin`), and under Docker's default /bin/sh (dash) they die
+# with "Bad substitution" / "cannot open /setup.sh" (exit 2 — killed every sim-image.yml run
+# through 2026-08-18, run 32184045299).
+SHELL ["/bin/bash", "-c"]
+
 # Route compiler invocations through ccache (already installed by the base image's "ArduPilot +
 # ros_gz build prerequisites" apt step) so a second build after a small Dockerfile.ci edit — or a
 # GH Actions run with a warm ~/.ccache persisted via actions/cache (not yet wired, see plan doc
