@@ -43,6 +43,27 @@ is being tested. It aborts nonzero with a one-line cause, and its trap tears dow
 force-kills any surviving sim process even on Ctrl-C. **First live run PASSED: 2026-08-18T22:16:18Z,
 253 s end to end** — `eval/results/testflight_gate_20260818T222031Z.json`.
 
+**Since 2026-08-19 the gate also has an evidence floor**, because flying the mission is not the same
+as recording one: the 2 Hz throughput measurement that night flew an identical mission, recorded
+**3 frames and 1 of 720 cells — and this gate said PASS**, which is useless as the
+throughput-collapse regression it exists to be. The last gate is now on the yield, read from the
+clip's own `meta.json` and `heatmap/heatmap.json`: **`frames_recorded ≥ 12` and `cells_imaged ≥ 40`**,
+or FAIL. Both numbers are **floors derived from n=2** — the only two test-flights that exist (the
+48-frame / 291-cell baseline clears them by 4.0× / 7.3×; the 3-frame / 1-cell collapse fails both
+decisively) — low enough that ordinary variance on a busy laptop cannot flake them, high enough to
+catch any collapse within 4× of the measured one. They are floors, not targets, and they should rise
+once more than one healthy run exists. A flight that fails *only* the floor still tears down
+recorder-first, stitches, and writes the full record — `result: FAIL`, `failed_phase:
+evidence-yield`, the failure naming the floor, plus the new `cells_imaged` and `evidence_floor`
+fields (record schema 1.1). The floor logic is exercised offline against both committed gate records
+in `tests/test_fly_pipeline.py`; **it has never run live — the next `test-flight` is its first live
+exercise.** The same pass fixed the pane capture that made the 2 Hz run so hard to diagnose:
+`capture-pane` renders the whole 80×24 pane grid, so a quiet pane's output sits at the *top* and a
+plain `tail` returned the blank rows underneath it — which is why `pane_tails["ndvi"]` is empty in
+both committed records. Tails now drop blank rows before tailing, so the ndvi node's
+`fused_count` / `dropped_pair_count` heartbeats reach the record: the one signal that separates
+"fusion never fused" from "the recorder dropped what fusion produced".
+
 **`up` refuses to start on top of a bringup that is already running in the container** — a manual
 session in other tabs, or a tmux session that was killed without `down`. Every gate above is a
 *liveness* gate, so leftovers make all of them pass instantly against the wrong processes while the

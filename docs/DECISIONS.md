@@ -461,7 +461,7 @@ the pure decision function to actuation history.
    mount, the vehicle SDF, or the georef extrinsics. Gate 2's band-separation PASS remains valid
    (same materials, same calibration — measured from a different viewpoint).
 
-## ADR-013: One-command bringup is a HOST-side tmux orchestrator wrapping the documented docker-exec one-liners — not a new launch path   (2026-08-18, status: ACCEPTED — implemented `scripts/fly_pipeline.sh`; flown live, `test-flight` PASS, see amendment 3)
+## ADR-013: One-command bringup is a HOST-side tmux orchestrator wrapping the documented docker-exec one-liners — not a new launch path   (2026-08-18, status: ACCEPTED — implemented `scripts/fly_pipeline.sh`; flown live, `test-flight` PASS, see amendments 3-4)
 Decision: `scripts/fly_pipeline.sh` (macOS host) replaces the seven copy-pasted terminal tabs of
 `docs/runbooks/FULL_PIPELINE_DEMO.md` with one tmux session (`swathkeeper`), **one window per
 runbook shell**, each pane running that shell's `docker exec` one-liner **byte-identical** to the runbook
@@ -560,6 +560,41 @@ that `up` never emits `arm`/`mode`/`wp` (carve-out (1), the reason `up` is safe 
 that the real `cmd_down` SIGINTs `record` before every other window, kills the session only after
 all of them, and recovers the clip path from the recorder's own finalize line (pinned against
 `record_node.py`'s literal string, confirmed by mutation).
+Amendment 4 (2026-08-19, after the 2 Hz throughput measurement): **the gate judged the flight, not
+the evidence — so it PASSED a run that recorded 3 frames and imaged 1 of 720 cells.** Same mission,
+same 12 `Reached command` lines, same self-firing birds, stitch exit 0, `result: PASS`
+(`eval/results/testflight_gate_20260819T021136Z.json`) — a 16× throughput collapse walking straight
+through the pre-demo regression gate whose entire purpose is to catch one. `test-flight` now ends on
+an **evidence-yield floor**, read from the clip's own `meta.json` and `heatmap/heatmap.json` (never
+from a counter the launcher kept): `frames_recorded >= 12` **and** `cells_imaged >= 40`, else FAIL.
+Both are **floors derived from n=2**, and the record says so — the only two test-flights that exist
+are the 48-frame / 291-cell baseline (clears by 4.0× / 7.3×) and the 3-frame / 1-cell collapse
+(fails both) — placed at roughly a quarter of the healthy frame count and a seventh of its cell
+count: below any plausible variance on a busy laptop, above any collapse within 4× of the measured
+one. They are floors, not targets, tied to `test_2lane`, and they should rise when more than one
+healthy run exists; raising them off a single good number would only buy flakiness. An unreadable
+yield (missing/malformed `meta.json` or `heatmap.json`) is a FAIL, not a pass — "we could not tell"
+scoring green is the shape of bug this amendment exists to close. Failing *only* the floor changes
+nothing about teardown: it is judged after the recorder-first `down` and the stitch have already
+run, so the run still produces the full record, with `failed_phase: evidence-yield` and the failure
+naming the floor, plus new `cells_imaged` / `evidence_floor` fields (record schema 1.1).
+The second half of the same defect was **instrumentation**: `pane_tails["ndvi"]` is empty in *both*
+committed gate records, so the `fused_count` / `dropped_pair_count` heartbeats — the one signal that
+separates "fusion never fused" from "the recorder dropped what fusion produced" — have never been
+captured, and that run was diagnosed by inference instead. Root cause was not capture timing (the
+tails are read before `down` touches the panes) but that **`tmux capture-pane` renders the whole
+pane grid**: every row below the cursor comes back as a blank line, so a quiet pane — the ndvi node
+heartbeats once per 25 fused frames, the recorder every ~30 s — keeps its output at the *top* of an
+80×24 grid and `tail -n 15` returns nothing but the padding underneath. The noisy birds pane tailed
+fine, which is exactly why it looked like a per-pane mystery; the baseline record's `record` pane,
+3 real lines followed by 12 blanks, is the smoking gun. Every pane tail now drops blank rows first
+(`meaningful`/`pane_tail`), which also repairs the dead-pane tails printed by a failing gate and by
+`down` — both were reading the same padding. Honesty bar: **neither fix has run live.** Both are
+pinned offline in `tests/test_fly_pipeline.py` (33 green, +9: the floor evaluated against the two
+committed gate records and their clips' `heatmap.json` — baseline passes, 2 Hz fails, each half
+short fails, an unreadable yield fails, the floor sits strictly between the two runs it came from;
+the padding filter through the capture shim; and a tripwire that no pane tail bypasses it). The
+first live exercise of both is the next `test-flight`.
 Owner / roles: devops-reliability-engineer (owner), robotics-sim-engineer + flight-software-engineer
 (the wrapped commands), qa-safety-reviewer (the gates are safety gates; the happy path is now
 evidenced, and the failure paths listed in amendment 3 are the outstanding evidence).
