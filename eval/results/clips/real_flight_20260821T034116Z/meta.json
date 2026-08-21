@@ -1,0 +1,55 @@
+{
+ "schema_version": "1.2",
+ "synthetic": false,
+ "pending_gazebo_replacement": false,
+ "generator": "src/fieldguard_planning/record_node.py (live real-render recorder)",
+ "seed": null,
+ "num_frames": 86,
+ "num_rgb_frames": 49,
+ "num_stale_pose_pairs": 0,
+ "pose_pairing": "gz_clock_stamp",
+ "stale_pair_bound_s": 0.35,
+ "image_width_px": 640,
+ "image_height_px": 480,
+ "coordinate_frame": "world ENU meters (x=East, y=North, z=Up), REP-103 convention",
+ "camera": {
+  "image_width_px": 640,
+  "image_height_px": 480,
+  "fx": 520.0057601928711,
+  "fy": 520.0057983398438,
+  "cx": 320.0,
+  "cy": 240.0
+ },
+ "camera_extrinsic": {
+  "mount": "rigid nadir (ADR-007 fg_sensor_mount), fixed for entire clip",
+  "offset_from_drone_m": [
+   0.0,
+   0.0,
+   -0.08
+  ]
+ },
+ "gps_global_origin": null,
+ "fuser": {
+  "fused_count": 129,
+  "dropped_pair_count": 0,
+  "red_frames": 217,
+  "nir_frames": 411,
+  "camera_info_frames": 698,
+  "last_fused_stamp_sim_s": 145.6,
+  "update_rate_hz": 5.0,
+  "max_delta_s": 0.05,
+  "sync_queue_size": 60,
+  "stats_schema_version": "1.0",
+  "writer": "src/fieldguard_planning/ndvi_node.py",
+  "pid": 58337,
+  "wall_time_s": 1787283894.625997,
+  "written_utc": "2026-08-21T03:44:54Z",
+  "present": true,
+  "source": "/workspace/fieldguard/eval/results/ndvi_fuser_stats.json",
+  "stats_age_s": 0.958,
+  "stats_stale": false,
+  "stats_stale_after_s": 5.0
+ },
+ "clock_note": "camera stamps are Gazebo sim time; /ap/pose/filtered stamps are ArduPilot's clock (use_sim_time=false) -- poses gz-tagged via a native gz clock stream and paired to each frame's stamp; residual in poses.jsonl pose_pair_residual_s, stale pairs flagged pose_pair_stale",
+ "ndvi_dtype": "float32, numpy.save (.npy), values in [-1, 1]"
+}

@@ -150,9 +150,15 @@ models, the drone with its ADR-007 dual-band camera pair (RGB Red + thermal-as-s
 ## Shell 2 — the sensor bridge (Gazebo → ROS 2)
 
 ```bash
-docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml'
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
 ```
-*What's happening:* the locked `/fg/*` contract crosses into ROS 2.
+*What's happening:* the locked `/fg/*` contract crosses into ROS 2. The two `qos_overrides` are the
+**image** topics only: the bridge publishes RELIABLE by default, and every consumer of these topics
+(`ndvi_node`, `record_node`) already subscribes `qos_profile_sensor_data` — BEST_EFFORT — so the
+reliable half of the contract was retransmission machinery for ~900 KB samples nobody asked to be
+retransmitted. `camera_info` is deliberately left RELIABLE (small, and it is the control that proves
+the override is what changed the image topics — see the yaml's header note for why this cannot live
+in the config file at the pinned SHA).
 *Look for:* **four** `Creating GZ->ROS Bridge` lines (the sensor topics only — the recorder reads
 the sim clock natively via gz-transport, deliberately NOT through this bridge: Gazebo's /clock is
 ~350 msgs/s and bridging it starved the image pipeline, measured live). A missing-library crash
@@ -209,7 +215,10 @@ docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash 
 `/fg/ndvi/image` (NDVI = (NIR−Red)/(NIR+Red), per pixel, live). That topic's stamp is the georef
 anchor the recorder pairs poses against, so this node must be up before Shell 7 starts.
 *Look for:* `fieldguard_ndvi up`, then `fused_count=…` heartbeats once the camera renders.
-`dropped_pair_count` should stay ~0.
+`dropped_pair_count` should stay ~0. Note `/fg/ndvi/preview` is published **only while something is
+subscribed** to it (ADR-013 am. 6 — it is human-only, and building it for nobody was starving the
+RGB subscription): open it in rviz and frames appear; watch it with no subscriber and it is idle by
+design, which is not a fault.
 
 ## Shell 7 — the clip recorder (the evidence)
 
@@ -223,7 +232,10 @@ render bursts can't mislabel frames (the lesson of the first recorded flight, wh
 meters down-track and put 0/18 trees at their true spots).
 *Look for:* `live intrinsics locked` (that line is ADR-007 follow-up-5 evidence) and the
 **absence** of the arrival-fallback warning. Heartbeats:
-`recorded N frames (M with rgb, K stale-pose flagged)` — K near zero.
+`recorded N frames (M with rgb, K stale-pose flagged)` — K near zero. At Ctrl-C, finalize also
+folds Shell 6's counters into the clip's own `meta.json` under `fuser` (bands in, pairs dropped,
+frames fused, and how stale that reading is), so a thin clip says *where* it thinned instead of
+only that it did — and the finalize line names them, or says the fuser never published.
 
 ## Fly it — Shell 4's MAVProxy prompt
 
@@ -260,8 +272,9 @@ arming on purpose: its service traffic adds jitter the EKF can't tolerate while 
 
         python3 scripts/stitch_ndvi.py --clip eval/results/clips/<the dir Shell 7 printed>
 
-    *Look for:* `cells imaged` in the low hundreds (the best valid clip is 291/720 — recording
-    throughput, not coverage, is the limit; `docs/ROADMAP.md` "Next up") and few stale-pose skips.
+    *Look for:* `cells imaged` in the low hundreds (the best valid 2-lane clip is 368/720 off 86
+    frames, 2026-08-21, after the two throughput levers in ADR-013 am. 6; recording throughput is
+    still the limit, not coverage — `docs/ROADMAP.md` "Next up") and few stale-pose skips.
     Then open `heatmap/heatmap.png`.
 
 4. **ADR-003 re-confirmation on the real render** (still on the host). `run_spike.sh` takes no

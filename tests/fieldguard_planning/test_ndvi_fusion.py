@@ -3,7 +3,9 @@ and raw image decode. Requires numpy (see ndvi_fusion.py's module docstring for 
 a scoped exception to the package's usual stdlib-only rule) -- unlike the rest of
 tests/fieldguard_planning, which runs on a bare interpreter.
 """
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -12,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 import numpy as np  # noqa: E402
 
 from fieldguard_planning.ndvi_fusion import (  # noqa: E402
+    FUSER_STATS_STALE_S,
     NDVI_ZERO_DENOM_SENTINEL,
     NdviFuser,
     StampedFrame,
@@ -23,8 +26,10 @@ from fieldguard_planning.ndvi_fusion import (  # noqa: E402
     ndvi_to_preview_rgb,
     nearest_index,
     pair_and_fuse_stream,
+    read_fuser_stats,
     rescale_nir,
     rescale_red,
+    write_fuser_stats,
 )
 
 CFG = load_camera_config()
@@ -302,6 +307,102 @@ class TestPairAndFuseStream(unittest.TestCase):
         self.assertTrue(all(not r.accepted for r in results))
         self.assertTrue(all(r.reason == "no_nir_frames" for r in results))
         self.assertEqual(fuser.dropped_pair_count, 2)
+
+
+class TestFuserStatsSideChannel(unittest.TestCase):
+    """The counters' side-channel: ndvi_node writes it once a second, clip_recorder reads it once at
+    finalize. Everything here is about the failure modes -- the reason it exists is that the
+    heartbeat-only version could not tell a starved flight from a dead fuser (ADR-013 amendment 4),
+    so 'absent' and 'frozen' must be as legible as 'fine'.
+    """
+
+    COUNTERS = {"fused_count": 48, "dropped_pair_count": 2, "red_frames": 664, "nir_frames": 660,
+                "camera_info_frames": 664, "last_fused_stamp_sim_s": 253.4,
+                "update_rate_hz": 5.0, "max_delta_s": 0.05, "sync_queue_size": 60}
+
+    def test_round_trip_carries_every_counter(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "stats.json"
+            write_fuser_stats(self.COUNTERS, path)
+            block = read_fuser_stats(path)
+            self.assertTrue(block["present"])
+            for key, value in self.COUNTERS.items():
+                self.assertEqual(block[key], value, msg=key)
+            self.assertEqual(block["source"], str(path))
+            self.assertLess(block["stats_age_s"], FUSER_STATS_STALE_S)   # just written
+            self.assertFalse(block["stats_stale"])
+
+    def test_a_dead_fuser_keeps_its_last_numbers_and_is_marked_stale(self):
+        """The mid-flight death: the counters are real, they are simply frozen. Reading them as
+        current is how a starved run gets blamed on the recorder."""
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "stats.json"
+            write_fuser_stats(self.COUNTERS, path)
+            written_at = json.loads(path.read_text())["wall_time_s"]
+
+            fresh = read_fuser_stats(path, now_s=written_at + FUSER_STATS_STALE_S - 0.5)
+            self.assertFalse(fresh["stats_stale"])
+
+            dead = read_fuser_stats(path, now_s=written_at + 600.0)
+            self.assertTrue(dead["stats_stale"])
+            self.assertEqual(dead["fused_count"], 48)         # last known, not discarded
+            self.assertAlmostEqual(dead["stats_age_s"], 600.0, places=2)
+            self.assertEqual(dead["stats_stale_after_s"], FUSER_STATS_STALE_S)
+
+    def test_missing_sidecar_is_absent_never_zeros(self):
+        """A fabricated `fused_count: 0` would read as 'fusion produced nothing' -- the wrong
+        diagnosis, indistinguishable from a real starve. Absence must say absent."""
+        with tempfile.TemporaryDirectory() as td:
+            block = read_fuser_stats(Path(td) / "never_written.json")
+            self.assertFalse(block["present"])
+            self.assertIn("no fuser stats sidecar", block["reason"])
+            for key in ("fused_count", "red_frames", "nir_frames", "stats_age_s"):
+                self.assertNotIn(key, block)
+
+    def test_malformed_sidecar_is_absent_not_a_crash(self):
+        with tempfile.TemporaryDirectory() as td:
+            garbage = Path(td) / "garbage.json"
+            garbage.write_text("{truncated mid-wri")
+            self.assertFalse(read_fuser_stats(garbage)["present"])
+            self.assertNotIn("fused_count", read_fuser_stats(garbage))
+
+            wrong_shape = Path(td) / "list.json"           # valid JSON, not a stats payload
+            wrong_shape.write_text("[1, 2, 3]")
+            self.assertFalse(read_fuser_stats(wrong_shape)["present"])
+
+            no_stamp = Path(td) / "no_stamp.json"          # counters but no staleness marker
+            no_stamp.write_text(json.dumps(self.COUNTERS))
+            block = read_fuser_stats(no_stamp)
+            self.assertFalse(block["present"])             # unaged counters are not trustworthy
+            self.assertIn("KeyError", block["reason"])
+
+    def test_rewriting_replaces_in_place_and_leaves_no_debris(self):
+        """The observable half of the atomic write (the indivisibility itself is os.replace's own
+        POSIX guarantee, not something a single-threaded test can witness): the target is whole and
+        current after a rewrite rather than appended to, and the pid-scoped temp file it landed
+        through does not survive -- a 1 Hz writer that leaked one would litter the bind mount."""
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "stats.json"
+            write_fuser_stats({"fused_count": 1}, path)
+            write_fuser_stats({"fused_count": 2}, path)
+            self.assertEqual(read_fuser_stats(path)["fused_count"], 2)   # replaced, not appended
+            self.assertEqual([p.name for p in Path(td).iterdir()], ["stats.json"])
+
+    def test_an_unwritable_sidecar_never_takes_the_flight_down(self):
+        """Both ways the write can fail, from a callback whose exceptions would kill the node."""
+        with tempfile.TemporaryDirectory() as td:
+            blocker = Path(td) / "not_a_dir"
+            blocker.write_text("a file where the stats directory would have to be")
+            path = blocker / "stats.json"
+            write_fuser_stats(self.COUNTERS, path)          # must not raise (OSError)
+            self.assertFalse(read_fuser_stats(path)["present"])
+
+            # ...and an unserialisable counter. The live way in is a numpy-typed one -- np.int64 is
+            # not JSON-serialisable, numpy is everywhere in this package, and the obvious next
+            # counter to add (`zero_denom_count`) is computed by it.
+            unserialisable = Path(td) / "stats.json"
+            write_fuser_stats({"fused_count": np.int64(5)}, unserialisable)   # must not raise
+            self.assertFalse(read_fuser_stats(unserialisable)["present"])     # absent, not corrupt
 
 
 class TestNdviPreviewColormap(unittest.TestCase):

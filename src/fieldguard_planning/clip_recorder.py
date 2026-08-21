@@ -3,7 +3,11 @@
 Writes the EXACT directory layout `sim/spike/README.md` defines and `scripts/stitch_ndvi.py` +
 `eval/run_spike.sh` consume, from live-flight data instead of the synthetic generator:
 
-    <out>/meta.json          synthetic: false (the real thing at last), live camera intrinsics
+    <out>/meta.json          synthetic: false (the real thing at last), live camera intrinsics,
+                             and `fuser`: the NDVI node's own counters at finalize (schema 1.2) --
+                             red/nir frames in, pairs dropped, frames fused, plus the age of that
+                             reading, so a thin clip says WHERE it thinned instead of only that it
+                             did. `present: false` + a reason if the fuser never published.
     <out>/poses.jsonl        one line per frame: drone pose + ndvi_path (+ honesty extras, below)
     <out>/frames/ndvi/*.npy  float32 (H,W) NDVI in [-1,1]  (AUTHORITATIVE band)
     <out>/frames/rgb/*.png   uint8 (H,W,3)                  (the ADR-003 RGB comparison arm)
@@ -40,10 +44,15 @@ from typing import Callable, Optional, Tuple
 
 import numpy as np
 
+from .ndvi_fusion import FUSER_STATS_PATH, read_fuser_stats
+
 Vec3 = Tuple[float, float, float]
 QuatXYZW = Tuple[float, float, float, float]
 
-SCHEMA_VERSION = "1.1"
+# 1.2 adds meta["fuser"] -- the fusion node's own counters, so a clip records WHERE the pipeline
+# starved and not just how little arrived (ADR-013 amendment 5). Additive: every 1.1 key is
+# unchanged, and no consumer reads this field yet.
+SCHEMA_VERSION = "1.2"
 
 # A frame whose best pose-pair residual exceeds this (in SIM seconds) is recorded but flagged
 # pose_pair_stale -- at ~3 m/s sim ground speed, 0.35 s is ~1 m of georef error, under half a cell.
@@ -119,11 +128,15 @@ class ClipWriter:
 
     def __init__(self, out_dir: Path, camera_info: dict,
                  mount_offset_body_m: Vec3 = (0.0, 0.0, -0.08),
-                 png_writer: Optional[Callable] = None):
+                 png_writer: Optional[Callable] = None,
+                 fuser_stats_path: Path = FUSER_STATS_PATH):
         """`camera_info`: {image_width_px, image_height_px, fx, fy, cx, cy} -- from the LIVE
         /fg/sensor/rgb/camera_info (closes ADR-007 follow-up 5: intrinsics confirmed empirically,
-        not assumed from config). `png_writer(path, uint8_array)` or None to skip RGB frames."""
+        not assumed from config). `png_writer(path, uint8_array)` or None to skip RGB frames.
+        `fuser_stats_path`: the ndvi_node counters sidecar, read once at finalize (parameterised so
+        tests never touch the live one)."""
         self.out_dir = Path(out_dir)
+        self.fuser_stats_path = Path(fuser_stats_path)
         self.camera_info = dict(camera_info)
         self.mount_offset_body_m = tuple(mount_offset_body_m)
         self.png_writer = png_writer
@@ -201,6 +214,12 @@ class ClipWriter:
                 self.png_writer(self.out_dir / "frames" / "rgb" / (raw.stem + ".png"), np.load(raw))
                 raw.unlink()
             raw_dir.rmdir()
+        # The fusion node's own counters, read from its side-channel at the one moment they are
+        # final. `num_frames` alone can only say the clip is thin; this says which stage thinned it
+        # (bands in vs pairs fused vs frames recorded), and `stats_stale` says whether the fuser was
+        # still alive when the recorder stopped. Absent/unreadable -> an explicit present:false with
+        # a reason, never zeros.
+        fuser = read_fuser_stats(self.fuser_stats_path)
         meta = {
             "schema_version": SCHEMA_VERSION,
             "synthetic": False,
@@ -221,6 +240,7 @@ class ClipWriter:
                 "offset_from_drone_m": list(self.mount_offset_body_m),
             },
             "gps_global_origin": self.origin,
+            "fuser": fuser,
             "clock_note": ("camera stamps are Gazebo sim time; /ap/pose/filtered stamps are "
                            "ArduPilot's clock (use_sim_time=false) -- poses gz-tagged via a "
                            "native gz clock stream and paired to each frame's stamp; residual in "
@@ -228,4 +248,10 @@ class ClipWriter:
             "ndvi_dtype": "float32, numpy.save (.npy), values in [-1, 1]",
         }
         (self.out_dir / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")
-        return {"out_dir": str(self.out_dir), "n_frames": self.n_frames, "n_rgb": self.n_rgb}
+        return {"out_dir": str(self.out_dir), "n_frames": self.n_frames, "n_rgb": self.n_rgb,
+                # Printed by record_node at Ctrl-C -- the one moment a human is watching, and the
+                # cheapest place to learn the fuser died an hour ago.
+                "fuser": (f"fused_count={fuser.get('fused_count')} "
+                          f"({fuser['stats_age_s']}s old"
+                          f"{', STALE' if fuser['stats_stale'] else ''})"
+                          if fuser["present"] else fuser["reason"])}

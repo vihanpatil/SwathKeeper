@@ -18,8 +18,27 @@
 #     /fg/sensor/nir/camera_info]sensor_msgs/msg/CameraInfo]gz.msgs.CameraInfo
 #
 # YAML field names (ros_topic_name/gz_topic_name/ros_type_name/gz_type_name/direction) verified
-# against the pinned ros_gz `ros2` branch's parameter_bridge README -- NOT run live yet, see
-# docs/runbooks/NDVI_VALIDATION.md Gate 1.
+# against the pinned ros_gz `humble` branch's parameter_bridge README, and live since 2026-08-18
+# (four `Creating GZ->ROS Bridge` lines every flight).
+#
+# QoS DOES NOT BELONG IN THIS FILE AT THE PINNED SHA -- do not add it here. Source-verified against
+# the checked-out ros_gz @ 9d7f8c7 (CLAUDE.md pin), in-container /root/ardu_ws/src/ros_gz:
+#   * ros_gz_bridge/src/bridge_config.cpp:28-36 declares the ENTIRE accepted key set -- topic_name,
+#     ros_topic_name, gz_topic_name, ros_type_name, gz_type_name, direction, publisher_queue,
+#     subscriber_queue, lazy. There is no reliability/durability/history key, and
+#     `parseEntry` (:52-169) reads only those; an unknown key is SILENTLY IGNORED, so a `qos:` block
+#     added here would look configured and do nothing -- the worst available failure mode.
+#   * The knob is real but lives on the command line: ros_gz_bridge/src/factory.hpp:66-79 attaches
+#     `rclcpp::QosOverridingOptions{Depth, Durability, History, Reliability}` to the ROS publisher it
+#     creates, i.e. per-topic ROS *parameters* named `qos_overrides.<topic>.publisher.<policy>`.
+#     That is why the bridge one-liner in docs/runbooks/FULL_PIPELINE_DEMO.md Shell 2 carries
+#     `-p qos_overrides./fg/sensor/{rgb,nir}/image.publisher.reliability:=best_effort` rather than a
+#     line in this file. Verified live 2026-08-21 before it was flown: with the params, the two image
+#     topics report `Reliability: BEST_EFFORT` and camera_info -- untouched -- still reports
+#     RELIABLE, which is the control proving the parameter, not the environment, did it.
+#   * `publisher_queue` / `subscriber_queue` (depth) ARE settable here. Left at the 10/10 default
+#     (bridge_config.hpp:34-37) on purpose: reliability was measured as one variable, and depth is a
+#     second one that nothing has measured.
 
 - ros_topic_name: "/fg/sensor/rgb/image"
   gz_topic_name: "/fg/sensor/rgb/image"

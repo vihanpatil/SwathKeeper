@@ -65,7 +65,7 @@ POLL_S=3
 # which mark "not expanding here is the requirement", not an oversight.
 # shellcheck disable=SC2016
 INNER_GAZEBO='source /root/ardu_ws/install/setup.bash && export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH:-}:/root/ardu_ws/install/ardupilot_gazebo/share" && gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard_field.sdf'
-INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml'
+INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
 # shellcheck disable=SC2016
 INNER_PROBE='source /root/ardu_ws/install/setup.bash && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
 INNER_AGENT='source /root/ardu_ws/install/setup.bash && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
@@ -519,7 +519,7 @@ print_stitch_hint() {
 [fly_pipeline] bar: the 18 trees at their 18 known positions in heatmap/heatmap.png, few stale-pose
 [fly_pipeline] skips, and cells_imaged near 720 — but read frames_total AND which mission flew,
 [fly_pipeline] first. 697/720 has been hit once, on a full boustrophedon with 1781 frames; the
-[fly_pipeline] 2-lane test-flight gate stitches ~291/720 off 48 frames, and a busy machine starves
+[fly_pipeline] 2-lane test-flight gate stitches ~368/720 off 86 frames, and a busy machine starves
 [fly_pipeline] a full mission to ~100. Low cells with low frames is a short mission or a starved
 [fly_pipeline] recorder, not a bad flight.
 EOF

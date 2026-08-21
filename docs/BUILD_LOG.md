@@ -6,6 +6,149 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-21 — three merged PRs that never reached `main`, counters that ended the guesswork, and 5.1× the evidence
+
+### 02:36-03:13Z — the stacked-merge trap, and PR #22
+
+GitHub reported #18, #19, #20 and #21 all **MERGED** inside four minutes. `main` had two of them.
+#19 (the disproven 2 Hz lever) was opened against `feat/one-command-launcher-and-docs` and #21 (the
+doc unification) against `feat/recording-throughput-2hz` — a stack, each PR based on the branch
+below it. Merging a stacked PR lands it on **its base**, not on `main`: once #18 went to `main`
+first, the two above it merged green into branches `main` no longer tracked, and their content was
+stranded with four green badges saying otherwise. A merged PR list is not an answer to "is it on
+`main`" — `git log origin/main` is, and that is the check this repo now owes itself before writing
+"current as of PR #N" anywhere. Recovery was one branch: `fix/land-pr19-21` merged
+`origin/feat/recording-throughput-2hz` (which carried #21 on top of #19) into a branch off `main`
+and landed as **PR #22** at 03:13:42Z. Nothing was cherry-picked and no history was rewritten, which
+is why the negative-result commit `01bb3af` still reads as its own decision rather than as a
+footnote to someone else's.
+
+### The fuser stops depending on a console that scrolls away (ADR-013 amendment 5)
+
+The 2 Hz collapse two days earlier was disproven but never *root-caused*, for one reason:
+`fused_count` / `dropped_pair_count` existed only as log heartbeats, so no artifact separated
+"fusion never fused" from "the recorder dropped what fusion produced". The fuser now publishes its
+counters to a **1 Hz atomically-replaced JSON sidecar** written from an rclpy timer — never from the
+image path — and `clip_recorder.finalize()` folds the last reading into the clip's own `meta.json`
+as `fuser` (schema 1.1 → 1.2). The per-band counters (`red_frames`, `nir_frames`,
+`camera_info_frames`) ride `registerCallback` on the `message_filters` subscribers that already
+deserialise those messages: no second subscription, no second copy of a 640×480 frame.
+
+A file and not a ROS 2 topic, deliberately. A bridged high-rate stream has already starved this
+exact pipeline 8× (the `/clock` finding), a stats topic's delivery depends on the very executor it
+is measuring, and it dies with its publisher — while a file survives whichever node dies first,
+which is precisely the case that must not read as silence. Absence is reported as `present: false`
+**with no counter keys at all**: a fabricated `fused_count: 0` is indistinguishable from a real
+starve, the same shape of lie amendment 4 closed in the gate. A frozen sidecar keeps its real
+numbers and is stamped `stats_age_s` / `stats_stale` instead of being passed off as current.
+
+### The annotator stops refusing frames that were never wrong (ADR-012 amendment 1)
+
+`eval/annotate_real_clip.py` flagged every pre-driver-start frame unshippable — 17 of 105 on the
+last real clip — and that blocked the ADR-003 real-render re-run. The bug was ordering inside
+`pose_at`: `t_s % tN` ran *before* the `t_s <= t0` hold, and `-15 % 20 == 5` in Python, so a frame
+recorded 15 s before the driver started was labelled at the t=5 midpoint. The old refusal was the
+right call on the old behaviour — a confident wrong position is worse than no position.
+
+The fix is one clause, the wrap is now forward-only, and it lives in `pose_at` — the single
+interpolation the driver and the annotator share by import — so the bird that was moved and the bird
+that gets labelled cannot describe different positions. It is *correct*, not merely convenient,
+because the birds are `<static>` models spawned at `waypoints[0]` and `drive_birds.py` is their only
+writer: between world load and the first `set_pose` each bird demonstrably sits at its t=0 waypoint.
+Verified three ways instead of asserted — the generator emits `waypoints[0]` as the spawn pose, the
+committed SDF carries those exact poses (bird_0 `20.0 5.0 8.0 0 0 1.5708` against config
+`x 20, y 5, z 8, yaw 90°`), and a repo-wide grep finds no second writer of a bird pose. Deliberately
+**not** symmetric: the far end still wraps, because a running driver really does keep ticking
+`pose_at` forever and the run sidecar records a start with no stop, so clamping that end would
+invent evidence about when the birds quit. Frames recorded after the driver *exits* stay
+undetectable — documented, not papered over with a speculative flag.
+
+### 03:22-03:45Z — four flights, one variable at a time
+
+Same `test_2lane` mission, same gate, four consecutive `fly_pipeline.sh test-flight` runs.
+`camera_info_frames` is the control: it comes off the same RGB sensor tick as the image band, so a
+flat column proves all four saw the same exposure window.
+
+| # | config | cinfo | red (of ticks) | fused | recorded | cells |
+|---|---|---|---|---|---|---|
+| F1 | baseline, unchanged (5 Hz) | 692 | 73 (10.5 %) | 45 | 17 | 158 / 720 |
+| F2 | + lever A (bridge QoS) | 699 | 126 (18.0 %) | 78 | 41 | 125 / 720 |
+| F3 | + lever B (preview gated) | 696 | 113 (16.2 %) | 76 | 36 | 150 / 720 |
+| **F4** | **A + B** | 698 | **217 (31.1 %)** | **129** | **86** | **368 / 720** |
+
+**F1 paid for the whole session.** The amendment-5 counters flew for the first time, climbed rather
+than sitting at 0 (closing the `registerCallback` risk flagged when they were written), and named
+the starving stage on the first flight: `red_frames` 73 against 692 `camera_info` messages **off the
+same sensor tick**, `dropped_pair_count` **0**. That single row kills both surviving explanations —
+the camera is not under-rendering and the stale-pair guard is not eating pairs — leaving a
+payload-size-dependent transport loss on the RGB image band alone. A lever-hunt became a
+measurement.
+
+Both levers were kept; nothing was reverted. **A**: the `ros_gz` bridge publishes RELIABLE while
+every consumer subscribes BEST_EFFORT, so the reliable half was retransmission machinery for ~900 KB
+samples nobody wanted retransmitted. It is **not settable in the bridge yaml** at the pinned SHA —
+`bridge_config.cpp:28-36` declares nine keys, none of them QoS, and `parseEntry` silently ignores
+the rest, so a `qos:` block there would look configured and do nothing, the worst failure mode
+available — but it is a per-topic ROS parameter, now on the Shell-2 one-liner and verified bound
+before it flew (the image topics report BEST_EFFORT while `camera_info`, deliberately untouched,
+still reports RELIABLE — the control proving the parameter and not the environment did it).
+**B**: `/fg/ndvi/preview` is human-only and nothing in the repo subscribes to it, yet every fused
+frame paid a colormap over 307 k px, two 921,600 B copies and a no-reader serialize-and-write — on
+the one executor whose next job was draining the RGB subscription F1 had just named. Now guarded by
+`get_subscription_count()`: work removed, feature intact.
+
+Read it honestly. Recorded frames are up **5.1×** and cells imaged **2.3×** against the same day's
+baseline, and 368/720 beats the previous all-time valid 2-lane best (291 off 48 frames, 2026-08-18).
+It is not solved. Two things were deliberately *not* claimed: the amendment-4 evidence floor was
+left at 12 frames / 40 cells rather than raised to match the new yield, because one healthy run at a
+new config is how a floor buys flakiness instead of detection; and **lever A's own flight imaged
+fewer cells than baseline (125 vs 158) on 2.4× the frames** — not a regression but the trap in
+judging this work by `cells_imaged` at n=1, since its extra frames landed while the vehicle was slow
+(three mid-climb at the origin, five stacked at the far-end turn at x≈75) where frames buy no new
+cells. The position-independent metric is `red_frames / camera_info_frames`, and it moved
+monotonically on every arm.
+
+### The adversarial pass — what the same four artifacts say that the write-ups did not
+
+A qa-safety-reviewer pass re-derived every number from the gate records and clip `meta.json` files
+(all four reproduce exactly), mutation-tested the load-bearing behaviour rather than trusting green
+tests — breaking the staleness marker fails exactly the two staleness pins, fabricating zeros for an
+absent sidecar fails exactly the two absence pins, and reverting the `pose_at` clause fails exactly
+the three clamp pins, each restored byte-identically after — and found three things.
+
+One is a live footgun in the new instrumentation: `write_fuser_stats` promised in its own docstring
+that instrumentation can never take a flight down, but caught only `OSError`. It runs on a 1 Hz
+rclpy timer, so an escaping exception kills the fusion node mid-flight, and the way in is one line
+away — `json.dumps(np.int64(5))` raises `TypeError`, numpy is everywhere in this package, and the
+obvious next counter to add (`zero_denom_count`) is computed by it. Widened to
+`(OSError, TypeError, ValueError)`, with the numpy case pinned in the test that makes the claim.
+
+The second is the more interesting one. `_on_pair` has exactly two outcomes, so
+`red_frames − fused_count − dropped_pair_count` is precisely the red frames the
+`ApproximateTimeSynchronizer` never handed over — they reached the node and never found a NIR
+partner inside the 50 ms slop. That is **28 / 48 / 37 / 88** across the four flights: 33-41 % of
+every red frame that survived transport, flat across both levers because neither touched pairing.
+The full F4 chain is `698 ticks → 217 red (31.1 %) → 129 fused (59.4 % of red) → 86 recorded
+(66.7 % of fused)` = **12.3 % end to end**. So `dropped_pair_count: 0` only ever meant the *guard*
+rejected nothing; it was never evidence that pairing was lossless, and the next lever on item 1 is
+not necessarily another transport lever (ADR-013 amendment 6a). Mechanism agrees with the transport
+diagnosis rather than competing with it: NIR is mono16 at 614,400 B and lands ~3 Hz while RGB is
+rgb8 at 921,600 B and lands 1.6 Hz even after both levers, so most red frames simply have no NIR
+neighbour close enough.
+
+The third is bookkeeping that a doc-honesty repo should not need told twice: `main` was described as
+"current as of PR #17" while `origin/main` stood at PR #22; ROADMAP item 1 was headlined "largely
+closed" one paragraph above its own "it is *not* solved"; the bridge yaml credited `ros_gz`'s `ros2`
+branch when the pinned checkout is `humble` at `9d7f8c7` (`ros2` is `ardupilot_gazebo`'s branch, and
+that conflation still sits in an agent-memory file); a source citation quoted `KeepLast(10)` where
+the source reads `KeepLast(queue_size)`; and the 6 → 42 survey-frame figure was reproducible only if
+you guessed the threshold, so it now states it. All corrected in place. Suite: **291 green, 2
+skipped** (258 + 33), `shellcheck` and `bash -n` clean on the launcher, and the launcher's nine pane
+payloads still byte-match the runbook — the parity test that made it safe to edit `fly_pipeline.sh`
+for lever A at all.
+
+---
+
 ## 2026-08-18 (late night) — `fly_pipeline.sh` replaces the 7-shell bringup, and the first scripted test-flight gate PASSES
 
 The seven copy-pasted terminal tabs of `docs/runbooks/FULL_PIPELINE_DEMO.md` collapsed into one

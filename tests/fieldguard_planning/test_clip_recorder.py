@@ -20,8 +20,9 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from fieldguard_planning.clip_recorder import (  # noqa: E402
-    ClipWriter, PoseBuffer, STALE_PAIR_BOUND_S, StreamingClockParser,
+    ClipWriter, PoseBuffer, SCHEMA_VERSION, STALE_PAIR_BOUND_S, StreamingClockParser,
 )
+from fieldguard_planning.ndvi_fusion import write_fuser_stats  # noqa: E402
 from fieldguard_planning.coverage import build_grid, load_field_polygon  # noqa: E402
 import stitch_ndvi  # noqa: E402
 
@@ -200,6 +201,67 @@ class TestClipWriter(unittest.TestCase):
             s = w.finalize()
             self.assertEqual(s["n_rgb"], 0)
             self.assertFalse((Path(td) / "frames" / "rgb").exists())
+
+    def test_meta_carries_the_fuser_counters(self):
+        """Schema 1.2: the clip records WHERE the pipeline starved. 664 red frames in, 48 fused,
+        2 recorded says 'the recorder lost them'; 664 in, 3 fused says 'pairing starved' -- the
+        distinction the 2 Hz run had to guess at (ADR-013 amendments 4-5)."""
+        with tempfile.TemporaryDirectory() as td:
+            stats = Path(td) / "ndvi_fuser_stats.json"
+            write_fuser_stats({"fused_count": 48, "dropped_pair_count": 2, "red_frames": 664,
+                               "nir_frames": 660, "camera_info_frames": 664,
+                               "last_fused_stamp_sim_s": 253.4}, stats)
+            out = Path(td) / "clip"
+            w = ClipWriter(out, CAM, fuser_stats_path=stats)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            summary = w.finalize()
+
+            meta = json.loads((out / "meta.json").read_text())
+            self.assertEqual(meta["schema_version"], SCHEMA_VERSION)
+            fuser = meta["fuser"]
+            self.assertTrue(fuser["present"])
+            self.assertEqual(fuser["fused_count"], 48)
+            self.assertEqual(fuser["dropped_pair_count"], 2)
+            self.assertEqual((fuser["red_frames"], fuser["nir_frames"]), (664, 660))
+            self.assertEqual(fuser["last_fused_stamp_sim_s"], 253.4)
+            self.assertFalse(fuser["stats_stale"])
+            self.assertEqual(meta["num_frames"], 1)      # the recorder-side half of the comparison
+            self.assertIn("fused_count=48", summary["fuser"])   # printed at Ctrl-C
+
+    def test_meta_marks_a_missing_fuser_absent_and_finalize_still_writes(self):
+        """A clip recorded with no fusion node (or one that never published) must finalize
+        normally and say so -- zeros here would read as 'fusion produced nothing'."""
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "clip"
+            w = ClipWriter(out, CAM, fuser_stats_path=Path(td) / "never_written.json")
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            summary = w.finalize()
+
+            meta = json.loads((out / "meta.json").read_text())
+            self.assertEqual(meta["num_frames"], 1)             # the clip itself is unaffected
+            self.assertFalse(meta["fuser"]["present"])
+            self.assertNotIn("fused_count", meta["fuser"])
+            self.assertIn("no fuser stats sidecar", meta["fuser"]["reason"])
+            self.assertIn("no fuser stats sidecar", summary["fuser"])
+
+    def test_meta_marks_a_fuser_that_died_mid_flight_stale(self):
+        with tempfile.TemporaryDirectory() as td:
+            stats = Path(td) / "ndvi_fuser_stats.json"
+            write_fuser_stats({"fused_count": 3, "red_frames": 240, "nir_frames": 238}, stats)
+            frozen = json.loads(stats.read_text())
+            frozen["wall_time_s"] -= 900.0                      # died 15 minutes into the flight
+            stats.write_text(json.dumps(frozen))
+
+            out = Path(td) / "clip"
+            w = ClipWriter(out, CAM, fuser_stats_path=stats)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            summary = w.finalize()
+
+            fuser = json.loads((out / "meta.json").read_text())["fuser"]
+            self.assertTrue(fuser["stats_stale"])
+            self.assertGreater(fuser["stats_age_s"], 890.0)
+            self.assertEqual(fuser["fused_count"], 3)           # last known, labelled as frozen
+            self.assertIn("STALE", summary["fuser"])
 
     def test_meta_honesty_fields(self):
         with tempfile.TemporaryDirectory() as td:
