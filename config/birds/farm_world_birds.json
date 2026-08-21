@@ -1,37 +1,38 @@
 {
   "schema_version": "1.0",
-  "note": "Scripted DYNAMIC obstacles for sim/worlds/farmguard_field.sdf (Gazebo SDF <actor> elements, per-actor <script><trajectory> keyframes -- no runtime randomness, so 'fixed seed' is trivial here: these waypoints ARE the deterministic path, committed as data). Matches MVP scope: 2-3 birds, not a flock (docs/SPEC.md, CLAUDE.md). Trajectory style (piecewise-linear waypoints: t_s, x_m, y_m, z_m) intentionally mirrors sim/spike/scenario_default.json's bird scripting for consistency across the project, though the concrete numbers differ because this world's field (75x60m, config/field_polygon.json) is a different size than the spike's standalone clip field.",
+  "note": "Scripted DYNAMIC obstacles for sim/worlds/farmguard_field.sdf -- no runtime randomness, so 'fixed seed' is trivial here: these waypoints ARE the deterministic path, committed as data. Matches MVP scope: 2-3 birds, not a flock (docs/SPEC.md, CLAUDE.md). Trajectory style (piecewise-linear waypoints: t_s, x_m, y_m, z_m) intentionally mirrors sim/spike/scenario_default.json's bird scripting for consistency across the project, though the concrete numbers differ because this world's field (75x60m, config/field_polygon.json) is a different size than the spike's standalone clip field.",
+  "geometry_note": "ADR-015 (2026-08-21) sets this geometry against TWO gates, and it must keep clearing both -- re-run them after any edit here, or to config/missions/boustrophedon.waypoints, config/field_polygon.json, or config/ndvi_camera.json: (1) CAMERA -- `python3 scripts/predict_bird_visibility.py` must exit 0 (every bird >= 5 median frames in view over the driver-start phase sweep at the 5 Hz sensor tick); (2) AVOIDANCE -- at least one bird must stay inside avoidance_policy's threat cylinder (horizontal <= threat_radius_m 12 m AND |z - 15| <= vertical_threat_m 6 m, i.e. z >= 9 m) on the nominal mission. bird_0 is the bird that holds gate 2. Both gates run on the host in ~1 s; neither needs the container.",
   "coordinate_frame": "local ENU meters (x=East, y=North, z=Up), origin = config/field_polygon.json home_lat/home_lon.",
-  "generator": "scripts/gen_farm_world.py reads this file and emits the matching <actor> blocks in sim/worlds/farmguard_field.sdf. Each bird's waypoint list is a there-and-back path (last waypoint == first waypoint's position) so SDF's <loop>true</loop> replays seamlessly with no teleport jump between cycles.",
-  "sdf_actor_note": "Gazebo actors have a visual (here: a small flat-colored sphere, no mesh/skin needed) and move along the scripted trajectory automatically once auto_start=true -- no plugin required (gz-sim Harmonic). Actors do not physically collide in gz-sim's actor system (this is a gz-sim limitation, not a SwathKeeper choice) -- they exist for the future NDVI-camera-based detection/avoidance loop (Week 3-4), not for Gazebo physics collision.",
+  "generator": "scripts/gen_farm_world.py reads this file and emits one static <model> per bird in sim/worlds/farmguard_field.sdf, spawned at waypoints[0]; scripts/drive_birds.py replays these waypoints at runtime via /world/<world>/set_pose (ADR-012 -- SDF <actor>s never rendered on Harmonic+ogre2). Each bird's waypoint list is a there-and-back path (last waypoint == first waypoint's position) so the driver's loop wrap replays seamlessly with no teleport jump between cycles.",
+  "sdf_model_note": "Each bird is a small flat-colored sphere visual carrying the ADR-007 per-visual <temperature> plugin (273 K, the NIR contrast the detector needs -- an actor <skin> could not take that plugin, which is half of why ADR-012 chose models). <static> models do not physically collide: the birds exist for the NDVI-camera detection/avoidance loop, not for Gazebo physics.",
   "birds": [
     {
       "bird_id": "bird_0",
-      "note": "south<->north sweep at x=20 (between orchard rows 0 and 1), mid-low altitude (8m AGL, 7m below the 15m mission altitude).",
+      "note": "THE THREAT BIRD (ADR-015). South<->north patrol at x=15 down orchard row 0 -- which is also the mission's row-0 flight lane -- at 11 m AGL, 4 m below the 15 m mission altitude. Being lane-PARALLEL is what lets one bird serve both gates at once: cross-track offset is 0 m on that lane, so the 1.84 m cross-track half-footprint at its 4 m depth never has to be beaten, while |dz| = 4 m keeps it inside the +/-6 m threat cylinder. Measured: 8 median frames in view (3/8/15 min/med/max, in frame at 55 of 55 driver-start offsets -- the only bird never invisible) and a 4.00 m closest approach, straight overhead, on every offset swept. Flies 7.2 m above the row-0 canopy tops (3.8 m), so the patrol line is clear of the trees it follows.",
       "physical_radius_m": 0.18,
       "color_rgba": [0.12, 0.12, 0.12, 1.0],
       "loop": true,
       "waypoints": [
-        {"t_s": 0.00, "x_m": 20.0, "y_m": 5.0, "z_m": 8.0, "yaw_deg": 90.0},
-        {"t_s": 8.33, "x_m": 20.0, "y_m": 55.0, "z_m": 8.0, "yaw_deg": 90.0},
-        {"t_s": 16.67, "x_m": 20.0, "y_m": 5.0, "z_m": 8.0, "yaw_deg": 270.0}
+        {"t_s": 0.00, "x_m": 15.0, "y_m": 5.0, "z_m": 11.0, "yaw_deg": 90.0},
+        {"t_s": 8.33, "x_m": 15.0, "y_m": 55.0, "z_m": 11.0, "yaw_deg": 90.0},
+        {"t_s": 16.67, "x_m": 15.0, "y_m": 5.0, "z_m": 11.0, "yaw_deg": 270.0}
       ]
     },
     {
       "bird_id": "bird_1",
-      "note": "east<->west sweep at y=30 (mid-field), altitude 11m AGL (4m below mission altitude) -- crosses all 3 orchard rows.",
+      "note": "East<->west sweep at y=30 (mid-field) at 8 m AGL -- crosses all 3 orchard rows and all 6 flight lanes, mostly over bare inter-row soil (the low-NDVI-contrast case eval/scenarios/det_bird_over_low_ndvi.yaml is about). Lane-PERPENDICULAR, so it is only ever in frame during a crossing and its frame count is set purely by depth: measured 6 median frames at 8 m (46/55 offsets) against 3 at its previous 11 m. 8 m is the highest altitude that still clears the 5-frame floor for this geometry, and it is below the threat cylinder by design -- bird_0 carries that role (ADR-015).",
       "physical_radius_m": 0.18,
       "color_rgba": [0.30, 0.22, 0.10, 1.0],
       "loop": true,
       "waypoints": [
-        {"t_s": 0.00, "x_m": 5.0, "y_m": 30.0, "z_m": 11.0, "yaw_deg": 0.0},
-        {"t_s": 9.29, "x_m": 70.0, "y_m": 30.0, "z_m": 11.0, "yaw_deg": 0.0},
-        {"t_s": 18.57, "x_m": 5.0, "y_m": 30.0, "z_m": 11.0, "yaw_deg": 180.0}
+        {"t_s": 0.00, "x_m": 5.0, "y_m": 30.0, "z_m": 8.0, "yaw_deg": 0.0},
+        {"t_s": 9.29, "x_m": 70.0, "y_m": 30.0, "z_m": 8.0, "yaw_deg": 0.0},
+        {"t_s": 18.57, "x_m": 5.0, "y_m": 30.0, "z_m": 8.0, "yaw_deg": 180.0}
       ]
     },
     {
       "bird_id": "bird_2",
-      "note": "diagonal SW<->NE sweep, low altitude (6m AGL, closest to canopy height of the 3 birds -- the most safety-relevant trajectory for future avoidance work since it's nearest the tree obstacles' height band).",
+      "note": "Diagonal SW<->NE sweep at 6 m AGL, the lowest and therefore most photographable of the three (9 m depth, 4.16 m cross-track half-footprint): 11 median frames in view, the best of the three, unchanged by ADR-015. Its 2.94 m/s north component against the 3 m/s lane speed means it nearly surfs the frame on a northbound lane, which is why its max (26) is so far above its median. NOT an avoidance threat -- 9 m below cruise is outside the +/-6 m threat cylinder, so the earlier 'most safety-relevant trajectory' note was wrong and is retracted; it is the NDVI bird.",
       "physical_radius_m": 0.18,
       "color_rgba": [0.18, 0.18, 0.20, 1.0],
       "loop": true,

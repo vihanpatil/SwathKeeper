@@ -23,6 +23,9 @@ scoring:
   fnr_gap_bar: 0.10
 
 approach_a_ndvi:
+  # SYNTHETIC-clip value, and the one ADR-003 was decided on. A REAL Gazebo clip resolves a
+  # different default (-0.61, the gate2 bird/soil midpoint) from its own meta.json -- real soil
+  # reads -0.4377, so 0.05 saturates there. See eval/baseline_ndvi.py + ADR-003 amendment 3.
   thresh: 0.05        # NDVI below this = bird candidate; below soil (~0.15), above bird core (~-0.08)
   min_area: 6
   max_area: 5000

@@ -36,24 +36,22 @@ import spike_common as sc
 # so GT labels and the heatmap share one camera model.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from fieldguard_planning.ndvi_georef import (  # noqa: E402
-    camera_world_position, world_ray_to_camera_frame,
+    CameraIntrinsics, camera_world_position, project_world_point,
 )
 
 
 def project_bird_oriented(bird_pos, drone_pos, quat_xyzw, mount_offset_body_m, intr):
     """(u_px, v_px, zc_m) for a bird world position seen from a fully-oriented drone pose, or None
-    if the bird is behind/beside the camera. Same pinhole convention as spike_common.project_bird;
-    orientation and mount offset handled by the ndvi_georef primitives instead of the spike's
-    fixed nadir extrinsic."""
-    cam_pos = camera_world_position(tuple(drone_pos), tuple(quat_xyzw),
-                                    tuple(mount_offset_body_m))
-    d_world = (bird_pos[0] - cam_pos[0], bird_pos[1] - cam_pos[1], bird_pos[2] - cam_pos[2])
-    d_cam = world_ray_to_camera_frame(d_world, tuple(quat_xyzw))
-    if d_cam[2] <= 1e-9:
-        return None
-    u = intr["cx"] + intr["fx"] * d_cam[0] / d_cam[2]
-    v = intr["cy"] + intr["fy"] * d_cam[1] / d_cam[2]
-    return (u, v, d_cam[2])
+    if the bird is behind/beside the camera. Same pinhole convention as spike_common.project_bird.
+
+    A thin dict-intrinsics adapter over `ndvi_georef.project_world_point` -- the ONE projection this
+    project owns (heatmap stitch, these GT labels and `scripts/predict_bird_visibility.py` all call
+    it), kept as a named function here because that is the name the harness and its tests import."""
+    intr_obj = CameraIntrinsics(width_px=int(intr.get("image_width_px", 0)),
+                                height_px=int(intr.get("image_height_px", 0)),
+                                fx=intr["fx"], fy=intr["fy"], cx=intr["cx"], cy=intr["cy"])
+    return project_world_point(tuple(bird_pos), tuple(drone_pos), tuple(quat_xyzw), intr_obj,
+                               tuple(mount_offset_body_m))
 
 
 def bird_range_m(bird, cam_pos):
