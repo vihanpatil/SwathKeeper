@@ -1,13 +1,13 @@
 # SwathKeeper — CI/CD sim image (Weeks 5-6 devops task, 2026-08-05).
 #
-# ⚠️ STATUS: UNVERIFIED ON A LIVE RUNNER. Written and reviewed by devops-reliability-engineer without
-# access to a live Docker/Gazebo runner in that session — see docs/runbooks/SIM_CI.md for the honest
-# feasibility verdict, what still needs a human, and the cut-list if this proves too heavy for
-# GitHub-hosted runners. Do not treat a clean `docker build` as proof this works inside GitHub
-# Actions' resource envelope (2 vCPU... actually 4 vCPU / 16GB RAM / 14GB SSD on public ubuntu-latest
-# — still less disk than docs/runbooks/SIM_BRINGUP.md's documented minimum of 40GB, and the workspace build has
-# already OOM'd once on a MORE generously resourced local Docker Desktop config, see that doc's §3
-# MEMORY gotcha). First human build of this image MUST watch disk and memory, not just wait for green.
+# ✅ STATUS: FIRST GREEN BUILD 2026-08-18, GitHub-hosted ubuntu-latest (sim-image.yml run
+# 32208264797): colcon 14 packages in 13m53s at -j2 (no OOM), waf copter 1m32s, CI-image step 17m31s,
+# whole job 27m18s, both tags pushed to GHCR. The resource envelope held after the workflow's
+# free-disk step — the docs/runbooks/SIM_CI.md disk/OOM/time fears did not materialize for the image
+# build. Two build-breaking bugs were fixed to get there, both in this file's RUN layers (see the
+# SHELL and rosdep comments below). What a green BUILD does not prove: the smoke flight and the
+# headless render path (ci.yml `build-test-sim`, scripts/ci_sim_smoke.sh) have still never run —
+# docs/runbooks/SIM_CI.md "What needs the human" steps 2-3 remain open.
 #
 # WHAT THIS IS: bakes the pinned-SHA ROS 2 Humble + Gazebo Harmonic + ArduPilot SITL + ardupilot_gazebo
 # workspace into image LAYERS, so CI never re-runs the ~hours-long from-scratch workspace build on
@@ -31,6 +31,12 @@
 # FROM line below to a pushed base-image tag once one exists in GHCR.
 
 FROM fieldguard-sim:week1
+
+# Every ROS-sourcing RUN below (`. /opt/ros/humble/setup.bash && ...`) requires bash — ROS setup
+# files use bash-isms (BASH_SOURCE, `builtin`), and under Docker's default /bin/sh (dash) they die
+# with "Bad substitution" / "cannot open /setup.sh" (exit 2 — killed every sim-image.yml run
+# through 2026-08-18, run 32184045299).
+SHELL ["/bin/bash", "-c"]
 
 # Route compiler invocations through ccache (already installed by the base image's "ArduPilot +
 # ros_gz build prerequisites" apt step) so a second build after a small Dockerfile.ci edit — or a
@@ -70,9 +76,15 @@ RUN . /opt/ros/humble/setup.bash && \
 
 # --- rosdep: resolve gz-* keys against GZ_VERSION=harmonic (already-installed OSRF rosdep rules from
 # the base image), then install everything the imported packages declare ------------------------------
+# apt-get update is load-bearing: the base image rm -rf's /var/lib/apt/lists/* after every apt
+# layer, and rosdep shells out to `apt-get install` without updating — with empty lists the first
+# not-already-installed dep dies with "E: Unable to locate package" (run 32207616487,
+# liburdfdom-headers-dev).
 RUN . /opt/ros/humble/setup.bash && \
+    apt-get update && \
     rosdep update && \
-    rosdep install --from-paths src --ignore-src -y
+    rosdep install --from-paths src --ignore-src -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # --- colcon build: the ROS 2 / Gazebo / ardupilot_gazebo / micro_ros_agent workspace -----------------
 # MAKEFLAGS="-j2" per docs/runbooks/SIM_BRINGUP.md §3's documented OOM gotcha (ros_gz_bridge's template-heavy

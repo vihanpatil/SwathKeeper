@@ -7,6 +7,19 @@ hard."* This doc is the committed plan plus an honest account of what got built 
 human. **Owner: `devops-reliability-engineer`.** Does not edit `docs/ROADMAP.md` — `product-lead` owns
 that file; see the one-paragraph status at the bottom of this doc for them to paste in.
 
+> **Update 2026-08-18: `sim-image.yml` is GREEN — the image build half of this doc's crux is
+> resolved.** Run 32208264797 (watched `workflow_dispatch`): whole job 27m18s on hosted
+> `ubuntu-latest`, colcon 14 packages in 13m53s at `-j2` with no OOM, waf copter 1m32s, image pushed
+> to `ghcr.io/vihanpatil/fieldguard-sim` (`:latest` + commit-SHA tag) — the first image this
+> workflow ever published. Every prior run had died at `Dockerfile.ci`'s first ROS-sourcing RUN
+> layer: Docker's default `/bin/sh` is dash, which cannot source ROS's bash-only setup files
+> (`SHELL ["/bin/bash", "-c"]` fixed it), and the next layer down then hit rosdep installing
+> against the base image's emptied apt lists (in-layer `apt-get update` fixed that). The
+> disk/OOM/time fears below turned out fine for the **build** after the workflow's free-disk step
+> (~25GB reclaimed). Still true and still open: the **headless-render smoke flight** ("What needs
+> the human" steps 2-4, `ci.yml`'s `build-test-sim`) has never run — the render-path verdict below
+> stands. The self-hosted-runner fallback was not needed.
+
 ## Feasibility verdict on headless-render CI on GitHub-hosted runners (the crux question)
 
 **Short answer: full Gazebo Harmonic + ArduPilot SITL + ROS 2, with real camera/thermal sensor

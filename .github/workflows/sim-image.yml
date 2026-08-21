@@ -1,12 +1,13 @@
 name: SwathKeeper sim image (build + push)
 
-# ⚠️ UNVERIFIED (Weeks 5-6 devops task, 2026-08-05) — see docs/runbooks/SIM_CI.md for the honest
-# feasibility verdict. Written and actionlint-checked, but never actually run: this session had no
-# live GitHub Actions runner / GHCR credentials to execute it against. The first run needs a human to
-# watch, in this order: (1) does `docker build` fit GH-hosted disk (14GB SSD on public ubuntu-latest —
-# tight, see the Dockerfile.ci header), (2) does the colcon build OOM even at -j2, (3) does the job
-# finish inside the runner's time budget. If any of those fail, the documented fallback is a
-# self-hosted runner (docs/runbooks/SIM_CI.md "Fallback"), not a bigger hosted-runner tier.
+# ✅ VERIFIED GREEN 2026-08-18 (run 32208264797): 27m18s total on hosted ubuntu-latest — free-disk
+# 3m, base image 4m39s, CI image 17m31s (colcon: 14 packages in 13m53s at -j2, NO OOM; waf copter
+# 1m32s), pushed ghcr.io/vihanpatil/fieldguard-sim:{<sha>,latest}. The 2026-08-05 feasibility fears
+# (14GB disk / colcon OOM / time budget — docs/runbooks/SIM_CI.md) did not materialize for the
+# image BUILD; the headless-render smoke flight (ci.yml `build-test-sim`) is still the unverified
+# crux. Every run before this one died at Dockerfile.ci's first ROS-sourcing RUN layer — Docker's
+# default /bin/sh (dash) cannot source ROS setup.bash (fixed: SHELL ["/bin/bash", "-c"]) — and then
+# at rosdep over the base image's emptied apt lists (fixed: in-layer apt-get update).
 #
 # Deliberately DECOUPLED from ci.yml's per-push jobs: this build is heavy (a from-scratch ROS 2 +
 # Gazebo + ArduPilot workspace compile) and does not need to run on every push/PR — only when the
