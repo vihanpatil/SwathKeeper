@@ -1,5 +1,88 @@
 # Full Pipeline Demo — the SwathKeeper showpiece *(runbook)*
 
+## One command: `scripts/fly_pipeline.sh`
+
+The seven shells below are wrapped by a host-side launcher — **one tmux session (`swathkeeper`),
+one window per shell**, each pane running that shell's `docker exec` one-liner *byte-identical* to
+this document (verified mechanically: all nine one-liners here, including the Shell-0 apt line,
+match the launcher's payload strings character for character). This doc stays the reference; the
+script is the wrapper. Read it here, run it there.
+
+```bash
+scripts/fly_pipeline.sh              # up (default): preflight -> gated bringup -> attaches you
+scripts/fly_pipeline.sh status       # session + live gate re-checks + the fly recipe
+scripts/fly_pipeline.sh birds        # start the birds NOW, bypassing the altitude gate
+scripts/fly_pipeline.sh down         # SIGINT the recorder FIRST, wait for finalize, then stop
+scripts/fly_pipeline.sh test-flight  # scripted REGRESSION GATE (see below) — not the demo path
+scripts/fly_pipeline.sh --dry-run up # print every docker/tmux command, run nothing
+scripts/fly_pipeline.sh --gate-geometry up   # + the mount-geometry gate after the bridge
+```
+
+What it adds over copy-paste is the **ordering and the gates** — Gazebo's four `fg/sensor`
+advertisements, the four `/fg/sensor` ROS 2 topics, the **mandatory** render-alive probe (which on
+DEGRADED restarts Gazebo + the bridge and re-probes, twice, then refuses to fly), and UDP 2019
+bound before SITL boots. Two things `up` deliberately does **not** do: **it never flies** (no `arm`,
+no `mode`, no `wp load` is ever sent — SITL stays an interactive pane and the fly recipe below is
+displayed in a pane beside it; the one scripted exception is `test-flight`, described next, which
+demo and recording flights never use), and **birds never start before arming** (the birds pane polls
+`/ap/pose/filtered` and launches `drive_birds.py --rate 2` itself once altitude > 10 m). See
+ADR-013.
+
+**`test-flight` is the pre-demo regression gate — run it the day before you record, never as the
+demo.** It is the one place this launcher flies: same `up`, same gates, then it pipes the SITL pane
+to a log and waits (bounded, 240 s) for *all three* readiness lines — `DDS: Initialization passed`,
+`EKF3 IMU… tilt alignment complete`, `GPS 1: detected` — before sending a key. Then it types the
+recipe below verbatim on the short test mission (`config/missions/test_2lane.waypoints`, ~2 sim-min;
+the first live run flew it in 192 s and finished the whole gate in 253 s — budget ~5 min, not the
+~10 estimated from RTF 0.2), retries once on `Arm: Accels inconsistent` after 30 s, watches ARMED →
+`Reached command` → disarm, and on disarm runs the recorder-first `down`, the host-side stitch, and
+writes `eval/results/testflight_gate_<UTC>.json` — timestamps, each gate's evidence line, frames
+recorded, the altitude the birds fired themselves at, finalize confirmation, stitch exit, plus pane
+tails on failure. The birds are *not* special-cased: their own altitude gate firing is part of what
+is being tested. It aborts nonzero with a one-line cause, and its trap tears down recorder-first and
+force-kills any surviving sim process even on Ctrl-C. **First live run PASSED: 2026-08-18T22:16:18Z,
+253 s end to end** — `eval/results/testflight_gate_20260818T222031Z.json`.
+
+**`up` refuses to start on top of a bringup that is already running in the container** — a manual
+session in other tabs, or a tmux session that was killed without `down`. Every gate above is a
+*liveness* gate, so leftovers make all of them pass instantly against the wrong processes while the
+second micro-ROS agent quietly loses the bind on UDP 2019. `status` says so explicitly when it sees
+green gates with no session; `docker restart fieldguard-sim` clears the container.
+
+> **Verification status: the launcher has flown.** `test-flight` completed a live unattended run on
+> 2026-08-18 in 253 s, result PASS — gate record `eval/results/testflight_gate_20260818T222031Z.json`,
+> clip `eval/results/clips/real_flight_20260818T221641Z` (48 frames, 42 with RGB, **0 stale-pose
+> pairs**), stitch exit 0. Proven in that one run, with the record's own evidence lines as the
+> receipt: all four bringup gates firing against a real container (Gazebo advertisements 8 s,
+> ROS 2 crossover 12 s, **render-alive probe 19 s, passed on attempt 1**, UDP 2019 at 22 s); the
+> DDS + EKF3 + GPS readiness wait completing at 38 s before a single key was sent; the recipe typed
+> on `test_2lane`; ARMED, 12 `Reached command` lines, DISARMED; **the birds pane firing its own
+> altitude gate at 15.0 m** after waiting through `-0.0 m` and `7.52 m`; and the recorder-first
+> teardown reporting *"finalize confirmed; session killed; survivors force-killed"*. Every timeout
+> in the script now has a measured margin: readiness 38 s of 240, arm ~0 s of 90, first waypoint
+> 15 s of 300, whole flight 192 s of the 1500 s budget.
+>
+> Still unproven, and worth watching on the first real demo flight: the **render-alive DEGRADED
+> restart path** (the probe has never yet failed, so `restart_world` has never run), the
+> already-running **refusal** actually refusing (its trigger was observed — `status` showed three
+> green gates against a live manual bringup with no session — but `up` has not been made to refuse),
+> the `NOTHING RECORDED` and finalize-timeout branches of `down`, and the accels-inconsistent arm
+> retry. Also unproven at scale: this gate flew the 2-lane mission for 192 s and recorded 48 frames;
+> the demo flight is ~5 sim-minutes and the runbook budgets 35-45 min end to end, which is where the
+> known recording-throughput limit bites and where a long-lived Gazebo has degraded before.
+>
+> Before the live run this was verified by `bash -n` and `shellcheck` clean; `--dry-run` for every
+> subcommand, confirmed to leave no trace (no Docker call, no tmux server, not even a temp file); a
+> throwaway tmux session exercising the real functions — `keep_output`, `window_failed`,
+> `send_ctrl_c`, `gate`, the `-J` capture — against live, dying, and missing windows; and a
+> mechanical byte-for-byte diff of all nine pane payloads against this document. An adversarial QA
+> pass on 2026-08-18 found and fixed seven defects that way, the largest being the missing
+> already-running check above; a second pass after the live run fixed two more (ADR-013 amendment 3).
+
+The whole manual, shell-by-shell path is below and remains the source of truth.
+
+---
+
 One flight, end to end: an autonomous boustrophedon survey over the farm world, scripted birds
 flying their committed trajectories, the dual-band NDVI camera fusing in real time, every frame
 recorded with a stamp-paired pose, and — after landing — the offline stitch that turns the flight

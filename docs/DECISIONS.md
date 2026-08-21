@@ -460,3 +460,161 @@ the pure decision function to actuation history.
    `ndvi_georef.world_enu_to_pixel` prediction; measured 2.2 px). Run it after ANY change to the
    mount, the vehicle SDF, or the georef extrinsics. Gate 2's band-separation PASS remains valid
    (same materials, same calibration — measured from a different viewpoint).
+
+## ADR-013: One-command bringup is a HOST-side tmux orchestrator wrapping the documented docker-exec one-liners — not a new launch path   (2026-08-18, status: ACCEPTED — implemented `scripts/fly_pipeline.sh`; flown live, `test-flight` PASS, see amendment 3)
+Decision: `scripts/fly_pipeline.sh` (macOS host) replaces the seven copy-pasted terminal tabs of
+`docs/runbooks/FULL_PIPELINE_DEMO.md` with one tmux session (`swathkeeper`), **one window per
+runbook shell**, each pane running that shell's `docker exec` one-liner **byte-identical** to the runbook
+(mechanically diffed: all nine, including the Shell-0 apt line). The value added is ordering and
+**gates**, each with a timeout and a named failure: Gazebo's four `fg/sensor` advertisements (and a
+`Failed to load a world` fast-fail) → the four `/fg/sensor` ROS 2 topics → the render-alive probe,
+**mandatory every flight**, which on DEGRADED restarts Gazebo + the bridge and re-probes, max 2
+retries, then aborts → UDP 2019 bound **before** SITL boots. Three deliberate carve-outs: (1) the
+script **never flies** — no `arm`, `mode`, or `wp load` is ever sent; SITL stays an interactive pane
+and the fly recipe plus its wait-for conditions are *displayed* in a pane beside it; (2) **birds are
+altitude-gated** — the birds pane polls `/ap/pose/filtered` and execs `drive_birds.py --rate 2` only
+above 10 m (`fly_pipeline.sh birds` overrides manually); (3) **teardown is recorder-first** —
+`down` SIGINTs the recorder, waits up to 120 s for finalize, and only then stops the rest and prints
+the host-side stitch command with the clip dir the recorder actually printed.
+Alternative(s) rejected: (a) A single script that also arms and flies — rejected on the standing
+`run_farm_mission.sh` reasoning: the EKF/DDS/GPS ready messages must be *watched*, and scripting
+past them has already cost this project debugging time; automating the one step a human must judge
+buys nothing and hides the judgement. (b) A ROS 2 launch file / in-container supervisor — it would
+become a second bringup path diverging from the runbook, exactly the class of bug
+`SIM_BRINGUP.md` exists to prevent; the runbook must stay the single audited source. (c) Starting
+birds with everything else — ADR-012's driver adds `set_pose` service traffic that is jitter the EKF
+cannot tolerate while aligning. (d) Killing all panes at once on teardown — finalize is the step
+that converts raw in-flight dumps to schema PNGs and writes `meta.json`; racing it loses the clip.
+Why: The bringup order and its gates were each learned by losing a flight (horizon-facing mount,
+sky-flat render, agent-after-SITL, understated coverage debt) — encoding them in one command makes
+the expensive lessons unskippable, while keeping every executed line diffable against the runbook
+keeps the automation honest instead of opaque.
+Amendment 1 (2026-08-18, qa-safety-reviewer adversarial pass, pre-flight): **every gate in this
+script is a LIVENESS gate, which means none of them can tell whose processes they found.** A
+bringup already running in the container — a manual runbook session, or a tmux session killed
+without `down` — makes all of them pass instantly: the second Gazebo double-publishes
+`/fg/sensor/*`, the second micro-ROS agent silently loses the bind on UDP 2019, and SITL attaches to
+whichever agent won. All green, two worlds, nothing reproducible. Found by running `status` against
+a live manual bringup: three green gates, no tmux session. `up` now refuses on any surviving
+`gz sim` / `parameter_bridge` / `micro_ros_agent` / `sim_vehicle.py` / ndvi / record / birds process;
+`down` reports survivors after killing the session; the DEGRADED restart path waits for the old
+world's topics to disappear before respawning (killing a pane kills the `docker exec` *client*, not
+necessarily the process inside the container). Also from that pass: gates now fail fast on a dead
+pane instead of burning their timeout, teardown SIGINTs *every* pane of a window (the sitl window
+has the recipe pane beside SITL, and `send-keys` hits whichever the user last clicked), and the
+`GZ_PARTITION=mountcheck` deviation on `--gate-geometry` was **removed** — `verify_mount_geometry.sh`
+already renames its world to `mountcheck` and its topics to `mountcheck/sensor/*`, so the collision
+it claimed to prevent does not exist and the runbook's line now runs verbatim.
+Amendment 2 (2026-08-18, product-lead decision): **one scripted flight mode exists —
+`fly_pipeline.sh test-flight` — and it is a regression gate, not a flight path.** Carve-out (1)
+above stands for every flight a human or a camera watches: **demo and recording flights stay
+human-flown** at the MAVProxy prompt. `test-flight` runs the same `up` (every gate, render probe
+included), then pipes the SITL pane to a log and **waits, bounded at 240 s, for all three readiness
+lines at once** — `DDS: Initialization passed`, `EKF3 IMU… tilt alignment complete` (or `is using
+GPS`), `GPS 1: detected` — before sending a single key. Scripting *past* those is the failure this
+carve-out was written about; scripting *after* them is not the same act, and the difference is the
+whole design. It then types the runbook recipe verbatim on the short test mission
+(`config/missions/test_2lane.waypoints`, ~2 sim-min), retries once on the documented
+`Arm: Accels inconsistent` after 30 s, supervises ARMED → `Reached command` → disarm inside a 25-min
+budget, and on disarm runs the recorder-first `down`, the host-side stitch, and a gate record at
+`eval/results/testflight_gate_<UTC>.json` (timestamps, every gate's evidence line, frames recorded,
+the altitude the birds fired at, finalize confirmation, stitch exit — un-gitignored like the other
+committed evidence). **The birds are deliberately NOT special-cased**: the altitude-gated watcher
+firing on its own is one of the things under test. An EXIT/INT/TERM trap guarantees the teardown —
+recorder-first, then `pkill -9` of any `arducopter|mavproxy|gz sim|parameter_bridge|micro_ros_agent|
+fieldguard_planning|drive_birds` that outlived its `docker exec` client, then the session — and it is
+armed only *after* `up` succeeds, so a run that refuses on someone else's live bringup cannot tear
+theirs down. The MAVProxy sequence now has ONE source in the script (`fly_lines`), printed by the
+recipe pane and typed by `test-flight`, so the two can never drift from the runbook separately.
+Alternative rejected: a separate scripted-flight script — it would become the second bringup path
+this ADR exists to prevent. Status: **PASSED live on its first run** — see amendment 3.
+Amendment 3 (2026-08-18, live gate + qa-safety-reviewer second adversarial pass, post-flight):
+**`test-flight` ran unattended and PASSED in 253 s**, gate record
+`eval/results/testflight_gate_20260818T222031Z.json`, clip
+`eval/results/clips/real_flight_20260818T221641Z` (48 frames, 42 with RGB, 0 stale-pose pairs),
+stitch exit 0. Every claim this ADR made in the abstract now has a measurement behind it: all four
+bringup gates fired against a real container (Gazebo advertisements 8 s of a 180 s budget, ROS 2
+crossover 12 s of 90, render-alive probe 19 s and **passed on attempt 1**, UDP 2019 at 22 s of 60);
+the DDS + EKF3 + GPS wait completed at 38 s of 240 **before a single key was sent**; ARMED
+immediately, first waypoint 15 s of a 300 s budget, disarm 192 s into a 1500 s budget; **the birds
+pane fired its own altitude gate at 15.0 m** having waited through `-0.0 m` and `7.52 m` — carve-out
+(2) working exactly as designed, with no special-casing; and teardown reported *"recorder SIGINTed
+first; finalize confirmed; session killed; survivors force-killed"*. The remaining unproven paths
+are the ones that only run when something is wrong: the render-alive DEGRADED restart
+(`restart_world` has never executed — the probe has never failed), `up` actually refusing an
+already-running bringup (its trigger was observed, the refusal was not), `down`'s `NOTHING RECORDED`
+and finalize-timeout branches, and the accels-inconsistent arm retry.
+Two defects were fixed in the same pass, both in the abort path this run did not take: `TF_PROCS`
+omitted `sim_vehicle`, so a force-kill would take out the `arducopter`/`mavproxy` children while the
+launcher survived — and the *next* `up` would then refuse to start on the corpse the abort was
+supposed to clear; and `parse_alt_m` carried a second anchor on a raw `z: <n>` line, which that pane
+never prints (`zget` consumes it) and which could only ever have matched something that was not a
+launch — a fail-dangerous second reading of the one field that certifies the birds flew. It now has
+exactly one anchor, on `launching`. The same pass removed the redundant work the style guide asks
+about: one pane capture per finalize poll instead of two, one liveness probe per restart wait
+instead of two, one dpkg dependency list instead of three copies and a magic `3`, and the birds
+watcher's exec line is now `$INNER_BIRDS` itself rather than a fourth copy of it — emitted payloads
+verified byte-identical to the ones this run flew. `tests/test_fly_pipeline.py` is **24 green**
+(no sim): a tautology-adjacent test of the deleted `z:` branch was removed, and two were added —
+that `up` never emits `arm`/`mode`/`wp` (carve-out (1), the reason `up` is safe unattended), and
+that the real `cmd_down` SIGINTs `record` before every other window, kills the session only after
+all of them, and recovers the clip path from the recorder's own finalize line (pinned against
+`record_node.py`'s literal string, confirmed by mutation).
+Owner / roles: devops-reliability-engineer (owner), robotics-sim-engineer + flight-software-engineer
+(the wrapped commands), qa-safety-reviewer (the gates are safety gates; the happy path is now
+evidenced, and the failure paths listed in amendment 3 are the outstanding evidence).
+
+## ADR-014: The docs get a rendering layer — an in-repo static generator in the "Heatmap Neutral" direction — and the Markdown stays untouched (2026-08-18, status: ACCEPTED — implemented `scripts/build_docs_site.py`, all 15 docs render)
+Decision: Ship documentation styling as `scripts/build_docs_site.py`, a one-command generator that
+renders `README.md`, `TIGER_TEAM_GUIDE.md` and every `docs/**/*.md` into a gitignored `docs-site/`.
+The **generator is the tracked artifact; the site is disposable.** The visual direction is
+**D · Heatmap Neutral**, chosen by the user tonight from a four-direction options artifact
+(https://claude.ai/code/artifact/3890177c-62a1-4467-9c72-ecd2b3ba7bd6): warm-grey monochrome chrome,
+New York for running prose, SF Pro for headings and tables, SF Mono for commands — and the NDVI
+diverging ramp (canopy `#4A7A3E` / soil `#A04E33`, dark `#86BE72` / `#E08163`) held back for data
+alone: status rows, gate markers, callout edges. Chrome never takes colour.
+Alternative(s) rejected: **MkDocs Material** — nav, search and versioning arrive free, but its own
+design system fights every custom token, and this direction is nothing but custom tokens; the
+dependency would cost more than the nav it buys. **A published Artifact portal** — a link you can
+send anyone instantly, but it lives outside the repo and drifts from the source the moment a doc
+changes, which is exactly the failure mode a docs layer must not have. Also rejected: touching the
+Markdown to carry styling hooks — the sources stay readable and diffable on GitHub as they are.
+Why: In a repo whose culture is radical engineering honesty, a page where green means "green" is
+the design argument — colour that carries meaning rather than mood, which is the repo's own
+standard applied to its own docs. And an 8-pattern renderer we own outright is defensible line by
+line in an interview, which a theme override never is.
+Implementation notes: one dependency (`markdown`, `extra` + `toc`); one shared stylesheet with
+three-state theming (bare `:root` light, `prefers-color-scheme` dark guarded by
+`:not([data-theme="light"])`, explicit `[data-theme="dark"]`) and an Auto/Light/Dark toggle
+persisted to `localStorage`. It styles the **eight patterns that actually recur in these files**:
+status tables, emoji status headings, blockquote warning callouts, `*Look for:*` evidence lines,
+gate/checklist blocks, ADR entries + nested amendments, narrated shell fences (`#` narration muted
+against full-ink commands), and dated log headings. Intra-repo `.md` links are rewritten to the
+generated `.html`; links to non-doc repo paths are rewritten back out to the tree. 16 pages in
+~0.2 s, byte-identical on rebuild, nonzero exit on any source that won't read or convert.
+**Two gates make the render falsifiable rather than merely pretty**, both added by the QA pass and
+both failing the build: a *heading-parity* gate (the headings the source declares, blockquote-nested
+ones included, must equal the headings the render produced) and a *link* gate (every relative link
+must resolve to a file that exists). Heading parity exists because python-markdown accepts `#` with
+no following space and GitHub does not, so `#5→#8),` — a wrapped body line in ADR-006 — silently
+became a page-title `<h1>`; the renderer now follows GitHub's rule and the gate pins it.
+Owner / roles: flight-software-engineer (front-end hat, implementation), product-lead (the pick),
+qa-safety-reviewer (the two gates, the print-specificity and mobile-overflow fixes).
+
+### ADR-014 amendment (2026-08-18, adversarial pass): four defects an exit code of 0 could not see
+The generator built 16 pages, exited 0 and was byte-identical on rebuild while all four of these
+were live, which is the point: **"the build passed" was never evidence that the render was right.**
+(1) *Heading hierarchy* — as above; the gate now catches it. (2) *Broken `.md` links passed
+silently*: the rewriter left an unresolvable target as-is and returned success, so a dead link could
+ship; it now collects and fails. (3) *Print* — the override was `:root,:root[data-theme]`, but the
+dark rule is `:root:not([data-theme="light"])`, which `:not()` gives specificity (0,2,0); a bare
+`:root` is (0,1,0) and lost, so **Auto + dark OS — the default state for a dark-mode reader — printed
+a black page.** It reads as verified because forcing dark *does* print white, and that is the state
+that got tested. `:root:root` ties and wins on source order; proven by flipping the block's media to
+`all` in each of the three states. (4) *Mobile* — one unbreakable token
+(`eval/results/testflight_gate_20260818T222031Z.json`, 422 px against a 339 px column) widened the
+document at 375 px and dragged the fixed bar sideways with it; `overflow-wrap:break-word` on `body`
+fixes it, with fences opted out by their existing `white-space:pre`. All 16 pages now measure zero
+horizontal overflow at 375 px, and all six theme × OS-preference combinations were read out of a
+live browser rather than argued from the cascade.
+Owner / roles: qa-safety-reviewer (found and fixed), flight-software-engineer (generator owner).

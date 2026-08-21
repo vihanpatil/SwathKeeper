@@ -15,13 +15,22 @@ name: SwathKeeper sim image (build + push)
 
 on:
   workflow_dispatch: {}   # manual — the only trigger until a human confirms this builds green once
-  push:
-    branches: [main]
-    paths:
-      - "sim/docker/Dockerfile.ci"
-      - "sim/docker/Dockerfile"          # the base layer Dockerfile.ci is FROM
-      - "CLAUDE.md"                       # pinned-SHA changes live here
-      - ".github/workflows/sim-image.yml"
+  # The push trigger below is DISABLED (2026-08-18) to match the line above, which was always the
+  # documented intent: this build has never once passed, and its failure is currently GUARANTEED --
+  # the pinned-SHA vcs-import layer sources /opt/ros/humble/setup.bash under /bin/sh (dash), which
+  # cannot source ROS bash setup files ("cannot open /setup.sh", exit 2, observed on all three
+  # 2026-08-18 main merges; CLAUDE.md was in `paths`, so every session-recording merge fired a
+  # doomed 3-hour build and a failure notification). Fix before re-enabling: `SHELL ["/bin/bash",
+  # "-c"]` in sim/docker/Dockerfile before ROS-sourcing RUN layers, then a WATCHED workflow_dispatch
+  # run to confirm the never-yet-built later layers (colcon in 14GB, OOM risk -- see header) --
+  # only after one green run does push-triggering earn its way back.
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "sim/docker/Dockerfile.ci"
+  #     - "sim/docker/Dockerfile"          # the base layer Dockerfile.ci is FROM
+  #     - "CLAUDE.md"                       # pinned-SHA changes live here
+  #     - ".github/workflows/sim-image.yml"
 
 permissions:
   contents: read

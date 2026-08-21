@@ -18,8 +18,10 @@ nothing gets added to scope without something else being cut in the same breath,
 | Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009); implementation gated on the batched session |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
-Test suite: **131 green** (CI also gates seed-42 FNR, scenario-log drift, flight-log evidence).
-Public main: current as of PR #13 (2026-08-18). Full narrative of how we got here:
+Test suite: **270 green, 2 skipped** — 246 in `tests/fieldguard_planning` plus 24 host-side launcher
+tests in `tests/test_fly_pipeline.py`, which need neither Docker nor tmux. CI discovers both (it ran
+only the first until 2026-08-18) and also gates seed-42 FNR, scenario-log drift, flight-log evidence.
+Public main: current as of PR #17 (2026-08-18). Full narrative of how we got here:
 `docs/BUILD_LOG.md`.
 
 ## Next up, in order
@@ -31,6 +33,9 @@ Public main: current as of PR #13 (2026-08-18). Full narrative of how we got her
    `ndvi_node` publish path. Measure with the same tree-check + coverage numbers.
 2. **The full-coverage demo take** on the tuned stack (runbook: `docs/runbooks/FULL_PIPELINE_DEMO.md`
    — geometry gate + render probe + host quiet + birds after arming + Ctrl-C only after DISARM).
+   The one-command launcher now exists (`scripts/fly_pipeline.sh`, ADR-013) with a scripted
+   test-flight regression gate (amendment 2, first PASS 2026-08-18) — demo flights still stay
+   human-flown at the MAVProxy prompt; the launcher removes the bringup toil around that step.
 3. **ADR-003 real-render re-run** (criterion 3) + comparison arm (criterion 2): fix
    `eval/annotate_real_clip.py`'s pre-driver-start labels first (clamp t<0 to the spawn pose — the
    annotator already refuses to ship them, 17/105 flagged on the last clip), then
