@@ -98,11 +98,14 @@ the plan is logged as a `requeue_event`; it terminates `covered` if later imaged
 
 ### The swath caveat (do not let coverage rot silently)
 `swath_half_width_m = 7.5` = half the 15 m lane spacing. Full coverage HOLDS only if the real
-downward NDVI camera's ground swath at 15 m altitude is ≥ 15 m. **That number is not yet measured.**
-If the true swath is narrower, strips open *between* lanes — a coverage bug in the mission plan that
-no avoidance logic can fix. `test_coverage.py::test_negative_control_narrow_swath_opens_gaps` proves
-the checker detects such gaps. **Action (perception-ml / robotics-sim): measure the real swath and
-replace this assumption.**
+downward NDVI camera's ground swath at 15 m altitude is ≥ 15 m. **Measured 2026-08-18.** The
+ADR-007 camera's live `camera_info` from the first real-render flight
+(`eval/results/clips/real_flight_20260818T221641Z/meta.json`: `fx = 520.006`, width 640 px) puts
+the across-track ground swath at the 15 m mission altitude at `2 · 15 · (320 / 520.006)` = **18.5
+m**, i.e. half-width **9.2 m** against the 7.5 m the plan assumes — adjacent lanes overlap by ~3.4
+m, so full coverage holds with margin.
+`test_coverage.py::test_negative_control_narrow_swath_opens_gaps` still proves the checker detects
+inter-lane gaps, so the guard stays if the camera is ever narrowed or the altitude lowered.
 
 ---
 
@@ -145,8 +148,11 @@ python3 -m unittest discover -s tests/fieldguard_planning -v
    `geofence.is_safe_3d` now exists and the avoidance policy + executor vet every dodge setpoint through
    it (a point over a tree at altitude is safe; one in the canopy band is rejected → HOLD). The
    `geo_avoid_into_tree` scenario asserts the flown path never enters a tree's radius AND danger band.
-2. **Camera swath unvalidated** (see §2 caveat) — still open. Coverage guarantee rests on an unmeasured
-   7.5 m FOV number; measure the real swath (perception-ml / robotics-sim) and replace the assumption.
+2. **Camera swath — ✅ CLOSED (2026-08-18).** Live `camera_info` from the first real-render flight
+   gives a 9.2 m across-track half-swath at 15 m altitude against the 7.5 m the mission plan
+   assumes — lanes overlap, the coverage guarantee holds. See §2.
 3. **Detection realism** — still open. ADR-003's FNR numbers are from a *synthetic* clip;
-   `det_bird_over_low_ndvi` must be re-run on the real Gazebo NDVI render (Weeks 5-6) before the "no
-   missed bird" claim is trusted. This is the one remaining confirmation-pending item.
+   `det_bird_over_low_ndvi` must be re-run on the real Gazebo NDVI render before the "no missed
+   bird" claim is trusted. The render now exists and real clips are recorded (Gates 0-3 green,
+   2026-08-18); what remains is the scored re-run itself — with gap 2 closed, this is genuinely the
+   last confirmation-pending item in the project.

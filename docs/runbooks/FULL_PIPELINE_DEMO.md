@@ -1,5 +1,8 @@
 # Full Pipeline Demo — the SwathKeeper showpiece *(runbook)*
 
+**Canonical for the recorded flight.** Any doc that needs a flight recorded points here rather than
+repeating the procedure — `NDVI_VALIDATION.md` is the ADR-007 gate record and does exactly that.
+
 ## One command: `scripts/fly_pipeline.sh`
 
 The seven shells below are wrapped by a host-side launcher — **one tmux session (`swathkeeper`),
@@ -42,6 +45,27 @@ tails on failure. The birds are *not* special-cased: their own altitude gate fir
 is being tested. It aborts nonzero with a one-line cause, and its trap tears down recorder-first and
 force-kills any surviving sim process even on Ctrl-C. **First live run PASSED: 2026-08-18T22:16:18Z,
 253 s end to end** — `eval/results/testflight_gate_20260818T222031Z.json`.
+
+**Since 2026-08-19 the gate also has an evidence floor**, because flying the mission is not the same
+as recording one: the 2 Hz throughput measurement that night flew an identical mission, recorded
+**3 frames and 1 of 720 cells — and this gate said PASS**, which is useless as the
+throughput-collapse regression it exists to be. The last gate is now on the yield, read from the
+clip's own `meta.json` and `heatmap/heatmap.json`: **`frames_recorded ≥ 12` and `cells_imaged ≥ 40`**,
+or FAIL. Both numbers are **floors derived from n=2** — the only two test-flights that exist (the
+48-frame / 291-cell baseline clears them by 4.0× / 7.3×; the 3-frame / 1-cell collapse fails both
+decisively) — low enough that ordinary variance on a busy laptop cannot flake them, high enough to
+catch any collapse within 4× of the measured one. They are floors, not targets, and they should rise
+once more than one healthy run exists. A flight that fails *only* the floor still tears down
+recorder-first, stitches, and writes the full record — `result: FAIL`, `failed_phase:
+evidence-yield`, the failure naming the floor, plus the new `cells_imaged` and `evidence_floor`
+fields (record schema 1.1). The floor logic is exercised offline against both committed gate records
+in `tests/test_fly_pipeline.py`; **it has never run live — the next `test-flight` is its first live
+exercise.** The same pass fixed the pane capture that made the 2 Hz run so hard to diagnose:
+`capture-pane` renders the whole 80×24 pane grid, so a quiet pane's output sits at the *top* and a
+plain `tail` returned the blank rows underneath it — which is why `pane_tails["ndvi"]` is empty in
+both committed records. Tails now drop blank rows before tailing, so the ndvi node's
+`fused_count` / `dropped_pair_count` heartbeats reach the record: the one signal that separates
+"fusion never fused" from "the recorder dropped what fusion produced".
 
 **`up` refuses to start on top of a bringup that is already running in the container** — a manual
 session in other tabs, or a tmux session that was killed without `down`. Every gate above is a
@@ -89,20 +113,26 @@ recorded with a stamp-paired pose, and — after landing — the offline stitch 
 into a georeferenced crop-health heatmap on the same cell grid the coverage ledger uses.
 
 Every command below is a **host-side one-liner** (each runs `docker exec` into the running
-`fieldguard-sim` container) — one terminal tab per shell, in this order. Total wall time:
-**~35-45 min**, dominated by the mission itself (the software-rendered sim runs at RTF ≈ 0.2;
-the flight is ~5 sim-minutes).
+`fieldguard-sim` container) — one terminal tab per shell. **The shell numbers are stable IDs, not
+the start order:** start them in the order the sections appear below — 0, 1, 2, 3, 4, 6, 7, fly,
+then 5 (the birds go last, after takeoff). Total wall time: **~35-45 min** — budget ~1/RTF of the
+sim-time flight, and the software-rendered sim runs at RTF ≈ 0.2 on a ~5-sim-minute mission.
+
+**Not in this flight:** the reactive-avoidance node. This runbook is the NDVI chain end to end; the
+avoidance loop is its own run with its own runbook (`AVOIDANCE_DEMO.md`).
 
 **Shell 0 — is the container up?**
 ```bash
 docker ps --filter name=fieldguard-sim
 ```
 If it's not listed: `bash scripts/sim_docker_run.sh` first. If the container was *recreated* (not
-just re-entered), re-install the three bridge runtime deps (container-ephemeral until the image is
-rebuilt — see `NDVI_VALIDATION.md` session log):
+just re-entered), re-install the three bridge runtime deps (apt state is container-ephemeral while
+`/root/ardu_ws` persists — see `NDVI_VALIDATION.md` session log):
 ```bash
 docker exec fieldguard-sim bash -c 'apt-get update -qq && apt-get install -y -qq ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs'
 ```
+These three are baked into `sim/docker/Dockerfile` as of 2026-08-18, so on an image rebuilt since
+then this is a no-op — run it either way, it costs a second and a missing one crashes Shell 2.
 
 ---
 
@@ -170,13 +200,14 @@ and the param file are load-bearing — without them, zero `/ap/*` topics, silen
 `GPS 1: detected u-blox`. **Wait for all of those before flying** — arming during the post-boot
 CPU spike earns `Arm: Accels inconsistent` (if you get it anyway: wait 30 s, retry).
 
-## Shell 6 — the NDVI fusion node
+## Shell 6 — the NDVI fusion node (start it BEFORE Shell 7)
 
 ```bash
 docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node'
 ```
 *What's happening:* Red + synthetic-NIR frames pair by stamp and fuse into the authoritative
-`/fg/ndvi/image` (NDVI = (NIR−Red)/(NIR+Red), per pixel, live).
+`/fg/ndvi/image` (NDVI = (NIR−Red)/(NIR+Red), per pixel, live). That topic's stamp is the georef
+anchor the recorder pairs poses against, so this node must be up before Shell 7 starts.
 *Look for:* `fieldguard_ndvi up`, then `fused_count=…` heartbeats once the camera renders.
 `dropped_pair_count` should stay ~0.
 
@@ -225,11 +256,24 @@ arming on purpose: its service traffic adds jitter the EKF can't tolerate while 
 1. **Ctrl-C Shell 7 first.** Finalize converts the in-flight raw RGB dumps to schema PNGs
    (give it a minute), writes `meta.json` (`synthetic: false`), and prints the stitch command.
 2. Ctrl-C the rest at leisure. Don't idle for ages first — parked frames add nothing.
-3. **On the host** (repo root, no container needed):
-```bash
-python3 scripts/stitch_ndvi.py --clip eval/results/clips/<the dir Shell 7 printed>
-```
-*Look for:* `~700/720 cells imaged`, few stale-pose skips — and open `heatmap/heatmap.png`.
+3. **Stitch, on the host** (repo root, no container needed):
+
+        python3 scripts/stitch_ndvi.py --clip eval/results/clips/<the dir Shell 7 printed>
+
+    *Look for:* `cells imaged` in the low hundreds (the best valid clip is 291/720 — recording
+    throughput, not coverage, is the limit; `docs/ROADMAP.md` "Next up") and few stale-pose skips.
+    Then open `heatmap/heatmap.png`.
+
+4. **ADR-003 re-confirmation on the real render** (still on the host). `run_spike.sh` takes no
+    argument — it reads `CLIP` from the environment, so a bare invocation silently re-scores the
+    *synthetic* clip and labels the numbers real:
+
+        CLIP=eval/results/clips/<the same dir> bash eval/run_spike.sh
+
+5. **Commit the evidence, not the bulk:** `meta.json`, `poses.jsonl`, `heatmap/*`, and a handful of
+    sample frames — never the full `.npy` set. `.gitignore` already carries un-ignore rules for
+    exactly those paths, so a plain `git add` works. (The 2026-08-05 clobber lesson: evidence that
+    isn't committed doesn't exist.)
 
 ## Performance rule: keep the host quiet during the flight
 

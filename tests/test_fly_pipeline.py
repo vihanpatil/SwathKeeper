@@ -16,6 +16,7 @@ the planning package, and CI's `unittest discover -s tests/fieldguard_planning` 
 stdlib unittest, so it runs under both `python3 -m pytest tests/test_fly_pipeline.py -q` and
 `python3 -m unittest`.
 """
+import json
 import os
 import shutil
 import subprocess
@@ -43,6 +44,15 @@ if [ "$(basename "$0")" = tmux ]; then
 fi
 exit 0
 """
+
+
+def floor_constants():
+    """(TF_MIN_FRAMES, TF_MIN_CELLS), read from the script so these tests pin the LOGIC, not the
+    two numbers — which are expected to rise once more than one healthy flight exists."""
+    code = f'source "{SCRIPT}"; printf "%s %s" "$TF_MIN_FRAMES" "$TF_MIN_CELLS"'
+    out = subprocess.run(["bash", "-c", code], capture_output=True, text=True,
+                         cwd=str(REPO_ROOT), check=True).stdout.split()
+    return int(out[0]), int(out[1])
 
 
 def runbook_fly_lines():
@@ -142,6 +152,12 @@ class TestTestFlightPlan(LauncherTestCase):
     def test_the_abort_path_promises_a_force_kill_and_a_gate_record(self):
         self.assertIn("pkill -9 -f", self.out)
         self.assertIn("eval/results/testflight_gate_", self.out)
+
+    def test_the_plan_advertises_the_floor_it_will_actually_judge_with(self):
+        # The dry run is what a human reads before trusting the gate; if it quoted a different bar
+        # than the one enforced, a PASS would mean something nobody agreed to.
+        min_frames, min_cells = floor_constants()
+        self.assertIn(f"frames_recorded >= {min_frames} AND cells_imaged >= {min_cells}", self.out)
 
 
 class TestRecipePaneMatchesTheRunbook(LauncherTestCase):
@@ -300,6 +316,105 @@ class TestAltitudeParse(LauncherTestCase):
         # flight where the birds never fired would score itself green.
         self.assertEqual(self.alt_from("[birds] waiting for takeoff: altitude 3.2 m (need > 10 m)\n"),
                          "")
+
+
+class TestPaneTailDropsTheGridPadding(LauncherTestCase):
+    """Why `pane_tails["ndvi"]` came back as 15 empty strings in BOTH committed gate records.
+
+    `tmux capture-pane` renders the whole pane GRID, so every row below the cursor is captured as a
+    blank line. A quiet pane — the ndvi node heartbeats once per 25 fused frames — keeps its output
+    at the TOP of an 80x24 grid, so tailing that capture returns padding, never heartbeats. The
+    capture was never late (the tails are read before `down` touches the panes); it was
+    bottom-anchored. Confirmed by hand against tmux 3.7c; pinned here through the capture shim.
+    """
+
+    HEARTBEATS = ["[ndvi] fused_count=1 dropped_pair_count=0",
+                  "[ndvi] fused_count=26 dropped_pair_count=3"]
+
+    def pane_tail(self, pane_text, n=15):
+        environ = dict(os.environ, PATH=f"{self.shim_path()}:{os.environ['PATH']}",
+                       FG_SHIM_LOG=str(self.shim_log), FG_PANE_TEXT=pane_text)
+        result = subprocess.run(["bash", "-c", f'source "{SCRIPT}"; pane_tail ndvi {n}'],
+                                capture_output=True, text=True, cwd=str(REPO_ROOT), env=environ)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        return result.stdout.splitlines()
+
+    def test_the_heartbeats_survive_the_padding_below_them(self):
+        grid = "\n".join(self.HEARTBEATS + [""] * 22)     # two lines of output in a 24-row pane
+        self.assertEqual(self.pane_tail(grid), self.HEARTBEATS)
+
+    def test_a_pane_of_nothing_but_padding_yields_nothing_and_still_exits_zero(self):
+        # The script runs -o pipefail: a filter that matches nothing must not abort a teardown
+        # halfway through writing the gate record.
+        self.assertEqual(self.pane_tail("\n" * 24), [])
+
+    def test_every_pane_tail_goes_through_the_padding_filter(self):
+        # The bug in one line: `pane_text <window> | tail -n <n>` reads the bottom of the grid.
+        tails = [line for line in SCRIPT.read_text().splitlines()
+                 if "tail -n" in line and ("pane_text" in line or "tail_txt" in line)]
+        self.assertTrue(tails, "no pane tail left in the script — this tripwire went vacuous")
+        for line in tails:
+            self.assertIn("meaningful", line, msg=line)
+
+
+class TestEvidenceYieldFloor(LauncherTestCase):
+    """The evidence-yield floor, judged against the only two test-flights that have ever run.
+
+    Both are committed. Frames come from the gate records, cells from the clips' own
+    `heatmap/heatmap.json` — the same two artifacts the live gate reads, so this cannot pass on
+    numbers the launcher would never see. n=2 is the whole dataset; the floor is derived from it.
+    """
+
+    BASELINE = "testflight_gate_20260818T222031Z.json"   # 2026-08-18, 5 Hz, healthy
+    COLLAPSE = "testflight_gate_20260819T021136Z.json"   # 2026-08-19, 2 Hz, PASSED on 3 frames
+
+    def yield_of(self, record_name):
+        record = json.loads((REPO_ROOT / "eval" / "results" / record_name).read_text())
+        heatmap = json.loads((REPO_ROOT / record["clip"] / "heatmap" / "heatmap.json").read_text())
+        return record["frames_recorded"], heatmap["cells_imaged"]
+
+    def floor(self, frames, cells):
+        """The failure text, or '' when the yield clears the floor."""
+        code = f'source "{SCRIPT}"; tf_floor_failure "{frames}" "{cells}"'
+        result = subprocess.run(["bash", "-c", code], capture_output=True, text=True,
+                                cwd=str(REPO_ROOT))
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        return result.stdout.strip()
+
+    def test_the_baseline_flight_clears_the_floor(self):
+        self.assertEqual(self.yield_of(self.BASELINE), (48, 291))   # pin the fixture itself
+        self.assertEqual(self.floor(*self.yield_of(self.BASELINE)), "")
+
+    def test_the_2hz_collapse_fails_the_floor_and_names_it(self):
+        self.assertEqual(self.yield_of(self.COLLAPSE), (3, 1))
+        failure = self.floor(*self.yield_of(self.COLLAPSE))
+        self.assertIn("evidence-yield floor", failure)
+        self.assertIn("frames_recorded=3", failure)
+        self.assertIn("cells_imaged=1", failure)
+
+    def test_the_floor_sits_between_the_two_runs_it_was_derived_from(self):
+        # The provenance claim, as an assertion: a floor above the healthy run would flake, one at
+        # or below the collapse would have let the 2 Hz run PASS again.
+        min_frames, min_cells = floor_constants()
+        good_frames, good_cells = self.yield_of(self.BASELINE)
+        bad_frames, bad_cells = self.yield_of(self.COLLAPSE)
+        self.assertLess(bad_frames, min_frames)
+        self.assertLess(min_frames, good_frames)
+        self.assertLess(bad_cells, min_cells)
+        self.assertLess(min_cells, good_cells)
+
+    def test_either_half_short_is_a_failure_and_the_floor_itself_passes(self):
+        min_frames, min_cells = floor_constants()
+        self.assertNotEqual(self.floor(min_frames - 1, 291), "")
+        self.assertNotEqual(self.floor(48, min_cells - 1), "")
+        self.assertEqual(self.floor(min_frames, min_cells), "")
+
+    def test_an_unreadable_yield_fails_instead_of_passing(self):
+        # Fail-dangerous otherwise: a missing meta.json / heatmap.json would score itself green,
+        # which is the exact shape of the bug this floor exists to close.
+        for frames, cells in (("", ""), (48, ""), ("", 291), ("none", 291)):
+            with self.subTest(frames=frames, cells=cells):
+                self.assertIn("cannot read the yield", self.floor(frames, cells))
 
 
 if __name__ == "__main__":

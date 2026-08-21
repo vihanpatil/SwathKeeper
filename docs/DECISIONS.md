@@ -12,6 +12,11 @@ Format per entry:
 
 ```
 ## ADR-NNN: <title>   (YYYY-MM-DD, status: accepted | superseded | proposed)
+#   An accepted decision that still depends on unproven live behaviour reads
+#   `ACCEPTED — confirmation-pending`, and flips to `ACCEPTED — CONFIRMED live <date>`
+#   the day a gate proves it. Decision bodies are APPEND-ONLY: corrections and
+#   gate results land as a dated `### ADR-NNN amendment (<date>, <what>)` block at
+#   the end of this file — never as an edit to the decision text above.
 Decision: <what we're doing>
 Alternative(s) rejected: <what we didn't do>
 Why: <one to two sentences the engineer can say out loud in an interview>
@@ -222,7 +227,7 @@ validated (same pattern as ADR-003 real-render and ADR-005 live-topic checks; ba
 Owner / roles: tech-lead (decided + verified source@SHA), flight-software-engineer (builds executor +
 3D geofence), perception-ml-engineer (detection trigger), qa-safety-reviewer (`geo_avoid_into_tree`).
 
-## ADR-007: Produce the dual-band NDVI frame with an RGB camera (Red) + Gazebo's thermal sensor repurposed as synthetic NIR; NDVI computed in a ROS 2 node   (2026-08-05, status: ACCEPTED — confirmation-pending; render mechanism unproven live)
+## ADR-007: Produce the dual-band NDVI frame with an RGB camera (Red) + Gazebo's thermal sensor repurposed as synthetic NIR; NDVI computed in a ROS 2 node   (2026-08-05, status: ACCEPTED — CONFIRMED live 2026-08-18; see the ADR-007 amendments below)
 Decision: Render the two NDVI bands as **two co-located Gazebo Harmonic sensors on one rigid nadir
 mount**, and compute the index in ROS 2, not in the render:
   - **Red band** = the **R channel of a standard `type="camera"` (R8G8B8) sensor**. That same RGB
@@ -461,7 +466,7 @@ the pure decision function to actuation history.
    mount, the vehicle SDF, or the georef extrinsics. Gate 2's band-separation PASS remains valid
    (same materials, same calibration — measured from a different viewpoint).
 
-## ADR-013: One-command bringup is a HOST-side tmux orchestrator wrapping the documented docker-exec one-liners — not a new launch path   (2026-08-18, status: ACCEPTED — implemented `scripts/fly_pipeline.sh`; flown live, `test-flight` PASS, see amendment 3)
+## ADR-013: One-command bringup is a HOST-side tmux orchestrator wrapping the documented docker-exec one-liners — not a new launch path   (2026-08-18, status: ACCEPTED — implemented `scripts/fly_pipeline.sh`; flown live, `test-flight` PASS, see amendments 3-4)
 Decision: `scripts/fly_pipeline.sh` (macOS host) replaces the seven copy-pasted terminal tabs of
 `docs/runbooks/FULL_PIPELINE_DEMO.md` with one tmux session (`swathkeeper`), **one window per
 runbook shell**, each pane running that shell's `docker exec` one-liner **byte-identical** to the runbook
@@ -560,11 +565,46 @@ that `up` never emits `arm`/`mode`/`wp` (carve-out (1), the reason `up` is safe 
 that the real `cmd_down` SIGINTs `record` before every other window, kills the session only after
 all of them, and recovers the clip path from the recorder's own finalize line (pinned against
 `record_node.py`'s literal string, confirmed by mutation).
+Amendment 4 (2026-08-19, after the 2 Hz throughput measurement): **the gate judged the flight, not
+the evidence — so it PASSED a run that recorded 3 frames and imaged 1 of 720 cells.** Same mission,
+same 12 `Reached command` lines, same self-firing birds, stitch exit 0, `result: PASS`
+(`eval/results/testflight_gate_20260819T021136Z.json`) — a 16× throughput collapse walking straight
+through the pre-demo regression gate whose entire purpose is to catch one. `test-flight` now ends on
+an **evidence-yield floor**, read from the clip's own `meta.json` and `heatmap/heatmap.json` (never
+from a counter the launcher kept): `frames_recorded >= 12` **and** `cells_imaged >= 40`, else FAIL.
+Both are **floors derived from n=2**, and the record says so — the only two test-flights that exist
+are the 48-frame / 291-cell baseline (clears by 4.0× / 7.3×) and the 3-frame / 1-cell collapse
+(fails both) — placed at roughly a quarter of the healthy frame count and a seventh of its cell
+count: below any plausible variance on a busy laptop, above any collapse within 4× of the measured
+one. They are floors, not targets, tied to `test_2lane`, and they should rise when more than one
+healthy run exists; raising them off a single good number would only buy flakiness. An unreadable
+yield (missing/malformed `meta.json` or `heatmap.json`) is a FAIL, not a pass — "we could not tell"
+scoring green is the shape of bug this amendment exists to close. Failing *only* the floor changes
+nothing about teardown: it is judged after the recorder-first `down` and the stitch have already
+run, so the run still produces the full record, with `failed_phase: evidence-yield` and the failure
+naming the floor, plus new `cells_imaged` / `evidence_floor` fields (record schema 1.1).
+The second half of the same defect was **instrumentation**: `pane_tails["ndvi"]` is empty in *both*
+committed gate records, so the `fused_count` / `dropped_pair_count` heartbeats — the one signal that
+separates "fusion never fused" from "the recorder dropped what fusion produced" — have never been
+captured, and that run was diagnosed by inference instead. Root cause was not capture timing (the
+tails are read before `down` touches the panes) but that **`tmux capture-pane` renders the whole
+pane grid**: every row below the cursor comes back as a blank line, so a quiet pane — the ndvi node
+heartbeats once per 25 fused frames, the recorder every ~30 s — keeps its output at the *top* of an
+80×24 grid and `tail -n 15` returns nothing but the padding underneath. The noisy birds pane tailed
+fine, which is exactly why it looked like a per-pane mystery; the baseline record's `record` pane,
+3 real lines followed by 12 blanks, is the smoking gun. Every pane tail now drops blank rows first
+(`meaningful`/`pane_tail`), which also repairs the dead-pane tails printed by a failing gate and by
+`down` — both were reading the same padding. Honesty bar: **neither fix has run live.** Both are
+pinned offline in `tests/test_fly_pipeline.py` (33 green, +9: the floor evaluated against the two
+committed gate records and their clips' `heatmap.json` — baseline passes, 2 Hz fails, each half
+short fails, an unreadable yield fails, the floor sits strictly between the two runs it came from;
+the padding filter through the capture shim; and a tripwire that no pane tail bypasses it). The
+first live exercise of both is the next `test-flight`.
 Owner / roles: devops-reliability-engineer (owner), robotics-sim-engineer + flight-software-engineer
 (the wrapped commands), qa-safety-reviewer (the gates are safety gates; the happy path is now
 evidenced, and the failure paths listed in amendment 3 are the outstanding evidence).
 
-## ADR-014: The docs get a rendering layer — an in-repo static generator in the "Heatmap Neutral" direction — and the Markdown stays untouched (2026-08-18, status: ACCEPTED — implemented `scripts/build_docs_site.py`, all 15 docs render)
+## ADR-014: The docs get a rendering layer — an in-repo static generator in the "Heatmap Neutral" direction — and the Markdown stays untouched (2026-08-18, status: ACCEPTED — implemented `scripts/build_docs_site.py`, every doc renders)
 Decision: Ship documentation styling as `scripts/build_docs_site.py`, a one-command generator that
 renders `README.md`, `TIGER_TEAM_GUIDE.md` and every `docs/**/*.md` into a gitignored `docs-site/`.
 The **generator is the tracked artifact; the site is disposable.** The visual direction is
@@ -618,3 +658,46 @@ fixes it, with fences opted out by their existing `white-space:pre`. All 16 page
 horizontal overflow at 375 px, and all six theme × OS-preference combinations were read out of a
 live browser rather than argued from the cascade.
 Owner / roles: qa-safety-reviewer (found and fixed), flight-software-engineer (generator owner).
+
+### ADR-005 amendment (2026-08-18, closes the trailing open follow-up)
+Superseded by this entry's own header banner: the live `ros2 topic list` check ran 2026-08-05 (Week-3
+Gate 2, `docs/archive/WEEK3_VALIDATION.md`) and all 18 `/ap/*` topics appeared exactly as locked. No
+follow-up remains on ADR-005.
+
+### ADR-006 amendment (2026-08-18, closes the trailing open follow-up)
+Superseded by this entry's own header banner: Week-3 Gate 3 (2026-08-05,
+`docs/archive/WEEK3_VALIDATION.md`) confirmed both halves live — a `/ap/cmd_gps_pose` setpoint was
+honoured in GUIDED, and AUTO with `MIS_RESTART=0` resumed the interrupted leg rather than restarting.
+No follow-up remains on ADR-006 beyond the MIS_RESTART pinning correction below.
+
+### ADR-006 amendment (2026-08-18, factual correction — MIS_RESTART is not actually pinned)
+The decision stands and was confirmed live; the "same explicit discipline as ADR-005" claim does not
+hold in the repo. `config/sitl_params/dds_udp.parm` sets only `DDS_ENABLE 1` and `DDS_UDP_PORT 2019` —
+`MIS_RESTART` appears in **no** committed param file. Every runbook, and `scripts/fly_pipeline.sh`'s
+`fly_lines()`, instead sends `param set MIS_RESTART 0` live at flight start (typed by a human, or by
+`fly_pipeline.sh test-flight`), so the executor's resume guarantee (`avoidance_executor.py`) depends on
+a runtime step nothing enforces at SITL boot. Fix forward: add `MIS_RESTART 0` to
+`config/sitl_params/dds_udp.parm` (or a sibling `mission.parm` loaded alongside it) so the pin is real.
+
+### ADR-007 amendment (2026-08-18, correction to amendment item 2 above): `/fg/gz_clock` was never bridged
+The frame↔pose pairing decision in the first ADR-007 amendment's item 2 stands; the mechanism it named
+was reversed the same day, per this file's own addendum item 3 above — `/fg/gz_clock` is **not**
+bridged. `sim/bridge/fg_sensor_bridge.yaml` carries only the four `/fg/sensor/*` topics; `record_node.py`
+streams the Gazebo clock natively over gz-transport (commit `09e5bf2`) and `clip_recorder.PoseBuffer`
+consumes that stream directly.
+
+### ADR-007 amendment (2026-08-18, closes four of the five items in the original "Open follow-up" list)
+1. **Item 1 CLOSED** — the four `/fg/sensor/*` topics bridge and publish; `/fg/ndvi/image` (`32FC1`) ran
+   live for a full flight (`src/fieldguard_planning/ndvi_node.py`).
+2. **Item 2 CLOSED (Gate 2, `gate2_summary.json`)** — over 996 frames the raw NIR band reads canopy
+   0.854 > soil 0.212 > bird 0.040 (gaps 0.643 / 0.171), the direct proof the NIR band is genuinely
+   independent of Red.
+3. **Item 3 STILL OPEN** — the ADR-003 scored re-run on a real clip has not been executed. This is the
+   last confirmation-pending item in the project (see `docs/ROADMAP.md` "Next up").
+4. **Item 4 CLOSED** — `gz-sim-thermal-system` loads on the pinned Harmonic + ogre2 build (Gate 0,
+   2026-08-05).
+5. **Item 5 CLOSED** — live `camera_info` gives `cx=320.0, cy=240.0` (exact image centre) and
+   `fx=fy≈520.006`, matching `CameraIntrinsics.from_config`'s default
+   (`eval/results/clips/real_flight_20260818T221641Z/meta.json`). The image-centre assumption was
+   correct; nothing downstream changes. (Items 6-7 were already-decided notes, not open questions, when
+   ADR-007 was written.)

@@ -1,6 +1,6 @@
 ---
 name: node-topic-map
-description: FieldGuard ROS 2 node/topic map, package layout, and locked AP_DDS /ap/* contract as of Weeks 3-4 (avoidance loop live on real stack) + Weeks 5-6 (NDVI nodes added, unit-tested only)
+description: FieldGuard ROS 2 node/topic map, package layout, locked AP_DDS /ap/* contract (Weeks 3-4 live) + Weeks 5-6 NDVI nodes, plus the test-flight gate's evidence-yield floor parameters (2026-08-19)
 metadata:
   type: project
 ---
@@ -117,6 +117,16 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
   `iris_with_gimbal_ndvi` vehicle model (2 new cameras + 40 thermal plugins added render load) and
   confirm dodge->hold->resume still completes + RTF doesn't collapse — a regression check, not a
   new ADR-007 claim.
+
+## `test-flight` gate parameters (as of 2026-08-19 — verify against `scripts/fly_pipeline.sh` before quoting)
+- The gate's LAST check is an **evidence-yield floor**: `TF_MIN_FRAMES=12`, `TF_MIN_CELLS=40`,
+  read from the clip's `meta.json` (`num_frames`) and `heatmap/heatmap.json` (`cells_imaged`).
+  Both are **floors derived from n=2** (the 48-frame/291-cell baseline and the 3-frame/1-cell 2 Hz
+  collapse) and tied to the `test_2lane` mission — a different mission needs different numbers.
+  **Never state the floor has been live-exercised until a real `test-flight` has run against it**
+  (as of 2026-08-19 it has not; it is pinned offline against the two committed gate records).
+- Only two test-flights have ever run, both committed under `eval/results/testflight_gate_*.json`;
+  they are the entire dataset for any claim about per-flight recording throughput.
 
 ## Field/geofence/mission constants (still true, Week 2 origin)
 - Field: `config/field_polygon.json` — 75m(E) x 60m(N) rectangle, home = (-35.363262, 149.165237,

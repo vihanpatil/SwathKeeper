@@ -14,10 +14,12 @@ a fusion pairing queue too shallow for bursty delivery; and the sensor mount its
 faced the horizon upside-down since authoring — Gazebo cameras look along +X). Each fix shipped
 with the gate that makes its bug class impossible to repeat, ending with
 `scripts/verify_mount_geometry.sh`: the camera's view now provably agrees with the georef
-transform to 2.2 px. The first **tree-verified** heatmaps are committed evidence: everywhere the
-recording looked, the 18 known trees appear at their true positions (+0.87 NDVI lift over soil).
+transform to 2.2 px. The first **tree-verified** heatmaps are committed evidence: every tree the
+recording imaged sits at its true position (+0.87 NDVI lift over soil).
 Open: fused-frame recording throughput (limits per-flight coverage), then the ADR-003
 real-render re-run and the dashboard. Docs map: [`docs/README.md`](docs/README.md).
+
+**Running it yourself:** [`SETUP.md`](SETUP.md) — Docker on macOS / Linux / WSL2, then one command.
 
 ## Why this is interesting
 Commercial ag-drone platforms (DJI, DroneDeploy, Sentera/John Deere, Trimble) fly **pre-surveyed
@@ -40,9 +42,10 @@ cell — is a documented stretch goal, ADR-002; v1 ships "avoid, return to next 
   2026-08-18 audit found the ledger itself understating debt (commanded dodge setpoints recorded as
   flown — up to 32 cells falsely COVERED per scenario), the fix + regression test + honestly-regenerated
   logs shipped the same day; the decision log records it. **The honesty is the product.**
-- **Automated tests:** 248 (`tests/fieldguard_planning`, via `python3 -m unittest discover -s
-  tests/fieldguard_planning` or `pytest tests/`), green in CI, which also gates on: the seed-42
-  per-bird-track-FNR regression, scenario-log drift (regenerate + byte-diff), and committed
+- **Automated tests:** 279 green, 2 skipped — 248 in `tests/fieldguard_planning` (`python3 -m
+  unittest discover -s tests/fieldguard_planning`) plus 33 host-side launcher tests in
+  `tests/test_fly_pipeline.py` (`pytest tests/` runs both). Green in CI, which also gates on: the
+  seed-42 per-bird-track-FNR regression, scenario-log drift (regenerate + byte-diff), and committed
   flight-log evidence validity. The avoidance/coverage/geofence core is stdlib-only; the NDVI
   fusion/georef/stitch tests use numpy (pinned in `requirements-eval.txt`) — a scoped, documented
   exception, not a project-wide dependency change.
@@ -53,7 +56,8 @@ Gazebo farm world  ─►  NDVI camera (RGB Red + thermal-as-NIR, ADR-007) ─�
    (ardupilot_gazebo)          │                          │  dynamic obstacle (blob, ADR-003/009)
 ArduPilot SITL  ◄── AP_DDS ──  ROS 2 avoidance node:  policy (when/where to dodge, 3D-safe)
    /ap/mode_switch, /ap/cmd_gps_pose          │      + executor (take over, resume, book coverage-debt)
-                                              └─►  recorded flight ─► offline georeferenced stitch
+                                              └─►  recorded clip (record_node: frames +
+                                                   gz-clock-stamped poses) ─► offline stitch
                                                    (scripts/stitch_ndvi.py, ADR-010) ─► NDVI heatmap
                                                    on the SAME cell grid as the coverage ledger
                                                    ─► light dashboard (Week 7)
@@ -64,10 +68,14 @@ rationale: `docs/DECISIONS.md`.
 
 ## Run it
 Runs in Docker (the stack isn't practically supported natively on macOS, ADR-004).
+**Start at [`SETUP.md`](SETUP.md)** — host prerequisites through one command that flies and proves
+itself. The steps below are the detail map behind it.
 1. **Bring up the sim** — `docs/runbooks/SIM_BRINGUP.md` (build the image, then Gazebo → micro-ROS agent →
    SITL, *in that order* — the agent must be listening before SITL's DDS client starts).
 2. **Reproduce the live avoidance demo** — `docs/runbooks/AVOIDANCE_DEMO.md` (runs the loop against a
-   scripted bird; writes a flight log to `eval/results/live_flight_log_<UTCstamp>.json`).
+   scripted bird; writes a flight log to `eval/results/live_flight_log_<UTCstamp>.json`). For the
+   whole pipeline in one flight — survey + birds + live NDVI + recording + stitch, shell by shell —
+   see `docs/runbooks/FULL_PIPELINE_DEMO.md`.
 3. **Stitch a heatmap (no Docker needed)** — generate the synthetic clip, then stitch:
    `python3 sim/spike/gen_spike_clip.py --seed 42 --out /tmp/clip && python3 scripts/stitch_ndvi.py
    --clip /tmp/clip` → `heatmap.json` + false-color `heatmap.png` on the canonical coverage grid.

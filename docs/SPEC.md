@@ -29,13 +29,18 @@ documented stretch goal.
 1. **Simulation:** Gazebo Harmonic + `ardupilot_gazebo` + ROS 2 Humble, pinned to SHAs (ADR-004,
    `CLAUDE.md`), in Docker on Ubuntu 22.04. Custom farm world generated from config
    (`scripts/gen_farm_world.py` → `sim/worlds/farmguard_field.sdf`, byte-reproducible): bounded
-   field polygon, 18 static trees in rows, 3 scripted bird actors.
+   field polygon, 18 static trees in rows, 3 birds as static models teleported along their
+   committed trajectories by `scripts/drive_birds.py` on the sim clock (ADR-012 — skinless SDF
+   actors never entered the ogre2 render scene).
 2. **Sensing (ADR-007):** dual-band NDVI camera = RGB camera (Red channel) + Gazebo **thermal
    sensor repurposed as synthetic NIR** (per-visual `<temperature>` authoring from the calibration
    table in `config/ndvi_camera.json`), co-located on one rigid nadir mount so fusion needs no
-   resampling. Topics `/fg/sensor/*` → `ros_gz` bridge. A second-sensor configuration (NDVI+depth)
-   is simulated as a **comparison arm** to quantify what a second sensor buys — measured against
-   the ADR-009 monocular range estimate, not assumed.
+   resampling. Topics `/fg/sensor/*` → `ros_gz` bridge (four topics, live-verified 2026-08-18). Sun
+   shadows are OFF in the world: the thermal band ignores illumination but Red does not, so a cast
+   shadow darkens Red alone and reads as false vegetation (ADR-007 amendment — found via the
+   drone's own shadow reading NDVI-positive). A second-sensor configuration (NDVI+depth) is
+   **planned as the Week-6 comparison arm — not built yet** — to measure what a second sensor buys
+   against the ADR-009 monocular range estimate.
 3. **Perception:** classical blob detector directly on NDVI frames (ADR-003 — NDVI-direct beat the
    bar: per-bird-track FNR 0.000 on the fixed-seed clip; any learned model must beat the same
    harness before it earns a place). Trees are a **pre-known static-obstacle map** (ADR-001,
@@ -52,10 +57,14 @@ documented stretch goal.
    the interrupted leg. Every DIVERT setpoint is re-vetted 3D against the geofence at the executor
    (the safety backstop); rejection falls back to HOLD. Every detection, takeover, maneuver,
    resume, and debt cell is logged.
-6. **Health mapping:** NDVI = (NIR − Red)/(NIR + Red) per frame (`ndvi_fusion.py`), georeferenced
-   from SITL telemetry (`ndvi_georef.py`, hand-fixture-tested incl. tilted poses), stitched
-   **offline post-flight** (ADR-010, `scripts/stitch_ndvi.py`) into a per-cell heatmap on the SAME
-   canonical grid as the coverage ledger — heatmap cell and ledger cell join by `cell_id`.
+6. **Health mapping:** NDVI = (NIR − Red)/(NIR + Red) per frame (`ndvi_fusion.py`), recorded live to
+   a spike-schema clip (`record_node.py` / `clip_recorder.py` — each frame pairs to the pose
+   nearest its OWN Gazebo-clock stamp; arrival pairing smears a render burst across meters, ADR-007
+   amendment, and out-of-bound frames are flagged `pose_pair_stale` and skipped rather than painted
+   somewhere wrong), georeferenced from SITL telemetry (`ndvi_georef.py`, hand-fixture-tested incl.
+   tilted poses), stitched **offline post-flight** (ADR-010, `scripts/stitch_ndvi.py`) into a
+   per-cell heatmap on the SAME canonical grid as the coverage ledger — heatmap cell and ledger
+   cell join by `cell_id`.
 7. **Dashboard (last, light):** flight replay + avoidance event log + NDVI overlay, joined on the
    shared cell grid.
 

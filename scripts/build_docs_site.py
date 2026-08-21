@@ -30,8 +30,8 @@ OUT = ROOT / "docs-site"
 
 # --- source set + landing-page order (docs/README.md's own map) ----------------------
 GROUPS: list[tuple[str, str, list[str]]] = [
-    ("Start here", "The repo's front door and how the tiger team is run.",
-     ["README.md", "TIGER_TEAM_GUIDE.md"]),
+    ("Start here", "The repo's front door, how to run it, and how the tiger team is run.",
+     ["README.md", "SETUP.md", "TIGER_TEAM_GUIDE.md"]),
     ("Living", "Always current. If these disagree with anything else, these win.",
      ["docs/README.md", "docs/SPEC.md", "docs/ROADMAP.md", "docs/DECISIONS.md",
       "docs/BUILD_LOG.md"]),
@@ -467,7 +467,7 @@ def tab_title(title: str) -> str:
 def main() -> int:
     t0 = time.perf_counter()
     listed = [Path(p) for grp in GROUPS for p in grp[2]]
-    found = [Path("README.md"), Path("TIGER_TEAM_GUIDE.md")]
+    found = [Path("README.md"), Path("SETUP.md"), Path("TIGER_TEAM_GUIDE.md")]
     found += [p.relative_to(ROOT) for p in sorted((ROOT / "docs").rglob("*.md"))]
     missing = [p for p in listed if p not in found]
     if missing:

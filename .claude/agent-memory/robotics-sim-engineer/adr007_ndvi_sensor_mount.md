@@ -45,15 +45,20 @@ a RIGID nadir mount). The mechanism used: wrap the include in a NEW outer `<mode
 (`iris_with_gimbal_ndvi`) that adds a sibling `<link>` (the sensor mount, sensors only, no
 visual/collision needed — a link just needs `<inertial>`) plus a `<joint type="fixed">` whose
 `<parent>` is the SCOPED name reaching into the nested include:
-`iris_with_gimbal::iris_with_standoffs::base_link`. This is the SAME nested-model-composition
-pattern `iris_with_gimbal/model.sdf` itself already uses one level shallower (its own
-`gimbal_joint`'s parent is `iris_with_standoffs::base_link`) — traced from the actual pinned-branch
-file, not guessed. **This exact scoped name is NOT run/confirmed live yet** — it's the one thing in
-this build riskier than the review's own named kill-switch (Gate 0/thermal loading). If `gz sim`
-can't resolve the parent link on this joint, the documented fallback is dropping the
-`iris_with_gimbal::` prefix (`iris_with_standoffs::base_link`) in `config/ndvi_camera.json`'s
-`mount.parent_link_scoped_from_wrapper`, regenerate, retry. See `docs/runbooks/NDVI_VALIDATION.md` Gate 0's
-troubleshooting section for the full writeup.
+**`iris_with_gimbal::base_link` — CORRECTED LIVE 2026-08-05 (Gate 0).** The originally-authored
+fully-nested name (`iris_with_gimbal::iris_with_standoffs::base_link`, reasoned by analogy with
+`iris_with_gimbal`'s own `gimbal_joint`) was REJECTED by `gz sim`: `iris_with_gimbal` pulls in
+`model://iris_with_standoffs` with `<include merge="true">`, which FLATTENS `base_link` straight
+into `iris_with_gimbal` instead of keeping an `iris_with_standoffs::` sub-scope. Lesson worth
+keeping: `merge="true"` collapses a scope level, so scoped-name reasoning by analogy is unsafe
+whenever a `<include>` in the chain merges. Full failure/fix record in
+`docs/runbooks/NDVI_VALIDATION.md` ("The fixed-joint parent name").
+
+**Mount ORIENTATION was also wrong from authoring until 2026-08-18 (ADR-007 amendment 5):** the
+rpy was derived under a pinhole Z-forward model, but Gazebo camera sensors look along the sensor
+frame's **+X**, so the mount faced the HORIZON, upside-down, for two weeks while every value-gate
+passed. Now `(-pi/2, +pi/2, 0)` and GATED by `scripts/verify_mount_geometry.sh` (2.2 px). See
+`config/ndvi_camera.json`'s `mount_pose_note` for the axis derivation.
 - A `<joint>` as a **direct child of `<world>`** (not nested in a `<model>`) is technically SDF-legal
   since 1.8 but explicitly **not supported by Gazebo or any other known software**
   (`gazebosim/sdformat` issue #1115) — don't reach for it even though it looks like the obvious
