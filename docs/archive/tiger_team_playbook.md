@@ -1,5 +1,10 @@
 # Claude Tiger Team — Playbook
 
+> **FROZEN RECORD (archived 2026-07-27).** The original pre-Claude-Code playbook, kept for
+> provenance of how the eight roles were framed. The live team definition is
+> `TIGER_TEAM_GUIDE.md` plus the subagents in `.claude/agents/` — do not follow the setup
+> instructions below.
+
 Solo-founder tiger team for taking a product from idea → portfolio-ready, interview-defensible build.
 
 ---

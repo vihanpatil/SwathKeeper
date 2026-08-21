@@ -28,7 +28,8 @@
 # header; ADR-013) — the sitl window just carries a second pane with the exact recipe beside it.
 # The ONE exception is `test-flight` (ADR-013 amendment 2): a scripted regression gate that flies the
 # short test mission unattended, and only ever after the same DDS/EKF/GPS readiness lines a human is
-# told to wait for. Demo and recording flights stay human-flown.
+# told to wait for. Demo and recording flights stay human-flown. Its last gate is on the EVIDENCE,
+# not the flight: a mission that completes while recording almost nothing is a FAIL (amendment 4).
 #
 # ADR-011: the `fieldguard` identifiers (container, /workspace path, /fg topics) are intentional.
 #
@@ -130,8 +131,9 @@ scripts/fly_pipeline.sh [SUBCOMMAND] [FLAGS]      (host side, macOS; needs tmux 
   birds     start drive_birds.py NOW, bypassing the altitude gate (drone must be airborne)
   down      SIGINT the recorder first, wait for finalize, stop the rest, print the stitch command
   test-flight  REGRESSION GATE, not the demo path: 'up', then fly the short test mission
-               unattended (only after DDS+EKF+GPS ready), tear down, stitch, write a gate
-               record under eval/results/. Demo/recording flights stay human-flown.
+               unattended (only after DDS+EKF+GPS ready), tear down, stitch, judge the flight's
+               evidence yield against the floor, write a gate record under eval/results/.
+               Demo/recording flights stay human-flown.
 
   --dry-run         print every docker/tmux command instead of running it (works with no Docker)
   --gate-geometry   also run scripts/verify_mount_geometry.sh after the bridge (one-time gate
@@ -158,6 +160,17 @@ ctr() { docker exec "$CONTAINER" bash -c "$1"; }
 # -J joins wrapped lines: without it the recorder's stitch line is cut at the pane width and the
 # recovered clip path comes back truncated (caught in the tmux smoke test, not live).
 pane_text() { tmux capture-pane -p -J -S -400 -t "$SESSION:$1" 2>/dev/null || true; }
+
+# `capture-pane` renders the whole pane GRID, so every row below the cursor comes back as an empty
+# line. A pane that talks constantly (birds) has its output at the bottom and tails fine; a QUIET
+# pane — the ndvi node heartbeats once per 25 fused frames, the recorder every ~30 s — has its
+# output at the TOP of an 80x24 grid, and a plain `tail -n 15` returns nothing but the padding
+# underneath it. That, not capture timing, is why pane_tails["ndvi"] is 15 empty strings in BOTH
+# committed gate records, and why the record pane's 3 real lines came back with 12 blanks after
+# them. (Reproduced by hand against tmux 3.7c, 2026-08-19.) So: drop the padding, then tail.
+# `|| true` because grep exits 1 on a pane that really is empty, and this script runs -o pipefail.
+meaningful() { grep -v '^[[:space:]]*$' || true; }
+pane_tail()  { pane_text "$1" | meaningful | tail -n "$2"; }
 
 session_exists() {
   if (( DRY_RUN )); then return 1; fi
@@ -251,7 +264,7 @@ gate() {
     # resource, so a dead pane whose port/topic is held by something else would otherwise PASS.
     if window_failed "$win"; then
       printf '%s\n' "--- tail of the '$win' window ---" >&2
-      pane_text "$win" | tail -n 20 >&2
+      pane_tail "$win" 20 >&2
       die "the '$win' pane exited before its gate passed (tail above): $desc. $hint"
     fi
     if "$probe"; then say "gate PASSED: $desc"; evidence "gate PASSED: $desc"; return 0; fi
@@ -655,7 +668,7 @@ cmd_down() {
     if window_failed record; then
       warn "the record pane exited without printing a finalize line — the clip may be incomplete."
       printf '%s\n' "--- tail of the 'record' window ---" >&2
-      tail -n 15 <<<"$tail_txt" >&2
+      meaningful <<<"$tail_txt" | tail -n 15 >&2
       break
     fi
     sleep "$POLL_S"; waited=$(( waited + POLL_S ))
@@ -716,6 +729,55 @@ TF_PROCS='arducopter|mavproxy|sim_vehicle|gz sim|parameter_bridge|micro_ros_agen
 
 TF_WORK=""; TF_LOG=""; TF_PANE=""; TF_RECORD=""; TF_PHASE="startup"; TF_FAIL=""
 TF_CLIP=""; TF_BIRDS_ALT=""; TF_STITCH_EXIT=""; TF_TEARDOWN=""; TF_START=""; TF_T0=0
+TF_FRAMES=""; TF_CELLS=""
+
+# --- the evidence-yield floor ---
+# Booting, arming, flying the mission and disarming is not the same as RECORDING one. On
+# 2026-08-19 the 2 Hz throughput measurement flew a byte-identical mission, recorded 3 frames,
+# imaged 1 of 720 cells — and this gate said PASS. A pre-demo regression gate that cannot fail on a
+# 16x throughput collapse is not gating the thing it exists for, so the LAST gate is on the
+# evidence yield, read off the artifacts themselves.
+#
+# The numbers below are FLOORS DERIVED FROM n=2 — the only two test-flights that have ever run,
+# both on $TF_MISSION_NAME (a different mission needs different numbers):
+#   2026-08-18  5 Hz baseline, healthy:   48 frames / 291 cells  -> clears by 4.0x / 7.3x
+#   2026-08-19  2 Hz collapse, unusable:   3 frames /   1 cell   -> fails both, decisively
+# Set at roughly a quarter of the healthy frame count and a seventh of its cell count: far enough
+# below the one healthy run that ordinary variance on a busy laptop cannot flake them, far enough
+# above the one bad run to catch any collapse within 4x of the measured one. They are floors, not
+# targets — a flight that merely clears them is still a poor flight, just not a regression. Raise
+# them once more healthy runs exist; do not raise them off a single good number.
+TF_MIN_FRAMES=12
+TF_MIN_CELLS=40
+
+# One integer out of a JSON artifact; empty when the file, the key, or the type is not there.
+# Python, not grep: these files have nested keys a regex would eventually read the wrong one of.
+tf_json_int() {
+  python3 -c 'import json, sys
+try:
+    v = json.load(open(sys.argv[1]))[sys.argv[2]]
+except Exception:
+    sys.exit(0)
+if isinstance(v, int) and not isinstance(v, bool):
+    print(v)' "$1" "$2" 2>/dev/null
+}
+
+# The floor itself: echoes the failure text when the yield is under it, nothing when it clears.
+# Kept pure and argument-driven so it can be exercised against the two committed gate records
+# without flying (tests/test_fly_pipeline.py). An UNREADABLE yield is a failure, never a pass —
+# "we could not tell" reading as green is the exact shape of bug this gate was missing.
+tf_floor_failure() {
+  local frames=${1:-} cells=${2:-}
+  if ! [[ $frames =~ ^[0-9]+$ ]] || ! [[ $cells =~ ^[0-9]+$ ]]; then
+    printf 'evidence-yield floor: cannot read the yield (frames_recorded=%s, cells_imaged=%s) from the clip meta.json / heatmap.json, so the floor cannot be judged — that is a FAIL, not a pass\n' \
+      "${frames:-<none>}" "${cells:-<none>}"
+    return 0
+  fi
+  if (( frames < TF_MIN_FRAMES || cells < TF_MIN_CELLS )); then
+    printf 'evidence-yield floor: frames_recorded=%s (min %s), cells_imaged=%s (min %s) — the mission flew but the flight recorded almost nothing (throughput collapse). Read this record pane_tails["ndvi"]: a fused_count that kept climbing means the RECORDER dropped what fusion produced; one that stalled means fusion never paired the bands.\n' \
+      "$frames" "$TF_MIN_FRAMES" "$cells" "$TF_MIN_CELLS"
+  fi
+}
 
 tf_has()  { grep -Eq -- "$1" "$TF_LOG"; }
 tf_line() { grep -Em1 -- "$1" "$TF_LOG" || true; }
@@ -780,6 +842,9 @@ tf_dry_plan() {
     "$TF_ARM_S" "$TF_RE_REACHED" "$TF_TAKEOFF_S" "$TF_FLIGHT_S"
   printf '  DRY  the birds pane must fire ITSELF (altitude gate) — never started by this path\n'
   printf '  DRY  on disarm: down (recorder first) -> stitch the clip -> gate record\n'
+  printf '  DRY  evidence-yield floor (LAST gate, read from the clip meta.json + heatmap.json):\n'
+  printf '  DRY    frames_recorded >= %s AND cells_imaged >= %s, else FAIL with the full record still written\n' \
+    "$TF_MIN_FRAMES" "$TF_MIN_CELLS"
   printf '  DRY  gate record: eval/results/testflight_gate_<UTC>.json\n'
   printf '  DRY  on abort: same teardown, then docker exec %s pkill -9 -f %s\n' "$CONTAINER" "$TF_PROCS"
 }
@@ -796,7 +861,7 @@ tf_cleanup() {
   if [ -n "$TF_FAIL" ] || [ "$TF_PHASE" != "teardown" ]; then n=60; fi
   if session_exists; then
     for w in gazebo bridge agent sitl ndvi record birds; do
-      pane_text "$w" | tail -n "$n" >"$TF_WORK/tails/$w.log"
+      pane_tail "$w" "$n" >"$TF_WORK/tails/$w.log"
     done
     TF_BIRDS_ALT=$(birds_gate_alt)
     cmd_down >"$TF_WORK/down.log" 2>&1 || warn "teardown reported a problem (see the log below)"
@@ -834,6 +899,22 @@ tf_cleanup() {
     fi
   fi
 
+  # The yield, straight off the two artifacts (the recorder's finalize wrote meta.json, the stitch
+  # above wrote heatmap.json) — never off a counter this script kept. Read whenever a clip exists,
+  # so a FAILING record still carries the numbers; judged only when nothing else already failed,
+  # because a starved clip is a consequence of an earlier abort, not a second cause.
+  if [ -n "$TF_CLIP" ]; then
+    TF_FRAMES=$(tf_json_int "$REPO_ROOT/$TF_CLIP/meta.json" num_frames)
+    TF_CELLS=$(tf_json_int "$REPO_ROOT/$TF_CLIP/heatmap/heatmap.json" cells_imaged)
+    evidence "evidence yield: frames_recorded=${TF_FRAMES:-<none>} (min $TF_MIN_FRAMES), cells_imaged=${TF_CELLS:-<none>} (min $TF_MIN_CELLS)"
+  fi
+  if [ -z "$TF_FAIL" ]; then
+    TF_FAIL=$(tf_floor_failure "$TF_FRAMES" "$TF_CELLS")
+    # Teardown already finished above, so a floor failure still gets the full record; naming its
+    # own phase keeps the record from blaming the teardown that actually worked.
+    [ -z "$TF_FAIL" ] || TF_PHASE="evidence-yield"
+  fi
+
   tf_write_record
   if [ -n "$TF_FAIL" ]; then
     printf '[fly_pipeline] TEST-FLIGHT FAILED in %s: %s\n' "$TF_PHASE" "$TF_FAIL" >&2
@@ -844,8 +925,8 @@ tf_cleanup() {
   exit "$rc"
 }
 
-# Evidence out as JSON. Python does the escaping and reads the clip's own meta.json for the frame
-# count, so the record can never disagree with the artifact it describes.
+# Evidence out as JSON. Python does the escaping; the yield numbers were read from the clip's own
+# meta.json / heatmap.json above, so the record can never disagree with the artifacts it describes.
 tf_write_record() {
   TF_RECORD="$REPO_ROOT/eval/results/testflight_gate_$(date -u +%Y%m%dT%H%M%SZ).json"
   mkdir -p "$REPO_ROOT/eval/results"
@@ -854,12 +935,12 @@ tf_write_record() {
   TF_FINISHED=$(now_utc)
   TF_DURATION=$(( SECONDS - TF_T0 ))
   export TF_WORK TF_FAIL TF_PHASE TF_CLIP TF_BIRDS_ALT TF_STITCH_EXIT TF_TEARDOWN
-  export TF_RESULT TF_START TF_FINISHED TF_DURATION TF_MISSION_NAME REPO_ROOT
+  export TF_RESULT TF_START TF_FINISHED TF_DURATION TF_MISSION_NAME
+  export TF_FRAMES TF_CELLS TF_MIN_FRAMES TF_MIN_CELLS
   python3 - "$TF_RECORD" <<'PY' || warn "could not write the gate record to $TF_RECORD"
 import json, os, pathlib, sys
 
 work = pathlib.Path(os.environ["TF_WORK"])
-repo = pathlib.Path(os.environ["REPO_ROOT"])
 clip = os.environ.get("TF_CLIP", "").strip()
 failed = os.environ["TF_RESULT"] == "FAIL"
 
@@ -879,15 +960,10 @@ def opt(key, cast=str):
         return value
 
 
-frames = None
-if clip:
-    try:
-        frames = json.loads((repo / clip / "meta.json").read_text())["num_frames"]
-    except (OSError, ValueError, KeyError):
-        frames = None
-
 record = {
-    "schema_version": "1.0",
+    # 1.1 added cells_imaged + evidence_floor (2026-08-19); the two committed 1.0 records predate
+    # the floor and carry neither.
+    "schema_version": "1.1",
     "gate": "scripts/fly_pipeline.sh test-flight (scripted pre-demo regression gate, ADR-013 am. 2)",
     "written_utc": os.environ["TF_FINISHED"],
     "started_utc": os.environ["TF_START"],
@@ -897,7 +973,12 @@ record = {
     "failure": opt("TF_FAIL"),
     "mission": "config/missions/%s.waypoints" % os.environ["TF_MISSION_NAME"],
     "evidence": lines(work / "evidence.txt"),
-    "frames_recorded": frames,
+    "frames_recorded": opt("TF_FRAMES", int),
+    "cells_imaged": opt("TF_CELLS", int),
+    # The floor this run was judged against, in the record, so a future reader can see which bar
+    # a PASS cleared instead of having to date the script (floors from n=2 — see fly_pipeline.sh).
+    "evidence_floor": {"frames_recorded_min": opt("TF_MIN_FRAMES", int),
+                       "cells_imaged_min": opt("TF_MIN_CELLS", int)},
     "birds_started_alt_m": opt("TF_BIRDS_ALT", float),
     "clip": clip or None,
     "teardown": opt("TF_TEARDOWN"),

@@ -5,7 +5,11 @@ Owner: `robotics-sim-engineer` · Consumer: `perception-ml-engineer` (`eval/labe
 
 ## What this is (read this before using the output)
 
-**This is a synthetic stand-in, NOT a Gazebo render.** The real Gazebo + `ardupilot_gazebo` +
+**This is a synthetic stand-in, NOT a Gazebo render.** *(2026-08-18: the real render now exists —
+`src/fieldguard_planning/record_node.py` writes this exact schema from a live flight with
+`synthetic: false`, so `scripts/stitch_ndvi.py` and `eval/run_spike.sh` consume real and synthetic
+clips interchangeably. This generator is kept, not retired: it is the fixed-seed, byte-reproducible
+arm a live flight can never be.)* The real Gazebo + `ardupilot_gazebo` +
 ArduPilot SITL + ROS 2 stack only runs inside the human-operated Docker/Ubuntu container
 (`docs/runbooks/SIM_BRINGUP.md`), which was not available to generate this Week-2 deliverable. Rather than
 block the perception spike on that, this script code-generates a clip that emits data in the
@@ -165,12 +169,19 @@ under it ≈0.15 vs. the bird's own -0.08 — a genuinely low-contrast case, not
 inside the patch radius). `bird_2`'s minimum distance to `clutter_0` is 2.4m, safely outside the
 patch's feathered radius (1.4m) — confirmed non-overlapping.
 
-## Assumptions the future Gazebo render must honor to stay a drop-in replacement
+## Assumptions the real render must honor to stay a drop-in replacement
+
+*(Status 2026-08-18, checked against `eval/results/clips/real_flight_20260818T221641Z/`:
+`record_node.py` meets 1, 2 and 4. Item 5 is satisfied by omission — real clips carry no
+`in_frustum_hint`/`generator_bbox_px`. **Item 7 is not met and cannot be:** a live flight records
+`seed: null` and is not byte-reproducible, which is precisely why this generator is kept as the
+reproducible arm.)*
 
 If/when the real Gazebo NDVI camera render replaces this generator, it must preserve:
-1. **Directory layout and file names** above (`frames/ndvi/*.npy` float32 [-1,1],
-   `frames/rgb/*.png` uint8, `poses.jsonl`, `meta.json`, `frames.csv`) — or `eval/label_from_sim.py`
-   needs a path-mapping shim.
+1. **Directory layout and file names** above — the four files any consumer actually reads:
+   `frames/ndvi/*.npy` float32 [-1,1], `frames/rgb/*.png` uint8, `poses.jsonl`, `meta.json`.
+   (`frames.csv` and `frames/ndvi_preview/` are generator conveniences that **no consumer reads**;
+   the live recorder correctly omits both, and that is not a schema violation.)
 2. **World frame = ENU meters**, not ArduPilot NED. If Gazebo/AP_DDS gives NED or a different
    local frame, convert at the boundary — don't change `eval/`'s assumed frame.
 3. **The camera axis convention** in "Camera model" above (X=East, Y=South, Z=Down when nadir) —

@@ -1,4 +1,4 @@
-# NDVI Validation — the Batched Docker Gate Session *(runbook; ADR-007 gates, born Week 5)*
+# NDVI Validation — the ADR-007 Gate Record *(runbook; gates 0-3, all green)*
 
 Owner: **human** (you), with `robotics-sim-engineer` on standby for failures.
 
@@ -17,7 +17,7 @@ these gates and exists because they measure values, not geometry (ADR-007 amendm
 faced the horizon through all four passes). Next steps live in `docs/ROADMAP.md`; the recording
 procedure in `docs/runbooks/FULL_PIPELINE_DEMO.md`.
 
-## ⚠️ Session log 2026-08-18 — Gate 1 attempted; read this before resuming
+## Session log 2026-08-18 — two fixes found live (keep: they still bite)
 
 **What happened:** Shell 1 (Gazebo) came up healthy — thermal systems on all 36 visuals, all four
 `/fg/sensor/*` topics advertised gz-side (Gate 0 behavior re-confirmed incidentally). Shell 2's
@@ -41,14 +41,16 @@ per-visual thermal), moved along the unchanged `config/birds/*.json` trajectorie
 `scripts/drive_birds.py`. Verified in-container on a renamed-world copy: 3 birds in the render
 scene, no actor warnings, and `--once 12` placed bird_0 at the trajectory-exact (20, 32.998, 8).
 
-**Session procedure change:** for Gate 2's bird check and ANY recorded flight, start the driver in
-its own shell first:
+**The bird driver runs in its own shell.** Timing depends on what you're doing:
+- **Static shot / Gate 2's bird check:** `--once T_S` places the birds and exits — run it any time
+  the world is up.
+- **Any flight (Gate 2's mission or a recorded one):** start the loop **after the vehicle is
+  airborne** (`height 15`). Its `set_pose` service traffic adds jitter the EKF can't tolerate while
+  aligning.
 ```bash
 python3 /workspace/fieldguard/scripts/drive_birds.py            # 5 Hz until Ctrl-C
 python3 /workspace/fieldguard/scripts/drive_birds.py --once 12  # or: park birds at t=12s for a still shot
 ```
-⚠️ **Restart Gazebo (Shell 1) before resuming** — the running instance predates the world change;
-the regenerated `farmguard_field.sdf` (birds as models) only takes effect on a fresh `gz sim` launch.
 
 ## Why this exists
 
@@ -190,8 +192,9 @@ rationale — samples the **raw NIR band directly**, deliberately does not build
 which is flight-software's downstream scope).
 
 **Shell D** — fly the existing, already-proven boustrophedon mission exactly as in
-`docs/archive/WEEK3_VALIDATION.md` Gate 1 (`scripts/run_farm_mission.sh` prints the recipe). No mission or
-world regeneration needed — reusing the proven flight is deliberate, see the script's docstring for
+`docs/archive/WEEK3_VALIDATION.md` Gate 1. **Read** the SITL recipe printed inside
+`scripts/run_farm_mission.sh`; do **not** run the script here — its last line is `exec gz sim …`,
+which would start a second world on top of Gate 0's. No mission or world regeneration needed — reusing the proven flight is deliberate, see the script's docstring for
 why lane x=15m is expected to put bird_0 in frame.
 
 **Shell E** — once the mission is armed and flying:
@@ -218,19 +221,16 @@ and a final PASS/FAIL verdict; exit code 0 = PASS.
 - ❌ FAIL (classes observed but gap too small): this is the review's named failure mode —
   some visual(s) fell back to ambient temperature instead of their calibrated value. Cross-check
   `sim/worlds/farmguard_field.sdf` — every `<visual>` must have its own
-  `<plugin filename="gz-sim-thermal-system" ...><temperature>...</temperature></plugin>` (**40**
-  per-visual: 1 ground + 18×2 tree trunk/canopy + 3 birds).
-  **Correction (verified 2026-08-05, was previously misstated as 40):**
-  `grep -c 'gz::sim::systems::Thermal' sim/worlds/farmguard_field.sdf` should print **41**, not 40 —
-  the raw (unanchored) grep pattern also matches the single world-level
-  `name="gz::sim::systems::ThermalSensor"` system-loader plugin (the one that enables the thermal
-  camera sensor itself, distinct from the 40 per-visual temperature-authoring plugins), because
-  `"ThermalSensor"` contains `"Thermal"` as a substring. To count ONLY the per-visual authoring
-  plugins (the number that must be exactly 40), anchor the pattern:
-  `grep -c 'name="gz::sim::systems::Thermal"' sim/worlds/farmguard_field.sdf` (should print 40); use
-  `grep -c 'name="gz::sim::systems::ThermalSensor"' sim/worlds/farmguard_field.sdf` to confirm
-  exactly 1 sensor-system loader separately. If the anchored per-visual count is off from 40, the
-  generator has a bug — report back, don't hand-patch the generated SDF.
+  `<plugin filename="gz-sim-thermal-system" ...><temperature>...</temperature></plugin>`. Expect
+  exactly 40 per-visual authoring plugins (1 ground + 18×2 tree trunk/canopy + 3 birds) plus 1
+  sensor-system loader:
+  ```bash
+  grep -c 'name="gz::sim::systems::Thermal"' sim/worlds/farmguard_field.sdf        # 40 — per-visual
+  grep -c 'name="gz::sim::systems::ThermalSensor"' sim/worlds/farmguard_field.sdf  # 1  — the sensor
+  ```
+  Anchor the pattern: unanchored `Thermal` also matches the `ThermalSensor` plugin declared **inside
+  the `fg_nir_camera` sensor** and prints 41. If the anchored count is off from 40, the generator has
+  a bug — report it, don't hand-patch the generated SDF.
 
 ---
 
@@ -284,8 +284,8 @@ gz topic -e -t /world/farmguard_field/stats -n 1   # one-shot sample of the worl
   2. The mission continues and completes its remaining lanes after the resume (not just the one
      dodge) — confirms the render load isn't causing a LATER stall once the two extra cameras are a
      few tens of seconds into continuous operation, not just at t=0.
-  3. Real-time factor stays in a broadly comparable range to the Week-3 baseline (`docs/
-     docs/archive/WEEK3_VALIDATION.md`'s recorded number, if captured there — otherwise treat any RTF that stays
+  3. Real-time factor stays in a broadly comparable range to the Week-3 baseline
+     (`docs/archive/WEEK3_VALIDATION.md`'s recorded number, if captured there — otherwise treat any RTF that stays
      bounded and non-collapsing, e.g. doesn't trend toward 0, as passing) for the duration of the
      dodge. A software-rendering (`llvmpipe`, no GPU passthrough — `docs/runbooks/SIM_BRINGUP.md` gotcha
      #1) machine is already slow; the question is whether the TWO NEW CAMERAS make it categorically
@@ -296,10 +296,10 @@ gz topic -e -t /world/farmguard_field/stats -n 1   # one-shot sample of the worl
      i.e. the coverage-debt guarantee still holds with the heavier vehicle model, not just the
      avoidance mechanics.
 - ⚠️ DEGRADED (dodge completes but RTF visibly collapses / pose updates visibly stutter): capture
-  the RTF numbers and the flight log, but this is not an automatic FAIL — note it and consider
-  lowering `config/ndvi_camera.json`'s `camera.update_rate_hz` (already conservative at 5 Hz,
-  documented as the first lever to pull in that file's own `update_rate_note`) before concluding
-  the sensor mount itself is the problem.
+  the RTF numbers and the flight log, but this is not an automatic FAIL. Note that **lowering
+  `config/ndvi_camera.json`'s `camera.update_rate_hz` is no longer the lever to reach for** — 5 → 2 Hz
+  was measured 2026-08-19 and reverted: it made frame delivery 16× worse with RTF unchanged
+  (`docs/ROADMAP.md`, `docs/BUILD_LOG.md`). 5 Hz stands on measured grounds.
 - ❌ FAIL (dodge doesn't trigger, doesn't complete, or the flight log shows a missing/duplicate
   cell that Week-3's equivalent run didn't have): this is a real regression — report back with the
   Shell D log tail and the flight log; do not silently attribute it to "the sim is just slow" without
@@ -316,37 +316,12 @@ flight log for Gate 3). Report back to `robotics-sim-engineer` (Gates 0-2) or
 stall here is the #1 project risk, so a fast, well-captured failure report matters more than trying
 to patch it live.
 
-## When all four gates pass
+## The recorded flight
 
-Flip ADR-007 in `docs/DECISIONS.md` from "confirmation-pending" to confirmed, with the date and a
-one-line pointer to this doc's results (mirroring how ADR-005/ADR-006 were closed out in Week 3).
-Then run **the recorded flight** — the artifact every remaining exit criterion consumes.
+**Canonical procedure: `docs/runbooks/FULL_PIPELINE_DEMO.md`** — all seven shells, the host-side
+one-liners, what to look for in each, and the post-flight stitch / ADR-003 re-run / evidence-commit
+steps. Nothing about it is duplicated here; that duplication is how the two copies drifted apart on
+when to start the birds.
 
-### The recorded flight (same session, gates green)
-
-Shell order (1-5 as the gates already have them): Gazebo, bridge, agent, SITL, birds
-(`drive_birds.py --rate 2`, started AFTER arming — its service traffic adds jitter the EKF can't
-tolerate while aligning). Then:
-
-**Shell 6 — the fusion node** (must be up before the recorder; its `/fg/ndvi/image` stamp is the
-georef anchor):
-```bash
-source /root/ardu_ws/install/setup.bash
-PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node
-```
-
-**Shell 7 — the recorder** (writes the spike-schema clip live; Ctrl-C AFTER the mission RTLs):
-```bash
-source /root/ardu_ws/install/setup.bash
-PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 -m fieldguard_planning.record_node \
-  --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)
-```
-Watch for "live intrinsics locked" (that line IS the ADR-007 follow-up-5 evidence) and the
-`recorded N frames` heartbeats. On Ctrl-C it finalizes `meta.json` (`synthetic: false`) and prints
-the exact stitch command. Budget ~1/RTF wall time for the full boustrophedon.
-
-**Afterwards, on the host** (no container needed): `python3 scripts/stitch_ndvi.py --clip <dir>`
-→ the georeferenced heatmap (exit criterion 1); `eval/run_spike.sh` pointed at the same clip → the
-ADR-003 real-render re-confirmation (criterion 3). COMMIT the clip's `meta.json` + `poses.jsonl` +
-`heatmap.*` + a handful of sample frames (not all ~GBs of `.npy`) — evidence, per the 2026-08-18
-clobber lesson.
+ADR-007's status line in `docs/DECISIONS.md` was flipped from "confirmation-pending" to CONFIRMED
+on the strength of the four gates above (mirroring how ADR-005/ADR-006 were closed out in Week 3).

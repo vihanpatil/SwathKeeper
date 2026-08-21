@@ -5,7 +5,7 @@ forces the drone to leave its lane, dodge (3D-safe), and resume the survey — w
 logged. This is the differentiator moving on the real stack, not just in unit tests.
 
 The loop logic (`avoidance_policy`, `avoidance_executor`, `geofence`) is sim-agnostic and unit-tested
-(54 tests). Only two files touch ROS 2: `ros2_adapter.py` (the `VehicleCommandSink` → AP_DDS) and
+(33 tests across those three modules; repo-wide totals live in `docs/ROADMAP.md`). Only two files touch ROS 2: `ros2_adapter.py` (the `VehicleCommandSink` → AP_DDS) and
 `avoidance_node.py` (this node). Their pure parts (ENU↔geodetic, scripted source, waypoint pick) are
 unit-tested; the rclpy parts are verified here, live.
 
@@ -46,7 +46,8 @@ PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.avoidance_node --demo
 `--demo` injects a scripted bird parked on lane **x=30** at cruise altitude (a stand-in until the NDVI
 detector lands in Weeks 5-6). Omit `--demo` to run with no detections (nominal pass-through).
 
-Then in **Shell B (MAVProxy)** start the survey so the drone sweeps toward the bird:
+Then at **Shell C's MAVProxy prompt** (the SITL shell — Shell B is the micro-ROS agent) start the
+survey so the drone sweeps toward the bird:
 ```
 param set MIS_RESTART 0
 wp load /workspace/fieldguard/config/missions/boustrophedon.waypoints

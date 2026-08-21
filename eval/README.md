@@ -11,12 +11,18 @@ Runs scripted scenarios headless and emits metrics — no "it works" without a n
 **What exists now:**
 - `score.py` — the reusable metric core (precision / recall / **FNR** / per-bird-track FNR); the seed of
   the permanent harness. Run the full NDVI-vs-RGB spike with `run_spike.sh` (needs `requirements-eval.txt`).
-- `label_from_sim.py`, `baseline_ndvi.py`, `baseline_rgb.py` — the ADR-003 spike pipeline.
+- `label_from_sim.py`, `baseline_ndvi.py`, `baseline_rgb.py` — the ADR-003 spike pipeline, built on
+  the shared `blob.py` (one classical-CV detector, used by both arms so the comparison is
+  apples-to-apples) and `spike_common.py` (clip IO).
 - `scenarios/` — the QA safety scenarios (spec + coverage-debt invariant); `generate_flight_logs.py`
   drives the real avoidance loop to produce each scenario's `flight_log.json`, activating its assertion.
 
-`results/` is gitignored (raw runs, incl. the live demo's timestamped `live_flight_log_<UTCstamp>.json`); commit summary
-metrics into reports, not raw runs.
+`results/` is gitignored by default (`eval/results/*`), with explicit negations for the evidence
+that must survive a clobber: `live_flight_log_*.json`, `gate2_summary.json`,
+`testflight_gate_*.json`, `bird_drive_*.json`, and each recorded clip's `meta.json` / `poses.jsonl`
+/ `heatmap/` / `INVALID_DO_NOT_USE.md` under `clips/real_flight_*/` — 54 files committed as of
+2026-08-18. The `.npy` frame bulk and any other raw run output stay ignored; commit summary metrics
+into reports, not raw frame data.
 
 ## Ground truth for real clips
 
