@@ -9,7 +9,12 @@ Owner: `robotics-sim-engineer` · Consumer: `perception-ml-engineer` (`eval/labe
 `src/fieldguard_planning/record_node.py` writes this exact schema from a live flight with
 `synthetic: false`, so `scripts/stitch_ndvi.py` and `eval/run_spike.sh` consume real and synthetic
 clips interchangeably. This generator is kept, not retired: it is the fixed-seed, byte-reproducible
-arm a live flight can never be.)* The real Gazebo + `ardupilot_gazebo` +
+arm a live flight can never be. A live clip's `meta.json` is a **superset** of the schema below:
+it adds the honesty fields listed in `src/fieldguard_planning/clip_recorder.py`, including
+`fuser` at schema 1.2 — the fusion node's counters as of finalize (`fused_count`,
+`dropped_pair_count`, `red_frames`/`nir_frames` in, `last_fused_stamp_sim_s`, plus `stats_age_s` /
+`stats_stale`, or `present: false` with a reason if that node never published). Consumers ignore
+unknown keys, so nothing here changes for the synthetic arm.)* The real Gazebo + `ardupilot_gazebo` +
 ArduPilot SITL + ROS 2 stack only runs inside the human-operated Docker/Ubuntu container
 (`docs/runbooks/SIM_BRINGUP.md`), which was not available to generate this Week-2 deliverable. Rather than
 block the perception spike on that, this script code-generates a clip that emits data in the

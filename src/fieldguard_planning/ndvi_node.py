@@ -8,11 +8,17 @@ Wires the locked `/fg/*` contract (ADR-007) to the tested fusion core in `ndvi_f
                                                                                           ▼
                                                         /fg/ndvi/image (32FC1, AUTHORITATIVE)
                                                         /fg/ndvi/camera_info (pass-through from rgb)
-                                                        /fg/ndvi/preview (rgb8, human-only)
+                                                        /fg/ndvi/preview (rgb8, human-only, published
+                                                        ONLY while subscribed -- ADR-013 am. 6)
+
+Alongside the image path, a 1 Hz timer publishes this node's counters to the stats side-channel
+(`ndvi_fusion.write_fuser_stats`), which `clip_recorder.finalize()` folds into each clip's
+meta.json -- so an under-delivering flight can be root-caused from the artifact instead of from a
+console that has scrolled away (ADR-013 amendment 5).
 
 The fusion math is sim-agnostic and unit-tested in `ndvi_fusion.py` (rescale/compute_ndvi/the 0/0
-guard, the stale-pair drop path, decode_rgb8/decode_mono16, the preview colormap). What is left here
-is rclpy wiring -- same "thin adapter" discipline as `avoidance_node.py`/`ros2_adapter.py`
+guard, the stale-pair drop path, decode_rgb8/decode_mono16, the preview colormap, and the stats
+side-channel's write/read/staleness paths). What is left here is rclpy wiring -- same "thin adapter" discipline as `avoidance_node.py`/`ros2_adapter.py`
 (Week 3-4): rclpy imports lazily inside `build_node()`/`main()` so the sibling pure modules stay
 importable (and testable) on a bare interpreter with no ROS 2 environment.
 
@@ -34,6 +40,10 @@ VERIFY-IN-CONTAINER items (cannot be checked outside Docker/ROS 2, same category
   * `message_filters` is a standard ROS 2 Humble package (`ros-humble-message-filters`) but is not
     used anywhere else in this repo yet -- confirm it's on the container's install line
     (`docs/runbooks/SIM_BRINGUP.md` / the Dockerfile) before first run; add it if missing.
+  * [ANSWERED 2026-08-21, four flights] the per-band counters ride
+    `message_filters.Subscriber.registerCallback` (standard `SimpleFilter` API -- the synchronizer
+    itself attaches the same way), which this repo had never used. They climb: red 73/126/113/217,
+    nir 404/418/409/411 (ADR-013 am. 6). Nothing left to confirm here.
   * `use_sim_time` is NOT hardcoded here (matches `avoidance_node.py`'s convention) -- launch with
     `--ros-args -p use_sim_time:=true` per ADR-007's "use_sim_time=true" requirement, or the NDVI
     frame's stamp arithmetic (delta vs. the stale-pair guard) will compare wall-clock stamps against
@@ -45,7 +55,15 @@ from typing import NamedTuple, Optional
 
 import numpy as np
 
-from .ndvi_fusion import NdviFuser, decode_mono16, decode_rgb8, load_camera_config, ndvi_to_preview_rgb
+from .ndvi_fusion import (
+    FUSER_STATS_PERIOD_S,
+    NdviFuser,
+    decode_mono16,
+    decode_rgb8,
+    load_camera_config,
+    ndvi_to_preview_rgb,
+    write_fuser_stats,
+)
 
 
 # --------------------------------------------------------------------------------------------------
@@ -55,6 +73,11 @@ NDVI_ENCODING = "32FC1"          # float32, 1 channel -> 4 bytes per pixel
 NDVI_BYTES_PER_PIXEL = 4
 PREVIEW_ENCODING = "rgb8"        # uint8, 3 channels -> 3 bytes per pixel
 PREVIEW_BYTES_PER_PIXEL = 3
+
+# Arrival-skew tolerance of the pairing queue (see the live finding at its use site). Named here
+# because it is also reported in the persisted counters -- a fused_count far below the per-band
+# counts is read against this number.
+SYNC_QUEUE_SIZE = 60
 
 
 class ImageMsgFields(NamedTuple):
@@ -161,6 +184,15 @@ def build_node():
             self.preview_pub = self.create_publisher(Image, "/fg/ndvi/preview", 10)
 
             self._rgb_info: Optional[CameraInfo] = None
+            # Per-band arrival counters: the pair (red_frames, nir_frames) vs fused_count is what
+            # separates "a band never arrived" from "both arrived but never paired" -- the question
+            # the 2 Hz flight could not answer (ADR-013 amendment 4). Counted on the filter
+            # subscribers that already deserialise these messages, so no second subscription and no
+            # second copy of a 640x480 frame.
+            self._red_frames = 0
+            self._nir_frames = 0
+            self._camera_info_frames = 0
+            self._last_fused_stamp_sim_s: Optional[float] = None
             self.create_subscription(CameraInfo, topics["rgb_camera_info"], self._on_rgb_info,
                                      qos_profile_sensor_data)
 
@@ -168,6 +200,8 @@ def build_node():
                                                  qos_profile=qos_profile_sensor_data)
             nir_sub = message_filters.Subscriber(self, Image, topics["nir_image"],
                                                  qos_profile=qos_profile_sensor_data)
+            rgb_sub.registerCallback(self._count_red)
+            nir_sub.registerCallback(self._count_nir)
             # ADR-007 amendment: message_filters' own slop is set to the SAME 25%-of-period bound
             # ndvi_fusion.NdviFuser re-enforces per-pair below -- belt-and-suspenders, not redundant:
             # this slop only decides which NIR message gets HANDED to the callback as "nearest";
@@ -175,7 +209,7 @@ def build_node():
             # dropped_pair_count if the nearest available match still isn't close enough (e.g. a
             # dropped NIR frame widened the true nearest gap beyond tolerance).
             self._sync = message_filters.ApproximateTimeSynchronizer(
-                [rgb_sub, nir_sub], queue_size=60, slop=self.fuser.max_delta_s)
+                [rgb_sub, nir_sub], queue_size=SYNC_QUEUE_SIZE, slop=self.fuser.max_delta_s)
             # queue_size 60, not 10 (2026-08-18 live finding): under host CPU contention each band
             # drops frames independently and arrives bursty, so a stamp's partner may lag many
             # messages behind — with queue 10 the match was flushed before it could pair and fused
@@ -184,12 +218,26 @@ def build_node():
             # the frame period, ADR-007) is untouched.
             self._sync.registerCallback(self._on_pair)
 
+            # Persist the counters on a TIMER, not on the image path: one small atomic file write
+            # per second, which `clip_recorder.finalize()` folds into the clip's meta.json (see
+            # ndvi_fusion's side-channel section). Written once here at startup too, so "fuser up,
+            # nothing arriving" is distinguishable from "fuser never ran" from the first second.
+            write_fuser_stats(self.counters())
+            self.create_timer(FUSER_STATS_PERIOD_S, lambda: write_fuser_stats(self.counters()))
+
             self.get_logger().info(
                 f"fieldguard_ndvi up: rgb={topics['rgb_image']} nir={topics['nir_image']} "
                 f"update_rate={self.fuser.update_rate_hz}Hz slop={self.fuser.max_delta_s * 1000:.1f}ms")
 
+        def _count_red(self, _msg) -> None:
+            self._red_frames += 1
+
+        def _count_nir(self, _msg) -> None:
+            self._nir_frames += 1
+
         def _on_rgb_info(self, msg: "CameraInfo") -> None:
             self._rgb_info = msg
+            self._camera_info_frames += 1
 
         def _on_pair(self, rgb_msg, nir_msg) -> None:
             rgb_stamp = rgb_msg.header.stamp.sec + rgb_msg.header.stamp.nanosec * 1e-9
@@ -205,6 +253,11 @@ def build_node():
                     f"(dropped_pair_count={self.fuser.dropped_pair_count})")
                 return
 
+            # The sim-time marker: WHEN the fusion last produced, in the same clock the recorded
+            # frames are stamped in -- so a fuser that stopped mid-flight is locatable in the clip,
+            # not merely known to be stale in wall time.
+            self._last_fused_stamp_sim_s = rgb_stamp
+
             # NDVI inherits the RGB stamp -- the georef anchor (ADR-007). Both headers go in; the
             # tested `georef_anchor_header` inside picks the RGB one.
             self.ndvi_pub.publish(apply_image_fields(
@@ -215,8 +268,16 @@ def build_node():
                 info.header = rgb_msg.header
                 self.ndvi_info_pub.publish(info)
 
-            self.preview_pub.publish(apply_image_fields(
-                Image(), assemble_preview_msg_fields(result.ndvi, rgb_msg.header, nir_msg.header)))
+            # The preview is HUMAN-ONLY (ADR-007): nothing in this repo subscribes to it, so on every
+            # unattended flight it cost a colormap over 307k px plus two 921,600 B copies plus a
+            # serialize-and-write of a message with no reader -- on the very executor whose next job
+            # is to drain the 921,600 B RGB subscription that the counters name as the starving stage
+            # (red_frames 73 of 692 camera_info ticks, baseline 2026-08-21). Asking the publisher
+            # whether anyone is listening is the whole fix; rviz still gets its preview the moment it
+            # subscribes, so this removes work rather than removing the feature.
+            if self.preview_pub.get_subscription_count() > 0:
+                self.preview_pub.publish(apply_image_fields(
+                    Image(), assemble_preview_msg_fields(result.ndvi, rgb_msg.header, nir_msg.header)))
 
             if self.fuser.fused_count % 25 == 1:  # heartbeat, not every frame (avoid log spam)
                 self.get_logger().info(
@@ -224,9 +285,21 @@ def build_node():
                     f"dropped_pair_count={self.fuser.dropped_pair_count} "
                     f"zero_denom_count={result.zero_denom_count}")
 
-        def status(self) -> dict:
+        def counters(self) -> dict:
+            """The whole where-did-it-starve chain in one payload: bands in (`red_frames`,
+            `nir_frames`), pairs rejected by the stale-pair guard (`dropped_pair_count`), frames
+            out (`fused_count`), and the config the first three are read against. `fused_count` is
+            also the `/fg/ndvi/image` publish count -- publishing is unconditional on an accepted
+            pair, so a second counter would be a second source of truth for one number."""
             return {"fused_count": self.fuser.fused_count,
-                   "dropped_pair_count": self.fuser.dropped_pair_count}
+                    "dropped_pair_count": self.fuser.dropped_pair_count,
+                    "red_frames": self._red_frames,
+                    "nir_frames": self._nir_frames,
+                    "camera_info_frames": self._camera_info_frames,
+                    "last_fused_stamp_sim_s": self._last_fused_stamp_sim_s,
+                    "update_rate_hz": self.fuser.update_rate_hz,
+                    "max_delta_s": self.fuser.max_delta_s,
+                    "sync_queue_size": SYNC_QUEUE_SIZE}
 
     if not rclpy.ok():
         rclpy.init()
@@ -240,7 +313,10 @@ def main(argv=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.get_logger().info(f"fieldguard_ndvi shutting down: {node.status()}")
+        # Final write before the timer stops, so the sidecar the recorder reads at finalize carries
+        # the exact terminal counts rather than the last periodic sample.
+        write_fuser_stats(node.counters())
+        node.get_logger().info(f"fieldguard_ndvi shutting down: {node.counters()}")
         node.destroy_node()
         rclpy.shutdown()
 

@@ -600,6 +600,104 @@ committed gate records and their clips' `heatmap.json` — baseline passes, 2 Hz
 short fails, an unreadable yield fails, the floor sits strictly between the two runs it came from;
 the padding filter through the capture shim; and a tripwire that no pane tail bypasses it). The
 first live exercise of both is the next `test-flight`.
+Amendment 5 (2026-08-20, closing amendment 4's instrumentation half at the source): the fuser's
+counters now leave the pane and land in **the clip's own `meta.json`** (`"fuser"`, schema 1.2) —
+`red_frames`/`nir_frames` in, `dropped_pair_count`, `fused_count` out, `last_fused_stamp_sim_s`,
+against `num_frames` recorded, which is the whole detect→pair→publish→record chain in one artifact
+and the difference between "fusion never fused" and "the recorder dropped what fusion produced".
+Transport: a **1 Hz atomically-replaced JSON sidecar** (`eval/results/ndvi_fuser_stats.json`,
+written from a timer, never from the image path), read once by `clip_recorder.finalize()`.
+Alternative(s) rejected: a ROS 2 stats topic — the recorder would then need a subscription whose
+messages the same starved executor delivers, on a stack where routing one extra stream has already
+collapsed the image pipeline 8× (the bridged `/clock`, ADR-007 amendment above), and it dies with
+the node that publishes it; a gz-transport topic — same objection plus a second bringup dependency.
+The file survives whichever node dies first, which is the case that matters: a fuser killed
+mid-flight leaves its last real numbers on disk, and the reader stamps them `stats_age_s` /
+`stats_stale` rather than passing frozen counters off as current. A missing or malformed sidecar
+reads `present: false` with a reason and **no counter keys at all** — a fabricated `fused_count: 0`
+would be indistinguishable from a real starve, which is the same "we could not tell scored green"
+shape amendment 4 closed in the gate. Honesty bar: **not run live** — 9 offline tests
+(`test_ndvi_fusion.py` round-trip/staleness/absent/malformed/atomicity/unwritable,
+`test_clip_recorder.py` the three meta outcomes); the per-band counters ride
+`message_filters.Subscriber.registerCallback`, standard API this repo has not used before, so the
+first flight must confirm they climb rather than sit at 0.
+Amendment 6 (2026-08-21, the recording-throughput measurement — four test-flights, one variable at a
+time): **the counters of amendment 5 flew, they climb, and they named the starving stage on the
+first flight — the RGB *image* band, alone.** Baseline (5 Hz, unchanged config, clip
+`real_flight_20260821T032316Z`): `red_frames` 73 against `camera_info_frames` 692 from the *same
+RGB sensor tick*, `nir_frames` 404, `fused_count` 45, `dropped_pair_count` **0**, 17 frames
+recorded. That one row falsifies the two explanations the 2 Hz collapse left standing: the camera
+is not under-rendering (692 ticks arrived), and the stale-pair guard is not eating pairs (0). ~89 %
+of RGB *images* died between Gazebo and the node while the small `camera_info` off the same sensor
+crossed intact — a payload-size-dependent transport loss, not a render or a pairing loss. This is
+exactly the artifact amendment 5 was built to produce, and it converted a lever-hunt into a
+measurement.
+Two levers were then measured against that baseline as a 2×2, each flight the same `test_2lane`
+mission through the same gate, with `camera_info_frames` (692 / 699 / 696 / 698) as the control that
+the exposure window was identical:
+  * **Lever A — bridge QoS, KEPT.** The bridge's ROS publishers are RELIABLE by default
+    (`ros_gz_bridge/src/factory.hpp:79` creates them with `rclcpp::QoS(rclcpp::KeepLast(queue_size))`
+    — default reliability, and `queue_size` defaults to 10 per `bridge_config.hpp:37`) while *every* consumer
+    — `ndvi_node`, `record_node` — subscribes `qos_profile_sensor_data`, i.e. BEST_EFFORT. The
+    reliable half was retransmission machinery for ~900 KB samples no reader had asked to have
+    retransmitted. **It cannot be set in the yaml at the pinned SHA** (`ros_gz` @ `9d7f8c7`):
+    `bridge_config.cpp:28-36` declares the entire accepted key set — nine keys, none of them QoS —
+    and `parseEntry` (`:52-169`) silently ignores anything else, so a `qos:` block there would look
+    configured and do nothing. The knob is real but is a per-topic ROS *parameter*:
+    `factory.hpp:66-79` attaches `rclcpp::QosOverridingOptions{Depth, Durability, History,
+    Reliability}` to each publisher. Applied as
+    `-p qos_overrides./fg/sensor/{rgb,nir}/image.publisher.reliability:=best_effort` on the Shell-2
+    one-liner, and **verified bound before it was flown** — with the parameters the two image topics
+    report `Reliability: BEST_EFFORT` and `camera_info`, deliberately left alone, still reports
+    RELIABLE, which is the control proving the parameter did it. Result: `red_frames` 73 → 126
+    (10.5 % → 18.0 % of ticks), fused 45 → 78, recorded 17 → 41.
+  * **Lever B — the preview publish, KEPT.** `/fg/ndvi/preview` is HUMAN-ONLY under ADR-007 and
+    **nothing in this repo subscribes to it**, yet every fused frame paid a colormap over 307 k px,
+    two 921,600 B copies and a serialize-and-write with no reader — on the single executor whose
+    next job is to drain the 921,600 B RGB subscription the baseline had just named as the starving
+    stage. Now guarded by `get_subscription_count() > 0`: work removed, feature intact (rviz gets
+    its preview the moment it subscribes). Result on its own: `red_frames` 73 → 113 (16.2 %), fused
+    45 → 76, recorded 17 → 36 — a self-inflicted starve, confirmed by removing it.
+  * **Combined (both KEPT, confirm flight `real_flight_20260821T034116Z`): `red_frames` 217 (31.1 %
+    of ticks, 3.0× baseline), fused 129 (2.9×), recorded 86 (5.1×), 368 of 720 cells imaged (2.3×).**
+    The end metric is superadditive because coverage is not bought by frames but by frames *spread
+    along the lanes*: survey-altitude frames off the takeoff point went 6 → 42 (7×), counting
+    `poses.jsonl` rows with `drone.pos_m` z > 12 m and more than 1 m of horizontal range from the
+    launch point — the frames that can image an unvisited cell at all.
+Nothing was reverted; both levers won independently and together. The one honest wrinkle is
+**Lever A's own flight imaged FEWER cells than baseline (125 vs 158) despite 2.4× the frames** —
+not a regression but a sampling accident, and worth recording because it is the trap in judging this
+work by cells on n=1: that flight's extra frames landed while the vehicle was slow or stationary
+(three during the climb at the origin, five stacked at the far-end turn at x≈75), where extra frames
+buy almost no new cells. `cells_imaged` on a 2-lane flight is dominated by *where* a handful of
+frames fall; `red_frames / camera_info_frames` is the lever's honest, position-independent metric,
+and it moved monotonically on every arm. Alternative(s) rejected: raising the amendment-4 evidence
+floor to match the new 86 / 368 yield — there is exactly **one** healthy run at the new config, and
+amendment 4's own rule is that a floor raised off a single good number buys flakiness, not
+detection. It should rise once a second full-config run exists. Also rejected: touching
+`publisher_queue` / `subscriber_queue` (settable in the yaml, `bridge_config.hpp:34-37`) in the same
+pass — depth is a second variable and nothing has measured it.
+Amendment 6a (2026-08-21, qa-safety-reviewer, reading the same four artifacts adversarially):
+**transport is not the only surviving loss — the counters record a second stage, and it is the
+larger of the two remaining.** `_on_pair` has exactly two outcomes, `dropped_pair_count++` or
+`fused_count++`, so `red_frames - fused_count - dropped_pair_count` is precisely the red frames the
+`ApproximateTimeSynchronizer` never handed over at all: they arrived at the node and never found a
+NIR partner inside the 50 ms slop. That number is **28 / 48 / 37 / 88** on the four flights —
+**38 % / 38 % / 33 % / 41 % of every red frame that survived transport**, essentially flat across
+both levers, because neither lever touched pairing. The full F4 chain is therefore
+`698 camera_info ticks → 217 red images (31.1 %) → 129 fused (59.4 % of red) → 86 recorded
+(66.7 % of fused)` = **12.3 % end to end**, and `dropped_pair_count: 0` means only that the *guard*
+rejected nothing — it was never evidence that pairing was lossless. Mechanism consistent with the
+transport diagnosis rather than competing with it: NIR is mono16 (614,400 B) and lands ~411 frames
+per flight (~3 Hz) while RGB is rgb8 (921,600 B) and lands 1.6 Hz even after both levers, so the
+two bands tick at different effective rates and most red frames have no NIR neighbour close enough.
+The consequence for whoever picks up item 1: **the next lever is not necessarily another transport
+lever.** Closing the red/NIR rate gap, or widening `slop` off its ADR-007 25 %-of-period bound (a
+georef-accuracy tradeoff, not a free one), addresses a bigger share of what is left than squeezing
+transport further. The third stage — 129 fused vs 86 recorded — is **not** attributed here: Shell 6
+starts before Shell 7 and teardown SIGINTs the recorder first (F4's clip ends at sim 141.0 s against
+`last_fused_stamp_sim_s` 145.6), so part of that gap is window and part may be recorder-side loss,
+and no counter separates them. That separation is the next counter to add, not the next lever.
 Owner / roles: devops-reliability-engineer (owner), robotics-sim-engineer + flight-software-engineer
 (the wrapped commands), qa-safety-reviewer (the gates are safety gates; the happy path is now
 evidenced, and the failure paths listed in amendment 3 are the outstanding evidence).

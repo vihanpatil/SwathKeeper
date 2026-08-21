@@ -42,6 +42,8 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
@@ -242,6 +244,82 @@ def pair_and_fuse_stream(rgb_frames: Sequence[StampedFrame], nir_frames: Sequenc
         nir = nir_frames[idx]
         results.append(fuser.fuse(rgb.stamp_s, rgb.data, nir.stamp_s, nir.data))
     return results
+
+
+# --------------------------------------------------------------------------------------------------
+# Fuser stats side-channel (ADR-013 amendment 5) -- "where did the pipeline starve?", persisted
+# --------------------------------------------------------------------------------------------------
+# The counters above used to exist ONLY as console heartbeats in `ndvi_node`, so an
+# under-delivering flight could not be root-caused afterwards: no artifact separated "fusion never
+# fused" from "the recorder dropped what fusion produced" (the 2 Hz collapse, ADR-013 amendment 4,
+# was diagnosed by inference). `ndvi_node` now publishes them here once a second FROM A TIMER --
+# never from the image path -- and `clip_recorder.finalize()` folds the last reading into the
+# clip's own meta.json.
+#
+# A file, not a topic: the stack is CPU-starved by construction and a bridged high-rate topic has
+# already starved this exact pipeline once (measured 2026-08-18, `StreamingClockParser` docstring),
+# so instrumentation buys no DDS traffic at all. It also survives whichever node dies first -- the
+# last-known counters and their age stay on disk after the fuser is gone, which is precisely the
+# case ("died mid-flight") that must not read as silence. Same shape and home as ADR-012's
+# `bird_drive_*.json` sidecar: a gitignored JSON file under `eval/results/`, on the bind mount, so
+# it is readable from the host as well as from inside the container.
+FUSER_STATS_SCHEMA_VERSION = "1.0"
+FUSER_STATS_PATH = REPO_ROOT / "eval" / "results" / "ndvi_fuser_stats.json"
+FUSER_STATS_PERIOD_S = 1.0   # one small write per second, off the image path
+FUSER_STATS_STALE_S = 5.0    # five missed writes: the fuser is gone, not merely quiet
+
+
+def write_fuser_stats(counters: dict, path: Path = FUSER_STATS_PATH) -> None:
+    """Publish `counters` plus a wall-clock stamp (the staleness marker) atomically -- written to a
+    pid-scoped temp file and `os.replace`d, so a recorder reading concurrently can never see a
+    half-written file. Best-effort by design: instrumentation must never take a flight down, and a
+    sidecar that failed to write is reported honestly as absent by `read_fuser_stats` rather than
+    as zeros."""
+    path = Path(path)
+    payload = dict(counters,
+                   # NOT "schema_version": this block is nested inside a clip meta.json that has
+                   # its own, and two keys of that name in one file is one too many.
+                   stats_schema_version=FUSER_STATS_SCHEMA_VERSION,
+                   writer="src/fieldguard_planning/ndvi_node.py",
+                   pid=os.getpid(),
+                   wall_time_s=time.time(),
+                   written_utc=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps(payload))
+        os.replace(tmp, path)
+    except (OSError, TypeError, ValueError):
+        # TypeError/ValueError, not just OSError: this runs on a 1 Hz rclpy timer, so an escaping
+        # exception kills the fusion node mid-flight. The live way in is a numpy-typed counter --
+        # `json.dumps(np.int64(5))` raises TypeError, and the obvious next counter to add here
+        # (`zero_denom_count`) is computed by numpy. Losing one second of instrumentation is the
+        # correct price; losing the flight is not.
+        pass
+
+
+def read_fuser_stats(path: Path = FUSER_STATS_PATH, now_s: Optional[float] = None,
+                     stale_after_s: float = FUSER_STATS_STALE_S) -> dict:
+    """The clip meta.json `"fuser"` block: the last counters the fuser published + how old they are.
+
+    ALWAYS returns a dict carrying `present`. A missing, unreadable or malformed sidecar yields
+    `present: false` with a `reason` and NO counter keys at all -- fabricating zeros there would
+    read as "fusion produced nothing", which is the wrong diagnosis and exactly the lie this block
+    exists to prevent. `stats_stale` marks a fuser that died mid-flight: its numbers are real but
+    frozen, and the age says how long ago it stopped."""
+    path = Path(path)
+    now = time.time() if now_s is None else float(now_s)
+    try:
+        payload = json.loads(path.read_text())
+        age_s = now - float(payload["wall_time_s"])
+    except FileNotFoundError:
+        return {"present": False, "source": str(path),
+                "reason": "no fuser stats sidecar -- ndvi_node was not running, or never wrote one"}
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        return {"present": False, "source": str(path),
+                "reason": f"unreadable fuser stats sidecar: {type(exc).__name__}: {exc}"}
+    return dict(payload, present=True, source=str(path), stats_age_s=round(age_s, 3),
+                stats_stale=bool(age_s > stale_after_s), stats_stale_after_s=stale_after_s)
 
 
 # --------------------------------------------------------------------------------------------------

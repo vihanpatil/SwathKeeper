@@ -1,0 +1,6505 @@
+{
+ "schema_version": "1.0",
+ "generated_by": "scripts/stitch_ndvi.py",
+ "clip_dir": "/Users/vihanpatil/personal/projects/auto-drone-sim/eval/results/clips/real_flight_20260821T032316Z",
+ "cell_size_m": 2.5,
+ "frames_total": 17,
+ "frames_stale_pose_skipped": [],
+ "frames_zero_update": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  15,
+  16
+ ],
+ "cells_total": 720,
+ "cells_imaged": 158,
+ "cells_unimaged": 562,
+ "clip_synthetic": false,
+ "clip_seed": null,
+ "cells": [
+  {
+   "cell_id": "cell_0_0",
+   "i": 0,
+   "j": 0,
+   "cx_m": 1.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_0_1",
+   "i": 0,
+   "j": 1,
+   "cx_m": 1.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_0_2",
+   "i": 0,
+   "j": 2,
+   "cx_m": 1.25,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_0_3",
+   "i": 0,
+   "j": 3,
+   "cx_m": 1.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_0_4",
+   "i": 0,
+   "j": 4,
+   "cx_m": 1.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_5",
+   "i": 0,
+   "j": 5,
+   "cx_m": 1.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_6",
+   "i": 0,
+   "j": 6,
+   "cx_m": 1.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_7",
+   "i": 0,
+   "j": 7,
+   "cx_m": 1.25,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_8",
+   "i": 0,
+   "j": 8,
+   "cx_m": 1.25,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_9",
+   "i": 0,
+   "j": 9,
+   "cx_m": 1.25,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_10",
+   "i": 0,
+   "j": 10,
+   "cx_m": 1.25,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_11",
+   "i": 0,
+   "j": 11,
+   "cx_m": 1.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_12",
+   "i": 0,
+   "j": 12,
+   "cx_m": 1.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_13",
+   "i": 0,
+   "j": 13,
+   "cx_m": 1.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_14",
+   "i": 0,
+   "j": 14,
+   "cx_m": 1.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_15",
+   "i": 0,
+   "j": 15,
+   "cx_m": 1.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_16",
+   "i": 0,
+   "j": 16,
+   "cx_m": 1.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_17",
+   "i": 0,
+   "j": 17,
+   "cx_m": 1.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_18",
+   "i": 0,
+   "j": 18,
+   "cx_m": 1.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_19",
+   "i": 0,
+   "j": 19,
+   "cx_m": 1.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_20",
+   "i": 0,
+   "j": 20,
+   "cx_m": 1.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_21",
+   "i": 0,
+   "j": 21,
+   "cx_m": 1.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_22",
+   "i": 0,
+   "j": 22,
+   "cx_m": 1.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_0_23",
+   "i": 0,
+   "j": 23,
+   "cx_m": 1.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_0",
+   "i": 1,
+   "j": 0,
+   "cx_m": 3.75,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_1_1",
+   "i": 1,
+   "j": 1,
+   "cx_m": 3.75,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_1_2",
+   "i": 1,
+   "j": 2,
+   "cx_m": 3.75,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_1_3",
+   "i": 1,
+   "j": 3,
+   "cx_m": 3.75,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_1_4",
+   "i": 1,
+   "j": 4,
+   "cx_m": 3.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_5",
+   "i": 1,
+   "j": 5,
+   "cx_m": 3.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_6",
+   "i": 1,
+   "j": 6,
+   "cx_m": 3.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_7",
+   "i": 1,
+   "j": 7,
+   "cx_m": 3.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_8",
+   "i": 1,
+   "j": 8,
+   "cx_m": 3.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_9",
+   "i": 1,
+   "j": 9,
+   "cx_m": 3.75,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_10",
+   "i": 1,
+   "j": 10,
+   "cx_m": 3.75,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_11",
+   "i": 1,
+   "j": 11,
+   "cx_m": 3.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_12",
+   "i": 1,
+   "j": 12,
+   "cx_m": 3.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_13",
+   "i": 1,
+   "j": 13,
+   "cx_m": 3.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_14",
+   "i": 1,
+   "j": 14,
+   "cx_m": 3.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_15",
+   "i": 1,
+   "j": 15,
+   "cx_m": 3.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_16",
+   "i": 1,
+   "j": 16,
+   "cx_m": 3.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_17",
+   "i": 1,
+   "j": 17,
+   "cx_m": 3.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_18",
+   "i": 1,
+   "j": 18,
+   "cx_m": 3.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_19",
+   "i": 1,
+   "j": 19,
+   "cx_m": 3.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_20",
+   "i": 1,
+   "j": 20,
+   "cx_m": 3.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_21",
+   "i": 1,
+   "j": 21,
+   "cx_m": 3.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_22",
+   "i": 1,
+   "j": 22,
+   "cx_m": 3.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_1_23",
+   "i": 1,
+   "j": 23,
+   "cx_m": 3.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_0",
+   "i": 2,
+   "j": 0,
+   "cx_m": 6.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_1",
+   "i": 2,
+   "j": 1,
+   "cx_m": 6.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_2",
+   "i": 2,
+   "j": 2,
+   "cx_m": 6.25,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_3",
+   "i": 2,
+   "j": 3,
+   "cx_m": 6.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_4",
+   "i": 2,
+   "j": 4,
+   "cx_m": 6.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_5",
+   "i": 2,
+   "j": 5,
+   "cx_m": 6.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_6",
+   "i": 2,
+   "j": 6,
+   "cx_m": 6.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_7",
+   "i": 2,
+   "j": 7,
+   "cx_m": 6.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_8",
+   "i": 2,
+   "j": 8,
+   "cx_m": 6.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_9",
+   "i": 2,
+   "j": 9,
+   "cx_m": 6.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_10",
+   "i": 2,
+   "j": 10,
+   "cx_m": 6.25,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_11",
+   "i": 2,
+   "j": 11,
+   "cx_m": 6.25,
+   "cy_m": 28.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_2_12",
+   "i": 2,
+   "j": 12,
+   "cx_m": 6.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_13",
+   "i": 2,
+   "j": 13,
+   "cx_m": 6.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_14",
+   "i": 2,
+   "j": 14,
+   "cx_m": 6.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_15",
+   "i": 2,
+   "j": 15,
+   "cx_m": 6.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_16",
+   "i": 2,
+   "j": 16,
+   "cx_m": 6.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_17",
+   "i": 2,
+   "j": 17,
+   "cx_m": 6.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_18",
+   "i": 2,
+   "j": 18,
+   "cx_m": 6.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_19",
+   "i": 2,
+   "j": 19,
+   "cx_m": 6.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_20",
+   "i": 2,
+   "j": 20,
+   "cx_m": 6.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_21",
+   "i": 2,
+   "j": 21,
+   "cx_m": 6.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_22",
+   "i": 2,
+   "j": 22,
+   "cx_m": 6.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_2_23",
+   "i": 2,
+   "j": 23,
+   "cx_m": 6.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_0",
+   "i": 3,
+   "j": 0,
+   "cx_m": 8.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_1",
+   "i": 3,
+   "j": 1,
+   "cx_m": 8.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_2",
+   "i": 3,
+   "j": 2,
+   "cx_m": 8.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_3",
+   "i": 3,
+   "j": 3,
+   "cx_m": 8.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_4",
+   "i": 3,
+   "j": 4,
+   "cx_m": 8.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_5",
+   "i": 3,
+   "j": 5,
+   "cx_m": 8.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_6",
+   "i": 3,
+   "j": 6,
+   "cx_m": 8.75,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_3_7",
+   "i": 3,
+   "j": 7,
+   "cx_m": 8.75,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_3_8",
+   "i": 3,
+   "j": 8,
+   "cx_m": 8.75,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_3_9",
+   "i": 3,
+   "j": 9,
+   "cx_m": 8.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_3_10",
+   "i": 3,
+   "j": 10,
+   "cx_m": 8.75,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_3_11",
+   "i": 3,
+   "j": 11,
+   "cx_m": 8.75,
+   "cy_m": 28.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_3_12",
+   "i": 3,
+   "j": 12,
+   "cx_m": 8.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_13",
+   "i": 3,
+   "j": 13,
+   "cx_m": 8.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_14",
+   "i": 3,
+   "j": 14,
+   "cx_m": 8.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_15",
+   "i": 3,
+   "j": 15,
+   "cx_m": 8.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_16",
+   "i": 3,
+   "j": 16,
+   "cx_m": 8.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_17",
+   "i": 3,
+   "j": 17,
+   "cx_m": 8.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_18",
+   "i": 3,
+   "j": 18,
+   "cx_m": 8.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_19",
+   "i": 3,
+   "j": 19,
+   "cx_m": 8.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_20",
+   "i": 3,
+   "j": 20,
+   "cx_m": 8.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_21",
+   "i": 3,
+   "j": 21,
+   "cx_m": 8.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_22",
+   "i": 3,
+   "j": 22,
+   "cx_m": 8.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_3_23",
+   "i": 3,
+   "j": 23,
+   "cx_m": 8.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_0",
+   "i": 4,
+   "j": 0,
+   "cx_m": 11.25,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_1",
+   "i": 4,
+   "j": 1,
+   "cx_m": 11.25,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_2",
+   "i": 4,
+   "j": 2,
+   "cx_m": 11.25,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_3",
+   "i": 4,
+   "j": 3,
+   "cx_m": 11.25,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_4",
+   "i": 4,
+   "j": 4,
+   "cx_m": 11.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_5",
+   "i": 4,
+   "j": 5,
+   "cx_m": 11.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_6",
+   "i": 4,
+   "j": 6,
+   "cx_m": 11.25,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_4_7",
+   "i": 4,
+   "j": 7,
+   "cx_m": 11.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_4_8",
+   "i": 4,
+   "j": 8,
+   "cx_m": 11.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_4_9",
+   "i": 4,
+   "j": 9,
+   "cx_m": 11.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_4_10",
+   "i": 4,
+   "j": 10,
+   "cx_m": 11.25,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_4_11",
+   "i": 4,
+   "j": 11,
+   "cx_m": 11.25,
+   "cy_m": 28.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_4_12",
+   "i": 4,
+   "j": 12,
+   "cx_m": 11.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_13",
+   "i": 4,
+   "j": 13,
+   "cx_m": 11.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_14",
+   "i": 4,
+   "j": 14,
+   "cx_m": 11.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_15",
+   "i": 4,
+   "j": 15,
+   "cx_m": 11.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_16",
+   "i": 4,
+   "j": 16,
+   "cx_m": 11.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_17",
+   "i": 4,
+   "j": 17,
+   "cx_m": 11.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_18",
+   "i": 4,
+   "j": 18,
+   "cx_m": 11.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_19",
+   "i": 4,
+   "j": 19,
+   "cx_m": 11.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_20",
+   "i": 4,
+   "j": 20,
+   "cx_m": 11.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_21",
+   "i": 4,
+   "j": 21,
+   "cx_m": 11.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_22",
+   "i": 4,
+   "j": 22,
+   "cx_m": 11.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_4_23",
+   "i": 4,
+   "j": 23,
+   "cx_m": 11.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_0",
+   "i": 5,
+   "j": 0,
+   "cx_m": 13.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_1",
+   "i": 5,
+   "j": 1,
+   "cx_m": 13.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_2",
+   "i": 5,
+   "j": 2,
+   "cx_m": 13.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_3",
+   "i": 5,
+   "j": 3,
+   "cx_m": 13.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_4",
+   "i": 5,
+   "j": 4,
+   "cx_m": 13.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_5",
+   "i": 5,
+   "j": 5,
+   "cx_m": 13.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_6",
+   "i": 5,
+   "j": 6,
+   "cx_m": 13.75,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_5_7",
+   "i": 5,
+   "j": 7,
+   "cx_m": 13.75,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_5_8",
+   "i": 5,
+   "j": 8,
+   "cx_m": 13.75,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_5_9",
+   "i": 5,
+   "j": 9,
+   "cx_m": 13.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_5_10",
+   "i": 5,
+   "j": 10,
+   "cx_m": 13.75,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_5_11",
+   "i": 5,
+   "j": 11,
+   "cx_m": 13.75,
+   "cy_m": 28.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_5_12",
+   "i": 5,
+   "j": 12,
+   "cx_m": 13.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_13",
+   "i": 5,
+   "j": 13,
+   "cx_m": 13.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_14",
+   "i": 5,
+   "j": 14,
+   "cx_m": 13.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_15",
+   "i": 5,
+   "j": 15,
+   "cx_m": 13.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_16",
+   "i": 5,
+   "j": 16,
+   "cx_m": 13.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_17",
+   "i": 5,
+   "j": 17,
+   "cx_m": 13.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_18",
+   "i": 5,
+   "j": 18,
+   "cx_m": 13.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_19",
+   "i": 5,
+   "j": 19,
+   "cx_m": 13.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_20",
+   "i": 5,
+   "j": 20,
+   "cx_m": 13.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_21",
+   "i": 5,
+   "j": 21,
+   "cx_m": 13.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_22",
+   "i": 5,
+   "j": 22,
+   "cx_m": 13.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_5_23",
+   "i": 5,
+   "j": 23,
+   "cx_m": 13.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_0",
+   "i": 6,
+   "j": 0,
+   "cx_m": 16.25,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_1",
+   "i": 6,
+   "j": 1,
+   "cx_m": 16.25,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_2",
+   "i": 6,
+   "j": 2,
+   "cx_m": 16.25,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_3",
+   "i": 6,
+   "j": 3,
+   "cx_m": 16.25,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_4",
+   "i": 6,
+   "j": 4,
+   "cx_m": 16.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_5",
+   "i": 6,
+   "j": 5,
+   "cx_m": 16.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_6",
+   "i": 6,
+   "j": 6,
+   "cx_m": 16.25,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_6_7",
+   "i": 6,
+   "j": 7,
+   "cx_m": 16.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_6_8",
+   "i": 6,
+   "j": 8,
+   "cx_m": 16.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_6_9",
+   "i": 6,
+   "j": 9,
+   "cx_m": 16.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_6_10",
+   "i": 6,
+   "j": 10,
+   "cx_m": 16.25,
+   "cy_m": 26.25,
+   "mean_ndvi": 0.410646,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_6_11",
+   "i": 6,
+   "j": 11,
+   "cx_m": 16.25,
+   "cy_m": 28.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_6_12",
+   "i": 6,
+   "j": 12,
+   "cx_m": 16.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_13",
+   "i": 6,
+   "j": 13,
+   "cx_m": 16.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_14",
+   "i": 6,
+   "j": 14,
+   "cx_m": 16.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_15",
+   "i": 6,
+   "j": 15,
+   "cx_m": 16.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_16",
+   "i": 6,
+   "j": 16,
+   "cx_m": 16.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_17",
+   "i": 6,
+   "j": 17,
+   "cx_m": 16.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_18",
+   "i": 6,
+   "j": 18,
+   "cx_m": 16.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_19",
+   "i": 6,
+   "j": 19,
+   "cx_m": 16.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_20",
+   "i": 6,
+   "j": 20,
+   "cx_m": 16.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_21",
+   "i": 6,
+   "j": 21,
+   "cx_m": 16.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_22",
+   "i": 6,
+   "j": 22,
+   "cx_m": 16.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_6_23",
+   "i": 6,
+   "j": 23,
+   "cx_m": 16.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_0",
+   "i": 7,
+   "j": 0,
+   "cx_m": 18.75,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_1",
+   "i": 7,
+   "j": 1,
+   "cx_m": 18.75,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_2",
+   "i": 7,
+   "j": 2,
+   "cx_m": 18.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_3",
+   "i": 7,
+   "j": 3,
+   "cx_m": 18.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_4",
+   "i": 7,
+   "j": 4,
+   "cx_m": 18.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_5",
+   "i": 7,
+   "j": 5,
+   "cx_m": 18.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_6",
+   "i": 7,
+   "j": 6,
+   "cx_m": 18.75,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_7",
+   "i": 7,
+   "j": 7,
+   "cx_m": 18.75,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_8",
+   "i": 7,
+   "j": 8,
+   "cx_m": 18.75,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_9",
+   "i": 7,
+   "j": 9,
+   "cx_m": 18.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_10",
+   "i": 7,
+   "j": 10,
+   "cx_m": 18.75,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_11",
+   "i": 7,
+   "j": 11,
+   "cx_m": 18.75,
+   "cy_m": 28.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_7_12",
+   "i": 7,
+   "j": 12,
+   "cx_m": 18.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_13",
+   "i": 7,
+   "j": 13,
+   "cx_m": 18.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_14",
+   "i": 7,
+   "j": 14,
+   "cx_m": 18.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_15",
+   "i": 7,
+   "j": 15,
+   "cx_m": 18.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_16",
+   "i": 7,
+   "j": 16,
+   "cx_m": 18.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_17",
+   "i": 7,
+   "j": 17,
+   "cx_m": 18.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_18",
+   "i": 7,
+   "j": 18,
+   "cx_m": 18.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_19",
+   "i": 7,
+   "j": 19,
+   "cx_m": 18.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_20",
+   "i": 7,
+   "j": 20,
+   "cx_m": 18.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_21",
+   "i": 7,
+   "j": 21,
+   "cx_m": 18.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_22",
+   "i": 7,
+   "j": 22,
+   "cx_m": 18.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_7_23",
+   "i": 7,
+   "j": 23,
+   "cx_m": 18.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_0",
+   "i": 8,
+   "j": 0,
+   "cx_m": 21.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_8_1",
+   "i": 8,
+   "j": 1,
+   "cx_m": 21.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_8_2",
+   "i": 8,
+   "j": 2,
+   "cx_m": 21.25,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_3",
+   "i": 8,
+   "j": 3,
+   "cx_m": 21.25,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_4",
+   "i": 8,
+   "j": 4,
+   "cx_m": 21.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_5",
+   "i": 8,
+   "j": 5,
+   "cx_m": 21.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_6",
+   "i": 8,
+   "j": 6,
+   "cx_m": 21.25,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_8_7",
+   "i": 8,
+   "j": 7,
+   "cx_m": 21.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_8_8",
+   "i": 8,
+   "j": 8,
+   "cx_m": 21.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_8_9",
+   "i": 8,
+   "j": 9,
+   "cx_m": 21.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_8_10",
+   "i": 8,
+   "j": 10,
+   "cx_m": 21.25,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_8_11",
+   "i": 8,
+   "j": 11,
+   "cx_m": 21.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_12",
+   "i": 8,
+   "j": 12,
+   "cx_m": 21.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_13",
+   "i": 8,
+   "j": 13,
+   "cx_m": 21.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_14",
+   "i": 8,
+   "j": 14,
+   "cx_m": 21.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_15",
+   "i": 8,
+   "j": 15,
+   "cx_m": 21.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_16",
+   "i": 8,
+   "j": 16,
+   "cx_m": 21.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_17",
+   "i": 8,
+   "j": 17,
+   "cx_m": 21.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_18",
+   "i": 8,
+   "j": 18,
+   "cx_m": 21.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_19",
+   "i": 8,
+   "j": 19,
+   "cx_m": 21.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_20",
+   "i": 8,
+   "j": 20,
+   "cx_m": 21.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_21",
+   "i": 8,
+   "j": 21,
+   "cx_m": 21.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_22",
+   "i": 8,
+   "j": 22,
+   "cx_m": 21.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_8_23",
+   "i": 8,
+   "j": 23,
+   "cx_m": 21.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_0",
+   "i": 9,
+   "j": 0,
+   "cx_m": 23.75,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_9_1",
+   "i": 9,
+   "j": 1,
+   "cx_m": 23.75,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_9_2",
+   "i": 9,
+   "j": 2,
+   "cx_m": 23.75,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_9_3",
+   "i": 9,
+   "j": 3,
+   "cx_m": 23.75,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_9_4",
+   "i": 9,
+   "j": 4,
+   "cx_m": 23.75,
+   "cy_m": 11.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_9_5",
+   "i": 9,
+   "j": 5,
+   "cx_m": 23.75,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_9_6",
+   "i": 9,
+   "j": 6,
+   "cx_m": 23.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_7",
+   "i": 9,
+   "j": 7,
+   "cx_m": 23.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_8",
+   "i": 9,
+   "j": 8,
+   "cx_m": 23.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_9",
+   "i": 9,
+   "j": 9,
+   "cx_m": 23.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_9_10",
+   "i": 9,
+   "j": 10,
+   "cx_m": 23.75,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_9_11",
+   "i": 9,
+   "j": 11,
+   "cx_m": 23.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_12",
+   "i": 9,
+   "j": 12,
+   "cx_m": 23.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_13",
+   "i": 9,
+   "j": 13,
+   "cx_m": 23.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_14",
+   "i": 9,
+   "j": 14,
+   "cx_m": 23.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_15",
+   "i": 9,
+   "j": 15,
+   "cx_m": 23.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_16",
+   "i": 9,
+   "j": 16,
+   "cx_m": 23.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_17",
+   "i": 9,
+   "j": 17,
+   "cx_m": 23.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_18",
+   "i": 9,
+   "j": 18,
+   "cx_m": 23.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_19",
+   "i": 9,
+   "j": 19,
+   "cx_m": 23.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_20",
+   "i": 9,
+   "j": 20,
+   "cx_m": 23.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_21",
+   "i": 9,
+   "j": 21,
+   "cx_m": 23.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_22",
+   "i": 9,
+   "j": 22,
+   "cx_m": 23.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_9_23",
+   "i": 9,
+   "j": 23,
+   "cx_m": 23.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_0",
+   "i": 10,
+   "j": 0,
+   "cx_m": 26.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_10_1",
+   "i": 10,
+   "j": 1,
+   "cx_m": 26.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_10_2",
+   "i": 10,
+   "j": 2,
+   "cx_m": 26.25,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_10_3",
+   "i": 10,
+   "j": 3,
+   "cx_m": 26.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_10_4",
+   "i": 10,
+   "j": 4,
+   "cx_m": 26.25,
+   "cy_m": 11.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_10_5",
+   "i": 10,
+   "j": 5,
+   "cx_m": 26.25,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_10_6",
+   "i": 10,
+   "j": 6,
+   "cx_m": 26.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_7",
+   "i": 10,
+   "j": 7,
+   "cx_m": 26.25,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_8",
+   "i": 10,
+   "j": 8,
+   "cx_m": 26.25,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_9",
+   "i": 10,
+   "j": 9,
+   "cx_m": 26.25,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_10",
+   "i": 10,
+   "j": 10,
+   "cx_m": 26.25,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_11",
+   "i": 10,
+   "j": 11,
+   "cx_m": 26.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_12",
+   "i": 10,
+   "j": 12,
+   "cx_m": 26.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_13",
+   "i": 10,
+   "j": 13,
+   "cx_m": 26.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_14",
+   "i": 10,
+   "j": 14,
+   "cx_m": 26.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_15",
+   "i": 10,
+   "j": 15,
+   "cx_m": 26.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_16",
+   "i": 10,
+   "j": 16,
+   "cx_m": 26.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_17",
+   "i": 10,
+   "j": 17,
+   "cx_m": 26.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_18",
+   "i": 10,
+   "j": 18,
+   "cx_m": 26.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_19",
+   "i": 10,
+   "j": 19,
+   "cx_m": 26.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_20",
+   "i": 10,
+   "j": 20,
+   "cx_m": 26.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_21",
+   "i": 10,
+   "j": 21,
+   "cx_m": 26.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_22",
+   "i": 10,
+   "j": 22,
+   "cx_m": 26.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_10_23",
+   "i": 10,
+   "j": 23,
+   "cx_m": 26.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_0",
+   "i": 11,
+   "j": 0,
+   "cx_m": 28.75,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.438658,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_11_1",
+   "i": 11,
+   "j": 1,
+   "cx_m": 28.75,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_11_2",
+   "i": 11,
+   "j": 2,
+   "cx_m": 28.75,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_11_3",
+   "i": 11,
+   "j": 3,
+   "cx_m": 28.75,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_11_4",
+   "i": 11,
+   "j": 4,
+   "cx_m": 28.75,
+   "cy_m": 11.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_11_5",
+   "i": 11,
+   "j": 5,
+   "cx_m": 28.75,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_11_6",
+   "i": 11,
+   "j": 6,
+   "cx_m": 28.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_7",
+   "i": 11,
+   "j": 7,
+   "cx_m": 28.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_8",
+   "i": 11,
+   "j": 8,
+   "cx_m": 28.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_9",
+   "i": 11,
+   "j": 9,
+   "cx_m": 28.75,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_10",
+   "i": 11,
+   "j": 10,
+   "cx_m": 28.75,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_11",
+   "i": 11,
+   "j": 11,
+   "cx_m": 28.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_12",
+   "i": 11,
+   "j": 12,
+   "cx_m": 28.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_13",
+   "i": 11,
+   "j": 13,
+   "cx_m": 28.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_14",
+   "i": 11,
+   "j": 14,
+   "cx_m": 28.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_15",
+   "i": 11,
+   "j": 15,
+   "cx_m": 28.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_16",
+   "i": 11,
+   "j": 16,
+   "cx_m": 28.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_17",
+   "i": 11,
+   "j": 17,
+   "cx_m": 28.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_18",
+   "i": 11,
+   "j": 18,
+   "cx_m": 28.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_19",
+   "i": 11,
+   "j": 19,
+   "cx_m": 28.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_20",
+   "i": 11,
+   "j": 20,
+   "cx_m": 28.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_21",
+   "i": 11,
+   "j": 21,
+   "cx_m": 28.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_22",
+   "i": 11,
+   "j": 22,
+   "cx_m": 28.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_11_23",
+   "i": 11,
+   "j": 23,
+   "cx_m": 28.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_0",
+   "i": 12,
+   "j": 0,
+   "cx_m": 31.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.438658,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_12_1",
+   "i": 12,
+   "j": 1,
+   "cx_m": 31.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.438658,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_12_2",
+   "i": 12,
+   "j": 2,
+   "cx_m": 31.25,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_12_3",
+   "i": 12,
+   "j": 3,
+   "cx_m": 31.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_12_4",
+   "i": 12,
+   "j": 4,
+   "cx_m": 31.25,
+   "cy_m": 11.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_12_5",
+   "i": 12,
+   "j": 5,
+   "cx_m": 31.25,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_12_6",
+   "i": 12,
+   "j": 6,
+   "cx_m": 31.25,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_12_7",
+   "i": 12,
+   "j": 7,
+   "cx_m": 31.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_12_8",
+   "i": 12,
+   "j": 8,
+   "cx_m": 31.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_12_9",
+   "i": 12,
+   "j": 9,
+   "cx_m": 31.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_12_10",
+   "i": 12,
+   "j": 10,
+   "cx_m": 31.25,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_12_11",
+   "i": 12,
+   "j": 11,
+   "cx_m": 31.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_12",
+   "i": 12,
+   "j": 12,
+   "cx_m": 31.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_13",
+   "i": 12,
+   "j": 13,
+   "cx_m": 31.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_14",
+   "i": 12,
+   "j": 14,
+   "cx_m": 31.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_15",
+   "i": 12,
+   "j": 15,
+   "cx_m": 31.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_16",
+   "i": 12,
+   "j": 16,
+   "cx_m": 31.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_17",
+   "i": 12,
+   "j": 17,
+   "cx_m": 31.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_18",
+   "i": 12,
+   "j": 18,
+   "cx_m": 31.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_19",
+   "i": 12,
+   "j": 19,
+   "cx_m": 31.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_20",
+   "i": 12,
+   "j": 20,
+   "cx_m": 31.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_21",
+   "i": 12,
+   "j": 21,
+   "cx_m": 31.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_22",
+   "i": 12,
+   "j": 22,
+   "cx_m": 31.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_12_23",
+   "i": 12,
+   "j": 23,
+   "cx_m": 31.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_0",
+   "i": 13,
+   "j": 0,
+   "cx_m": 33.75,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_13_1",
+   "i": 13,
+   "j": 1,
+   "cx_m": 33.75,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_13_2",
+   "i": 13,
+   "j": 2,
+   "cx_m": 33.75,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.43963,
+   "n_samples": 3
+  },
+  {
+   "cell_id": "cell_13_3",
+   "i": 13,
+   "j": 3,
+   "cx_m": 33.75,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.439144,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_13_4",
+   "i": 13,
+   "j": 4,
+   "cx_m": 33.75,
+   "cy_m": 11.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_13_5",
+   "i": 13,
+   "j": 5,
+   "cx_m": 33.75,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_13_6",
+   "i": 13,
+   "j": 6,
+   "cx_m": 33.75,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_13_7",
+   "i": 13,
+   "j": 7,
+   "cx_m": 33.75,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_13_8",
+   "i": 13,
+   "j": 8,
+   "cx_m": 33.75,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_13_9",
+   "i": 13,
+   "j": 9,
+   "cx_m": 33.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_13_10",
+   "i": 13,
+   "j": 10,
+   "cx_m": 33.75,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_13_11",
+   "i": 13,
+   "j": 11,
+   "cx_m": 33.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_12",
+   "i": 13,
+   "j": 12,
+   "cx_m": 33.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_13",
+   "i": 13,
+   "j": 13,
+   "cx_m": 33.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_14",
+   "i": 13,
+   "j": 14,
+   "cx_m": 33.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_15",
+   "i": 13,
+   "j": 15,
+   "cx_m": 33.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_16",
+   "i": 13,
+   "j": 16,
+   "cx_m": 33.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_17",
+   "i": 13,
+   "j": 17,
+   "cx_m": 33.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_18",
+   "i": 13,
+   "j": 18,
+   "cx_m": 33.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_19",
+   "i": 13,
+   "j": 19,
+   "cx_m": 33.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_20",
+   "i": 13,
+   "j": 20,
+   "cx_m": 33.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_21",
+   "i": 13,
+   "j": 21,
+   "cx_m": 33.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_22",
+   "i": 13,
+   "j": 22,
+   "cx_m": 33.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_13_23",
+   "i": 13,
+   "j": 23,
+   "cx_m": 33.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_0",
+   "i": 14,
+   "j": 0,
+   "cx_m": 36.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_14_1",
+   "i": 14,
+   "j": 1,
+   "cx_m": 36.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_14_2",
+   "i": 14,
+   "j": 2,
+   "cx_m": 36.25,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_14_3",
+   "i": 14,
+   "j": 3,
+   "cx_m": 36.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.439144,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_14_4",
+   "i": 14,
+   "j": 4,
+   "cx_m": 36.25,
+   "cy_m": 11.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_14_5",
+   "i": 14,
+   "j": 5,
+   "cx_m": 36.25,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 2
+  },
+  {
+   "cell_id": "cell_14_6",
+   "i": 14,
+   "j": 6,
+   "cx_m": 36.25,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_14_7",
+   "i": 14,
+   "j": 7,
+   "cx_m": 36.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_14_8",
+   "i": 14,
+   "j": 8,
+   "cx_m": 36.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_14_9",
+   "i": 14,
+   "j": 9,
+   "cx_m": 36.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_14_10",
+   "i": 14,
+   "j": 10,
+   "cx_m": 36.25,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_14_11",
+   "i": 14,
+   "j": 11,
+   "cx_m": 36.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_12",
+   "i": 14,
+   "j": 12,
+   "cx_m": 36.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_13",
+   "i": 14,
+   "j": 13,
+   "cx_m": 36.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_14",
+   "i": 14,
+   "j": 14,
+   "cx_m": 36.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_15",
+   "i": 14,
+   "j": 15,
+   "cx_m": 36.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_16",
+   "i": 14,
+   "j": 16,
+   "cx_m": 36.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_17",
+   "i": 14,
+   "j": 17,
+   "cx_m": 36.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_18",
+   "i": 14,
+   "j": 18,
+   "cx_m": 36.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_19",
+   "i": 14,
+   "j": 19,
+   "cx_m": 36.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_20",
+   "i": 14,
+   "j": 20,
+   "cx_m": 36.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_21",
+   "i": 14,
+   "j": 21,
+   "cx_m": 36.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_22",
+   "i": 14,
+   "j": 22,
+   "cx_m": 36.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_14_23",
+   "i": 14,
+   "j": 23,
+   "cx_m": 36.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_0",
+   "i": 15,
+   "j": 0,
+   "cx_m": 38.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_1",
+   "i": 15,
+   "j": 1,
+   "cx_m": 38.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_2",
+   "i": 15,
+   "j": 2,
+   "cx_m": 38.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_3",
+   "i": 15,
+   "j": 3,
+   "cx_m": 38.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_4",
+   "i": 15,
+   "j": 4,
+   "cx_m": 38.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_5",
+   "i": 15,
+   "j": 5,
+   "cx_m": 38.75,
+   "cy_m": 13.75,
+   "mean_ndvi": 0.614547,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_15_6",
+   "i": 15,
+   "j": 6,
+   "cx_m": 38.75,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_15_7",
+   "i": 15,
+   "j": 7,
+   "cx_m": 38.75,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_15_8",
+   "i": 15,
+   "j": 8,
+   "cx_m": 38.75,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_15_9",
+   "i": 15,
+   "j": 9,
+   "cx_m": 38.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_15_10",
+   "i": 15,
+   "j": 10,
+   "cx_m": 38.75,
+   "cy_m": 26.25,
+   "mean_ndvi": 0.614547,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_15_11",
+   "i": 15,
+   "j": 11,
+   "cx_m": 38.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_12",
+   "i": 15,
+   "j": 12,
+   "cx_m": 38.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_13",
+   "i": 15,
+   "j": 13,
+   "cx_m": 38.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_14",
+   "i": 15,
+   "j": 14,
+   "cx_m": 38.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_15",
+   "i": 15,
+   "j": 15,
+   "cx_m": 38.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_16",
+   "i": 15,
+   "j": 16,
+   "cx_m": 38.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_17",
+   "i": 15,
+   "j": 17,
+   "cx_m": 38.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_18",
+   "i": 15,
+   "j": 18,
+   "cx_m": 38.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_19",
+   "i": 15,
+   "j": 19,
+   "cx_m": 38.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_20",
+   "i": 15,
+   "j": 20,
+   "cx_m": 38.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_21",
+   "i": 15,
+   "j": 21,
+   "cx_m": 38.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_22",
+   "i": 15,
+   "j": 22,
+   "cx_m": 38.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_15_23",
+   "i": 15,
+   "j": 23,
+   "cx_m": 38.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_0",
+   "i": 16,
+   "j": 0,
+   "cx_m": 41.25,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_1",
+   "i": 16,
+   "j": 1,
+   "cx_m": 41.25,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_2",
+   "i": 16,
+   "j": 2,
+   "cx_m": 41.25,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_3",
+   "i": 16,
+   "j": 3,
+   "cx_m": 41.25,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_4",
+   "i": 16,
+   "j": 4,
+   "cx_m": 41.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_5",
+   "i": 16,
+   "j": 5,
+   "cx_m": 41.25,
+   "cy_m": 13.75,
+   "mean_ndvi": 0.401568,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_16_6",
+   "i": 16,
+   "j": 6,
+   "cx_m": 41.25,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_16_7",
+   "i": 16,
+   "j": 7,
+   "cx_m": 41.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_16_8",
+   "i": 16,
+   "j": 8,
+   "cx_m": 41.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_16_9",
+   "i": 16,
+   "j": 9,
+   "cx_m": 41.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_16_10",
+   "i": 16,
+   "j": 10,
+   "cx_m": 41.25,
+   "cy_m": 26.25,
+   "mean_ndvi": 0.397074,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_16_11",
+   "i": 16,
+   "j": 11,
+   "cx_m": 41.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_12",
+   "i": 16,
+   "j": 12,
+   "cx_m": 41.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_13",
+   "i": 16,
+   "j": 13,
+   "cx_m": 41.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_14",
+   "i": 16,
+   "j": 14,
+   "cx_m": 41.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_15",
+   "i": 16,
+   "j": 15,
+   "cx_m": 41.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_16",
+   "i": 16,
+   "j": 16,
+   "cx_m": 41.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_17",
+   "i": 16,
+   "j": 17,
+   "cx_m": 41.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_18",
+   "i": 16,
+   "j": 18,
+   "cx_m": 41.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_19",
+   "i": 16,
+   "j": 19,
+   "cx_m": 41.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_20",
+   "i": 16,
+   "j": 20,
+   "cx_m": 41.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_21",
+   "i": 16,
+   "j": 21,
+   "cx_m": 41.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_22",
+   "i": 16,
+   "j": 22,
+   "cx_m": 41.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_16_23",
+   "i": 16,
+   "j": 23,
+   "cx_m": 41.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_0",
+   "i": 17,
+   "j": 0,
+   "cx_m": 43.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_1",
+   "i": 17,
+   "j": 1,
+   "cx_m": 43.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_2",
+   "i": 17,
+   "j": 2,
+   "cx_m": 43.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_3",
+   "i": 17,
+   "j": 3,
+   "cx_m": 43.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_4",
+   "i": 17,
+   "j": 4,
+   "cx_m": 43.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_5",
+   "i": 17,
+   "j": 5,
+   "cx_m": 43.75,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_17_6",
+   "i": 17,
+   "j": 6,
+   "cx_m": 43.75,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_17_7",
+   "i": 17,
+   "j": 7,
+   "cx_m": 43.75,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_17_8",
+   "i": 17,
+   "j": 8,
+   "cx_m": 43.75,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_17_9",
+   "i": 17,
+   "j": 9,
+   "cx_m": 43.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_17_10",
+   "i": 17,
+   "j": 10,
+   "cx_m": 43.75,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_17_11",
+   "i": 17,
+   "j": 11,
+   "cx_m": 43.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_12",
+   "i": 17,
+   "j": 12,
+   "cx_m": 43.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_13",
+   "i": 17,
+   "j": 13,
+   "cx_m": 43.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_14",
+   "i": 17,
+   "j": 14,
+   "cx_m": 43.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_15",
+   "i": 17,
+   "j": 15,
+   "cx_m": 43.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_16",
+   "i": 17,
+   "j": 16,
+   "cx_m": 43.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_17",
+   "i": 17,
+   "j": 17,
+   "cx_m": 43.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_18",
+   "i": 17,
+   "j": 18,
+   "cx_m": 43.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_19",
+   "i": 17,
+   "j": 19,
+   "cx_m": 43.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_20",
+   "i": 17,
+   "j": 20,
+   "cx_m": 43.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_21",
+   "i": 17,
+   "j": 21,
+   "cx_m": 43.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_22",
+   "i": 17,
+   "j": 22,
+   "cx_m": 43.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_17_23",
+   "i": 17,
+   "j": 23,
+   "cx_m": 43.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_0",
+   "i": 18,
+   "j": 0,
+   "cx_m": 46.25,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_1",
+   "i": 18,
+   "j": 1,
+   "cx_m": 46.25,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_2",
+   "i": 18,
+   "j": 2,
+   "cx_m": 46.25,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_3",
+   "i": 18,
+   "j": 3,
+   "cx_m": 46.25,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_4",
+   "i": 18,
+   "j": 4,
+   "cx_m": 46.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_5",
+   "i": 18,
+   "j": 5,
+   "cx_m": 46.25,
+   "cy_m": 13.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_18_6",
+   "i": 18,
+   "j": 6,
+   "cx_m": 46.25,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_18_7",
+   "i": 18,
+   "j": 7,
+   "cx_m": 46.25,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_18_8",
+   "i": 18,
+   "j": 8,
+   "cx_m": 46.25,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_18_9",
+   "i": 18,
+   "j": 9,
+   "cx_m": 46.25,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_18_10",
+   "i": 18,
+   "j": 10,
+   "cx_m": 46.25,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_18_11",
+   "i": 18,
+   "j": 11,
+   "cx_m": 46.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_12",
+   "i": 18,
+   "j": 12,
+   "cx_m": 46.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_13",
+   "i": 18,
+   "j": 13,
+   "cx_m": 46.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_14",
+   "i": 18,
+   "j": 14,
+   "cx_m": 46.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_15",
+   "i": 18,
+   "j": 15,
+   "cx_m": 46.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_16",
+   "i": 18,
+   "j": 16,
+   "cx_m": 46.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_17",
+   "i": 18,
+   "j": 17,
+   "cx_m": 46.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_18",
+   "i": 18,
+   "j": 18,
+   "cx_m": 46.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_19",
+   "i": 18,
+   "j": 19,
+   "cx_m": 46.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_20",
+   "i": 18,
+   "j": 20,
+   "cx_m": 46.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_21",
+   "i": 18,
+   "j": 21,
+   "cx_m": 46.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_22",
+   "i": 18,
+   "j": 22,
+   "cx_m": 46.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_18_23",
+   "i": 18,
+   "j": 23,
+   "cx_m": 46.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_0",
+   "i": 19,
+   "j": 0,
+   "cx_m": 48.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_1",
+   "i": 19,
+   "j": 1,
+   "cx_m": 48.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_2",
+   "i": 19,
+   "j": 2,
+   "cx_m": 48.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_3",
+   "i": 19,
+   "j": 3,
+   "cx_m": 48.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_4",
+   "i": 19,
+   "j": 4,
+   "cx_m": 48.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_5",
+   "i": 19,
+   "j": 5,
+   "cx_m": 48.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_6",
+   "i": 19,
+   "j": 6,
+   "cx_m": 48.75,
+   "cy_m": 16.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_19_7",
+   "i": 19,
+   "j": 7,
+   "cx_m": 48.75,
+   "cy_m": 18.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_19_8",
+   "i": 19,
+   "j": 8,
+   "cx_m": 48.75,
+   "cy_m": 21.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_19_9",
+   "i": 19,
+   "j": 9,
+   "cx_m": 48.75,
+   "cy_m": 23.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_19_10",
+   "i": 19,
+   "j": 10,
+   "cx_m": 48.75,
+   "cy_m": 26.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_19_11",
+   "i": 19,
+   "j": 11,
+   "cx_m": 48.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_12",
+   "i": 19,
+   "j": 12,
+   "cx_m": 48.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_13",
+   "i": 19,
+   "j": 13,
+   "cx_m": 48.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_14",
+   "i": 19,
+   "j": 14,
+   "cx_m": 48.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_15",
+   "i": 19,
+   "j": 15,
+   "cx_m": 48.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_16",
+   "i": 19,
+   "j": 16,
+   "cx_m": 48.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_17",
+   "i": 19,
+   "j": 17,
+   "cx_m": 48.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_18",
+   "i": 19,
+   "j": 18,
+   "cx_m": 48.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_19",
+   "i": 19,
+   "j": 19,
+   "cx_m": 48.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_20",
+   "i": 19,
+   "j": 20,
+   "cx_m": 48.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_21",
+   "i": 19,
+   "j": 21,
+   "cx_m": 48.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_22",
+   "i": 19,
+   "j": 22,
+   "cx_m": 48.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_19_23",
+   "i": 19,
+   "j": 23,
+   "cx_m": 48.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_0",
+   "i": 20,
+   "j": 0,
+   "cx_m": 51.25,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_1",
+   "i": 20,
+   "j": 1,
+   "cx_m": 51.25,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_2",
+   "i": 20,
+   "j": 2,
+   "cx_m": 51.25,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_3",
+   "i": 20,
+   "j": 3,
+   "cx_m": 51.25,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_4",
+   "i": 20,
+   "j": 4,
+   "cx_m": 51.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_5",
+   "i": 20,
+   "j": 5,
+   "cx_m": 51.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_6",
+   "i": 20,
+   "j": 6,
+   "cx_m": 51.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_7",
+   "i": 20,
+   "j": 7,
+   "cx_m": 51.25,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_8",
+   "i": 20,
+   "j": 8,
+   "cx_m": 51.25,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_9",
+   "i": 20,
+   "j": 9,
+   "cx_m": 51.25,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_10",
+   "i": 20,
+   "j": 10,
+   "cx_m": 51.25,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_11",
+   "i": 20,
+   "j": 11,
+   "cx_m": 51.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_12",
+   "i": 20,
+   "j": 12,
+   "cx_m": 51.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_13",
+   "i": 20,
+   "j": 13,
+   "cx_m": 51.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_14",
+   "i": 20,
+   "j": 14,
+   "cx_m": 51.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_15",
+   "i": 20,
+   "j": 15,
+   "cx_m": 51.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_16",
+   "i": 20,
+   "j": 16,
+   "cx_m": 51.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_17",
+   "i": 20,
+   "j": 17,
+   "cx_m": 51.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_18",
+   "i": 20,
+   "j": 18,
+   "cx_m": 51.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_19",
+   "i": 20,
+   "j": 19,
+   "cx_m": 51.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_20",
+   "i": 20,
+   "j": 20,
+   "cx_m": 51.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_21",
+   "i": 20,
+   "j": 21,
+   "cx_m": 51.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_22",
+   "i": 20,
+   "j": 22,
+   "cx_m": 51.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_20_23",
+   "i": 20,
+   "j": 23,
+   "cx_m": 51.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_0",
+   "i": 21,
+   "j": 0,
+   "cx_m": 53.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_1",
+   "i": 21,
+   "j": 1,
+   "cx_m": 53.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_2",
+   "i": 21,
+   "j": 2,
+   "cx_m": 53.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_3",
+   "i": 21,
+   "j": 3,
+   "cx_m": 53.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_4",
+   "i": 21,
+   "j": 4,
+   "cx_m": 53.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_5",
+   "i": 21,
+   "j": 5,
+   "cx_m": 53.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_6",
+   "i": 21,
+   "j": 6,
+   "cx_m": 53.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_7",
+   "i": 21,
+   "j": 7,
+   "cx_m": 53.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_8",
+   "i": 21,
+   "j": 8,
+   "cx_m": 53.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_9",
+   "i": 21,
+   "j": 9,
+   "cx_m": 53.75,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_10",
+   "i": 21,
+   "j": 10,
+   "cx_m": 53.75,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_11",
+   "i": 21,
+   "j": 11,
+   "cx_m": 53.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_12",
+   "i": 21,
+   "j": 12,
+   "cx_m": 53.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_13",
+   "i": 21,
+   "j": 13,
+   "cx_m": 53.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_14",
+   "i": 21,
+   "j": 14,
+   "cx_m": 53.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_15",
+   "i": 21,
+   "j": 15,
+   "cx_m": 53.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_16",
+   "i": 21,
+   "j": 16,
+   "cx_m": 53.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_17",
+   "i": 21,
+   "j": 17,
+   "cx_m": 53.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_18",
+   "i": 21,
+   "j": 18,
+   "cx_m": 53.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_19",
+   "i": 21,
+   "j": 19,
+   "cx_m": 53.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_20",
+   "i": 21,
+   "j": 20,
+   "cx_m": 53.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_21",
+   "i": 21,
+   "j": 21,
+   "cx_m": 53.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_22",
+   "i": 21,
+   "j": 22,
+   "cx_m": 53.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_21_23",
+   "i": 21,
+   "j": 23,
+   "cx_m": 53.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_0",
+   "i": 22,
+   "j": 0,
+   "cx_m": 56.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_22_1",
+   "i": 22,
+   "j": 1,
+   "cx_m": 56.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_22_2",
+   "i": 22,
+   "j": 2,
+   "cx_m": 56.25,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_22_3",
+   "i": 22,
+   "j": 3,
+   "cx_m": 56.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_22_4",
+   "i": 22,
+   "j": 4,
+   "cx_m": 56.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_5",
+   "i": 22,
+   "j": 5,
+   "cx_m": 56.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_6",
+   "i": 22,
+   "j": 6,
+   "cx_m": 56.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_7",
+   "i": 22,
+   "j": 7,
+   "cx_m": 56.25,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_8",
+   "i": 22,
+   "j": 8,
+   "cx_m": 56.25,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_9",
+   "i": 22,
+   "j": 9,
+   "cx_m": 56.25,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_10",
+   "i": 22,
+   "j": 10,
+   "cx_m": 56.25,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_11",
+   "i": 22,
+   "j": 11,
+   "cx_m": 56.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_12",
+   "i": 22,
+   "j": 12,
+   "cx_m": 56.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_13",
+   "i": 22,
+   "j": 13,
+   "cx_m": 56.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_14",
+   "i": 22,
+   "j": 14,
+   "cx_m": 56.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_15",
+   "i": 22,
+   "j": 15,
+   "cx_m": 56.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_16",
+   "i": 22,
+   "j": 16,
+   "cx_m": 56.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_17",
+   "i": 22,
+   "j": 17,
+   "cx_m": 56.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_18",
+   "i": 22,
+   "j": 18,
+   "cx_m": 56.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_19",
+   "i": 22,
+   "j": 19,
+   "cx_m": 56.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_20",
+   "i": 22,
+   "j": 20,
+   "cx_m": 56.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_21",
+   "i": 22,
+   "j": 21,
+   "cx_m": 56.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_22",
+   "i": 22,
+   "j": 22,
+   "cx_m": 56.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_22_23",
+   "i": 22,
+   "j": 23,
+   "cx_m": 56.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_0",
+   "i": 23,
+   "j": 0,
+   "cx_m": 58.75,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_23_1",
+   "i": 23,
+   "j": 1,
+   "cx_m": 58.75,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_23_2",
+   "i": 23,
+   "j": 2,
+   "cx_m": 58.75,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_23_3",
+   "i": 23,
+   "j": 3,
+   "cx_m": 58.75,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_23_4",
+   "i": 23,
+   "j": 4,
+   "cx_m": 58.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_5",
+   "i": 23,
+   "j": 5,
+   "cx_m": 58.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_6",
+   "i": 23,
+   "j": 6,
+   "cx_m": 58.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_7",
+   "i": 23,
+   "j": 7,
+   "cx_m": 58.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_8",
+   "i": 23,
+   "j": 8,
+   "cx_m": 58.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_9",
+   "i": 23,
+   "j": 9,
+   "cx_m": 58.75,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_10",
+   "i": 23,
+   "j": 10,
+   "cx_m": 58.75,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_11",
+   "i": 23,
+   "j": 11,
+   "cx_m": 58.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_12",
+   "i": 23,
+   "j": 12,
+   "cx_m": 58.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_13",
+   "i": 23,
+   "j": 13,
+   "cx_m": 58.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_14",
+   "i": 23,
+   "j": 14,
+   "cx_m": 58.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_15",
+   "i": 23,
+   "j": 15,
+   "cx_m": 58.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_16",
+   "i": 23,
+   "j": 16,
+   "cx_m": 58.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_17",
+   "i": 23,
+   "j": 17,
+   "cx_m": 58.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_18",
+   "i": 23,
+   "j": 18,
+   "cx_m": 58.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_19",
+   "i": 23,
+   "j": 19,
+   "cx_m": 58.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_20",
+   "i": 23,
+   "j": 20,
+   "cx_m": 58.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_21",
+   "i": 23,
+   "j": 21,
+   "cx_m": 58.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_22",
+   "i": 23,
+   "j": 22,
+   "cx_m": 58.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_23_23",
+   "i": 23,
+   "j": 23,
+   "cx_m": 58.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_0",
+   "i": 24,
+   "j": 0,
+   "cx_m": 61.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_24_1",
+   "i": 24,
+   "j": 1,
+   "cx_m": 61.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_24_2",
+   "i": 24,
+   "j": 2,
+   "cx_m": 61.25,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_24_3",
+   "i": 24,
+   "j": 3,
+   "cx_m": 61.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_24_4",
+   "i": 24,
+   "j": 4,
+   "cx_m": 61.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_5",
+   "i": 24,
+   "j": 5,
+   "cx_m": 61.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_6",
+   "i": 24,
+   "j": 6,
+   "cx_m": 61.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_7",
+   "i": 24,
+   "j": 7,
+   "cx_m": 61.25,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_8",
+   "i": 24,
+   "j": 8,
+   "cx_m": 61.25,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_9",
+   "i": 24,
+   "j": 9,
+   "cx_m": 61.25,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_10",
+   "i": 24,
+   "j": 10,
+   "cx_m": 61.25,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_11",
+   "i": 24,
+   "j": 11,
+   "cx_m": 61.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_12",
+   "i": 24,
+   "j": 12,
+   "cx_m": 61.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_13",
+   "i": 24,
+   "j": 13,
+   "cx_m": 61.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_14",
+   "i": 24,
+   "j": 14,
+   "cx_m": 61.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_15",
+   "i": 24,
+   "j": 15,
+   "cx_m": 61.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_16",
+   "i": 24,
+   "j": 16,
+   "cx_m": 61.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_17",
+   "i": 24,
+   "j": 17,
+   "cx_m": 61.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_18",
+   "i": 24,
+   "j": 18,
+   "cx_m": 61.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_19",
+   "i": 24,
+   "j": 19,
+   "cx_m": 61.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_20",
+   "i": 24,
+   "j": 20,
+   "cx_m": 61.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_21",
+   "i": 24,
+   "j": 21,
+   "cx_m": 61.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_22",
+   "i": 24,
+   "j": 22,
+   "cx_m": 61.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_24_23",
+   "i": 24,
+   "j": 23,
+   "cx_m": 61.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_0",
+   "i": 25,
+   "j": 0,
+   "cx_m": 63.75,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_25_1",
+   "i": 25,
+   "j": 1,
+   "cx_m": 63.75,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_25_2",
+   "i": 25,
+   "j": 2,
+   "cx_m": 63.75,
+   "cy_m": 6.25,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_25_3",
+   "i": 25,
+   "j": 3,
+   "cx_m": 63.75,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_25_4",
+   "i": 25,
+   "j": 4,
+   "cx_m": 63.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_5",
+   "i": 25,
+   "j": 5,
+   "cx_m": 63.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_6",
+   "i": 25,
+   "j": 6,
+   "cx_m": 63.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_7",
+   "i": 25,
+   "j": 7,
+   "cx_m": 63.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_8",
+   "i": 25,
+   "j": 8,
+   "cx_m": 63.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_9",
+   "i": 25,
+   "j": 9,
+   "cx_m": 63.75,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_10",
+   "i": 25,
+   "j": 10,
+   "cx_m": 63.75,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_11",
+   "i": 25,
+   "j": 11,
+   "cx_m": 63.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_12",
+   "i": 25,
+   "j": 12,
+   "cx_m": 63.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_13",
+   "i": 25,
+   "j": 13,
+   "cx_m": 63.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_14",
+   "i": 25,
+   "j": 14,
+   "cx_m": 63.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_15",
+   "i": 25,
+   "j": 15,
+   "cx_m": 63.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_16",
+   "i": 25,
+   "j": 16,
+   "cx_m": 63.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_17",
+   "i": 25,
+   "j": 17,
+   "cx_m": 63.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_18",
+   "i": 25,
+   "j": 18,
+   "cx_m": 63.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_19",
+   "i": 25,
+   "j": 19,
+   "cx_m": 63.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_20",
+   "i": 25,
+   "j": 20,
+   "cx_m": 63.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_21",
+   "i": 25,
+   "j": 21,
+   "cx_m": 63.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_22",
+   "i": 25,
+   "j": 22,
+   "cx_m": 63.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_25_23",
+   "i": 25,
+   "j": 23,
+   "cx_m": 63.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_0",
+   "i": 26,
+   "j": 0,
+   "cx_m": 66.25,
+   "cy_m": 1.25,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_26_1",
+   "i": 26,
+   "j": 1,
+   "cx_m": 66.25,
+   "cy_m": 3.75,
+   "mean_ndvi": -0.440601,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_26_2",
+   "i": 26,
+   "j": 2,
+   "cx_m": 66.25,
+   "cy_m": 6.25,
+   "mean_ndvi": 0.462749,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_26_3",
+   "i": 26,
+   "j": 3,
+   "cx_m": 66.25,
+   "cy_m": 8.75,
+   "mean_ndvi": -0.437687,
+   "n_samples": 1
+  },
+  {
+   "cell_id": "cell_26_4",
+   "i": 26,
+   "j": 4,
+   "cx_m": 66.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_5",
+   "i": 26,
+   "j": 5,
+   "cx_m": 66.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_6",
+   "i": 26,
+   "j": 6,
+   "cx_m": 66.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_7",
+   "i": 26,
+   "j": 7,
+   "cx_m": 66.25,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_8",
+   "i": 26,
+   "j": 8,
+   "cx_m": 66.25,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_9",
+   "i": 26,
+   "j": 9,
+   "cx_m": 66.25,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_10",
+   "i": 26,
+   "j": 10,
+   "cx_m": 66.25,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_11",
+   "i": 26,
+   "j": 11,
+   "cx_m": 66.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_12",
+   "i": 26,
+   "j": 12,
+   "cx_m": 66.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_13",
+   "i": 26,
+   "j": 13,
+   "cx_m": 66.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_14",
+   "i": 26,
+   "j": 14,
+   "cx_m": 66.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_15",
+   "i": 26,
+   "j": 15,
+   "cx_m": 66.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_16",
+   "i": 26,
+   "j": 16,
+   "cx_m": 66.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_17",
+   "i": 26,
+   "j": 17,
+   "cx_m": 66.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_18",
+   "i": 26,
+   "j": 18,
+   "cx_m": 66.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_19",
+   "i": 26,
+   "j": 19,
+   "cx_m": 66.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_20",
+   "i": 26,
+   "j": 20,
+   "cx_m": 66.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_21",
+   "i": 26,
+   "j": 21,
+   "cx_m": 66.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_22",
+   "i": 26,
+   "j": 22,
+   "cx_m": 66.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_26_23",
+   "i": 26,
+   "j": 23,
+   "cx_m": 66.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_0",
+   "i": 27,
+   "j": 0,
+   "cx_m": 68.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_1",
+   "i": 27,
+   "j": 1,
+   "cx_m": 68.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_2",
+   "i": 27,
+   "j": 2,
+   "cx_m": 68.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_3",
+   "i": 27,
+   "j": 3,
+   "cx_m": 68.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_4",
+   "i": 27,
+   "j": 4,
+   "cx_m": 68.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_5",
+   "i": 27,
+   "j": 5,
+   "cx_m": 68.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_6",
+   "i": 27,
+   "j": 6,
+   "cx_m": 68.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_7",
+   "i": 27,
+   "j": 7,
+   "cx_m": 68.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_8",
+   "i": 27,
+   "j": 8,
+   "cx_m": 68.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_9",
+   "i": 27,
+   "j": 9,
+   "cx_m": 68.75,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_10",
+   "i": 27,
+   "j": 10,
+   "cx_m": 68.75,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_11",
+   "i": 27,
+   "j": 11,
+   "cx_m": 68.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_12",
+   "i": 27,
+   "j": 12,
+   "cx_m": 68.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_13",
+   "i": 27,
+   "j": 13,
+   "cx_m": 68.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_14",
+   "i": 27,
+   "j": 14,
+   "cx_m": 68.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_15",
+   "i": 27,
+   "j": 15,
+   "cx_m": 68.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_16",
+   "i": 27,
+   "j": 16,
+   "cx_m": 68.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_17",
+   "i": 27,
+   "j": 17,
+   "cx_m": 68.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_18",
+   "i": 27,
+   "j": 18,
+   "cx_m": 68.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_19",
+   "i": 27,
+   "j": 19,
+   "cx_m": 68.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_20",
+   "i": 27,
+   "j": 20,
+   "cx_m": 68.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_21",
+   "i": 27,
+   "j": 21,
+   "cx_m": 68.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_22",
+   "i": 27,
+   "j": 22,
+   "cx_m": 68.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_27_23",
+   "i": 27,
+   "j": 23,
+   "cx_m": 68.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_0",
+   "i": 28,
+   "j": 0,
+   "cx_m": 71.25,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_1",
+   "i": 28,
+   "j": 1,
+   "cx_m": 71.25,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_2",
+   "i": 28,
+   "j": 2,
+   "cx_m": 71.25,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_3",
+   "i": 28,
+   "j": 3,
+   "cx_m": 71.25,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_4",
+   "i": 28,
+   "j": 4,
+   "cx_m": 71.25,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_5",
+   "i": 28,
+   "j": 5,
+   "cx_m": 71.25,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_6",
+   "i": 28,
+   "j": 6,
+   "cx_m": 71.25,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_7",
+   "i": 28,
+   "j": 7,
+   "cx_m": 71.25,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_8",
+   "i": 28,
+   "j": 8,
+   "cx_m": 71.25,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_9",
+   "i": 28,
+   "j": 9,
+   "cx_m": 71.25,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_10",
+   "i": 28,
+   "j": 10,
+   "cx_m": 71.25,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_11",
+   "i": 28,
+   "j": 11,
+   "cx_m": 71.25,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_12",
+   "i": 28,
+   "j": 12,
+   "cx_m": 71.25,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_13",
+   "i": 28,
+   "j": 13,
+   "cx_m": 71.25,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_14",
+   "i": 28,
+   "j": 14,
+   "cx_m": 71.25,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_15",
+   "i": 28,
+   "j": 15,
+   "cx_m": 71.25,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_16",
+   "i": 28,
+   "j": 16,
+   "cx_m": 71.25,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_17",
+   "i": 28,
+   "j": 17,
+   "cx_m": 71.25,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_18",
+   "i": 28,
+   "j": 18,
+   "cx_m": 71.25,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_19",
+   "i": 28,
+   "j": 19,
+   "cx_m": 71.25,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_20",
+   "i": 28,
+   "j": 20,
+   "cx_m": 71.25,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_21",
+   "i": 28,
+   "j": 21,
+   "cx_m": 71.25,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_22",
+   "i": 28,
+   "j": 22,
+   "cx_m": 71.25,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_28_23",
+   "i": 28,
+   "j": 23,
+   "cx_m": 71.25,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_0",
+   "i": 29,
+   "j": 0,
+   "cx_m": 73.75,
+   "cy_m": 1.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_1",
+   "i": 29,
+   "j": 1,
+   "cx_m": 73.75,
+   "cy_m": 3.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_2",
+   "i": 29,
+   "j": 2,
+   "cx_m": 73.75,
+   "cy_m": 6.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_3",
+   "i": 29,
+   "j": 3,
+   "cx_m": 73.75,
+   "cy_m": 8.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_4",
+   "i": 29,
+   "j": 4,
+   "cx_m": 73.75,
+   "cy_m": 11.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_5",
+   "i": 29,
+   "j": 5,
+   "cx_m": 73.75,
+   "cy_m": 13.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_6",
+   "i": 29,
+   "j": 6,
+   "cx_m": 73.75,
+   "cy_m": 16.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_7",
+   "i": 29,
+   "j": 7,
+   "cx_m": 73.75,
+   "cy_m": 18.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_8",
+   "i": 29,
+   "j": 8,
+   "cx_m": 73.75,
+   "cy_m": 21.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_9",
+   "i": 29,
+   "j": 9,
+   "cx_m": 73.75,
+   "cy_m": 23.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_10",
+   "i": 29,
+   "j": 10,
+   "cx_m": 73.75,
+   "cy_m": 26.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_11",
+   "i": 29,
+   "j": 11,
+   "cx_m": 73.75,
+   "cy_m": 28.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_12",
+   "i": 29,
+   "j": 12,
+   "cx_m": 73.75,
+   "cy_m": 31.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_13",
+   "i": 29,
+   "j": 13,
+   "cx_m": 73.75,
+   "cy_m": 33.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_14",
+   "i": 29,
+   "j": 14,
+   "cx_m": 73.75,
+   "cy_m": 36.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_15",
+   "i": 29,
+   "j": 15,
+   "cx_m": 73.75,
+   "cy_m": 38.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_16",
+   "i": 29,
+   "j": 16,
+   "cx_m": 73.75,
+   "cy_m": 41.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_17",
+   "i": 29,
+   "j": 17,
+   "cx_m": 73.75,
+   "cy_m": 43.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_18",
+   "i": 29,
+   "j": 18,
+   "cx_m": 73.75,
+   "cy_m": 46.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_19",
+   "i": 29,
+   "j": 19,
+   "cx_m": 73.75,
+   "cy_m": 48.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_20",
+   "i": 29,
+   "j": 20,
+   "cx_m": 73.75,
+   "cy_m": 51.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_21",
+   "i": 29,
+   "j": 21,
+   "cx_m": 73.75,
+   "cy_m": 53.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_22",
+   "i": 29,
+   "j": 22,
+   "cx_m": 73.75,
+   "cy_m": 56.25,
+   "mean_ndvi": null,
+   "n_samples": 0
+  },
+  {
+   "cell_id": "cell_29_23",
+   "i": 29,
+   "j": 23,
+   "cx_m": 73.75,
+   "cy_m": 58.75,
+   "mean_ndvi": null,
+   "n_samples": 0
+  }
+ ]
+}
