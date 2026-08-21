@@ -12,6 +12,11 @@ Format per entry:
 
 ```
 ## ADR-NNN: <title>   (YYYY-MM-DD, status: accepted | superseded | proposed)
+#   An accepted decision that still depends on unproven live behaviour reads
+#   `ACCEPTED — confirmation-pending`, and flips to `ACCEPTED — CONFIRMED live <date>`
+#   the day a gate proves it. Decision bodies are APPEND-ONLY: corrections and
+#   gate results land as a dated `### ADR-NNN amendment (<date>, <what>)` block at
+#   the end of this file — never as an edit to the decision text above.
 Decision: <what we're doing>
 Alternative(s) rejected: <what we didn't do>
 Why: <one to two sentences the engineer can say out loud in an interview>
@@ -222,7 +227,7 @@ validated (same pattern as ADR-003 real-render and ADR-005 live-topic checks; ba
 Owner / roles: tech-lead (decided + verified source@SHA), flight-software-engineer (builds executor +
 3D geofence), perception-ml-engineer (detection trigger), qa-safety-reviewer (`geo_avoid_into_tree`).
 
-## ADR-007: Produce the dual-band NDVI frame with an RGB camera (Red) + Gazebo's thermal sensor repurposed as synthetic NIR; NDVI computed in a ROS 2 node   (2026-08-05, status: ACCEPTED — confirmation-pending; render mechanism unproven live)
+## ADR-007: Produce the dual-band NDVI frame with an RGB camera (Red) + Gazebo's thermal sensor repurposed as synthetic NIR; NDVI computed in a ROS 2 node   (2026-08-05, status: ACCEPTED — CONFIRMED live 2026-08-18; see the ADR-007 amendments below)
 Decision: Render the two NDVI bands as **two co-located Gazebo Harmonic sensors on one rigid nadir
 mount**, and compute the index in ROS 2, not in the render:
   - **Red band** = the **R channel of a standard `type="camera"` (R8G8B8) sensor**. That same RGB
@@ -599,7 +604,7 @@ Owner / roles: devops-reliability-engineer (owner), robotics-sim-engineer + flig
 (the wrapped commands), qa-safety-reviewer (the gates are safety gates; the happy path is now
 evidenced, and the failure paths listed in amendment 3 are the outstanding evidence).
 
-## ADR-014: The docs get a rendering layer — an in-repo static generator in the "Heatmap Neutral" direction — and the Markdown stays untouched (2026-08-18, status: ACCEPTED — implemented `scripts/build_docs_site.py`, all 15 docs render)
+## ADR-014: The docs get a rendering layer — an in-repo static generator in the "Heatmap Neutral" direction — and the Markdown stays untouched (2026-08-18, status: ACCEPTED — implemented `scripts/build_docs_site.py`, every doc renders)
 Decision: Ship documentation styling as `scripts/build_docs_site.py`, a one-command generator that
 renders `README.md`, `TIGER_TEAM_GUIDE.md` and every `docs/**/*.md` into a gitignored `docs-site/`.
 The **generator is the tracked artifact; the site is disposable.** The visual direction is
@@ -653,3 +658,46 @@ fixes it, with fences opted out by their existing `white-space:pre`. All 16 page
 horizontal overflow at 375 px, and all six theme × OS-preference combinations were read out of a
 live browser rather than argued from the cascade.
 Owner / roles: qa-safety-reviewer (found and fixed), flight-software-engineer (generator owner).
+
+### ADR-005 amendment (2026-08-18, closes the trailing open follow-up)
+Superseded by this entry's own header banner: the live `ros2 topic list` check ran 2026-08-05 (Week-3
+Gate 2, `docs/archive/WEEK3_VALIDATION.md`) and all 18 `/ap/*` topics appeared exactly as locked. No
+follow-up remains on ADR-005.
+
+### ADR-006 amendment (2026-08-18, closes the trailing open follow-up)
+Superseded by this entry's own header banner: Week-3 Gate 3 (2026-08-05,
+`docs/archive/WEEK3_VALIDATION.md`) confirmed both halves live — a `/ap/cmd_gps_pose` setpoint was
+honoured in GUIDED, and AUTO with `MIS_RESTART=0` resumed the interrupted leg rather than restarting.
+No follow-up remains on ADR-006 beyond the MIS_RESTART pinning correction below.
+
+### ADR-006 amendment (2026-08-18, factual correction — MIS_RESTART is not actually pinned)
+The decision stands and was confirmed live; the "same explicit discipline as ADR-005" claim does not
+hold in the repo. `config/sitl_params/dds_udp.parm` sets only `DDS_ENABLE 1` and `DDS_UDP_PORT 2019` —
+`MIS_RESTART` appears in **no** committed param file. Every runbook, and `scripts/fly_pipeline.sh`'s
+`fly_lines()`, instead sends `param set MIS_RESTART 0` live at flight start (typed by a human, or by
+`fly_pipeline.sh test-flight`), so the executor's resume guarantee (`avoidance_executor.py`) depends on
+a runtime step nothing enforces at SITL boot. Fix forward: add `MIS_RESTART 0` to
+`config/sitl_params/dds_udp.parm` (or a sibling `mission.parm` loaded alongside it) so the pin is real.
+
+### ADR-007 amendment (2026-08-18, correction to amendment item 2 above): `/fg/gz_clock` was never bridged
+The frame↔pose pairing decision in the first ADR-007 amendment's item 2 stands; the mechanism it named
+was reversed the same day, per this file's own addendum item 3 above — `/fg/gz_clock` is **not**
+bridged. `sim/bridge/fg_sensor_bridge.yaml` carries only the four `/fg/sensor/*` topics; `record_node.py`
+streams the Gazebo clock natively over gz-transport (commit `09e5bf2`) and `clip_recorder.PoseBuffer`
+consumes that stream directly.
+
+### ADR-007 amendment (2026-08-18, closes four of the five items in the original "Open follow-up" list)
+1. **Item 1 CLOSED** — the four `/fg/sensor/*` topics bridge and publish; `/fg/ndvi/image` (`32FC1`) ran
+   live for a full flight (`src/fieldguard_planning/ndvi_node.py`).
+2. **Item 2 CLOSED (Gate 2, `gate2_summary.json`)** — over 996 frames the raw NIR band reads canopy
+   0.854 > soil 0.212 > bird 0.040 (gaps 0.643 / 0.171), the direct proof the NIR band is genuinely
+   independent of Red.
+3. **Item 3 STILL OPEN** — the ADR-003 scored re-run on a real clip has not been executed. This is the
+   last confirmation-pending item in the project (see `docs/ROADMAP.md` "Next up").
+4. **Item 4 CLOSED** — `gz-sim-thermal-system` loads on the pinned Harmonic + ogre2 build (Gate 0,
+   2026-08-05).
+5. **Item 5 CLOSED** — live `camera_info` gives `cx=320.0, cy=240.0` (exact image centre) and
+   `fx=fy≈520.006`, matching `CameraIntrinsics.from_config`'s default
+   (`eval/results/clips/real_flight_20260818T221641Z/meta.json`). The image-centre assumption was
+   correct; nothing downstream changes. (Items 6-7 were already-decided notes, not open questions, when
+   ADR-007 was written.)

@@ -8,12 +8,17 @@ Data-driven scenario + mission configuration so scenarios can be added without c
 - `static_obstacles.json` — ADR-001 known-static-obstacle (tree) geofence export: hand-authored row
   layout + generator-computed per-tree positions/radii. The contract `flight-software-engineer`'s
   geofence/planner reads directly (schema documented in `sim/README.md`).
-- `birds/` — scripted dynamic bird actor trajectories (2-3 birds; MVP scope, not a flock). Currently
-  `birds/farm_world_birds.json` (the farm world's actors); `sim/spike/scenario_default.json` has a
+- `birds/` — scripted dynamic bird trajectories (2-3 birds; MVP scope, not a flock). Per ADR-012 the
+  birds are static SDF models: `scripts/gen_farm_world.py` spawns them at their first waypoint and
+  `scripts/drive_birds.py` replays these waypoints at runtime via Gazebo `set_pose`. Currently
+  `birds/farm_world_birds.json` (the farm world's birds); `sim/spike/scenario_default.json` has a
   separate bird scripting for the NDVI-vs-RGB spike clip (different field size/purpose, same style).
-- `sitl_params/dds_udp.parm` — enables AP_DDS (the ROS 2 `/ap/*` bridge) over UDP; load with
-  `sim_vehicle.py --add-param-file`. See `docs/runbooks/SIM_BRINGUP.md` §6b and
-  `docs/DECISIONS.md` for the locked topic/frame-id contract this unblocks.
+- `sitl_params/dds_udp.parm` — `DDS_ENABLE=1` + `DDS_UDP_PORT=2019` for the ROS 2 `/ap/*` bridge.
+  **The param file alone does nothing:** SITL compiles AP_DDS out by default, so build with
+  `sim_vehicle.py --enable-DDS --add-param-file=...` — without `--enable-DDS` the `DDS_ENABLE` param
+  does not even exist and zero `/ap/*` topics appear, silently (ADR-005 correction). See
+  `docs/runbooks/SIM_BRINGUP.md` §6b and `docs/DECISIONS.md` for the locked topic/frame-id contract
+  this unblocks.
 - `ndvi_camera.json` — ADR-007 dual-band NDVI sensor mount (Weeks 5-6): RGB (Red band, also the
   ADR-003 NDVI+RGB comparison arm) + Gazebo thermal sensor (repurposed as synthetic NIR) intrinsics,
   the sensor-mount attachment pose, and the per-material-class `<temperature>` calibration table

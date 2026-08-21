@@ -1,5 +1,11 @@
 # Week 3 — Human Docker Validation Session (the gating run)
 
+> **FROZEN RECORD (archived).** This session ran and passed on 2026-08-05; it is kept as the
+> evidence behind ADR-005 and ADR-006, not as a procedure to follow. Parts of it are superseded —
+> Gate 1's "Confirm birds move (dynamic actors)" describes the `<actor>` mechanism ADR-012
+> replaced, and SITL now requires `--enable-DDS` (ADR-005 correction). For a runnable end-to-end
+> flight use `docs/runbooks/FULL_PIPELINE_DEMO.md`.
+
 > ## ✅ RESULT (2026-08-05): all three gates PASSED — foundation confirmed live, core-loop build unblocked.
 > - **Gate 1** ✅ farm world flies — armed, took off to 15 m, `Reached command #N` through the lanes.
 > - **Gate 2** ✅ AP_DDS — all **18 `/ap/*` topics** present, exactly matching the ADR-005 contract. **ADR-005 confirmed.**
