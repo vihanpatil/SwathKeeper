@@ -79,8 +79,24 @@ class TestPoseAt(unittest.TestCase):
         self.assertEqual((x, y, z), (20.0, 30.0, 14.0))
         self.assertAlmostEqual(yaw, math.pi / 2)
 
-    def test_before_start_holds_first(self):
-        self.assertEqual(pose_at(-3.0, WPS, loop=False), (0.0, 0.0, 10.0, 0.0))
+    def test_before_start_holds_the_spawn_pose_even_when_looping(self):
+        """The wrap is FORWARD-ONLY. A static bird sits at waypoints[0] from world load until the
+        driver's first set_pose (ADR-012 amendment 1), so a negative t_s must hold the spawn pose
+        for a looping bird too. t=-15 is the pin: `-15 % 20 == 5` in Python, so the old unguarded
+        modulo teleported it to the t=5 midpoint (10, 0, 10) -- a confident, wrong position."""
+        spawn = (0.0, 0.0, 10.0, 0.0)
+        self.assertEqual(pose_at(-15.0, WPS, loop=True), spawn)
+        self.assertEqual(pose_at(-15.0, WPS, loop=False), spawn)
+        self.assertEqual(pose_at(-1e4, WPS, loop=True), spawn)  # no far-past decay either
+        self.assertEqual(pose_at(0.0, WPS, loop=True), spawn)   # the boundary belongs to the hold
+
+    def test_the_two_ends_are_deliberately_asymmetric(self):
+        """Near end clamps, far end does NOT -- because the driver keeps ticking pose_at with the
+        same `loop` flag forever, so past the span it really does wrap (or hold last). Clamping the
+        far end would invent a stop the sidecar does not record."""
+        self.assertEqual(pose_at(25.0, WPS, loop=True), pose_at(5.0, WPS))          # wraps
+        self.assertNotEqual(pose_at(25.0, WPS, loop=True), pose_at(0.0, WPS))       # ...not clamped
+        self.assertEqual(pose_at(999.0, WPS, loop=False), pose_at(20.0, WPS, loop=False))
 
     def test_empty_waypoints_raise(self):
         with self.assertRaises(ValueError):
@@ -254,17 +270,41 @@ class TestAnnotateRealClip(unittest.TestCase):
         self.assertEqual(stats["n_replaced"], 1)
         self.assertEqual(second[0]["birds"], first[0]["birds"])
 
-    def test_negative_trajectory_time_is_counted_and_warned_about(self):
-        # t0 after the frame stamp = wrong sidecar. pose_at's modulo wrap would hand back a
-        # confident wrong position (-20 % 20 == 0), so this has to be loud, not silent.
-        _, stats = arc.annotate_lines([pose_line(0, 100.0)], BIRDS_CFG["birds"], 120.0)
-        self.assertEqual(stats["n_negative_t"], 1)
+    def test_pre_driver_frames_are_labelled_at_the_spawn_pose_and_still_counted(self):
+        """The frames a clip records before the birds start moving (17/105 on the last real clip).
+        They are labelled, not refused: both birds sit at waypoints[0] until the first set_pose.
+        t0=115 puts the frame 15 s early -- the value the old modulo wrapped to the t=5 midpoint."""
+        annotated, stats = arc.annotate_lines([pose_line(0, 100.0)], BIRDS_CFG["birds"], 115.0)
+        self.assertEqual(stats["n_pre_driver_start"], 1)
+        self.assertEqual(annotated[0]["birds"][0]["pos_m"], [0.0, 0.0, 10.0])   # bird_0, loop=True
+        self.assertEqual(annotated[0]["birds"][1]["pos_m"], [5.0, 30.0, 11.0])  # bird_1, loop=False
+        # The negative time is kept verbatim as provenance: it is what separates a spawn-pose label
+        # from a genuine t=0 one when a human checks a line by hand.
+        self.assertEqual([b["traj_t_s"] for b in annotated[0]["birds"]], [-15.0, -15.0])
+
+    def test_pre_driver_frames_ship_with_a_note_not_a_refusal(self):
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td)
             clip = make_clip(tmp, [100.0])
-            _, _, err = run_cli(["--clip", str(clip), "--bird-t0", "120.0",
-                                 "--config", str(write_cfg(tmp))])
-            self.assertIn("NEGATIVE", err)
+            rc, _, err = run_cli(["--clip", str(clip), "--bird-t0", "115.0",
+                                  "--config", str(write_cfg(tmp))])
+            self.assertEqual(rc, 0)
+            self.assertIn("SPAWN pose", err)
+            self.assertNotIn("do not ship", err)
+            # ...and the labels actually reached the file, which is what unblocks the ADR-003 re-run.
+            written = arc.read_poses(clip / "poses_annotated.jsonl")
+            self.assertEqual(written[0]["birds"][0]["pos_m"], [0.0, 0.0, 10.0])
+
+    def test_a_missing_trajectory_config_still_refuses(self):
+        """The clamp narrowed what counts as unlabelable; it must not have emptied it. No waypoint
+        file means no ground truth at all -- there is nothing to clamp to."""
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaises(OSError):
+                arc.load_birds(Path(td) / "does_not_exist.json")
+            empty = Path(td) / "empty.json"
+            empty.write_text(json.dumps({"birds": []}))
+            with self.assertRaises(ValueError):
+                arc.load_birds(empty)
 
     def test_synthetic_clip_is_warned_about(self):
         with tempfile.TemporaryDirectory() as td:

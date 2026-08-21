@@ -58,14 +58,17 @@ Pose = Tuple[float, float, float, float]  # (x_m, y_m, z_m, yaw_rad)
 
 def pose_at(t_s: float, waypoints: Sequence[dict], loop: bool = True) -> Pose:
     """Piecewise-linear pose along `waypoints` at time `t_s` — the same interpolation the SDF
-    <actor><script> performed. Before the first waypoint: hold the first. After the last:
-    wrap (loop=True, modulo the last t_s) or hold the last. Yaw interpolates linearly in
-    degrees then converts (the committed trajectories never cross the +/-180 seam; asserting
-    that here would be over-engineering a data file this repo owns)."""
+    <actor><script> performed. Before the first waypoint: hold the first — and that is not a
+    convention, it is where the bird physically IS: `gen_farm_world.sdf_bird_model` spawns each
+    one as a <static> model at waypoints[0] and nothing moves it until this driver's first
+    set_pose (ADR-012 amendment 1), so the wrap below is forward-only. After the last: wrap
+    (loop=True, modulo the last t_s) or hold the last. Yaw interpolates linearly in degrees then
+    converts (the committed trajectories never cross the +/-180 seam; asserting that here would
+    be over-engineering a data file this repo owns)."""
     if not waypoints:
         raise ValueError("empty waypoint list")
     t0, tN = waypoints[0]["t_s"], waypoints[-1]["t_s"]
-    if loop and tN > 0:
+    if loop and tN > 0 and t_s > t0:  # forward-only: -15 % 20 == 5 would teleport a pre-spawn bird
         t_s = t_s % tN
     if t_s <= t0:
         wp = waypoints[0]

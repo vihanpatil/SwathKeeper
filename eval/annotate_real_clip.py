@@ -15,6 +15,10 @@ with `t0_sim` the driver's startup anchor (printed at startup AND written to its
 interpolation -- imported, never re-implemented: a second copy of that interpolation would drift
 from the driver silently, and both sides are supposed to describe one physical bird.
 
+2026-08-20: frames stamped BEFORE the driver started are now labelled at the spawn pose instead of
+being flagged unshippable -- `pose_at`'s wrap is forward-only, and a static bird sitting at
+waypoints[0] until the first set_pose is ground truth, not a guess (ADR-012 amendment 1).
+
     python3 eval/annotate_real_clip.py --clip eval/results/clips/<clip> \
         --sidecar eval/results/bird_drive_20260818T161200Z.json
     python3 eval/annotate_real_clip.py --clip <clip> --bird-t0 152.44 --in-place
@@ -115,10 +119,12 @@ def annotate_lines(lines: Sequence[dict], birds: Sequence[dict],
         "n_frames": len(out),
         "n_birds": len(birds),
         "n_replaced": replaced,
-        # A negative trajectory time means t0 is AFTER the frame, i.e. the driver started after the
-        # recording did. It is not a crash: pose_at's loop wraps (-3 % 20 == 17 in Python), so it
-        # would hand back a confident, wrong position. Counted here so the caller can shout.
-        "n_negative_t": sum(1 for t in t_traj if t < 0.0),
+        # A negative trajectory time means the frame predates the driver -- routine, since the
+        # recorder starts before the birds. Those frames are labelled at the spawn pose, which is
+        # where the static models physically sat until the first set_pose (ADR-012 amendment 1).
+        # Still counted: a count far larger than the gap actually left is what a WRONG sidecar
+        # looks like, and only the operator knows that gap.
+        "n_pre_driver_start": sum(1 for t in t_traj if t < 0.0),
         "t_traj_min_s": min(t_traj) if t_traj else None,
         "t_traj_max_s": max(t_traj) if t_traj else None,
     }
@@ -186,12 +192,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         raise SystemExit(f"[annotate_real_clip] {args.clip}/poses.jsonl has no frames")
     annotated, stats = annotate_lines(lines, birds, t0)
 
-    if stats["n_negative_t"]:
-        print(f"[annotate_real_clip] WARNING: {stats['n_negative_t']}/{stats['n_frames']} frames "
-              f"have a NEGATIVE trajectory time (t0_sim={t0:.3f}s is after their stamp) -- the "
-              f"driver started after the recording, or this is the wrong sidecar. The looping "
-              f"interpolation wraps those into confident, wrong positions: fix t0, do not ship "
-              f"these labels.", file=sys.stderr)
+    if stats["n_pre_driver_start"]:
+        print(f"[annotate_real_clip] NOTE: {stats['n_pre_driver_start']}/{stats['n_frames']} frames "
+              f"predate the driver (earliest {-stats['t_traj_min_s']:.2f}s before t0_sim={t0:.3f}s) "
+              f"and are labelled at the SPAWN pose -- where the static bird models sat until the "
+              f"first set_pose, so those labels are ground truth. Expected when the recorder starts "
+              f"before the birds; if that lead-in is longer than the gap you actually left, you are "
+              f"holding the wrong sidecar.", file=sys.stderr)
 
     out_path = (args.clip / "poses.jsonl") if args.in_place else (args.clip / "poses_annotated.jsonl")
     write_poses(out_path, annotated)

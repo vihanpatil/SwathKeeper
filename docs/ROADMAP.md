@@ -45,10 +45,12 @@ Public main: current as of PR #17 (2026-08-18). Full narrative of how we got her
    The one-command launcher now exists (`scripts/fly_pipeline.sh`, ADR-013) with a scripted
    test-flight regression gate (amendment 2, first PASS 2026-08-18) — demo flights still stay
    human-flown at the MAVProxy prompt; the launcher removes the bringup toil around that step.
-3. **ADR-003 real-render re-run** (criterion 3) + comparison arm (criterion 2): fix
-   `eval/annotate_real_clip.py`'s pre-driver-start labels first (clamp t<0 to the spawn pose — the
-   annotator already refuses to ship them, 17/105 flagged on the last clip), then
-   `CLIP=<clip> bash eval/run_spike.sh` and record the numbers against the synthetic 0.445 bar.
+3. **ADR-003 real-render re-run** (criterion 3) + comparison arm (criterion 2): the annotator
+   blocker is FIXED (2026-08-20, ADR-012 amendment 1 — `pose_at`'s loop wrap is now forward-only,
+   so pre-driver-start frames label at the spawn pose the static birds actually sit at, instead of
+   being flagged unshippable as 17/105 were on the last clip). Still needs the full-coverage
+   recording from item 2, then `CLIP=<clip> bash eval/run_spike.sh` and record the numbers against
+   the synthetic 0.445 bar.
 4. **Doc long-tail**: apply the remaining documentation-review fix-list (78 items, ~70 remaining —
    list + exact edits preserved; criticals already applied).
 5. **Week 7**: dashboard (replay + avoidance log + NDVI overlay on the shared cell grid), demo
