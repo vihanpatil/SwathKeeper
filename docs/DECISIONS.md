@@ -53,7 +53,7 @@ Owner / roles: product-lead, tech-lead, flight-software-engineer.
 
 ---
 
-## ADR-003: NDVI-vs-RGB detection approach  (2026-08-04, status: ACCEPTED — confirmation-pending; criterion 3 ATTEMPTED 2026-08-21 and returned EVIDENCE INSUFFICIENT, see amendment 1)
+## ADR-003: NDVI-vs-RGB detection approach  (2026-08-04, status: ACCEPTED — confirmation-pending; criterion 3 ATTEMPTED 2026-08-21 and returned EVIDENCE INSUFFICIENT, see amendments 1-3)
 Decision: Detect directly on the **NDVI-rendered frame itself** (approach (a), NDVI-direct), faithful
 to the single-NDVI-camera hardware (ADR-000). The synthetic-RGB pass (b) is **retained but not as the
 detection path** — it becomes the NDVI+RGB comparison arm that quantifies what a second sensor buys.
@@ -146,6 +146,87 @@ produced NOTHING TO SCORE. Criterion 3 is NOT met. This is neither a confirmatio
     — commanded waypoints × bird waypoints × the same `ndvi_georef` projection answers "will any bird
     be in frame, and for how many frames?" with no Docker session, and would have called this flight
     dead before it was flown; (3) recalibrate both thresholds against the first clip that has one.
+
+Amendment 2 (2026-08-21, perception-ml-engineer — unblock (2) BUILT, unblock (3) done for the NDVI
+arm): **`scripts/predict_bird_visibility.py`.** Mission file × bird config × the same `ndvi_georef`
+projection → "will any bird be in frame, and for how many frames", in **0.8 s on the host, no
+container**. It backtests against the flown clip, and it **sharpens amendment 1's diagnosis into two
+different problems that need two different fixes.**
+  * **Validated by reproduction, not by inspection.** Replaying the demo take's own `poses.jsonl`
+    through this tool returns that flight's measured numbers exactly: **0 bird-visible frames of
+    454**, closest approach **14.15 m** slant (bird_2, frame 275), nearest miss **341.2 px** outside
+    the image edge (bird_2, frame 279) — the three figures amendment 1 quotes, which were produced
+    by a different implementation (the pre-refactor `label_from_sim.project_bird_oriented`, before it
+    became a view of the shared primitive). That reproduction is the cross-check. It also agrees with
+    today's `label_from_sim.py` `visible` flag on **all 1,362 frame×bird decisions** (test
+    `test_agrees_with_the_ground_truth_labeller_frame_by_frame`) — worth pinning, but scoped
+    honestly: since the refactor both call the same `project_world_point`, so what that test pins is
+    the apparent-size and in-frame predicate on real poses, not the projection underneath it. (The
+    refactor itself was verified behaviour-preserving on those same 1,362 decisions: no decision
+    flips, max deviation 2.9e-11 px from float reassociation.) Predicting the same mission from
+    **pure config, no clip**, at the rate that take actually sampled (0.407 Hz — 53 airborne frames
+    in 127.8 s) gives per-bird medians **0 / 0 / 1**, i.e. **under one expected bird-visible frame in
+    the whole flight**. The measured zero was the most likely single outcome, not bad luck.
+  * **Correction to amendment 1's arithmetic (verdict unchanged, the miss is BIGGER).** bird_0's 5.0 m
+    off-lane distance was compared against 4.31 m, the half-footprint of the **640-px** image axis.
+    Per ADR-007's mount extrinsic that axis lies **along** the flight direction; the cross-track half
+    is the 480-px axis, **3.23 m** at bird_0's 7 m depth. Measured miss at its best moment: **136 px
+    = 1.81 m** outside the frame edge, not ~0.7 m.
+  * **"More frames cannot fix this" is true of bird_0 and ONLY bird_0.** Swept across all 55
+    driver-start offsets (the bird driver's t0 is anchored to `fly_pipeline.sh`'s 10 m altitude gate,
+    but where that lands relative to lane timing is uncontrollable), at the 5 Hz sensor tick:
+
+    | bird | alt | depth | footprint at bird alt | frames in view min/med/max | offsets seen | limited by |
+    |---|---|---|---|---|---|---|
+    | bird_0 | 8 m | 7 m | 8.6 × 6.5 m | **0 / 0 / 0** | **0/55** | **STRUCTURAL** |
+    | bird_1 | 11 m | 4 m | 4.9 × 3.7 m | 0 / 3 / 5 | 37/55 | timing |
+    | bird_2 | 6 m | 9 m | 11.1 × 8.3 m | 0 / 11 / 26 | 46/55 | timing |
+
+    bird_1 and bird_2 **do** cross the lanes — rarely (0.3 % / 1.2 % of ~900 opportunities), but at
+    every-cadence-dependent rates, so **throughput moves them and geometry does not have to**. Only
+    bird_0 is unreachable at any rate. The tool reports this as `limited_by`, because "lower the
+    birds" and "fix the recording pipeline" are different work and amendment 1 read as though only
+    the first could help. (bird_2's median is high for a reason worth knowing: its north component is
+    2.94 m/s against a 3 m/s lane speed, so on a northbound lane it nearly *surfs* the frame.)
+  * **One projection, now literally.** `ndvi_georef.project_world_point` is the single
+    world-point→(u, v, depth) primitive; the heatmap stitch (`world_enu_to_pixel`), the GT labeller
+    (`label_from_sim.project_bird_oriented`) and this predictor are all thin views of it, so a
+    projection bug cannot disagree between the map, the labels and the prediction. The in-frame
+    predicate is likewise pinned equal to `spike_common.clip_box`, by test.
+  * **Alternatives rejected:** a Monte-Carlo sampler over random bird phases (a deterministic sweep
+    over one offset is complete here — the birds share one driver, so their phases relative to each
+    other are fixed by the config, and each period divides the swept span); simulating the ROS 2
+    stack offline (the question is geometry, and geometry does not need a container).
+  * **Honest limits.** Constant speed, instant turns, no wind, no avoidance dodges, no occlusion, and
+    frames spread uniformly — whereas real frames are bursty and cluster where the vehicle is slow
+    (only 29 of the take's 53 airborne frames were at survey altitude off the takeoff point, with
+    gaps to 18.4 s). Every one of those makes the model **optimistic**, which is the safe direction
+    for a check whose job is to say "don't bother". `--speed` is a real knob, not a constant: the
+    take's own poses show cruise chords to 9.2 m/s against a 3.91 m/s median.
+
+Amendment 3 (2026-08-21, perception-ml-engineer — the NDVI threshold, unblock (3) half-done):
+**`eval/baseline_ndvi.py`'s threshold is now resolved per render from the clip's `meta.json`, and
+the real-render value is `-0.61`, PROVISIONAL.**
+  * **Value:** the midpoint of the two classes the mask must separate, from the committed 996-frame
+    real-render evidence in `eval/results/gate2_summary.json` — bird **−0.7888**, soil **−0.4285**,
+    midpoint **−0.6087**. Pinned to that file by `test_baseline_ndvi_threshold.py`, which recomputes
+    the midpoint rather than trusting the constant.
+  * **What it fixes, measured on the demo take's 454 real frames:** at the synthetic `0.05`, `ndvi <
+    thresh` masks **≥99.9 % of pixels on 438 of 454 frames** (mean masked fraction 0.9986) —
+    independently reproducing amendment 1's figure — so every frame collapses to one whole-image
+    component that `max_area=5000` discards: **0 detections from saturation**. At `-0.61` the mask is
+    **empty on all 454** (soil at −0.4377 sits above it), so the same 0 detections now means *there
+    was nothing there*, which is the truth for this clip.
+  * **PROVISIONAL, and it stays that way until a bird-visible clip exists.** It is calibrated on
+    per-class pixel means, never against precision/recall, because criterion 3's blocker is still
+    open. The tool prints that caveat on every real-render run and writes `thresh_provisional: true`
+    into its output; a test fails if the word ever leaves the module.
+  * **Synthetic stays at 0.05, untouched** — that is the number ADR-003 was decided on and
+    `check_spike_regression.py` re-checks; a per-clip resolution (not a flag) keeps `run_spike.sh`
+    byte-identical in behaviour while making the real-render default correct by default.
+  * **`baseline_rgb.py`'s inverted birdness is deliberately NOT touched** (amendment 1's reasoning
+    stands: flipping polarity blind, with no visible bird to calibrate the absolute scale against,
+    would replace a known-wrong number with an unknown-wrong one). Week 6.
 
 ---
 
@@ -881,3 +962,169 @@ consumes that stream directly.
    (`eval/results/clips/real_flight_20260818T221641Z/meta.json`). The image-centre assumption was
    correct; nothing downstream changes. (Items 6-7 were already-decided notes, not open questions, when
    ADR-007 was written.)
+
+### ADR-007 amendment (2026-08-21, qa-safety-reviewer): the tree-check is promoted from an ad-hoc look to a gate — `scripts/check_tree_positions.py`
+Amendment 5 above added a **pre-flight** geometry gate (`verify_mount_geometry.sh`, parked vehicle,
+2.2 px). It cannot see a clip that was mislocated *after* bringup — by pose pairing, by georef, by a
+mid-session SDF edit. The tree-check that caught the horizon-facing mount in the first place was
+never code; the 2026-08-18 figures came from an ad-hoc look, so nothing stopped the next map from
+being judged by eye. It is now `scripts/check_tree_positions.py`: reads a clip's committed
+`heatmap/heatmap.json` + `config/static_obstacles.json`, prints the per-tree table (imaged /
+canopy-grade / lift), and **exits nonzero on the georef-displacement signature**. Two gates, two
+failure windows — the mount before the flight, the artifact after it.
+  * **The FAIL condition is displacement ONLY: a positive-NDVI cell farther than 2 m from every tree
+    centre.** Deliberately not "too few trees imaged" and not "too few canopy-grade" — those are
+    coverage, which varies with recording throughput (ADR-013 am. 5-6a) and would make the gate a
+    flaky proxy for a problem it does not test. Displacement is the failure that *looks like
+    success*, and it is the one worth an exit code.
+  * **The 2 m bar is measured, not chosen.** Every post-mount-fix clip in the repo puts 100 % of its
+    positive cells at exactly 1.7678 m (a 2.5 m cell's centre-to-corner distance); the three
+    horizon-mount clips put 100 % of theirs at 6.4-11.9 m. The bar sits in an empty gap, so it is
+    not a tuning knob — pinned by `test_threshold_sits_in_the_measured_gap`.
+  * **The port was pinned before it was trusted.** `tests/fieldguard_planning/
+    test_check_tree_positions.py` (12 tests) reproduces all five published clip figures exactly —
+    8/5, 6/5, 7/6, 11/6, and the demo take's 12/8 at median lift +0.8692 — and rejects the three
+    horizon-mount clips. Mutation-checked: dropping the four-cell quad, moving the canopy threshold,
+    using a mean instead of the modal soil, or widening the bar to 20 m each fail the suite. One
+    test exists purely to pin the inversion the gate is for: the all-time-high 697/720 clip FAILS
+    while the 410/720 demo take PASSES — `cells_imaged` is not the metric.
+  * **Honest edge:** a clip with no positive cells has nothing to mislocate, so it exits 0 and says
+    `PASS (vacuous)` in those words. Placement is what this gate tests; it is not evidence that a
+    thin clip is a good one.
+
+---
+
+## ADR-015: Bird geometry answers to TWO gates — one lane-PARALLEL threat bird in the cylinder, two lane-crossing observation birds below it   (2026-08-21, status: ACCEPTED — host-verified on both gates, not yet flown)
+Decision: `config/birds/farm_world_birds.json` changes by **one patrol line and one altitude swap**;
+the regenerated `sim/worlds/farmguard_field.sdf` diff is exactly two `<pose>` lines.
+  * **bird_0: x 20 → 15 m, z 8 → 11 m.** It now patrols *down* the mission's row-0 lane (which is
+    also orchard row 0), 4 m under cruise. **This is the threat bird.**
+  * **bird_1: z 11 → 8 m.** Unchanged east↔west crossing sweep, now below the threat cylinder.
+  * **bird_2: unchanged at 6 m.**
+  * The altitude **multiset {6, 8, 11} is identical before and after** — this is a reassignment, not
+    a lowered flock, and `test_bird_geometry_contract.py::test_the_altitude_multiset_is_unchanged`
+    pins that so the change cannot later be mistaken for (or turned into) an altitude giveaway.
+
+**The constraint, which is structural and worth saying out loud.** A strictly nadir camera makes the
+two project priorities pull in opposite directions on this one file. Camera footprint scales with the
+bird's **depth below the drone**, so a bird is photographable when it flies LOW; `avoidance_policy`'s
+threat cylinder is `threat_radius_m` 12 m × `vertical_threat_m` ±6 m, so a bird is dangerous only when
+it flies HIGH (z ≥ 9 m at 15 m cruise). Measured on the lane-**perpendicular** geometry (bird_1), the
+two windows do not overlap at all: median frames in view is 10 / 6 / 4 / 3 / 3 at z = 6 / 8 / 9 / 10 /
+11 m, so the 5-frame floor needs z ≤ 8 and the cylinder needs z ≥ 9. **For a bird that crosses the
+lanes, "photogenic" and "dangerous" are mutually exclusive.** The resolution is not altitude at all:
+a lane-**PARALLEL** bird has cross-track offset 0 on its lane, so it never has to beat the shrinking
+cross-track half-footprint, and it can sit in the cylinder *and* in frame. That is the whole decision.
+
+**The chosen geometry, measured** (`scripts/predict_bird_visibility.py`, 3 m/s, the 5 Hz sensor tick,
+55 driver-start offsets — the table the tool prints, verbatim):
+
+| bird | alt | depth | footprint @ bird alt | frames in view min/med/max | at gate (phase 0) | offsets seen | limited by |
+|---|---|---|---|---|---|---|---|
+| bird_0 | 11 m | 4 m | 4.9 × 3.7 m | **3 / 8 / 15** | 3 | **55/55** | timing |
+| bird_1 | 8 m | 7 m | 8.6 × 6.5 m | 0 / 6 / 11 | 9 | 46/55 | timing |
+| bird_2 | 6 m | 9 m | 11.1 × 8.3 m | 0 / 11 / 26 | 11 | 46/55 | timing |
+
+VERDICT **PASS** (was FAIL on 2 of 3, with bird_0 STRUCTURAL — 0/55 offsets at every cadence). No bird
+is structurally invisible any more, and the safety-relevant bird is the one that is **never**
+invisible: 55/55 offsets, against 46/55 for the two crossers.
+
+**And the avoidance story is not weaker — it is the same near-miss, in a harder place.** Against the
+as-flown geometry (frozen at `tests/fieldguard_planning/fixtures/farm_world_birds_asflown_20260821.json`),
+swept over every driver-start offset — all rows at ONE setting, the same 55-offset sweep as the camera
+table above (path sampled at 5 Hz, phase step 0.5 s; dwell is quantised by that sampling rate, so a
+coarser scan moves it by a tenth or two):
+
+| | as flown (bird_1 @ 11 m) | ADR-015 (bird_0 @ 11 m) |
+|---|---|---|
+| birds in the threat cylinder | 1 | 1 |
+| closest in-cylinder approach | 4.01 m | **4.00 m** |
+| offsets with a threat event | 55/55 | 55/55 |
+| median cylinder dwell | 9.6 s | 8.4 s |
+| offsets where the threat bird is ALSO in frame | 37/55 | **55/55** |
+| encounter geometry | perpendicular crossing | along-track, closest approach **0.02 m horizontal / 4 m vertical — straight overhead** |
+
+The last row is the one that matters most and it is the one that improves: a threat the NDVI camera
+never sees is a threat the real loop cannot act on. As flown, the threat bird was in frame at only
+37 of 55 offsets (and for a median 3 frames, below the floor); the ADR-015 threat bird is in frame at
+every one. At the closest approach it subtends a 48 px diameter of 480, and ADR-009's apparent-size
+range (0.15 m radius prior against the true 0.18 m) reads it at 3.27 m against a true 3.92 m depth —
+*closer* than it is, the fail-safe direction, and 3.27 m is well inside the ±6 m cylinder rather than
+near its edge. So the avoidance event survives the real detection chain, not just an injected
+ground-truth detection.
+
+The 1.2 s of dwell is the only thing given up, and it buys a strictly harder encounter: at the closest
+approach the real `AvoidancePolicy` returns **DIVERT** and **rejects its own preferred 0° dodge**
+("swept path clears tree by only −1.11 m"), taking +45° with 1.00 m clearance — because the lane the
+bird patrols runs down an orchard row. **The nominal world now reaches the "avoidance must never
+create a new collision" branch that only the hand-built `geo_avoid_into_tree` scenario used to.**
+All of the above is asserted, not narrated: `test_bird_geometry_contract.py` (14 tests) re-derives the
+as-flown baseline from the fixture on every run rather than hardcoding 4.01 m, so the comparison
+cannot rot.
+
+Alternative(s) rejected — every one of them measured, none rejected on taste:
+  1. **Lower all three birds to 2-3 m AGL** — ADR-003 amendment 1's own recommendation, and the trap
+     this ADR exists to refuse. It maximises frames and deletes the avoidance story: 12-13 m below
+     cruise is twice outside the ±6 m cylinder, so **zero** birds would remain threats; it also puts
+     them at the 3.8 m canopy tops and makes ADR-009's apparent-size range estimate worst exactly
+     where it is least tested (relative range error ≈ 1/r_px: ~4 % at bird_0's 23 px, ~13 % at 8 px).
+     A bird that photographs beautifully and threatens nothing is not a dynamic obstacle.
+  2. **Lower bird_0 without moving its patrol line.** Measured over z = 2…12 m: **structural (0
+     frames at 0/55 offsets) for every z from 5 m up** — which is every altitude that is not already
+     alternative 1. The miss was never depth, it was **cross-track** — 5.0 m off lane x=15 against a
+     cross-track half-footprint of 0.4615·depth, so closing it needs 10.8 m of depth, i.e. ≤ 4.2 m
+     AGL. Below that line it does become visible (median 23 / 25 / 27 frames at z = 4 / 3 / 2 m), and
+     that is precisely the trade alternative 1 rejects: at 4 m AGL the bird sits 11 m under cruise,
+     outside the ±6 m cylinder, threatening nothing. So "lower it" is not a third option — it is
+     alternative 1 with one bird. Pinned by `TestNoAltitudeFixesTheOldLine`, which sweeps the threat
+     band (z = 9…12 m) and separately asserts the 4 m case that *does* clear the floor and *does*
+     cost the threat.
+  3. **Slow bird_1 down instead of lowering it** (more dwell per crossing, same altitude). Measured
+     backwards: at z=11 the median goes **3 → 0 → 0** at 1× / 1.5× / 2× trajectory time. Slowing
+     lengthens each crossing but removes crossings, and the median follows the count, not the dwell.
+     The max rises (5 → 16) — a lever that buys luck, not reliability.
+  4. **Keep bird_1 at 11 m as a second threat.** Median 3 < the 5-frame floor. A bird the NDVI
+     detector can never see is not a second threat; it is a threat the system is blind to, which is
+     the ADR-003 failure mode wearing a different hat.
+  5. **Promote bird_2 to 9 m as the second threat.** It actually clears both bars on paper (median 6,
+     in-cylinder) — and |dz| is **exactly 6.00 m**, sitting on `vertical_threat_m`. A metre of
+     altitude-hold error flickers the threat on and off. Do not build a safety claim on a boundary.
+  6. **A vertical profile** — low at the ends, threat band at mid-trajectory, costing **no new
+     waypoints** (the there-and-back middle waypoint already exists). It works: bird_1 at 6→11→6 gives
+     median 5 with 3.5 s dwell and 4.90 m closest; bird_2 at 6→11→6 gives median 8, 4.0 s, 4.59 m, but
+     a threat at only 25/28 offsets. Both are strictly worse than bird_0-on-the-lane on **both** axes,
+     and a bird with no single altitude makes every report's "alt" column a lie. Kept in the drawer as
+     the cheapest way to add a *second* threat if one is ever wanted; not needed for one.
+  7. **Widen `vertical_threat_m` so the low birds count as threats.** Rejected outright: that is
+     tuning a safety parameter to make a demo look good. The world moves, the policy does not.
+
+**Honest limits — what this does NOT fix.** The predicted counts are frame **opportunity** at the
+5 Hz sensor tick, not recorded yield (~12 % reaches a clip, ADR-013 am. 6a). At the demo take's actual
+0.407 Hz the new geometry predicts medians **0 / 0 / 1 — identical to the old.** Geometry raised the
+ceiling (total median across the three birds, 14 → 25 frames at 5 Hz; 6 → 11 at 2 Hz) and removed the
+one bird no throughput could ever reach; it did **not** on its own make the ADR-003 real-render re-run
+scoreable. Both levers are still required, and the pre-flight check is now the thing that says so
+before a Docker session is spent, not after. Model limits inherited from the predictor: constant
+speed, instant turns, no wind, no avoidance dodges, no occlusion — all optimistic, all in the safe
+direction for a go/no-go check.
+Why: A nadir camera makes "can photograph it" and "can collide with it" opposite properties for any
+bird that crosses the survey lanes, so the fix was never an altitude — it was flying one bird *along*
+a lane, where cross-track offset is zero and the two windows finally overlap. The result keeps the
+identical 4 m near-miss, on a lane where the dodge has to thread an orchard row, and makes every bird
+photographable for the first time.
+Owner / roles: robotics-sim-engineer (decided, with the `product-lead` tiebreak: priority #1 avoidance
+outranks #2 NDVI where they conflict); perception-ml-engineer (the predictor this was measured with,
+ADR-003 am. 2); qa-safety-reviewer (the two-gate contract test is the regression that makes trading
+one priority for the other loud).
+
+### ADR-003 amendment 4 (2026-08-21, robotics-sim-engineer): criterion 3's geometry blocker is CLOSED; its throughput blocker is not
+Amendment 1 listed "lower the birds" as unblock (1) and amendment 2 split the blocker into a
+STRUCTURAL half (bird_0) and a TIMING half (bird_1, bird_2). **ADR-015 closes the structural half —
+and does it by moving a patrol line, not by lowering anything**, because lowering was measured to fix
+the camera at the cost of the avoidance story that outranks it. The committed geometry now predicts
+PASS (medians 8 / 6 / 11 at the 5 Hz tick, no bird structural, every bird seen at 46-55 of 55
+driver-start offsets) with the threat cylinder still occupied at an unchanged 4.00 m closest approach.
+**The re-run is now worth a Docker session in a way it demonstrably was not on 2026-08-21** — but
+`predict_bird_visibility.py` at the demo take's own 0.407 Hz still returns medians 0 / 0 / 1 on the new
+geometry, so item 1's recording-throughput work (ADR-013 am. 5-6a) is the remaining blocker, not a
+nice-to-have. Criterion 3 stays OPEN; the reason it is open has changed.

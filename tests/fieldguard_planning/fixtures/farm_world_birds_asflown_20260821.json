@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "frozen_note": "FROZEN EVIDENCE -- do NOT edit, and do NOT sync with config/birds/farm_world_birds.json. This is the bird geometry AS FLOWN on the demo take eval/results/clips/real_flight_20260821T045848Z (2026-08-21), the flight ADR-003 amendments 1-2 were written from and the flight that returned 0 bird-visible frames of 454. The live config was changed by ADR-015; reproducing a past measurement requires the geometry that produced it, so test_predict_bird_visibility.py replays THIS file. If it ever tracked the live config, the predictor would silently stop being validated against any real measurement at all.",
+  "coordinate_frame": "local ENU meters (x=East, y=North, z=Up), origin = config/field_polygon.json home_lat/home_lon.",
+  "birds": [
+    {
+      "bird_id": "bird_0",
+      "note": "south<->north sweep at x=20 (between orchard rows 0 and 1), mid-low altitude (8m AGL, 7m below the 15m mission altitude).",
+      "physical_radius_m": 0.18,
+      "color_rgba": [
+        0.12,
+        0.12,
+        0.12,
+        1.0
+      ],
+      "loop": true,
+      "waypoints": [
+        {
+          "t_s": 0.0,
+          "x_m": 20.0,
+          "y_m": 5.0,
+          "z_m": 8.0,
+          "yaw_deg": 90.0
+        },
+        {
+          "t_s": 8.33,
+          "x_m": 20.0,
+          "y_m": 55.0,
+          "z_m": 8.0,
+          "yaw_deg": 90.0
+        },
+        {
+          "t_s": 16.67,
+          "x_m": 20.0,
+          "y_m": 5.0,
+          "z_m": 8.0,
+          "yaw_deg": 270.0
+        }
+      ]
+    },
+    {
+      "bird_id": "bird_1",
+      "note": "east<->west sweep at y=30 (mid-field), altitude 11m AGL (4m below mission altitude) -- crosses all 3 orchard rows.",
+      "physical_radius_m": 0.18,
+      "color_rgba": [
+        0.3,
+        0.22,
+        0.1,
+        1.0
+      ],
+      "loop": true,
+      "waypoints": [
+        {
+          "t_s": 0.0,
+          "x_m": 5.0,
+          "y_m": 30.0,
+          "z_m": 11.0,
+          "yaw_deg": 0.0
+        },
+        {
+          "t_s": 9.29,
+          "x_m": 70.0,
+          "y_m": 30.0,
+          "z_m": 11.0,
+          "yaw_deg": 0.0
+        },
+        {
+          "t_s": 18.57,
+          "x_m": 5.0,
+          "y_m": 30.0,
+          "z_m": 11.0,
+          "yaw_deg": 180.0
+        }
+      ]
+    },
+    {
+      "bird_id": "bird_2",
+      "note": "diagonal SW<->NE sweep, low altitude (6m AGL, closest to canopy height of the 3 birds -- the most safety-relevant trajectory for future avoidance work since it's nearest the tree obstacles' height band).",
+      "physical_radius_m": 0.18,
+      "color_rgba": [
+        0.18,
+        0.18,
+        0.2,
+        1.0
+      ],
+      "loop": true,
+      "waypoints": [
+        {
+          "t_s": 0.0,
+          "x_m": 10.0,
+          "y_m": 10.0,
+          "z_m": 6.0,
+          "yaw_deg": 36.0
+        },
+        {
+          "t_s": 13.6,
+          "x_m": 65.0,
+          "y_m": 50.0,
+          "z_m": 6.0,
+          "yaw_deg": 36.0
+        },
+        {
+          "t_s": 27.2,
+          "x_m": 10.0,
+          "y_m": 10.0,
+          "z_m": 6.0,
+          "yaw_deg": 216.0
+        }
+      ]
+    }
+  ]
+}

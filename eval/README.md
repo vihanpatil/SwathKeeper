@@ -13,7 +13,12 @@ Runs scripted scenarios headless and emits metrics — no "it works" without a n
   the permanent harness. Run the full NDVI-vs-RGB spike with `run_spike.sh` (needs `requirements-eval.txt`).
 - `label_from_sim.py`, `baseline_ndvi.py`, `baseline_rgb.py` — the ADR-003 spike pipeline, built on
   the shared `blob.py` (one classical-CV detector, used by both arms so the comparison is
-  apples-to-apples) and `spike_common.py` (clip IO).
+  apples-to-apples) and `spike_common.py` (clip IO). **`baseline_ndvi.py`'s threshold is per-render**
+  and resolved from the clip's own `meta.json`: `0.05` on a synthetic clip (ADR-003's deciding value),
+  `-0.61` on a real Gazebo render (the gate2 bird/soil midpoint — real soil reads −0.4377, where 0.05
+  masks the whole image). The real-render value is PROVISIONAL until a clip exists with a bird in
+  frame; ADR-003 amendment 3. Before flying for one, run
+  `scripts/predict_bird_visibility.py` — it says whether the mission can produce one at all.
 - `scenarios/` — the QA safety scenarios (spec + coverage-debt invariant); `generate_flight_logs.py`
   drives the real avoidance loop to produce each scenario's `flight_log.json`, activating its assertion.
 
@@ -69,10 +74,14 @@ projection hand-checked (a bird 5 m below a level hover lands on the principal p
 
 **Still open — what a real clip needs before its numbers mean anything** (all three found on the
 2026-08-21 re-run, which produced **zero** scoreable bird-frames; see ADR-003 criterion 3):
-1. **A clip with a bird in frame at all.** Nadir at 15 m over birds at 6/8/11 m AGL gives a footprint
-   of 4.9×3.7 to 11.1×8.3 m at bird altitude against a **15 m** boustrophedon lane pitch — the
-   ground plane tiles, the bird-altitude plane does not. This is mission/world geometry, not
-   throughput: no number of extra frames fixes it.
+1. **A clip with a bird in frame at all.** As flown, nadir at 15 m over birds at 6/8/11 m AGL gave a
+   footprint of 4.9×3.7 to 11.1×8.3 m at bird altitude against a **15 m** boustrophedon lane pitch —
+   the ground plane tiles, the bird-altitude plane does not. **The geometry half is fixed
+   (ADR-015):** bird_0 now patrols *down* the x=15 lane, and
+   `scripts/predict_bird_visibility.py` predicts PASS — medians 8/6/11 frames at the 5 Hz sensor
+   tick, no bird structural. **The throughput half is not:** at the demo take's actual 0.407 Hz the
+   same geometry still predicts 0/0/1, so this item stays open on recording throughput
+   (ADR-013 am. 5-6a), not on where the birds are. Run the predictor before spending a session.
 2. **`baseline_rgb.py`'s birdness is inverted for this world** — see that file's KNOWN-WRONG note.
    (b)'s numbers on a real clip are meaningless until it is recalibrated.
 3. **(b)'s FNR is not comparable to (a)'s on a partial-RGB clip** — `score.py` iterates the ground

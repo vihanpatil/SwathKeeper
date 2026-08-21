@@ -27,11 +27,16 @@ see docs/runbooks/NDVI_VALIDATION.md):
     1. Gazebo + the ros_gz bridge (sim/bridge/fg_sensor_bridge.yaml) must already be running.
     2. Fly the EXISTING boustrophedon mission (scripts/run_farm_mission.sh, unchanged from
        Weeks 1-4) -- this script does NOT drive the vehicle itself. Reusing the already-proven
-       mission flight (rather than inventing a new gz-teleport procedure) is deliberate: the
-       mission's lane at x=15m has a >=63 deg-hfov ground footprint of ~+/-9.2m at 15m altitude,
-       which fully covers bird_0's entire x=20m, y=[5,55]m track (config/birds/farm_world_birds.json)
-       -- bird_0 loops every 16.67s and the drone dwells on that lane for much longer than one loop,
-       so a bird-in-frame event is a near-geometric-certainty during a single mission run, not luck.
+       mission flight (rather than inventing a new gz-teleport procedure) is deliberate: bird_0
+       patrols x=15, y=[5,55]m -- straight down the mission's own x=15 lane
+       (config/birds/farm_world_birds.json, ADR-015) -- so its cross-track offset on that lane is
+       zero and the only question is along-track timing. Measured, not assumed:
+       `python3 scripts/predict_bird_visibility.py` predicts bird_0 in frame for a median 8 frames
+       and at ALL 55 driver-start offsets. Run that first; it costs 1 s on the host and tells you
+       whether this gate can see a bird at all. (The corresponding claim BEFORE ADR-015 was wrong
+       and cost a whole session: it compared bird_0's 5.0 m off-lane distance against the ~+/-9.2 m
+       GROUND footprint, but a bird is imaged at BIRD altitude, where the cross-track half-footprint
+       was 3.23 m -- so bird_0 was outside frame on every pass ever flown. See ADR-003 amendment 2.)
     3. In a 5th shell: `python3 scripts/check_ndvi_bands.py` (defaults to a 240s window, generous
        for one full 6-lane mission).
 

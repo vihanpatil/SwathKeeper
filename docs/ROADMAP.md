@@ -128,8 +128,19 @@ Public main: current as of PR #24 (2026-08-20). Full narrative of how we got her
    450) and *more* trees (17, 16, 15) — and returned **zero** canopy-grade trees, with 100 % of their
    positive cells sitting **6.4-11.9 m** off the nearest tree. That is the pre-mount-fix signature;
    every post-fix clip puts 100 % of its positive cells at 1.7678 m. Cells imaged is not the metric.
-   *Birds.* 0/0/0 in-frame across all 454 frames and across the 51 that painted a cell — see item 3;
-   it is mission/world geometry, not a regression and not throughput.
+   *Birds.* 0/0/0 in-frame across all 454 frames and across the 51 that painted a cell — see item 3.
+   Not a regression. **Both causes, separated on 2026-08-21 by `scripts/predict_bird_visibility.py`:**
+   bird_0 was STRUCTURAL (5.0 m off the nearest lane, 1.81 m outside the frame edge at its best
+   moment, unreachable at any cadence) — **fixed by ADR-015**, which moved its patrol line onto the
+   x=15 lane; bird_1 and bird_2 were TIMING (they do cross the lanes, median 3 and 11 frames at the
+   5 Hz sensor tick) and are **still gated on item 1's throughput** — at this take's actual 0.407 Hz
+   even the new geometry predicts medians 0/0/1. The earlier reading of this line ("geometry, not
+   throughput") was half right and is corrected here.
+
+   *The tree half is now a gate, not a look.* The method above was reconstructed by hand; it is now
+   `scripts/check_tree_positions.py` (+ 12 tests reproducing all five published clip figures exactly
+   and rejecting the three horizon-mount clips). Exit 1 on the georef-displacement signature —
+   a positive-NDVI cell farther than 2 m from every tree centre. See the ADR-007 amendment.
 
    **Open question this raises, worth one line and no more:** all three trees on row 0 sit **on** the
    x=15 flight lane and returned +0.000 / +0.614 / +0.622, while every tree imaged from *between*
@@ -155,22 +166,67 @@ Public main: current as of PR #24 (2026-08-20). Full narrative of how we got her
    the synthetic 0.445 bar has nothing to be compared against. Criterion 2's comparison arm is
    blocked on the same missing clip.
 
-   **The blocker is no longer "needs the recording" — it is geometry.** A nadir camera at 15 m over
-   birds at 6/8/11 m AGL has a footprint *at bird altitude* of just 4.9×3.7 to 11.1×8.3 m against a
-   **15 m lane pitch**: the ground plane tiles, the bird-altitude plane does not. bird_0 patrols
-   x=20, a fixed 5.0 m off lane x=15 — outside frame on every pass. Closest approach all flight:
-   **14.15 m** slant range, ≈341 px outside the image edge. **More frames cannot fix this.** Cheapest
-   unblocks, in order: (a) **lower the birds** in `config/birds/farm_world_birds.json` — at 2-3 m AGL
-   the footprint is 14.8-16.0 m ≈ the lane pitch; their altitudes are pure config and no ADR requires
-   6/8/11 m; (b) **an offline pre-flight predictor** — commanded waypoints × bird waypoints × the same
-   `ndvi_georef` projection answers "will any bird be in frame, for how many frames?" with no Docker
-   session, and would have called this flight dead before it was flown; (c) recalibrate both
-   detector thresholds, which the real render moved (`ndvi < 0.05` passes **100 % of pixels on 438 of
-   454 frames** against real soil at −0.4377; the RGB arm's "bright + achromatic" birdness is
-   **inverted** for this world's dark birds on bright soil) — but only against a clip with a bird in
-   it. **The premise survives:** class ordering on the real render is canopy +0.531 > trunk −0.026 >
+   **The blocker was geometry, and the geometry half is now CLOSED (ADR-015).** A nadir camera at
+   15 m over birds at 6/8/11 m AGL had a footprint *at bird altitude* of just 4.9×3.7 to 11.1×8.3 m
+   against a **15 m lane pitch**: the ground plane tiles, the bird-altitude plane does not. bird_0
+   patrolled x=20, a fixed 5.0 m off lane x=15 — outside frame on every pass. Closest approach all
+   flight: **14.15 m** slant range, ≈341 px outside the image edge. Cheapest unblocks, in order:
+   (a) **move the birds** in `config/birds/farm_world_birds.json` — **DONE 2026-08-21, ADR-015**, and
+   *not* by lowering them: the recommendation this line used to carry ("2-3 m AGL") was measured to
+   put every bird 12-13 m under cruise, i.e. twice outside the ±6 m avoidance threat cylinder, which
+   trades priority #1 for #2. bird_0's patrol line moved onto the x=15 lane instead (cross-track
+   offset 0, so altitude is free) and took the threat role at 11 m; bird_1 took its 8 m. Predictor
+   now says **PASS**, medians **8/6/11**, no bird structural, threat cylinder still occupied at an
+   unchanged **4.00 m** closest approach. (b) **an offline pre-flight predictor** — **BUILT
+   2026-08-21, see below**; (c) recalibrate both detector thresholds, which the real render moved —
+   **NDVI arm done (provisional), RGB arm still blocked**.
+
+   **What is still open on this item is THROUGHPUT, not geometry.** At the demo take's own 0.407 Hz
+   the new geometry predicts the same medians **0/0/1** as the old; ADR-015 raised the ceiling (total
+   median 14 → 25 frames at the 5 Hz tick) and removed the one bird no cadence could ever reach, but
+   item 1's recording-throughput work is what converts opportunity into a scoreable clip. Run
+   `python3 scripts/predict_bird_visibility.py` before booking the session — it is 1 s on the host.
+
+   **Why the next Docker session is worth booking: ONE re-fly clears four blockers at once** — all
+   four are waiting on the same artifact, a clip with a bird actually in frame:
+   1. **criterion 3** — the NDVI-direct per-bird-track FNR on the real render (this item);
+   2. **criterion 2** — the NDVI-vs-RGB comparison arm, blocked on the same missing clip;
+   3. **item 2's second half** — the runbook proof standard's "birds visible / avoidance exercised",
+      NOT EXERCISED on the demo take;
+   4. **both detector thresholds** — `baseline_ndvi.py`'s −0.61 is PROVISIONAL until it is calibrated
+      against precision/recall rather than pixel means, and `baseline_rgb.py`'s inverted birdness is
+      deliberately untouched until there is a bird to calibrate its absolute scale against.
+
+   **The precondition is not optional, and it is the whole lesson of 2026-08-21:** geometry alone does
+   not deliver that clip. Land item 1's throughput work first, then re-run the predictor at the
+   cadence you actually achieve — if it still reports medians 0/0/1, the session will produce a
+   fourth unscoreable clip and should not be booked.
+   **The premise survives:** class ordering on the real render is canopy +0.531 > trunk −0.026 >
    soil −0.429 > bird −0.789, a bird-vs-soil gap of **0.360** against ~0.23 synthetic. What broke is
    a threshold value, not the hypothesis.
+
+   **(b) DONE — `scripts/predict_bird_visibility.py` (ADR-003 amendment 2).** Host-only, 0.8 s, exit 1
+   on a shortfall. Validated by reproduction: replaying the demo take's own poses returns its measured
+   0-of-454, 14.15 m and 341.2 px, and agrees with `label_from_sim.py` on all **1,362 frame×bird
+   decisions**; predicting the same mission from **pure config** at that take's actual 0.407 Hz frame
+   rate gives medians **0/0/1**, i.e. under one expected bird-visible frame in the whole flight.
+   **It also splits the blocker in two, which changes what to do next:** sweeping all 55
+   driver-start offsets at the 5 Hz sensor tick, bird_0 is **0/0/0 at 0 of 55 offsets** — STRUCTURAL,
+   1.81 m outside the frame edge at its best moment, and no throughput or luck can ever show it —
+   while **bird_1 (median 3) and bird_2 (median 11) do cross the lanes** and are limited by *cadence*,
+   not geometry. So (a) is required for bird_0 and item 1's throughput work is what buys the other
+   two. Amendment 1's "more frames cannot fix this" holds for bird_0 only; its 4.31 m half-width was
+   the along-track axis — cross-track is **3.23 m** (ADR-007 mount extrinsic), so the miss is larger
+   than stated, not smaller.
+
+   **(c) NDVI half DONE — threshold `-0.61`, PROVISIONAL (ADR-003 amendment 3).** `baseline_ndvi.py`
+   now resolves its threshold per render from the clip's `meta.json`: synthetic keeps ADR-003's
+   deciding `0.05`, real render gets the gate2 bird/soil midpoint (bird −0.7888, soil −0.4285 →
+   −0.6087), recomputed from `gate2_summary.json` by test so the constant cannot drift from its
+   evidence. Measured on the demo take: at `0.05` the mask covers **≥99.9 % of pixels on 438 of 454
+   frames** (0 detections *by saturation*); at `-0.61` the mask is **empty on all 454**, so the same 0
+   now means "nothing was there". It stays PROVISIONAL — calibrated on pixel means, never on
+   precision/recall — until a bird-visible clip exists. `baseline_rgb.py` is untouched by design.
 
    **Three harness defects found and fixed on the way** (pinned by `tests/fieldguard_planning/
    test_score_evidence.py`), the first of which is the reason this item reads "insufficient" rather

@@ -317,3 +317,10 @@ committed patrol zones show as low-NDVI track marks. The first recorded flight L
 failed exactly this check — which is the whole SwathKeeper story: a survey artifact is only
 trusted when it can be cross-examined against ground truth, whether that's coverage debt in the
 ledger or trees in the heatmap.
+
+**Don't eyeball it — run the gate:** `python3 scripts/check_tree_positions.py
+eval/results/clips/<the clip>` prints the per-tree table (imaged / canopy-grade / NDVI lift) and
+**exits nonzero on the georef-displacement signature** — any positive-NDVI cell farther than 2 m
+from every tree centre. Post-mount-fix clips put 100 % of theirs at 1.7678 m; the horizon-facing
+mount put its at 6.4-11.9 m, which is how a full-looking grid gets caught. The method and the five
+published clip figures are pinned by `tests/fieldguard_planning/test_check_tree_positions.py`.

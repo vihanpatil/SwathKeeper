@@ -6,6 +6,66 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-21 (third entry) — a flight-free session: two gates, one geometry fix, and the number that says whether to book the next Docker session
+
+Deliberately no container, no flight, no ROS. Everything below runs on the host in seconds, and the
+point of the session was that the *previous* one — a full Docker session, a clean 454-frame flight —
+produced **0 bird-visible frames** and nobody could have known beforehand. So: build the thing that
+knows beforehand.
+
+**`scripts/predict_bird_visibility.py`.** Mission × bird config × the same `ndvi_georef` projection
+→ "will any bird be in frame, for how many frames", in under a second. It earns trust by
+reproduction, not by inspection: replay the demo take's own poses and it returns that flight's
+measured numbers exactly — **0 of 454**, closest approach **14.15 m**, nearest miss **341.2 px** —
+and agrees with `label_from_sim.py` on all **1,362 frame×bird decisions**. Predicting the same
+mission from *pure config* at the rate that take actually sampled (0.407 Hz) gives medians
+**0 / 0 / 1**: the measured zero was the most likely outcome, not bad luck.
+
+**What it found is that "the birds are too high" was two different problems.** bird_0 was
+**STRUCTURAL** — patrolling x=20, a fixed 5.0 m off the nearest lane, **1.81 m outside the frame
+edge at its best moment, at 0 of 55 driver-start offsets**. No cadence, speed or luck reaches it.
+bird_1 and bird_2 were **TIMING** — they do cross the lanes, just rarely. That split matters because
+the two need opposite fixes, and ADR-003 amendment 1 had read as though only "lower the birds" could
+help. It also corrected that amendment's own arithmetic: the 4.31 m half-width it compared against is
+the *along-track* axis; cross-track is **3.23 m**, so the miss was bigger than recorded, not smaller.
+
+**ADR-015: the fix is a patrol line, not an altitude.** Lowering the birds was measured and refused —
+at 2-3 m AGL every bird sits 12-13 m under cruise, twice outside the ±6 m avoidance threat cylinder,
+which trades priority #1 for priority #2. The real finding: for a lane-**perpendicular** bird the two
+gates are mutually exclusive (median frames 10/6/4/3/3 at z=6/8/9/10/11 — the 5-frame floor needs
+z ≤ 8, the cylinder needs z ≥ 9). A lane-**parallel** bird has cross-track offset 0 and satisfies
+both. So bird_0's line moved onto the x=15 lane at 11 m and took the threat role; bird_1 took its
+8 m. Altitude multiset {6, 8, 11} **identical before and after** — a reassignment, not a lowered
+flock. Predictor now says **PASS** (medians 8/6/11, nothing structural); the near-miss is unchanged
+at **4.00 m**, and it got *harder*: the threat bird now patrols down orchard row 0, so the policy
+rejects its own preferred 0° dodge ("clears tree by only −1.11 m") and takes +45°. The nominal world
+finally reaches the "avoidance must never create a new collision" branch only a hand-built scenario
+used to. SDF diff: exactly two `<pose>` lines.
+
+**`scripts/check_tree_positions.py`.** The tree-check that caught the horizon-facing mount was never
+code — the 2026-08-18 figures came from an ad-hoc look. It is now a gate: exit 1 when a positive-NDVI
+cell sits farther than 2 m from every tree centre. The bar is measured, not chosen (every post-fix
+clip puts 100 % of its positive cells at 1.7678 m; the three horizon-mount clips put 100 % of theirs
+at 6.4-11.9 m — the 2 m bar sits in an empty gap). Twelve tests reproduce all five published clip
+figures exactly and reject the three bad ones.
+
+**The honest limit, which is the whole point of writing it down.** At the demo take's actual 0.407 Hz
+the new geometry predicts **0 / 0 / 1 — identical to the old.** Geometry raised the ceiling (total
+median 14 → 25 frames at the 5 Hz tick) and removed the bird no throughput could reach; it did not on
+its own make the ADR-003 re-run scoreable. Recording throughput is still the binding constraint. The
+difference is that the next Docker session can now be *priced before it is spent* — one command, one
+second — and one re-fly with a bird in frame clears four blockers at once.
+
+**Adversarial pass** (before any of it was believed): both gates re-run independently on all five
+clips and the flown take; mutation-tested — a swapped quaternion in the backtest manufactures 289
+phantom sightings, a widened displacement bar lets all three horizon-mount clips through, and the
+pinned tests catch both. Four ADR numbers were measured wrong and corrected: the cylinder-dwell row
+(quoted from two different sampling settings), alternative 2's altitude range (it claimed structural
+at z=2…12; z ≤ 4 *is* visible — that case is alternative 1, not a third option), alternative 6's
+dwell/closest, and an independence claim the one-projection refactor had quietly made untrue.
+
+---
+
 ## 2026-08-21 (second entry) — the demo take: one command, a full mission, the best tree evidence yet, and a bird check that was never exercised
 
 ### 04:58-05:16Z — the flight

@@ -824,7 +824,7 @@
     <!-- Scripted dynamic obstacles (2-3 birds, MVP scope); see config/birds/farm_world_birds.json for the trajectory source data. -->
     <model name="bird_0">
       <static>true</static>
-      <pose>20.0 5.0 8.0 0 0 1.5708</pose>
+      <pose>15.0 5.0 11.0 0 0 1.5708</pose>
       <link name="link">
         <visual name="visual">
           <geometry><sphere><radius>0.18</radius></sphere></geometry>
@@ -841,7 +841,7 @@
 
     <model name="bird_1">
       <static>true</static>
-      <pose>5.0 30.0 11.0 0 0 0.0000</pose>
+      <pose>5.0 30.0 8.0 0 0 0.0000</pose>
       <link name="link">
         <visual name="visual">
           <geometry><sphere><radius>0.18</radius></sphere></geometry>

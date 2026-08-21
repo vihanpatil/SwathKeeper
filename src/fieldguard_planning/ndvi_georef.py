@@ -102,6 +102,17 @@ class CameraIntrinsics:
                    cx=cx if cx is not None else width_px / 2.0,
                    cy=cy if cy is not None else height_px / 2.0)
 
+    @classmethod
+    def from_meta(cls, camera: Dict[str, float]) -> "CameraIntrinsics":
+        """Intrinsics as a recorded clip states them (`meta.json` "camera" block, written by
+        `clip_recorder.py` from the live `camera_info`). Offline tools that must agree with what a
+        clip was actually rendered with read the clip, not `config/ndvi_camera.json` -- the config
+        is what we ASKED for and the clip is what we GOT (they agree today: fx=fy=520.006 vs the
+        config's 520.0, a 6e-3 px difference)."""
+        return cls(width_px=int(camera["image_width_px"]), height_px=int(camera["image_height_px"]),
+                   fx=float(camera["fx"]), fy=float(camera["fy"]),
+                   cx=float(camera["cx"]), cy=float(camera["cy"]))
+
 
 # --------------------------------------------------------------------------------------------------
 # Rotation helpers (pure stdlib math; no numpy needed for a single point/ray)
@@ -221,13 +232,24 @@ def world_ray_to_camera_frame(ray_world: Vec3, orientation_q: Quat) -> Vec3:
     return (sx * ray_body[0], sy * ray_body[1], sz * ray_body[2])
 
 
-def world_enu_to_pixel(point_enu: Vec3, drone_position_enu: Vec3, orientation_q: Quat,
-                       intr: CameraIntrinsics,
-                       mount_offset_body_m: Vec3 = MOUNT_OFFSET_BODY_M) -> Optional[Tuple[float, float]]:
-    """Inverse of `pixel_to_ground_enu` (for a ground-plane point, not an arbitrary 3D point): world
-    point -> the pixel it projects to, or None if it falls behind/beside the camera (not in the
-    downward viewing cone) -- the caller must still range-check against `intr.width_px/height_px`
-    for "is this pixel actually in frame"."""
+def project_world_point(point_enu: Vec3, drone_position_enu: Vec3, orientation_q: Quat,
+                        intr: CameraIntrinsics,
+                        mount_offset_body_m: Vec3 = MOUNT_OFFSET_BODY_M
+                        ) -> Optional[Tuple[float, float, float]]:
+    """THE project-a-world-point-into-the-NDVI-frame primitive: (u_px, v_px, depth_m) for any 3D
+    world-ENU point seen from a fully-oriented drone pose, or None if it is behind the camera.
+
+    `depth_m` is the pinhole depth (camera +Z, i.e. straight down the optical axis) -- NOT slant
+    range. Callers need it for two things this module cannot decide for them: apparent size
+    (`r_px = fx * physical_radius_m / depth`, ADR-009's "never ground-plane projection" rule) and a
+    minimum-depth frustum gate (`eval/spike_common.MIN_DEPTH_M`).
+
+    Every consumer of this transform goes through here -- the heatmap stitch (`world_enu_to_pixel`
+    below), the ground-truth labeller (`eval/label_from_sim.project_bird_oriented`) and the
+    pre-flight visibility predictor (`scripts/predict_bird_visibility.py`) -- so a projection bug
+    can never disagree between the map, the labels and the prediction. It stays here, next to the
+    hand-computed fixtures in `tests/fieldguard_planning/test_ndvi_georef.py`, because those
+    fixtures are what make it trustworthy."""
     cam_pos = camera_world_position(drone_position_enu, orientation_q, mount_offset_body_m)
     d_world = (point_enu[0] - cam_pos[0], point_enu[1] - cam_pos[1], point_enu[2] - cam_pos[2])
     d_cam = world_ray_to_camera_frame(d_world, orientation_q)
@@ -235,7 +257,19 @@ def world_enu_to_pixel(point_enu: Vec3, drone_position_enu: Vec3, orientation_q:
         return None
     x_n = d_cam[0] / d_cam[2]
     y_n = d_cam[1] / d_cam[2]
-    return (intr.cx + x_n * intr.fx, intr.cy + y_n * intr.fy)
+    return (intr.cx + x_n * intr.fx, intr.cy + y_n * intr.fy, d_cam[2])
+
+
+def world_enu_to_pixel(point_enu: Vec3, drone_position_enu: Vec3, orientation_q: Quat,
+                       intr: CameraIntrinsics,
+                       mount_offset_body_m: Vec3 = MOUNT_OFFSET_BODY_M) -> Optional[Tuple[float, float]]:
+    """Inverse of `pixel_to_ground_enu` (for a ground-plane point, not an arbitrary 3D point): world
+    point -> the pixel it projects to, or None if it falls behind/beside the camera (not in the
+    downward viewing cone) -- the caller must still range-check against `intr.width_px/height_px`
+    for "is this pixel actually in frame". Depth-free view of `project_world_point`."""
+    proj = project_world_point(point_enu, drone_position_enu, orientation_q, intr,
+                               mount_offset_body_m)
+    return None if proj is None else (proj[0], proj[1])
 
 
 # --------------------------------------------------------------------------------------------------

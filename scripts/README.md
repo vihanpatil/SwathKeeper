@@ -47,6 +47,13 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   calibrated `<temperature>` on every visual, from `config/ndvi_camera.json`.
 
 **Checks / regression:**
+- `predict_bird_visibility.py` — **run this before spending a Docker session on a detection flight.**
+  Mission file × bird config × the same `ndvi_georef` projection → "will any bird be in frame, and
+  for how many frames", host-only in 0.8 s, exit 1 when a bird is below the frame floor. Sweeps the
+  bird driver's start offset and reports each bird as `STRUCTURAL` (never in frame at any offset —
+  only geometry can fix it) or `TIMING` (does cross, just rarely). `--backtest <clip>` replays a
+  flown clip's own poses through the identical geometry, and reproducing the demo take's measured
+  0/454 is what makes the prediction trustworthy (ADR-003 amendment 2).
 - `check_mission_geofence.py` — min XY clearance of the mission path vs. the tree geofence (exits 1 on
   the documented, altitude-safe row-0 overlap — expected, not a failure).
 - `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses, or frame FNR / precision slip past their calibrated floors (ADR-003).
@@ -62,6 +69,12 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   from a known tree in a physics-free world copy and checks the canopy centroid lands within 15 px
   of `ndvi_georef`'s prediction (measured 2.2 px). Run after any change to the mount, the vehicle
   SDF, or the georef extrinsics.
+- `check_tree_positions.py` — the post-flight companion to `verify_mount_geometry.sh`: reads a
+  clip's stitched `heatmap/heatmap.json`, prints the per-tree table (imaged / canopy-grade / NDVI
+  lift), and **exits 1 on the georef-displacement signature** — a positive-NDVI cell more than 2 m
+  from every tree centre. Post-mount-fix clips sit at 1.7678 m, the horizon-mount ones at
+  6.4-11.9 m. Host-only, no container. The runbook's proof standard points here, because
+  `cells_imaged` will not catch a map that is full and misplaced.
 - `check_live_flight_log.py` — evidence gate for `eval/results/*flight_log*.json`: parses the log,
   runs the `check_ledger` partition invariant against the canonical grid, and rejects an empty
   `flown_path_enu`. Exists because the 2026-08-05 demo log was silently clobbered by a later idle
