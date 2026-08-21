@@ -16,8 +16,12 @@ with the gate that makes its bug class impossible to repeat, ending with
 `scripts/verify_mount_geometry.sh`: the camera's view now provably agrees with the georef
 transform to 2.2 px. The first **tree-verified** heatmaps are committed evidence: every tree the
 recording imaged sits at its true position (+0.87 NDVI lift over soil).
-Open: fused-frame recording throughput (limits per-flight coverage), then the ADR-003
-real-render re-run and the dashboard. Docs map: [`docs/README.md`](docs/README.md).
+The 2026-08-21 full-mission demo take holds the best of them: 8 canopy-grade trees at that same
++0.869 median lift, and all 9 positive cells in a 410-cell map sitting 1.77 m from a tree centre —
+no canopy signal anywhere a tree isn't. Open, and independent of each other: fused-frame recording
+throughput (limits per-flight coverage); the ADR-003 real-render re-run, which ran and found **no
+bird ever entered the nadir camera's frame** — a mission-geometry gap, not a throughput one; and the
+dashboard. Docs map: [`docs/README.md`](docs/README.md).
 
 **Running it yourself:** [`SETUP.md`](SETUP.md) — Docker on macOS / Linux / WSL2, then one command.
 

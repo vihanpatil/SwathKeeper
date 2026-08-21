@@ -6,6 +6,111 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-21 (second entry) — the demo take: one command, a full mission, the best tree evidence yet, and a bird check that was never exercised
+
+### 04:58-05:16Z — the flight
+
+The first flight anybody flew through `scripts/fly_pipeline.sh` as a *user* rather than as its
+author. Seven shells' worth of bringup — Gazebo, the sensor bridge, the micro-ROS agent before SITL
+(the golden rule), the fuser, the recorder, the altitude-gated birds — came up under one command,
+gated, in one window, and the flight itself was typed at the MAVProxy prompt the way a demo flight
+always is. Full boustrophedon, not the two-lane test mission. It worked. That is the whole story of
+the launcher, and it is worth writing down that the first time it was used in anger, the toil it was
+built to remove stayed removed.
+
+Clip: `eval/results/clips/real_flight_20260821T045848Z` — **454 frames, 410 of 720 cells imaged**,
+`dropped_pair_count` 0, no stale pose pairs. Bird sidecar `bird_drive_20260821T050635Z.json`; the
+driver's altitude gate fired on its own at takeoff (first airborne frame at sim 430.8 s, driver
+`t0_sim` 437.92 s), so the birds were alive and moving for the whole imaging window.
+
+### The tree half: PASS, and the best canopy evidence in the project
+
+No tree-check script had ever existed — the 2026-08-18 numbers came from an ad-hoc look. So the
+method was reconstructed and then **pinned by reproducing all three published figures exactly**
+before it was allowed to judge anything new: flight 6 at 5/8, flight 7 at 5/6, and the "+0.87
+typical lift" that `README.md` and this log both quote, which recomputes to **+0.869196** pooled.
+Every tree centre sits on a 2.5 m grid corner, so its r=1.3 m canopy straddles the **four** cells
+sharing that corner — that quad is the tree's cell set, and it is what makes the historical
+denominators 8 and 6 rather than 6 and 5.
+
+**This clip: 12/18 trees imaged, 8 canopy-grade, median lift +0.8692 — against a +0.8692 baseline,
+dead on to four decimals, and 8 canopy-grade against a previous best of 6.** The strongest result is
+one nobody had thought to measure: **all 9 positive-NDVI cells in the entire 410-cell map sit at
+exactly 1.7678 m from a tree centre** — precisely a 2.5 m cell's centre-to-corner distance. Zero
+canopy signal anywhere a tree is not; zero false positives in 410 cells. A 6 m sweep around each
+soil-grade tree turns up no displaced canopy cell either, so those are genuine non-detections rather
+than the mislocation class ADR-007 amendment 5 fixed.
+
+**"Best to date" needed checking, and the check changed the claim.** Three earlier clips imaged
+*more* cells (697, 586, 450) and *more* trees (17, 16, 15) — and returned **zero** canopy-grade
+trees, with 100 % of their positive cells sitting **6.4-11.9 m** from the nearest tree. That is the
+horizon-facing-mount signature, drawn as a plausible map. Every post-fix clip puts 100 % of its
+positive cells at 1.7678 m. The lesson is blunt and now written into the runbook's own bar:
+**`cells_imaged` is not the metric.** A wrong camera fills the grid faster than a right one.
+
+### The bird half: not failed — NEVER EXERCISED
+
+**0 bird-visible frames out of 454.** Verified twice independently: a from-scratch projection of
+each frame's recorded bird positions through the clip's own intrinsics, and the harness's own
+`label_from_sim.py`, which printed `454 frames, 0 visible bird-boxes`. Closest any bird came all
+flight: **14.15 m** slant range, ≈341 px outside the image edge.
+
+The cause is geometry, and it is structural. A nadir camera at 15 m over birds at 6 / 8 / 11 m AGL
+sees a footprint *at bird altitude* of only 4.9×3.7 to 11.1×8.3 m — against a **15 m lane pitch**.
+The ground plane tiles; the bird-altitude plane does not. bird_0 patrols x=20, a fixed 5.0 m from
+lane x=15, so it is outside the frame on every single pass, every flight, deterministically. Nobody
+had measured this because nobody had had a full-coverage clip to measure it on. **No number of extra
+frames fixes it** — which makes it the first item in a long time that is not a throughput problem.
+
+Per the runbook's own Gate-2 discipline ("do not treat this as a pass by just dropping the bird
+check"), this clip cannot close the bird half of the proof standard, and it is recorded as
+unmet-and-unexercised with the frustum numbers attached rather than quietly dropped.
+
+### ADR-003 criterion 3: EVIDENCE INSUFFICIENT — and the harness that would have said otherwise
+
+The real-render re-run this clip was supposed to unblock ran cleanly end to end and produced nothing
+to score, so precision / recall / FNR / per-bird-track FNR are **undefined** against the synthetic
+0.445 bar. Not a confirmation, not a refutation. The premise is intact — the real render keeps
+ADR-003's class ordering with a *wider* margin than the spike (canopy +0.531 > trunk −0.026 > soil
+−0.429 > bird −0.789; bird-vs-soil gap **0.360** against ~0.23 synthetic) — but the *threshold
+values* are calibrated to the synthetic clip's absolute scale and saturate on the real one:
+`ndvi < 0.05` passes **100 % of pixels on 438 of 454 frames** against real soil at −0.4377.
+
+Then the part that matters more than the verdict. **`eval/score.py` would have printed
+`-> ADOPT (a) NDVI-direct` on that empty ground truth.** With TP=FP=FN=0 every rate guard yields
+0.000, and the decision rule read four zeros as a clean sweep. Reproduced live, same inputs, pre-fix
+file vs post-fix file: `ADOPT` before, `EVIDENCE INSUFFICIENT` after. Anyone running `run_spike.sh`
+and reading the last line would have closed a load-bearing ADR on **zero** evidence. A rate needs a
+denominator, so the denominator is now checked before the rates are consulted. Two more found in the
+same pass: `label_from_sim.py` never derived `range_m` on real clips, so the closest-approach lookup
+hit its `1e9` fallback and silently redefined the safety-critical per-bird-track FNR from "detected
+before closest approach" to "detected on first sight"; and `baseline_rgb.py` KeyError-ed on any clip
+with partial RGB (243 of 454 here), killing the spike runner outright. All three fixed, 10 tests
+pinning them (`tests/fieldguard_planning/test_score_evidence.py`, suite 291 → 301).
+
+One more left deliberately unfixed and flagged in the file instead: `baseline_rgb.py`'s "birdness =
+bright + achromatic" is a property of the *synthetic* clip's white birds. This world's birds are
+**dark** against **bright** soil (measured modal soil pixel (138, 161, 115), min-channel 115 above
+the 110 threshold), so the arm is inverted here. Flipping it is one character and the wrong thing to
+do blind — the threshold needs recalibrating against a clip that actually contains a visible bird,
+which is the same clip criterion 3 is waiting on.
+
+### What it cost, and the honest footnote
+
+The full-mission fuser telemetry landed for the first time: 4257 sensor ticks → 962 RGB frames
+(22.6 %) → 634 fused (65.9 %) → 454 recorded (71.6 %) = **10.7 % end to end**, `dropped_pair_count`
+0, with 328 unpaired frames (34.1 % of arrivals) landing squarely inside ADR-013 amendment 6a's
+33-41 % band — the two-stage loss confirmed at 5× the duration of the flights that found it.
+
+And the footnote the frame count hides: **only 51 of those 454 frames painted a cell.** 403 painted
+nothing, 401 of them parked at home before arm and after land; just 42 were above 12 m. All 6
+unimaged trees have 24/24 of their quad cells inside the 310 unimaged, so the misses are pure
+coverage. The map is a 51-effective-frame artifact that happens to be the best one yet — which is
+either encouraging or alarming depending on the day, and is worth reporting as painting frames from
+here on rather than as a recorded-frame count that reads five times better than the work it did.
+
+---
+
 ## 2026-08-21 — three merged PRs that never reached `main`, counters that ended the guesswork, and 5.1× the evidence
 
 ### 02:36-03:13Z — the stacked-merge trap, and PR #22

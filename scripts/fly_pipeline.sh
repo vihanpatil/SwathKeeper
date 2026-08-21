@@ -511,17 +511,21 @@ print_stitch_hint() {
   if [ -z "$clip" ]; then clip="eval/results/clips/<the dir the record window printed>"; fi
   printf '\n[fly_pipeline] stitch it on the host (repo root, no container needed):\n\n'
   printf '    python3 scripts/stitch_ndvi.py --clip %s\n\n' "$clip"
-  # The bar names its preconditions on purpose. 697/720 has been reached exactly once, off a full
-  # boustrophedon that delivered 1781 frames; every other real clip to date ran 48-116 frames and
-  # stitched to 228-586. Quoting the good number alone reads a short mission or a starved recorder
-  # as a bad flight.
+  # The bar leads with the TREES, not with cells_imaged, and 2026-08-21 is why: the 697/720 record
+  # was flown with the horizon-facing mount, and 100% of its canopy signal landed 9.5-11.9 m off any
+  # tree — a full grid, entirely misplaced. Every post-mount-fix clip puts 100% of its positive cells
+  # at exactly 1.7678 m from a tree centre (a 2.5 m cell's centre-to-corner distance). A high cell
+  # count with canopy in the wrong place is the worse failure, because it looks like the good one.
   cat <<'EOF'
-[fly_pipeline] bar: the 18 trees at their 18 known positions in heatmap/heatmap.png, few stale-pose
-[fly_pipeline] skips, and cells_imaged near 720 — but read frames_total AND which mission flew,
-[fly_pipeline] first. 697/720 has been hit once, on a full boustrophedon with 1781 frames; the
-[fly_pipeline] 2-lane test-flight gate stitches ~368/720 off 86 frames, and a busy machine starves
-[fly_pipeline] a full mission to ~100. Low cells with low frames is a short mission or a starved
-[fly_pipeline] recorder, not a bad flight.
+[fly_pipeline] bar, in this order: (1) the 18 trees at their 18 known positions in
+[fly_pipeline] heatmap/heatmap.png — canopy anywhere else is a georef fault, not a good map;
+[fly_pipeline] (2) few stale-pose skips; (3) cells_imaged, read against frames_total AND which
+[fly_pipeline] mission flew. Reference points, both on the two-lever config: the 2-lane test-flight
+[fly_pipeline] gate stitches ~368/720 off 86 frames; the full-boustrophedon demo take reached
+[fly_pipeline] 410/720 off 454 recorded frames, of which only 51 painted a cell. Low cells with low
+[fly_pipeline] frames is a short mission or a starved recorder, not a bad flight. Do NOT chase the
+[fly_pipeline] all-time 697/720 — that clip was flown with the pre-ADR-007-am.5 mount and put every
+[fly_pipeline] canopy cell 9.5-11.9 m from a real tree.
 EOF
 }
 
@@ -538,6 +542,10 @@ cmd_up() {
 
   say "1/7 Gazebo (the world)"
   run tmux new-session -d -s "$SESSION" -n gazebo "$(exec_line "$INNER_GAZEBO")"
+  # Session-scoped, never `-g`: a global set-option would follow the user's tmux server out of this
+  # session and change mouse behaviour in their other work. Non-fatal — a tmux too old to know the
+  # option is a worse pane experience, not a reason to abort a bringup that is already half up.
+  run tmux set-option -t "$SESSION" mouse on 2>/dev/null || true
   keep_output gazebo
   gate_gazebo
   say "2/7 sensor bridge (Gazebo -> ROS 2)"

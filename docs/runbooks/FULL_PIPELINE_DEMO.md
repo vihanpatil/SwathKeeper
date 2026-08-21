@@ -21,6 +21,9 @@ scripts/fly_pipeline.sh --dry-run up # print every docker/tmux command, run noth
 scripts/fly_pipeline.sh --gate-geometry up   # + the mount-geometry gate after the bridge
 ```
 
+`up` turns tmux mouse mode on for the `swathkeeper` session (session-scoped only — your other tmux
+sessions are untouched): click a pane or window name to focus it; the `Ctrl-b` prefix also works.
+
 What it adds over copy-paste is the **ordering and the gates** — Gazebo's four `fg/sensor`
 advertisements, the four `/fg/sensor` ROS 2 topics, the **mandatory** render-alive probe (which on
 DEGRADED restarts Gazebo + the bridge and re-probes, twice, then refuses to fly), and UDP 2019
@@ -272,10 +275,19 @@ arming on purpose: its service traffic adds jitter the EKF can't tolerate while 
 
         python3 scripts/stitch_ndvi.py --clip eval/results/clips/<the dir Shell 7 printed>
 
-    *Look for:* `cells imaged` in the low hundreds (the best valid 2-lane clip is 368/720 off 86
-    frames, 2026-08-21, after the two throughput levers in ADR-013 am. 6; recording throughput is
-    still the limit, not coverage — `docs/ROADMAP.md` "Next up") and few stale-pose skips.
-    Then open `heatmap/heatmap.png`.
+    *Look for:* **the 18 trees at their 18 known positions in `heatmap/heatmap.png` first**, and
+    `cells imaged` second. Reference points, both 2026-08-21 on the two-lever config: the best
+    2-lane clip is 368/720 off 86 frames, and the full-boustrophedon demo take is **410/720 off 454
+    frames — of which only 51 painted a cell**, which is the number that actually sets coverage.
+    Few stale-pose skips. Recording throughput is still the limit, not coverage
+    (`docs/ROADMAP.md` "Next up").
+
+    **`cells_imaged` alone will lie to you.** The all-time high — 697/720 — was flown on
+    2026-08-18 with the horizon-facing mount, and 100 % of its canopy signal landed 9.5-11.9 m from
+    any tree: a full grid, entirely misplaced. Every clip since the ADR-007 am. 5 mount fix puts
+    100 % of its positive cells at exactly 1.7678 m from a tree centre (a 2.5 m cell's
+    centre-to-corner distance). A high cell count with canopy in the wrong place is the *worse*
+    failure, because it looks like the good outcome. Then open `heatmap/heatmap.png`.
 
 4. **ADR-003 re-confirmation on the real render** (still on the host). `run_spike.sh` takes no
     argument — it reads `CLIP` from the environment, so a bare invocation silently re-scores the

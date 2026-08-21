@@ -53,7 +53,7 @@ Owner / roles: product-lead, tech-lead, flight-software-engineer.
 
 ---
 
-## ADR-003: NDVI-vs-RGB detection approach  (2026-08-04, status: ACCEPTED — confirmation-pending; spike landed, see docs/SPIKE_ndvi_vs_rgb.md §Outcome)
+## ADR-003: NDVI-vs-RGB detection approach  (2026-08-04, status: ACCEPTED — confirmation-pending; criterion 3 ATTEMPTED 2026-08-21 and returned EVIDENCE INSUFFICIENT, see amendment 1)
 Decision: Detect directly on the **NDVI-rendered frame itself** (approach (a), NDVI-direct), faithful
 to the single-NDVI-camera hardware (ADR-000). The synthetic-RGB pass (b) is **retained but not as the
 detection path** — it becomes the NDVI+RGB comparison arm that quantifies what a second sensor buys.
@@ -80,6 +80,72 @@ signal but do NOT yet validate against the real render. The framing call is made
 was never in real danger of falsification), but ADR-003 must be **re-confirmed by re-running
 `eval/run_spike.sh` on the real Gazebo NDVI render** before it is treated as fully validated.
 Owner / roles: perception-ml-engineer (decided on metric), tech-lead (recorded).
+Amendment 1 (2026-08-21, criterion 3 — the real-render re-run, on the demo take
+`eval/results/clips/real_flight_20260821T045848Z`): **the re-run EXECUTED cleanly end to end and
+produced NOTHING TO SCORE. Criterion 3 is NOT met. This is neither a confirmation nor a refutation
+— it is an empty measurement, and it is recorded as one.**
+  * **The number: 0 visible bird-boxes over 454 frames.** `eval/annotate_real_clip.py` labelled
+    454/454 with 0 refusals (ADR-012 amendment 1 doing its job — 280 frames predate the driver and
+    label at the spawn pose rather than being flagged unshippable), and `eval/label_from_sim.py`
+    then projected every bird through the oriented camera model: `454 frames, 0 visible bird-boxes`.
+    So precision, recall, FNR and per-bird-track FNR are all **undefined** on this clip against the
+    synthetic bars (0.445 precision, 0.000 per-bird-track FNR). Both baselines emitted 0 detections;
+    both would have been unscoreable anyway.
+  * **Why, and it is not throughput.** Nadir camera at 15 m over birds at 6 / 8 / 11 m AGL leaves
+    depths of 9 / 7 / 4 m, so the FOV footprint *at bird altitude* is only 11.1×8.3 / 8.6×6.5 /
+    4.9×3.7 m — against a **15 m boustrophedon lane pitch**. The footprint tiles the *ground* plane
+    (18.5×13.8 m) and does **not** tile the bird-altitude plane. bird_0 patrols x=20, a fixed 5.0 m
+    from lane x=15, i.e. systematically just outside frame on every pass. Closest any bird came:
+    **14.15 m** slant range, ≈341 px outside the image edge (bird_2, frame 279). More frames cannot
+    fix this; only mission or world geometry can. Verified twice independently (a from-scratch
+    projection, and the harness's own `label_from_sim.py`), both returning in-frame counts 0/0/0.
+  * **What the clip DOES establish — the separability premise survives, with a wider margin than the
+    spike.** The real render reproduces ADR-007's Gate-2 band arithmetic to three decimals: soil
+    ρ_nir 0.212 with ρ_red 138/255 predicts NDVI −0.437, and the clip's modal soil cell is
+    **−0.437687** (311 of 410 imaged cells); canopy ρ_nir 0.854 with ρ_red 52/255 predicts +0.614
+    and the clip's **raw NDVI pixel maximum is +0.6145**. `eval/results/gate2_summary.json` (996
+    frames, 3,646 bird pixels, real render) keeps ADR-003's class ordering intact — canopy +0.531 >
+    trunk −0.026 > soil −0.429 > **bird −0.789** — with a bird-vs-soil gap of **0.360** on the real
+    render against ~0.23 synthetic. **What broke is the threshold VALUE, not the hypothesis.** The
+    0.05 default was chosen below the *synthetic* soil (0.15); against real soil at −0.4377 the
+    `ndvi < thresh` mask passes **100 % of pixels on 438 of 454 frames** (307,200 px → one component
+    → discarded by `max_area=5000`), which is why (a) returned zero detections. On this render the
+    threshold belongs near the bird/soil midpoint, ≈ **−0.55 to −0.61**. That is a recalibration,
+    and it stays **unverified** until a clip exists with a bird actually in frame.
+  * **Three harness defects found, all of which would have written a WRONG number into the record
+    rather than failing** (all three fixed in this change, with `tests/fieldguard_planning/
+    test_score_evidence.py` pinning them):
+    1. **`eval/score.py` decided ADR-003 on an EMPTY ground truth.** With TP=FP=FN=0 every rate
+       guard yields 0.000, the decision rule reads four zeros as a clean sweep, and it printed
+       `-> ADOPT (a) NDVI-direct`. Reproduced live on this clip's real artifacts against the pre-fix
+       file: same inputs, `ADOPT` before, `EVIDENCE INSUFFICIENT` after. A rate needs a denominator,
+       so `evidence_shortfall()` now checks the denominator (≥1 visible bird-frame, and every bird
+       in the clip seen at least once) *before* the rates are consulted, and refuses rather than
+       deciding. This is the defect that matters most: it is the one that would have closed ADR-003
+       on zero evidence, silently, for anyone who read the last line of `run_spike.sh`.
+    2. **`eval/label_from_sim.py` never derived `range_m` on real clips**, so `score.py`'s
+       closest-approach lookup hit its `1e9` fallback for every record and `min()` returned the
+       *first* visible frame. That silently redefines the project's safety-critical **per-bird-track
+       FNR** from "detected before closest approach" to "detected on first sight" — on exactly the
+       real clips it exists to score. Now derived from the same camera position the projection uses.
+    3. **`eval/baseline_rgb.py` KeyError-ed on real clips** (unconditional `d["rgb_path"]`; real
+       clips carry RGB on a subset — 243 of 454 here), killing `run_spike.sh` outright.
+  * **Not fixed, deliberately, and now flagged in the file: `baseline_rgb.py`'s birdness hypothesis
+    is inverted for this world.** "Bright + achromatic" is a property of the *synthetic* clip's
+    white birds. In `farmguard_field.sdf` the birds are **dark** (`color_rgba` 0.12 / 0.30 / 0.18)
+    against **bright** soil — measured modal soil pixel (138, 161, 115), min-channel **115 > the
+    110 threshold**, so every real frame saturates into one whole-image blob. Flipping the polarity
+    is one character and a wrong thing to do blind: the threshold must also be recalibrated to this
+    render's absolute scale, and there is no visible bird to calibrate against yet. Criterion 2's
+    comparison arm is therefore **also** blocked on the same missing clip, not on code.
+  * **Status unchanged: ACCEPTED — confirmation-pending.** The default was never in danger of
+    falsification here; it simply was not tested. Cheapest unblocks, in order: (1) **lower the birds
+    in `config/birds/farm_world_birds.json`** — at 2-3 m AGL the nadir footprint is 14.8-16.0 m, i.e.
+    ≈ the lane pitch, giving near-continuous cross-track opportunity; their altitudes are pure
+    config and nothing in ADR-001/ADR-003 requires 6/8/11 m; (2) **an offline pre-flight predictor**
+    — commanded waypoints × bird waypoints × the same `ndvi_georef` projection answers "will any bird
+    be in frame, and for how many frames?" with no Docker session, and would have called this flight
+    dead before it was flown; (3) recalibrate both thresholds against the first clip that has one.
 
 ---
 
