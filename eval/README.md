@@ -56,13 +56,28 @@ provenance, and the annotator prints how long that lead-in was: if it is longer 
 actually left between recorder and driver, you are holding the wrong sidecar. Frames recorded after
 the driver **exits** are the one case still undetectable — the sidecar records a start, not a stop.
 
-**Still open — annotated real clips are not yet scoreable.** `label_from_sim.py` was written for
-the synthetic clip and needs two changes before it can turn one into `ground_truth.json`
-(deliberately not made here; they belong to whoever runs the ADR-003 re-run):
-1. it reads a per-frame `camera.pos_m`, which real clips don't record — derive it from
-   `drone.pos_m`/`drone.quat_wxyz` + `meta.camera_extrinsic.offset_from_drone_m`
-   (`ndvi_georef.camera_world_position` already does exactly this).
-2. `spike_common.project_bird` hardcodes the spike's fixed nadir axes (image-right = East) and
-   ignores camera orientation. A real AUTO mission yaws onto each boustrophedon leg, so on return
-   legs every box would be mirrored about the principal point — wrong labels, not missing ones. Use
-   the orientation-aware `ndvi_georef.world_enu_to_pixel` instead.
+**Real clips ARE scoreable (both blockers closed).** This section listed two `label_from_sim.py`
+gaps as open; both were implemented before the 2026-08-21 re-run and the list had gone stale.
+`build_ground_truth` now derives the camera position from `drone.pos_m`/`drone.quat_wxyz` +
+`meta.camera_extrinsic.offset_from_drone_m` (`ndvi_georef.camera_world_position`), and
+`project_bird_oriented` replaces the spike's fixed nadir axes with the orientation-aware
+`ndvi_georef` primitives — so a yawed return leg no longer mirrors every box about the principal
+point. The synthetic clip keeps the legacy fixed-extrinsic path, selected per line by whether it
+carries a `camera.pos_m`. Verified 2026-08-21: 454/454 frames of the demo take labelled, 0 refused,
+projection hand-checked (a bird 5 m below a level hover lands on the principal point (320.0, 240.0);
+2 m East at 4.92 m depth lands at u = 531.38 = 320 + 520·2/4.92).
+
+**Still open — what a real clip needs before its numbers mean anything** (all three found on the
+2026-08-21 re-run, which produced **zero** scoreable bird-frames; see ADR-003 criterion 3):
+1. **A clip with a bird in frame at all.** Nadir at 15 m over birds at 6/8/11 m AGL gives a footprint
+   of 4.9×3.7 to 11.1×8.3 m at bird altitude against a **15 m** boustrophedon lane pitch — the
+   ground plane tiles, the bird-altitude plane does not. This is mission/world geometry, not
+   throughput: no number of extra frames fixes it.
+2. **`baseline_rgb.py`'s birdness is inverted for this world** — see that file's KNOWN-WRONG note.
+   (b)'s numbers on a real clip are meaningless until it is recalibrated.
+3. **(b)'s FNR is not comparable to (a)'s on a partial-RGB clip** — `score.py` iterates the ground
+   truth's frames, so frames that carry no RGB score against (b) as missed rather than as unseen.
+   See `baseline_rgb.run`'s LIMITATION note.
+
+`score.py` will now **refuse to decide** rather than emit a verdict on an empty ground truth
+(`EVIDENCE INSUFFICIENT`); before 2026-08-21 the same input printed `ADOPT (a) NDVI-direct`.

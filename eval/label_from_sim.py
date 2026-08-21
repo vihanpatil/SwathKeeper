@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -55,6 +56,21 @@ def project_bird_oriented(bird_pos, drone_pos, quat_xyzw, mount_offset_body_m, i
     return (u, v, d_cam[2])
 
 
+def bird_range_m(bird, cam_pos):
+    """Camera-to-bird slant range, metres. The synthetic generator writes `range_m` into poses.jsonl
+    and that number wins when present; real clips (annotate_real_clip.py) carry only positions, so
+    it is derived here from the same camera position the projection uses.
+
+    Not cosmetic: `score.py` defines per-bird-track FNR as "detected before CLOSEST APPROACH", and
+    picks that frame by `min(range_m)`. With every range None its `or 1e9` fallback makes `min` pick
+    the first visible frame instead, silently weakening the project's safety-critical metric to
+    "detected on first sight" -- on exactly the real clips it was built to score."""
+    recorded = bird.get("range_m")
+    if recorded is not None:
+        return recorded
+    return round(math.dist(bird["pos_m"], cam_pos), 6)
+
+
 def build_ground_truth(clip_dir: Path):
     meta = sc.load_meta(clip_dir)
     intr = meta["camera"]
@@ -73,6 +89,9 @@ def build_ground_truth(clip_dir: Path):
         if legacy_cam is None:
             wq, xq, yq, zq = d["drone"]["quat_wxyz"]
             quat_xyzw = (xq, yq, zq, wq)
+            cam_pos = camera_world_position(tuple(d["drone"]["pos_m"]), quat_xyzw, mount_offset)
+        else:
+            cam_pos = tuple(legacy_cam)
         birds_gt = []
         for b in d["birds"]:
             if legacy_cam is not None:
@@ -81,7 +100,7 @@ def build_ground_truth(clip_dir: Path):
                 proj = project_bird_oriented(b["pos_m"], d["drone"]["pos_m"], quat_xyzw,
                                              mount_offset, intr)
             entry = {"bird_id": b["bird_id"], "bbox": None, "visible": False,
-                     "range_m": b.get("range_m")}
+                     "range_m": bird_range_m(b, cam_pos)}
             if proj is not None:
                 u, v, zc = proj
                 r_px = intr["fx"] * b["physical_radius_m"] / zc

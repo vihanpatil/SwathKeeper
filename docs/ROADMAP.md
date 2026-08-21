@@ -8,20 +8,22 @@ in `docs/DECISIONS.md`; this file is only ever **the current truth and what's ne
 nothing gets added to scope without something else being cut in the same breath, and every
 `/standup` is still measured against protecting the demo + dashboard exit.
 
-## Where we are (2026-08-18)
+## Where we are (2026-08-21)
 
 | Phase | Status |
 |---|---|
 | Weeks 1-2 — sim foundation + detection decision | ✅ complete (2026-08-04) |
 | Weeks 3-4 — reactive avoidance + coverage-debt loop | ✅ complete, **demonstrated live** (2026-08-05) |
-| Week 5 — NDVI pipeline | 🟢 validation DONE: **all four gates GREEN live** (Gate 0 2026-08-05, Gates 1-3 2026-08-18); mount geometry corrected + gated (ADR-007 am. 5, 2.2 px); first tree-verified heatmaps committed. Recording throughput instrumented + 3× improved 2026-08-21 (5.1× frames, 2.3× cells, ADR-013 am. 6). Open: ADR-003 re-run, and the two-stage frame loss that remains — transport + pairing (am. 6a) |
-| Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009); implementation gated on the batched session |
+| Week 5 — NDVI pipeline | 🟢 validation DONE: **all four gates GREEN live** (Gate 0 2026-08-05, Gates 1-3 2026-08-18); mount geometry corrected + gated (ADR-007 am. 5, 2.2 px); first tree-verified heatmaps committed. Recording throughput instrumented + 3× improved 2026-08-21 (5.1× frames, 2.3× cells, ADR-013 am. 6). **Demo take flown 2026-08-21** — best canopy evidence to date (8 canopy-grade trees, median lift +0.8692), item 2. Open: the two-stage frame loss (am. 6a) |
+| Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009); implementation gated on the batched session. **New blocker, measured 2026-08-21:** no clip yet puts a bird in the nadir FOV, so both ADR-003 criterion 3 and the criterion-2 comparison arm have nothing to score (item 3) |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
-Test suite: **291 green, 2 skipped** — 258 in `tests/fieldguard_planning` plus 33 host-side launcher
+Test suite: **301 green, 2 skipped** — 268 in `tests/fieldguard_planning` plus 33 host-side launcher
 tests in `tests/test_fly_pipeline.py`, which need neither Docker nor tmux. CI discovers both (it ran
 only the first until 2026-08-18) and also gates seed-42 FNR, scenario-log drift, flight-log evidence.
-Public main: current as of PR #22 (2026-08-20). Full narrative of how we got here:
+The 10 added 2026-08-21 (`test_score_evidence.py`) pin the eval harness's evidence guards — the
+reason a real-render re-run can no longer return a verdict it did not measure.
+Public main: current as of PR #24 (2026-08-20). Full narrative of how we got here:
 `docs/BUILD_LOG.md`.
 
 ## Next up, in order
@@ -68,21 +70,116 @@ Public main: current as of PR #22 (2026-08-20). Full narrative of how we got her
    lanes* (survey-altitude frames off the takeoff point: 6 → 42); (b) the amendment-4 evidence floor
    (12 frames / 40 cells) was deliberately **not** raised to match the new yield — one healthy run at
    the new config is not enough, and it should rise after a second.
+   **First FULL-mission datapoint on the tuned config (2026-08-21 demo take, item 2).** The four
+   flights above were all the short `test_2lane` mission; the demo take flew the full boustrophedon
+   and its `meta.json` carries the first full-mission fuser telemetry. The two-stage picture from
+   amendment 6a holds at 5× the duration, and both stage fractions land where the short flights put
+   them:
+
+   | stage | count | of previous stage | of sensor ticks |
+   |---|---|---|---|
+   | `camera_info_frames` (sensor ticks) | 4257 | — | 100 % |
+   | `red_frames` (RGB images that survived transport) | 962 | **22.6 %** | 22.6 % |
+   | `fused_count` (paired with NIR) | 634 | 65.9 % | 14.9 % |
+   | frames recorded into the clip | 454 | 71.6 % | **10.7 %** |
+
+   `dropped_pair_count` **0**, `nir_frames` 2970. The unpaired remainder — `red_frames −
+   fused_count − dropped_pair_count` = **328, i.e. 34.1 % of the RGB frames that did arrive** — sits
+   squarely inside amendment 6a's 33-41 % band, confirming on a full mission that pairing is a
+   second, independent loss stage that neither kept lever touched. End to end 10.7 % against the
+   short flights' 12.3 %.
+   **But the throughput number is not the coverage number, and this flight is where that stops being
+   theoretical:** of the 454 frames recorded, only **51 painted a cell**. 403 painted nothing (401 of
+   them parked at home before arm and after land) and only 42 were above 12 m. Judge a lever by
+   `red_frames / camera_info_frames`, judge a *map* by painting frames — and start reporting the
+   second, because "454 frames" reads five times better than the 51-frame artifact it produced.
+
    **Lever already disproven — do not retry:** `camera.update_rate_hz` 5 → 2 (2026-08-19) made
    delivery 16× worse (3 frames / 1 of 720 cells against 48 / 291), with RTF unchanged (0.585 vs
    0.561) and the mission flown identically; `eval/results/testflight_gate_20260819T021136Z.json` vs
    `..._20260818T222031Z.json`, reasons preserved in `config/ndvi_camera.json`'s `update_rate_note`.
-2. **The full-coverage demo take** on the tuned stack (runbook: `docs/runbooks/FULL_PIPELINE_DEMO.md`
-   — geometry gate + render probe + host quiet + birds after arming + Ctrl-C only after DISARM).
-   The one-command launcher now exists (`scripts/fly_pipeline.sh`, ADR-013) with a scripted
-   test-flight regression gate (amendment 2, first PASS 2026-08-18) — demo flights still stay
-   human-flown at the MAVProxy prompt; the launcher removes the bringup toil around that step.
-3. **ADR-003 real-render re-run** (criterion 3) + comparison arm (criterion 2): the annotator
-   blocker is FIXED (2026-08-20, ADR-012 amendment 1 — `pose_at`'s loop wrap is now forward-only,
-   so pre-driver-start frames label at the spawn pose the static birds actually sit at, instead of
-   being flagged unshippable as 17/105 were on the last clip). Still needs the full-coverage
-   recording from item 2, then `CLIP=<clip> bash eval/run_spike.sh` and record the numbers against
-   the synthetic 0.445 bar.
+2. **The full-coverage demo take — FLOWN 2026-08-21.** Clip
+   `eval/results/clips/real_flight_20260821T045848Z`, the first full boustrophedon on the tuned
+   (both-levers) config, and the first flight anyone flew through the one-command launcher rather
+   than seven hand-driven shells. **454 frames, 410/720 cells imaged.** Runbook:
+   `docs/runbooks/FULL_PIPELINE_DEMO.md`; the launcher stays a bringup wrapper — the flight itself
+   was human-flown at the MAVProxy prompt, as demo flights always are (ADR-013).
+
+   **Against the runbook's own proof standard, this clip is HALF a pass — and the half it misses was
+   never exercised, not failed.**
+
+   | half of the standard | verdict | evidence |
+   |---|---|---|
+   | 18 trees at their 18 known positions | **PASS — best canopy evidence to date** | 12/18 imaged, **8 canopy-grade**, median lift **+0.8692** |
+   | birds visible / avoidance exercised | **NOT EXERCISED** | **0 bird-visible frames of 454** |
+
+   *Trees.* Method (reconstructed and pinned by reproducing all three published 2026-08-18 figures
+   exactly — flight 6 at 5/8, flight 7 at 5/6, and the "+0.87 typical lift" that `README.md` and
+   `BUILD_LOG.md` both quote, which recomputes to **+0.869196** pooled): every tree centre sits on a
+   grid corner, so its canopy straddles the **four** cells sharing that corner; `imaged` = ≥1 of the
+   four has a mean; `canopy-grade` = best-of-four > 0.0; `lift` = best-of-four − soil modal
+   (−0.437687, on 311 of 410 imaged cells). This clip returns median lift **+0.8692 against the
+   +0.8692 baseline** — dead on to four decimals — and **8 canopy-grade trees against a previous
+   best of 6**. Precision is the strongest single result: **all 9 positive-NDVI cells in the whole
+   410-cell map sit at exactly 1.7678 m from a tree centre** (= a 2.5 m cell's centre-to-corner
+   distance), zero canopy signal anywhere a tree is not, and a 6 m sweep around each soil-grade tree
+   finds no displaced canopy cell — so those are genuine non-detections, not ADR-007-am.5-class
+   mislocation. **Read "best to date" precisely:** three earlier clips imaged *more* cells (697, 586,
+   450) and *more* trees (17, 16, 15) — and returned **zero** canopy-grade trees, with 100 % of their
+   positive cells sitting **6.4-11.9 m** off the nearest tree. That is the pre-mount-fix signature;
+   every post-fix clip puts 100 % of its positive cells at 1.7678 m. Cells imaged is not the metric.
+   *Birds.* 0/0/0 in-frame across all 454 frames and across the 51 that painted a cell — see item 3;
+   it is mission/world geometry, not a regression and not throughput.
+
+   **Open question this raises, worth one line and no more:** all three trees on row 0 sit **on** the
+   x=15 flight lane and returned +0.000 / +0.614 / +0.622, while every tree imaged from *between*
+   lanes returned +0.85…+0.92. Hypothesis (n=3, **unproven**): near-nadir a canopy projects near its
+   true 5.31 m² footprint and splits four ways across the corner it straddles (~21 % fill per 6.25 m²
+   cell → diluted mean), while off-nadir parallax smears a 3.8 m-tall object over more ground-plane
+   area and fills a cell. It predicts that lane spacing which puts orchard rows *under* the lanes
+   systematically under-reads its own trees — which would matter for the NDVI product, not just for
+   this check. **Not established:** two off-lane trees (row2_0 at 10.7 m, row2_5 at 5.4 m) also read
+   soil-grade, both off single-sample cells, so sample poverty is an unseparated competing
+   explanation. No ADR amendment until someone separates them.
+
+   **Also honest about coverage: this is a 51-effective-frame map.** Only **51 of 454** frames painted
+   a single cell (frames 275-325, contiguous); 403 painted nothing and 401 of those sat at home
+   before arm and after land, with just 42 frames above 12 m. All 6 unimaged trees have **24/24** of
+   their quad cells inside the 310 unimaged — the misses are pure coverage, not weak signal.
+3. **ADR-003 real-render re-run (criterion 3) — RUN 2026-08-21, returned EVIDENCE INSUFFICIENT. Open,
+   and its blocker has CHANGED.** Full record: **ADR-003 amendment 1**. The re-run executed cleanly
+   end to end on the item-2 clip and produced **nothing to score**: `annotate_real_clip.py` labelled
+   454/454 frames with 0 refusals (ADR-012 amendment 1 working as intended — 280 pre-driver-start
+   frames labelled at the spawn pose), and `label_from_sim.py` then returned **0 visible bird-boxes
+   over 454 frames**. Precision / recall / FNR / per-bird-track FNR are **undefined** on this clip;
+   the synthetic 0.445 bar has nothing to be compared against. Criterion 2's comparison arm is
+   blocked on the same missing clip.
+
+   **The blocker is no longer "needs the recording" — it is geometry.** A nadir camera at 15 m over
+   birds at 6/8/11 m AGL has a footprint *at bird altitude* of just 4.9×3.7 to 11.1×8.3 m against a
+   **15 m lane pitch**: the ground plane tiles, the bird-altitude plane does not. bird_0 patrols
+   x=20, a fixed 5.0 m off lane x=15 — outside frame on every pass. Closest approach all flight:
+   **14.15 m** slant range, ≈341 px outside the image edge. **More frames cannot fix this.** Cheapest
+   unblocks, in order: (a) **lower the birds** in `config/birds/farm_world_birds.json` — at 2-3 m AGL
+   the footprint is 14.8-16.0 m ≈ the lane pitch; their altitudes are pure config and no ADR requires
+   6/8/11 m; (b) **an offline pre-flight predictor** — commanded waypoints × bird waypoints × the same
+   `ndvi_georef` projection answers "will any bird be in frame, for how many frames?" with no Docker
+   session, and would have called this flight dead before it was flown; (c) recalibrate both
+   detector thresholds, which the real render moved (`ndvi < 0.05` passes **100 % of pixels on 438 of
+   454 frames** against real soil at −0.4377; the RGB arm's "bright + achromatic" birdness is
+   **inverted** for this world's dark birds on bright soil) — but only against a clip with a bird in
+   it. **The premise survives:** class ordering on the real render is canopy +0.531 > trunk −0.026 >
+   soil −0.429 > bird −0.789, a bird-vs-soil gap of **0.360** against ~0.23 synthetic. What broke is
+   a threshold value, not the hypothesis.
+
+   **Three harness defects found and fixed on the way** (pinned by `tests/fieldguard_planning/
+   test_score_evidence.py`), the first of which is the reason this item reads "insufficient" rather
+   than "confirmed": `score.py` used to print `-> ADOPT (a) NDVI-direct` on an **empty** ground truth
+   (TP=FP=FN=0 makes every rate 0.000, and the decision rule read four zeros as a clean sweep) —
+   reproduced live against the pre-fix file on this clip's own artifacts, `ADOPT` before,
+   `EVIDENCE INSUFFICIENT` after. Also: `label_from_sim.py` never derived `range_m` on real clips, so
+   per-bird-track FNR silently degraded from "detected before closest approach" to "detected on first
+   sight"; and `baseline_rgb.py` KeyError-ed on any clip with partial RGB (243 of 454 here).
 4. **Doc long-tail**: apply the remaining documentation-review fix-list (78 items, ~70 remaining —
    list + exact edits preserved; criticals already applied).
 5. **Week 7**: dashboard (replay + avoidance log + NDVI overlay on the shared cell grid), demo

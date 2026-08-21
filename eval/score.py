@@ -28,6 +28,10 @@ import spike_common as sc
 
 PER_BIRD_FNR_BAR = 0.10   # (a) must clear this (docs/SPIKE_ndvi_vs_rgb.md section 3)
 FNR_GAP_BAR = 0.10        # (a) must be within this of (b) on frame FNR
+# Evidence floor for the decision rule (NOT a detector bar). Deliberately the smallest number that
+# is not zero: the failure this exists to stop is a decision on an EMPTY ground truth, and nobody
+# has yet measured how many bird-frames a trustworthy verdict needs. Raise it when someone has.
+MIN_VISIBLE_BIRD_FRAMES = 1
 
 
 def load_gt(path):
@@ -109,6 +113,10 @@ def score(gt_by_fid, det_frames, iou_thresh):
         "TP": TP, "FP": FP, "FN": FN,
         "precision": precision, "recall": recall, "fnr": fnr,
         "per_bird_track_fnr": per_bird_fnr,
+        # Evidence counts, reported next to the rates because every rate above is 0.0 when there is
+        # nothing to score and 0.0 reads as "perfect". `decide()` refuses on these, not on the rates.
+        "birds_with_visible_frames": len(per_bird),
+        "visible_bird_frames": sum(b["visible_frames"] for b in per_bird),
         "per_bird": per_bird,
     }
 
@@ -121,6 +129,8 @@ def print_report(label, m):
     print(f"  FNR       = {m['fnr']:.3f}   <-- SAFETY-CRITICAL (missed bird-frames)")
     print(f"  per-bird-track FNR = {m['per_bird_track_fnr']:.3f} "
           f"(birds not seen before closest approach)")
+    print(f"  evidence  = {m['visible_bird_frames']} visible bird-frames over "
+          f"{m['birds_with_visible_frames']} birds   <-- the denominator every rate above divides by")
     print("  per-bird:")
     print(f"    {'bird':8} {'vis':>4} {'hit':>4} {'closest_m':>9} {'det_before_closest':>18}")
     for b in m["per_bird"]:
@@ -128,12 +138,41 @@ def print_report(label, m):
               f"{str(b['closest_range_m']):>9} {str(b['detected_before_closest']):>18}")
 
 
-def decide(ma, mb):
-    """Apply the ADR-003 decision rule. ma=(a) NDVI-direct, mb=(b) synthetic RGB."""
+def evidence_shortfall(m, birds_in_clip):
+    """Why this scoring run cannot decide ADR-003, or None if it can.
+
+    Found 2026-08-21 on the first real-render re-run: the demo clip put NO bird in the nadir FOV, so
+    TP=FP=FN=0, every guard above yielded 0.000, and the decision rule read four zeros as a clean
+    sweep and printed ADOPT. A vacuous PASS on an empty ground truth is worse than a crash -- it
+    writes a confirmation into the record on zero evidence. The bars are rates; rates need a
+    denominator, so the denominator is now checked before the rates are consulted."""
+    if m["visible_bird_frames"] < MIN_VISIBLE_BIRD_FRAMES:
+        return (f"only {m['visible_bird_frames']} visible bird-frames scored "
+                f"(need >= {MIN_VISIBLE_BIRD_FRAMES})")
+    if m["birds_with_visible_frames"] < birds_in_clip:
+        return (f"only {m['birds_with_visible_frames']} of {birds_in_clip} birds were ever visible "
+                f"-- per-bird-track FNR is undefined for the rest")
+    return None
+
+
+def decide(ma, mb, birds_in_clip):
+    """Apply the ADR-003 decision rule. ma=(a) NDVI-direct, mb=(b) synthetic RGB.
+
+    `birds_in_clip` is REQUIRED, not defaulted: a default of 0 would silently switch off the
+    roster half of the evidence check for any future caller who forgot it, which is the same class
+    of quiet-wrong-answer this guard exists to prevent."""
     a_fnr, b_fnr = ma["fnr"], mb["fnr"]
     a_pbf = ma["per_bird_track_fnr"]
     gap = a_fnr - b_fnr
     lines = []
+    shortfall = evidence_shortfall(ma, birds_in_clip)
+    if shortfall is not None:
+        lines.append(f"evidence check FAILED: {shortfall}")
+        return lines, ("EVIDENCE INSUFFICIENT -- no ADR-003 verdict from this clip. This is neither "
+                       "a confirmation nor a refutation; the clip contains nothing to score. Fly a "
+                       "clip that actually puts each bird in frame, then re-run.")
+    lines.append(f"evidence: {ma['visible_bird_frames']} visible bird-frames, "
+                 f"{ma['birds_with_visible_frames']}/{birds_in_clip} birds seen")
     lines.append(f"(a) per-bird FNR = {a_pbf:.3f} (bar <= {PER_BIRD_FNR_BAR})")
     lines.append(f"(a) frame FNR = {a_fnr:.3f} vs (b) frame FNR = {b_fnr:.3f} "
                  f"(gap {gap:+.3f}, must be <= {FNR_GAP_BAR})")
@@ -172,8 +211,13 @@ def main():
         results["approaches"][approach] = m
         print_report(approach, m)
 
+    # The clip's bird roster, not the visible subset: a bird that is never visible must still count
+    # against `birds_with_visible_frames`, or "we saw one of three" scores as a full sweep.
+    birds_in_clip = len({b["bird_id"] for f in gt_by_fid.values() for b in f["birds"]})
+    results["birds_in_clip"] = birds_in_clip
+
     if "a_ndvi_direct" in scored and "b_synthetic_rgb" in scored:
-        lines, verdict = decide(scored["a_ndvi_direct"], scored["b_synthetic_rgb"])
+        lines, verdict = decide(scored["a_ndvi_direct"], scored["b_synthetic_rgb"], birds_in_clip)
         print("\n=== ADR-003 decision rule ===")
         for l in lines:
             print("  " + l)
