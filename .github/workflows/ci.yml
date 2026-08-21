@@ -63,6 +63,15 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests/fieldguard_planning -v
 
+      - name: Launcher test suite (tests/test_fly_pipeline.py -- host-side, no sim)
+        run: |
+          set -euo pipefail
+          # Lives in tests/, not tests/fieldguard_planning/, on purpose (see its own docstring):
+          # it tests scripts/fly_pipeline.sh, a host-side shell script, not the planning package.
+          # The discover -s above scopes to tests/fieldguard_planning and never walks this file --
+          # a second discover rooted one level up, filtered to just this file, is the fix.
+          python3 -m unittest discover -s tests -p 'test_fly_pipeline.py' -v
+
       - name: Scenario flight logs are current (regenerate + diff -- catches silent rot)
         run: |
           set -euo pipefail
@@ -120,6 +129,28 @@ jobs:
           name: eval-spike-metrics
           path: eval/results/
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # ACTIVE (2026-08-18, ADR-014). The docs site is a rendering layer over docs/*.md, but its build
+  # is also the repo's only automated doc-integrity gate: it exits 1 on any broken intra-repo .md
+  # link and on source-vs-rendered heading drift (both gates added by the adversarial pass, see
+  # ADR-014 amendment). Docs are this project's proof layer -- dead cross-references rotting
+  # silently is exactly the failure class worth ~40 CI seconds per push. The markdown pin lives in
+  # requirements-eval.txt (one home for all pinned deps; installing numpy/scipy alongside costs
+  # seconds and keeps the pin single-sourced).
+  # ---------------------------------------------------------------------------
+  docs-site:
+    name: Docs site builds (link + heading-parity gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned dependencies (markdown lives in requirements-eval.txt)
+        run: pip install -r requirements-eval.txt
+      - name: Build the docs site (fails on broken links or heading drift)
+        run: python3 scripts/build_docs_site.py
 
   # ---------------------------------------------------------------------------
   # PROMOTED Weeks 5-6 (2026-08-05, devops-reliability-engineer) from "deferred until the image

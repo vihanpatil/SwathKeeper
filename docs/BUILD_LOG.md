@@ -6,6 +6,38 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-18 (late night) — `fly_pipeline.sh` replaces the 7-shell bringup, and the first scripted test-flight gate PASSES
+
+The seven copy-pasted terminal tabs of `docs/runbooks/FULL_PIPELINE_DEMO.md` collapsed into one
+host-side tmux session (ADR-013): `scripts/fly_pipeline.sh`, one window per runbook shell, each pane
+running that shell's `docker exec` one-liner **byte-identical** to the runbook (mechanically diffed,
+all nine lines) — the only thing added is ordering and a **gate between every stage** (Gazebo's four
+`/fg/sensor` advertisements, the ROS 2 crossover, the render-alive probe, UDP 2019 bound before SITL
+boots). A qa-safety-reviewer adversarial pass refused to accept that the gates prove anything, on
+the grounds that every one of them is a *liveness* gate — it cannot tell whose process it found —
+and proved the point live: running `status` against an already-running manual bringup returned
+three green gates and no tmux session, the exact stale-bringup clash the happy path would never
+have surfaced. `up` now refuses to start on any surviving sim process instead of double-publishing
+into it.
+Then the one scripted flight mode this ADR allows — `fly_pipeline.sh test-flight` (ADR-013
+amendment 2), a regression gate, not a flight path — ran for real and **PASSED on its first attempt**:
+`eval/results/testflight_gate_20260818T222031Z.json` — 253 s unattended, every gate green, the
+birds pane self-started at its altitude gate (15.0 m), teardown went recorder-first, the host-side
+stitch exited 0 over a 48-frame clip with 0 stale-pose pairs. Suite 246 → 270 green (the 24 launcher
+tests in `tests/test_fly_pipeline.py`) — and CI was not running any of them: `discover -s
+tests/fieldguard_planning` never walks `tests/`, so a second discover was added. The ROADMAP's
+test-count line said **131**, a number last true on 2026-08-05 and carried unchanged through the
+sessions that tripled it; corrected to 270 in the same pass, and worth naming rather than quietly
+overwriting — a stale metric in a living doc is the failure mode this repo claims not to have.
+Docs decision: against a four-direction options artifact, the user picked **D · Heatmap Neutral**,
+built by an in-repo generator rather than an external tool (ADR-014). An adversarial QA pass on the
+generator found four defects the exit code could not: a wrapped body line beginning `#5→#8)` parsed
+as a page-title `<h1>` mid-ADR (python-markdown allows `#` with no space; GitHub does not — the
+renderer now follows GitHub and a heading-parity gate fails the build on any future divergence),
+broken intra-repo `.md` links passing silently, the print stylesheet losing to the dark rule on
+specificity so an Auto + dark-OS reader printed a black page, and one unbreakable
+`eval/results/...json` path widening every page at 375 px.
+
 ## 2026-08-18 (night) — Gates 1-3 green, five bugs deep, and the first honest heatmap
 
 The batched session ran to the end — and became the project's best story. Gates 1-3 all passed

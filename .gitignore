@@ -47,6 +47,7 @@ secrets/
 # so each level excludes CONTENTS (dir/*) and re-includes the evidence children.
 !eval/results/live_flight_log_*.json
 !eval/results/gate2_summary.json
+!eval/results/testflight_gate_*.json
 !eval/results/bird_drive_*.json
 !eval/results/clips/
 eval/results/clips/*
@@ -56,3 +57,7 @@ eval/results/clips/real_flight_*/*
 !eval/results/clips/real_flight_*/poses.jsonl
 !eval/results/clips/real_flight_*/heatmap/
 !eval/results/clips/real_flight_*/INVALID_DO_NOT_USE.md
+
+# Generated docs site (the generator is the tracked artifact; the site is disposable —
+# rebuild with `python3 scripts/build_docs_site.py`, ADR-014)
+docs-site/
