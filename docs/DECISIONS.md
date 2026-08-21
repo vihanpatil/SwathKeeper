@@ -413,6 +413,22 @@ stack, the committed trajectory data stays untouched (reproducibility unchanged)
 is 150 lines of stdlib instead of a new Gazebo plugin.
 Owner / roles: robotics-sim-engineer, perception-ml-engineer (consumer), qa-safety-reviewer
 (bird trajectories are safety-scenario inputs — interpolation is unit-tested).
+Amendment 1 (2026-08-20, perception-ml-engineer, unblocking the ADR-003 re-run): **`pose_at`'s loop
+wrap is FORWARD-ONLY, because the spawn pose is ground truth for every t < 0.** Birds are `<static>`
+models spawned at `waypoints[0]` (`gen_farm_world.sdf_bird_model`) and `drive_birds.py` is the only
+writer of their pose, so between world load and the driver's first `set_pose` each bird demonstrably
+sits at its t=0 waypoint — a fact, not a convention. The unguarded `t_s % tN` violated that:
+`-15 % 20 == 5` in Python, so a frame recorded 15 s before driver start was labelled at the t=5
+midpoint. `eval/annotate_real_clip.py` therefore flagged all pre-driver frames unshippable
+(17/105 on the last real clip), which blocked the ADR-003 real-render re-run. The clamp lives in
+`pose_at` — the ONE interpolation the driver and the annotator share by import — not in the
+annotator, so the bird that was moved and the bird that gets labelled cannot describe different
+positions. Deliberately NOT symmetric: the far end still wraps (loop=True) or holds the last
+waypoint (loop=False), because a running driver really does keep ticking `pose_at` forever, and the
+run sidecar records `t0_sim_s` with no stop time — clamping the far end would invent evidence about
+when the birds stopped. Frames after the driver *exits* remain undetectable and unfixed; the
+annotator now prints the pre-driver lead-in so an operator can recognise a wrong sidecar by it.
+Owner: perception-ml-engineer.
 
 ### ADR-007 amendment (2026-08-18, real-render findings from the first recorded flight)
 1. **Sun shadows OFF in the farm world** (`gen_farm_world.py`): the thermal band (synthetic NIR)

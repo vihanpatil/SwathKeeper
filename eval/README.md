@@ -49,6 +49,13 @@ python3 eval/annotate_real_clip.py --clip <clip> --sidecar <same file> --in-plac
 coverage ledger) — the render lags by one driver tick of sim time, ≈ `period x RTF`, which is
 centimetres at this stack's measured RTF and ~1.2 m only if RTF ever reaches 1.
 
+Frames recorded **before** the driver started (the recorder always starts first) label at each
+bird's **spawn pose** — the `waypoints[0]` the static model sits at until the first `set_pose`, so
+they are ground truth, not filler (ADR-012 amendment 1). Their `traj_t_s` stays negative as
+provenance, and the annotator prints how long that lead-in was: if it is longer than the gap you
+actually left between recorder and driver, you are holding the wrong sidecar. Frames recorded after
+the driver **exits** are the one case still undetectable — the sidecar records a start, not a stop.
+
 **Still open — annotated real clips are not yet scoreable.** `label_from_sim.py` was written for
 the synthetic clip and needs two changes before it can turn one into `ground_truth.json`
 (deliberately not made here; they belong to whoever runs the ADR-003 re-run):
