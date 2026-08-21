@@ -1,1 +1,1 @@
-- [Node/topic map + coverage-debt/control-param notes](node_topic_map.md) — package layout, confirmed AP_DDS /ap/* contract, avoidance-loop live-run gotchas, Weeks 5-6 NDVI fusion/georef state (current as of 2026-08-05)
+- [Node/topic map + coverage-debt/control-param notes](node_topic_map.md) — AP_DDS /ap/* contract, avoidance/NDVI node state, test-flight evidence-yield floor params (2026-08-19)

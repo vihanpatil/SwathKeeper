@@ -27,10 +27,18 @@ Public main: current as of PR #17 (2026-08-18). Full narrative of how we got her
 ## Next up, in order
 
 1. **Recording throughput** (the last quality gap; truth is proven, coverage is not): fused-frame
-   delivery captures only a fraction of each flight (105 frames / 228-586 of 720 cells). First
-   lever per config: `camera.update_rate_hz` 5 → 2 (halves render+transport load; at 3 m/s and a
-   13.8 m footprint, 2 Hz sim still over-samples). Also candidates: bridge QoS, a leaner
-   `ndvi_node` publish path. Measure with the same tree-check + coverage numbers.
+   delivery captures only a fraction of each flight (105 frames / 228-586 of 720 cells).
+   **Lever 1 — `camera.update_rate_hz` 5 → 2 — MEASURED 2026-08-19 and REVERTED.** It made delivery
+   16× worse, not better: 3 frames / 1 of 720 cells at 2 Hz against 48 / 291 at 5 Hz over a
+   comparable sim-time window (1.2 % vs 7.2 % of frames delivered), with RTF unchanged (0.585 vs
+   0.561) and the mission flown identically — so the load relief was real and the throughput gain
+   was not. `eval/results/testflight_gate_20260819T021136Z.json` vs
+   `..._20260818T222031Z.json`; full numbers table in `docs/BUILD_LOG.md`. 5 Hz stands, now on
+   measured grounds. Remaining candidates: **bridge QoS**, a leaner `ndvi_node` publish path.
+   **Do this first:** persist the fuser's `fused_count`/`dropped_pair_count` into the gate record or
+   clip `meta.json` — no artifact today separates "never fused" from "recorded dropped it", which is
+   why the 2 Hz collapse is disproven but not root-caused. Measure with the same tree-check +
+   coverage numbers.
 2. **The full-coverage demo take** on the tuned stack (runbook: `docs/runbooks/FULL_PIPELINE_DEMO.md`
    — geometry gate + render probe + host quiet + birds after arming + Ctrl-C only after DISARM).
    The one-command launcher now exists (`scripts/fly_pipeline.sh`, ADR-013) with a scripted
