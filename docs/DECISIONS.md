@@ -1190,3 +1190,37 @@ evidence comparison on the final config; a resolution cut stays off the table.
 Owner / roles: flight-software-engineer (built + flew + bench), robotics-sim-engineer scope
 co-owned, qa-safety-reviewer's amendment-6a discipline followed (counters before levers),
 product-lead's user-escalations resolved in-session.
+
+### ADR-013 amendment 8 (2026-08-22, throughput round 2 closes): L1 is a KEEP with an honest cost, the attribution closes to zero, and the remaining gap has a single mechanism
+F5c and F6 flew back-to-back on the restored clean host (load sampled throughout, other-container
+CPU 0.0 % on every sample), one variable apart:
+
+* **Environment drift is confirmed end-to-end.** The same code that read red/ci 17.31 % against
+  13 containers read **25.60 %** on the clean host (F5c). With the bench A/B of amendment 7, the
+  2× shortfall is closed as fully environmental. F5c is also the **second healthy run at the A+B
+  config** (tree gate PASS at lift **+0.9888**, the best on record) — amendment 4's rule now
+  PERMITS raising the evidence floor for A+B, but the operative config moved to A+B+L1 the same
+  hour at n=1, so the floor deliberately stays 12/40 until the L1 config has its own second
+  healthy run. Anchors if raised later: the lower healthy A+B run is 36 frames / 158 cells.
+* **L1 (recorder `/fg/ndvi/image` subscription BEST_EFFORT→RELIABLE): KEEP.** It closed its hop
+  completely — NDVI→recorder transport loss **62.5 % → 0.0 %** — and the attribution identity
+  closed exactly (received − written − no_writer − no_pose = **0** unaccounted), which was the
+  round's whole goal. The predicted backpressure was real and is the recorded cost: red/ci
+  25.60 % → 20.46 %, fused 96 → 72. Net **painting cadence 0.2823 → 0.4767 Hz (1.69×)**, recorded
+  1.94×, cells 1.91× — the downstream leak was the bigger one. **Standing re-check:** if NIR
+  transport is ever materially improved, re-fly the L1 trade — the upstream cost could outgrow
+  the hop it closes.
+* **The slop lever is dead across five flights** (histogram `ge_tick` 79/79, 70/70, 73/73, 66/66
+  with zero in every other bucket). Retired permanently.
+* **Where the remaining 3.1–4.2× lives, and what it is NOT:** best measured painting cadence is
+  0.4767 Hz against the 1.5–2 Hz target. The only losses left are the two sensor-image hops,
+  bridge→fuser (RGB **79.5 %**, NIR **53.8 %** on F6) — both already `best_effort`, so the QoS
+  lever class is exhausted; closing NIR alone computes to ~0.93 Hz, not enough without red
+  recovering too. The mechanism left standing is **payload-size fragmentation on an entirely
+  untuned DDS layer** (nothing in the repo sets `RMW_IMPLEMENTATION`, a DDS profile, or
+  `--shm-size`; amendment 7's escalated 16UC1 lever targeted the NDVI hop, which L1 just closed —
+  that escalation is SUPERSEDED). Next round follows amendment 6a's discipline again:
+  **instrument the DDS baseline before pulling a DDS lever** — record the active RMW, transports,
+  and `/dev/shm` capacity into the artifact, then lever one variable at a time.
+Owner / roles: flight-software-engineer (flew + measured), qa-safety-reviewer's counters-first
+discipline held for a second consecutive round; the floor decision follows amendment 4's own rule.

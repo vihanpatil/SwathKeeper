@@ -106,9 +106,13 @@ Public main: current as of PR #26 (2026-08-21). Full narrative of how we got her
    disproven twice, `dropped_pair_count` structurally zero), NIR render and the recorder's own
    logic/disk both exonerated — every remaining loss is transport. F5's baseline came back VOID
    twice on measured **environment drift** (an unrelated 12-container stack now shares the Docker
-   VM; F4's 31.1 % remains the only clean anchor, n=1). Next: clean re-baseline + F6 (recorder sub
-   RELIABLE) in a user-granted host-quiet window; the 32FC1→16UC1 encoding lever is escalated and
-   held in reserve.
+   VM; F4's 31.1 % remains the only clean anchor, n=1). **Closed 2026-08-22, ADR-013 am. 8:**
+   F5c re-baselined clean (red/ci 25.6 %, drift confirmed end-to-end; tree lift +0.9888, best on
+   record) and **L1 KEPT** — the NDVI→recorder hop closed 62.5 %→0 % with the attribution identity
+   at zero unaccounted; painting cadence **0.2823 → 0.4767 Hz (1.69×)**; predictor now 1/0/1 at
+   the achieved rate. Remaining 3.1–4.2× is payload-size fragmentation on the two sensor-image
+   hops (both already best_effort — QoS class exhausted); next round instruments the untuned DDS
+   layer before any lever. The 16UC1 escalation is superseded (its target hop is closed).
 2. **The full-coverage demo take — FLOWN 2026-08-21.** Clip
    `eval/results/clips/real_flight_20260821T045848Z`, the first full boustrophedon on the tuned
    (both-levers) config, and the first flight anyone flew through the one-command launcher rather
