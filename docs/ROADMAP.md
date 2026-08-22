@@ -15,7 +15,7 @@ nothing gets added to scope without something else being cut in the same breath,
 | Weeks 1-2 — sim foundation + detection decision | ✅ complete (2026-08-04) |
 | Weeks 3-4 — reactive avoidance + coverage-debt loop | ✅ complete, **demonstrated live** (2026-08-05) |
 | Week 5 — NDVI pipeline | 🟢 validation DONE: **all four gates GREEN live** (Gate 0 2026-08-05, Gates 1-3 2026-08-18); mount geometry corrected + gated (ADR-007 am. 5, 2.2 px); first tree-verified heatmaps committed. Recording throughput instrumented + 3× improved 2026-08-21 (5.1× frames, 2.3× cells, ADR-013 am. 6). **Demo take flown 2026-08-21** — best canopy evidence to date (8 canopy-grade trees, median lift +0.8692), item 2. Open: the two-stage frame loss (am. 6a) |
-| Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009); implementation gated on the batched session. **New blocker, measured 2026-08-21:** no clip yet puts a bird in the nadir FOV, so both ADR-003 criterion 3 and the criterion-2 comparison arm have nothing to score (item 3) |
+| Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009). Bird-visibility blocker CLOSED 2026-08-22: the delegated flagship take (ADR-013 am. 10) put birds in frame for the first time (10 GT frames, 3/3 birds — evidence floor cleared) at **720/720 cells, 5.00 Hz flat**. Current blocker: harness ground-truth alignment (0.5 s driver-step vs continuous annotator interpolation, ADR-003 am. 5) — offline fix + re-score, no re-fly needed |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
 Test suite: **364 green, 2 skipped** (measured 2026-08-21 post-PR #26) — 331 in

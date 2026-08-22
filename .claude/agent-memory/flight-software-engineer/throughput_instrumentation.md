@@ -143,6 +143,36 @@ BEST_EFFORT 1.71 %; identical 5.0 Hz cadence, 502 painting frames each. **KEPT**
 margin, and note L1's round-2 cost (red/ci 25.60 % -> 20.46 % backpressure) has VANISHED — both
 flights sit at 100 % red/ci, because L2 removed the drops the retransmission was repairing.
 
+## THE FULL-COVERAGE DEMO TAKE (2026-08-22, clip real_flight_20260822T215516Z)
+Full boustrophedon, flown from the runbook's MAVProxy recipe. **720/720 cells, 18/18 trees imaged,
+14 canopy-grade, displacement gate PASS.** 935 frames, 935 with RGB (100 %), 0 stale-pose pairs,
+end-to-end 97.80 % of sensor ticks. Painting 624 frames at **5.00 Hz**.
+
+**Run-age decay is GONE, and it was never a separate phenomenon.** 623 of 623 painting inter-frame
+gaps are exactly 0.200 s — median = p90 = max. 5.00 Hz in every 60 s bin across the whole mission.
+Round 2's decay (median gap 1.4 s, p90 6 s, max 18.4 s) was a symptom of segment-exhaustion loss.
+
+**Short-vs-long is REVERSED by L2.** Painting frames per airborne minute: 2-lane 288.0 vs full
+boustrophedon 290.2 (identical); cells per airborne minute 239.2 vs **334.9**. The long flight is now
+strictly better per minute, because the boustrophedon spreads frames over new ground. Round 2's
+"several short flights beat one long one" no longer holds — do not carry it forward.
+
+## ADR-003 IS NO LONGER THROUGHPUT-BLOCKED — the blocker moved to the HARNESS
+The clip cleared the evidence floor for the first time: **10 visible bird-frames, 3/3 birds seen**
+(previously 0, structurally). But both arms scored **FNR 1.000** and the rule printed
+`AMBIGUOUS -> default to (a)`. **That number is an artifact, not a detector property:**
+- The NDVI detector fired on **18 frames**, exactly the frames the birds are in (331-333, 392-398,
+  455-462), with blob sizes matching the ground truth to **1-2 px across four ranges** (47x47 vs
+  45x45 at 3.96 m; 21x21 vs 20x21 at 9.24 m). Same physical objects.
+- But GT box centres sit a **mean 193.6 px** from the detections, so IoU >= 0.3 can never match:
+  every real detection scores FP and every real bird scores FN.
+- Leading hypothesis (consistent, not proven): `drive_birds --rate 2` moves birds in **0.5 s steps**
+  while `annotate_real_clip.py` interpolates the trajectory **continuously**, so the rendered bird is
+  up to 0.5 s stale. Implied bird travel from the offsets is 0.7-4.4 m, the right order for 0.5 s —
+  but the implied speeds vary 1.4-8.7 m/s, and 16 `set_pose` calls failed, which compounds it.
+  Fix direction: replay the driver's STEP function (t0 + k/rate), not the continuous path.
+- This only became visible at 5 Hz. At the demo take's old 0.407 Hz a 0.5 s quantisation is invisible.
+
 ## LEVER L1 — KEEP (measured 2026-08-22, F6, host verifiably quiet)
 Making `record_node`'s `/fg/ndvi/image` subscription **RELIABLE** (reliability only; every other
 field copied from `qos_profile_sensor_data`; the publisher was already RELIABLE depth 10) **closed

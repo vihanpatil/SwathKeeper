@@ -358,14 +358,18 @@ class TestPaneTailDropsTheGridPadding(LauncherTestCase):
 
 
 class TestEvidenceYieldFloor(LauncherTestCase):
-    """The evidence-yield floor, judged against the only two test-flights that have ever run.
+    """The evidence-yield floor, judged against committed test-flight artifacts.
 
-    Both are committed. Frames come from the gate records, cells from the clips' own
-    `heatmap/heatmap.json` — the same two artifacts the live gate reads, so this cannot pass on
-    numbers the launcher would never see. n=2 is the whole dataset; the floor is derived from it.
+    Frames come from the gate records, cells from the clips' own `heatmap/heatmap.json` — the same
+    two artifacts the live gate reads, so this cannot pass on numbers the launcher would never see.
+    Provenance (2026-08-22, ADR-013 am. 10): the floor was raised 12/40 -> 300/200 off the F9
+    healthy run at the operative A+B+L1+L2 transport config. The pre-transport-fix "healthy" run
+    (48/291) now FAILS it BY DESIGN — a silently unloaded DDS profile reverts delivery to exactly
+    that regime, and catching it is the floor's job.
     """
 
-    BASELINE = "testflight_gate_20260818T222031Z.json"   # 2026-08-18, 5 Hz, healthy
+    HEALTHY = "testflight_gate_20260822T181022Z.json"    # 2026-08-22, F9, A+B+L1+L2, healthy
+    PRE_FIX = "testflight_gate_20260818T222031Z.json"    # 2026-08-18, healthy THEN, fails floor NOW
     COLLAPSE = "testflight_gate_20260819T021136Z.json"   # 2026-08-19, 2 Hz, PASSED on 3 frames
 
     def yield_of(self, record_name):
@@ -381,9 +385,17 @@ class TestEvidenceYieldFloor(LauncherTestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         return result.stdout.strip()
 
-    def test_the_baseline_flight_clears_the_floor(self):
-        self.assertEqual(self.yield_of(self.BASELINE), (48, 291))   # pin the fixture itself
-        self.assertEqual(self.floor(*self.yield_of(self.BASELINE)), "")
+    def test_the_healthy_flight_clears_the_floor(self):
+        self.assertEqual(self.yield_of(self.HEALTHY), (681, 417))   # pin the fixture itself
+        self.assertEqual(self.floor(*self.yield_of(self.HEALTHY)), "")
+
+    def test_the_pre_transport_fix_run_now_fails_the_floor_by_design(self):
+        # 48/291 was the healthy anchor before the DDS fix. If the profile silently stops loading,
+        # delivery reverts to that regime — and this is the gate that must catch it.
+        self.assertEqual(self.yield_of(self.PRE_FIX), (48, 291))
+        failure = self.floor(*self.yield_of(self.PRE_FIX))
+        self.assertIn("evidence-yield floor", failure)
+        self.assertIn("frames_recorded=48", failure)
 
     def test_the_2hz_collapse_fails_the_floor_and_names_it(self):
         self.assertEqual(self.yield_of(self.COLLAPSE), (3, 1))
@@ -392,16 +404,22 @@ class TestEvidenceYieldFloor(LauncherTestCase):
         self.assertIn("frames_recorded=3", failure)
         self.assertIn("cells_imaged=1", failure)
 
-    def test_the_floor_sits_between_the_two_runs_it_was_derived_from(self):
-        # The provenance claim, as an assertion: a floor above the healthy run would flake, one at
-        # or below the collapse would have let the 2 Hz run PASS again.
+    def test_the_floor_sits_between_the_regressions_and_the_healthy_run(self):
+        # The provenance claim, as an assertion: a floor above the healthy run would flake; one at
+        # or below the pre-fix regime would let a silent transport regression PASS again.
         min_frames, min_cells = floor_constants()
-        good_frames, good_cells = self.yield_of(self.BASELINE)
+        good_frames, good_cells = self.yield_of(self.HEALTHY)
+        pre_frames, pre_cells = self.yield_of(self.PRE_FIX)
         bad_frames, bad_cells = self.yield_of(self.COLLAPSE)
         self.assertLess(bad_frames, min_frames)
+        self.assertLess(pre_frames, min_frames)   # the frames half is what catches the pre-fix regime
         self.assertLess(min_frames, good_frames)
         self.assertLess(bad_cells, min_cells)
         self.assertLess(min_cells, good_cells)
+        # Deliberately NOT asserted: pre_cells < min_cells. The pre-fix run imaged 291 cells and
+        # the floor is an OR — it fails that run on frames alone. Pinning cells too would force
+        # the cell floor above 291 and start flaking ordinary healthy variance.
+        self.assertGreater(pre_cells, min_cells)  # documents the OR-logic dependency instead
 
     def test_either_half_short_is_a_failure_and_the_floor_itself_passes(self):
         min_frames, min_cells = floor_constants()

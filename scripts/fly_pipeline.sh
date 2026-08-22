@@ -746,17 +746,19 @@ TF_FRAMES=""; TF_CELLS=""
 # 16x throughput collapse is not gating the thing it exists for, so the LAST gate is on the
 # evidence yield, read off the artifacts themselves.
 #
-# The numbers below are FLOORS DERIVED FROM n=2 — the only two test-flights that have ever run,
-# both on $TF_MISSION_NAME (a different mission needs different numbers):
-#   2026-08-18  5 Hz baseline, healthy:   48 frames / 291 cells  -> clears by 4.0x / 7.3x
-#   2026-08-19  2 Hz collapse, unusable:   3 frames /   1 cell   -> fails both, decisively
-# Set at roughly a quarter of the healthy frame count and a seventh of its cell count: far enough
-# below the one healthy run that ordinary variance on a busy laptop cannot flake them, far enough
-# above the one bad run to catch any collapse within 4x of the measured one. They are floors, not
-# targets — a flight that merely clears them is still a poor flight, just not a regression. Raise
-# them once more healthy runs exist; do not raise them off a single good number.
-TF_MIN_FRAMES=12
-TF_MIN_CELLS=40
+# The numbers below are FLOORS, RAISED 2026-08-22 off TWO healthy runs at the operative
+# A+B+L1+L2 transport config (ADR-013 am. 4's own rule — never raise off a single good number):
+#   2026-08-22  F9 test_2lane, healthy:        681 frames / 417 cells  -> clears by 2.3x / 2.1x
+#   2026-08-22  full boustrophedon, healthy:   935 frames / 720 cells  (context, not an anchor —
+#                                              different mission; anchors are $TF_MISSION_NAME only)
+#   history: 2026-08-18 pre-transport-fix healthy was 48/291; 2026-08-19's 2 Hz collapse was 3/1;
+#   the pre-L2 configs (F4 86, F6 70 frames) would now FAIL — deliberately: a silent transport
+#   regression (profile not loading, segment back at 512 KiB) is exactly what this floor exists
+#   to catch, and every such config delivers under 300 frames on this mission.
+# They are floors, not targets — a flight that merely clears them is still a poor flight, just
+# not a regression. Raise them again only off two healthy runs at whatever config is operative.
+TF_MIN_FRAMES=300
+TF_MIN_CELLS=200
 
 # One integer out of a JSON artifact; empty when the file, the key, or the type is not there.
 # Python, not grep: these files have nested keys a regex would eventually read the wrong one of.

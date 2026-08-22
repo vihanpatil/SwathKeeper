@@ -1279,3 +1279,65 @@ Owner / roles: flight-software-engineer (built, benched, flew all of round 3),
 robotics-sim-engineer scope co-owned, qa-safety-reviewer's instrument-before-lever discipline
 held for a third consecutive round; injection-parity and L4 decisions escalated to and returned
 from the user.
+
+### ADR-013 amendment 10 (2026-08-22, the delegated flagship take): 720/720 cells at a dead-flat 5.00 Hz; two round-2 conclusions honestly reversed; the floor finally rises
+**Delegation note (the human-flown rule, exercised knowingly):** the user delegated THIS
+full-coverage boustrophedon take to Claude explicitly (offered the choice, chose "Claude flies,
+with ADR note"). The flight was flown by driving the runbook's own 7-line MAVProxy recipe into
+the pane via tmux send-keys — the operator's keystrokes, not a new scripted mode. The
+demo-flights-stay-human-flown rule otherwise STANDS; future delegations get their own dated note.
+
+The take (clip `real_flight_20260822T215516Z`, admissible: 5/5 participants on 8,413,728 B
+segments): **956 sensor ticks → 956 red = 956 NIR = 956 fused (100.00 % at every fuser stage,
+unpaired 0) → 948 received → 935 written, 0 unaccounted; end-to-end 97.80 %** against the
+2026-08-21 demo take's 10.7 %. **Painting 624 frames at exactly 5.00 Hz — all 623 inter-frame
+gaps are 0.200 s — and cells 720/720: the first full-grid, correctly-georeferenced map in the
+project's history.** Tree gate PASS, 18/18 imaged, 14 canopy-grade, all 16 positive cells within
+2.0 m. Birds visible for the first time ever: 10 ground-truth bird-frames, 3/3 birds — ADR-003's
+evidence floor cleared (its verdict and the new blocker live in the ADR-003 amendment).
+
+* **Round-2 conclusion reversed #1 — run-age decay does not exist.** The decay was segment
+  exhaustion wearing a clock's clothes: with L2 in place the cadence is bit-perfect at full
+  mission length. Amendment 7's decay measurements stand as data; their "elapsed time" reading
+  is retired.
+* **Round-2 conclusion reversed #2 — short flights do not out-yield long ones.** Same config,
+  same per-minute frame yield (288 vs 290 painting frames/airborne-min); the boustrophedon is
+  **1.4× better on cells/min** because it spreads frames over new ground. The user's evidence
+  study lands the opposite of its round-2 premise: measure with short flights for one-variable
+  discipline, but the long mission is the better evidence artifact too, not just the product one.
+* **Evidence floor RAISED 12/40 → 300/200** (amendment 4's rule satisfied: two healthy runs at
+  the operative config — F9 681/417 on the anchor mission, the take 935/720 as context). Every
+  pre-L2 config now fails it, deliberately: a silently unloaded profile is the exact regression
+  the floor exists to catch.
+* **Avoidance was NOT exercised, correctly:** FULL_PIPELINE_DEMO.md's own scope excludes the
+  avoidance node ("Not in this flight"), and the pilot-agent followed the runbook over the
+  orchestrator's contrary expectation — the right call, recorded here as precedent. The
+  avoidance-on-real-render half of the proof standard needs the separate AVOIDANCE_DEMO.md
+  flight, which awaits its own booking (and its own delegation decision).
+Owner / roles: flight-software-engineer (flew as delegated pilot, ran the full evaluation chain);
+qa-safety-reviewer discipline: verdicts reported exactly as the harness printed them, artifact
+FNR flagged as artifact rather than buried.
+
+### ADR-003 amendment 5 (2026-08-22, criterion 3 re-run on the delegated flagship take): the evidence floor clears for the first time — and the blocker moves from throughput to harness ground-truth alignment
+The re-run executed on `real_flight_20260822T215516Z` (scores in `eval/results/adr003_20260822/`)
+and **cleared the evidence floor for the first time: 10 visible bird-frames, 3/3 birds seen** —
+every prior attempt returned EVIDENCE INSUFFICIENT on zero. The harness printed, verbatim: both
+arms at per-bird-track FNR 1.000, gap +0.000 → **AMBIGUOUS → default to (a) + scoped follow-up
+ticket**. That verdict stands as printed, and this amendment is the scoped follow-up.
+
+**The 1.000 is a measurement artifact, not a detector result — diagnosed, not asserted:** the
+NDVI-direct detector fired on **exactly the 18 bird frames** (331-333, 392-398, 455-462) with
+blob sizes matching ground truth to **1-2 px across four ranges** (47×47 vs 45×45 at 3.96 m;
+21×21 vs 20×21 at 9.24 m) — the same physical objects — but ground-truth box centres sit a mean
+**193.6 px** from the detections, so IoU ≥ 0.3 can never match: every true detection scores FP,
+every bird scores FN. Leading hypothesis (consistent, unproven): `drive_birds.py --rate 2` moves
+birds in **0.5 s steps** while `annotate_real_clip.py` interpolates the trajectory continuously,
+so the RENDERED bird lags the annotated one by up to 0.5 s (implied offsets 0.7-4.4 m, the right
+order; 16 failed `set_pose` calls compound it). **This was invisible at 0.407 Hz and only became
+measurable at 5 Hz.** Fix direction: the annotator must replay the driver's own step function
+(`t0 + k/rate`), never the continuous path. Re-score is offline — the clip is scoreable as
+recorded; no re-fly is needed. Criterion 3 stays OPEN; the reason it is open has changed for the
+second time (geometry → throughput → ground-truth alignment), each time with the previous cause
+measured closed.
+Owner / roles: flight-software-engineer (ran the chain, refused to let the artifact stand as a
+detector verdict); perception-ml-engineer owns the annotator fix and the offline re-score.
