@@ -1224,3 +1224,58 @@ CPU 0.0 % on every sample), one variable apart:
   and `/dev/shm` capacity into the artifact, then lever one variable at a time.
 Owner / roles: flight-software-engineer (flew + measured), qa-safety-reviewer's counters-first
 discipline held for a second consecutive round; the floor decision follows amendment 4's own rule.
+
+### ADR-013 amendment 9 (2026-08-22, throughput round 3 — the transport root cause, fixed): painting cadence 0.48 → 5.0 Hz; the recording-throughput thread that began in amendment 4 is CLOSED
+The mechanism, source-verified in Fast DDS 2.6.11 (the pinned image's only RMW): every large
+sample fragments at **65,384 B even over shared memory** — SHM's own `max_message_size` defaults
+to 65500, UDPv4 is hard-capped there, and a participant takes the MINIMUM across transports. The
+default SHM segment is **512 KiB = 8 fragment slots**, against 10 (NIR), 15 (RGB) and 19 (NDVI)
+fragments per sample; on overflow Fast DDS **silently discards and reports success** (the discard
+path logs at logInfo, compiled out of release builds). Amendment 8's L1 result was the unwitting
+control experiment: RELIABLE never made the transport faster, it NACK_FRAG-repaired the fragments
+the segment was dropping. One honest correction: the iid per-fragment-loss model is **falsified**
+(red implied ~8 %/fragment while NIR implied ~0.5 % in the same arm) — the data supports a
+slot-exhaustion threshold. The anchors that hold: 65,384 B/fragment, 8 slots per default segment.
+
+* **Lever L2 — KEPT: `config/dds/fg_fastdds.xml`, SHM segment 512 KiB → 8 MiB (128 slots).** QoS
+  untouched; orthogonal to kept levers A/B/L1. Enabled by `--shm-size=1g` at container re-create
+  (`sim_docker_run.sh` + the duplicated SIM_BRINGUP.md block, same commit; named-volume gate
+  passed first). Bench (interleaved ×2, admissibility = segment min AND max ≈ 8.4 MB): red/ci
+  28.8/26.4 % → **100.0 %**, nir → **100.0 %**, both pairs.
+* **F9, the one-variable confirmation flight (A+B+L1+L2): red/ci 706/706 = 100.00 %, NIR
+  707/707 = 100.00 %, `unpaired_red_count` 0 with every histogram bucket 0** — pairing has ceased
+  to exist as a loss stage, exactly as amendment 7's same-tick model predicted. End-to-end
+  96.46 %; **painting 502 frames / 5.0 Hz** (target was 1.5–2; round started at 0.4767); cells
+  417/720 on `test_2lane`; the protected RGB comparison arm at 681/681 = 100 %. Attribution
+  closes to zero unaccounted. Tree gate PASS.
+* **Amendment 8's standing L1 re-check — CLOSED, KEEP (F10, one variable):** RELIABLE 1.56 % vs
+  BEST_EFFORT 1.71 % hop loss at identical 5.0 Hz / 502 painting frames. L1's measured round-2
+  cost is gone (both flights 100 % red/ci) because L2 removed the drops the repair traffic
+  amplified. L1 stays as free insurance for a segment under pressure again.
+* **Injection = in-pane exports (user decision):** `FASTRTPS_DEFAULT_PROFILES_FILE` exported
+  inside the six participant pane payloads + `ctr()`'s probe, runbook mirrored in the same change
+  — ADR-013's command-level parity claim stays fully true; 7 tripwire tests pin it (participants
+  carry it, non-participants must not, both probe paths covered, single value, path resolves,
+  runbook agrees).
+* **L4 (SHM-only, zero-fragmentation) — SHELVED, decided:** the user delegated and leaned
+  host-side; L2 saturated the metric without closing the door, and a reachable DDS graph keeps
+  `ros2 topic echo` against a live sim available to anyone exploring the project. Revisit only if
+  a longer mission underperforms, and with the user, since it closes that door.
+* **Dead ends, measured so nobody re-walks them:** `net.core.rmem_max` is 212,992 and unraisable
+  here (/proc/sys read-only in-container; `docker run --sysctl` rejected by runc on this Docker
+  Desktop); XML socket-buffer knobs silently clamp to it; `FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA`
+  landed in Fast DDS 2.10/2.11, not 2.6.11; CycloneDDS is not installed and its 1,344 B fragments
+  would be ~24× the loss surface; the micro-ROS agent is hard-linked against rmw_fastrtps, so an
+  RMW switch would split the graph.
+* **Floor unchanged at 12/40** — one healthy run at the operative A+B+L1+L2 config (F9; F10
+  differs by one variable). Amendment 4's rule, third application. **Caveat carried forward:**
+  5.0 Hz on a 3-minute `test_2lane` is not a promise for the 14-minute boustrophedon — round 2
+  measured real run-age decay, and `meta["dds"]` now makes transport state checkable per clip.
+
+**Consequence: `predict_bird_visibility.py --fps 5.0` → PASS, medians 8/6/11, bird_0 visible at
+55/55 driver-start offsets. The ADR-003 full-coverage re-fly — four blockers behind one clip — is
+BOOKABLE for the first time since the demo take. Per ADR-013, the user flies it.**
+Owner / roles: flight-software-engineer (built, benched, flew all of round 3),
+robotics-sim-engineer scope co-owned, qa-safety-reviewer's instrument-before-lever discipline
+held for a third consecutive round; injection-parity and L4 decisions escalated to and returned
+from the user.

@@ -109,10 +109,17 @@ Public main: current as of PR #26 (2026-08-21). Full narrative of how we got her
    VM; F4's 31.1 % remains the only clean anchor, n=1). **Closed 2026-08-22, ADR-013 am. 8:**
    F5c re-baselined clean (red/ci 25.6 %, drift confirmed end-to-end; tree lift +0.9888, best on
    record) and **L1 KEPT** — the NDVI→recorder hop closed 62.5 %→0 % with the attribution identity
-   at zero unaccounted; painting cadence **0.2823 → 0.4767 Hz (1.69×)**; predictor now 1/0/1 at
-   the achieved rate. Remaining 3.1–4.2× is payload-size fragmentation on the two sensor-image
-   hops (both already best_effort — QoS class exhausted); next round instruments the untuned DDS
-   layer before any lever. The 16UC1 escalation is superseded (its target hop is closed).
+   at zero unaccounted; painting cadence **0.2823 → 0.4767 Hz (1.69×)**.
+
+   **ROUND 3 CLOSES THE THREAD (2026-08-22, ADR-013 am. 9).** Root cause source-verified in Fast
+   DDS 2.6.11: samples fragment at 65,384 B even over shared memory and the default 512 KiB
+   segment holds 8 fragment slots against the 10–19 our frames need; overflow discards silently.
+   Fix = `config/dds/fg_fastdds.xml` (SHM segment → 8 MiB) + `--shm-size=1g`, injected in-pane
+   with runbook parity intact. **F9: 100.00 % delivery on BOTH bands, zero unpaired reds,
+   end-to-end 96.46 %, painting cadence 5.0 Hz** — the full sensor tick; transport is no longer
+   the bottleneck. L1 re-check closed (KEEP, dead heat, old cost vanished). **Predictor: PASS,
+   medians 8/6/11 → the item-3 re-fly is BOOKABLE.** Caveat: 5.0 Hz on 3-min `test_2lane` is not
+   yet proven at boustrophedon length (run-age decay, am. 7); `meta["dds"]` makes it checkable.
 2. **The full-coverage demo take — FLOWN 2026-08-21.** Clip
    `eval/results/clips/real_flight_20260821T045848Z`, the first full boustrophedon on the tuned
    (both-levers) config, and the first flight anyone flew through the one-command launcher rather
