@@ -488,6 +488,55 @@ class TestMetaRecorderBlock(unittest.TestCase):
             self.assertEqual(meta["recorder"]["ndvi_msgs_received"], 7)
 
 
+class TestMetaSchemaContract(unittest.TestCase):
+    """A DELIBERATE literal pin. Every block here was added because a stage of the pipeline was
+    unattributable without it, so a silent bump that drops one should fail a test rather than a
+    flight three days later."""
+
+    def test_schema_version_is_pinned_to_a_literal(self):
+        self.assertEqual(SCHEMA_VERSION, "1.4")
+
+    def test_meta_carries_all_four_attribution_blocks(self):
+        with tempfile.TemporaryDirectory() as td:
+            w = ClipWriter(Path(td), CAM)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize(recorder_counters=RecorderCounters().to_meta())
+            meta = json.loads((Path(td) / "meta.json").read_text())
+        for block in ("fuser", "recorder", "airborne", "dds"):
+            self.assertIn(block, meta, msg=f"meta.json lost the '{block}' block")
+
+    def test_meta_dds_block_records_the_transport_stack(self):
+        """1.4: which transport stack the clip was recorded on. The round-3 lever's failure mode is
+        silent (malformed XML falls back to defaults with only a log line), so without this a
+        lever flight reading 20 % delivery cannot be told apart from one where the lever never
+        loaded."""
+        with tempfile.TemporaryDirectory() as td:
+            w = ClipWriter(Path(td), CAM)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize(recorder_counters=RecorderCounters().to_meta())
+            dds = json.loads((Path(td) / "meta.json").read_text())["dds"]
+        for key in ("rmw", "profiles_file", "profiles_file_present", "shm_segments",
+                    "shm_capacity_bytes", "unreadable"):
+            self.assertIn(key, dds)
+        # min AND max both ride along -- max proves a profile loaded, min proves none was missed.
+        self.assertIn("min_bytes", dds["shm_segments"])
+        self.assertIn("max_bytes", dds["shm_segments"])
+
+    def test_the_dds_snapshot_is_taken_at_construction_not_at_finalize(self):
+        """By finalize the other panes may already be torn down and their segments gone, so
+        min_bytes could no longer see a participant that missed the profile."""
+        with tempfile.TemporaryDirectory() as td:
+            w = ClipWriter(Path(td), CAM)
+            self.assertIsInstance(w.dds, dict)
+            sentinel = {"rmw": "sentinel", "shm_segments": {"count": 0, "min_bytes": None,
+                                                            "max_bytes": None}}
+            w.dds = sentinel
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize()
+            self.assertEqual(
+                json.loads((Path(td) / "meta.json").read_text())["dds"]["rmw"], "sentinel")
+
+
 class TestMetaHonesty(unittest.TestCase):
     def test_meta_honesty_fields(self):
         with tempfile.TemporaryDirectory() as td:

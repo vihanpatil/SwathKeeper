@@ -66,6 +66,7 @@ docker volume create fieldguard_ardu_ws
 
 docker run -it \
   --name fieldguard-sim \
+  --shm-size=1g \
   -v "$(pwd)":/workspace/fieldguard \
   -v fieldguard_ardu_ws:/root/ardu_ws \
   -p 14550:14550/udp \
@@ -73,6 +74,15 @@ docker run -it \
   fieldguard-sim:week1 \
   bash
 ```
+
+**Why `--shm-size=1g`** (added 2026-08-22, round 3): Fast DDS carries every `/fg/*` image over
+**shared memory**, and each participant allocates *and memsets* its own segment out of `/dev/shm`.
+Docker's 64 MB default fits the stock 512 KiB segments but not the enlarged ones that fix the
+large-sample fragment loss (`config/dds/fg_fastdds.xml` uses 8 MiB, times ~6 participants). It is a
+**creation-time** flag — there is no `docker update` equivalent — so changing it costs a container
+re-create. On its own it changes nothing: no process allocates more unless `segment_size` does.
+This block and `scripts/sim_docker_run.sh` must be edited **together**; unlike the nine pane
+payloads in `FULL_PIPELINE_DEMO.md`, no test asserts that they agree.
 
 **In practice, use the maintained wrappers** — they run the exact `docker build` / `docker run`
 above:

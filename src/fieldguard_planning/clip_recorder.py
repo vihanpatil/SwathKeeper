@@ -51,6 +51,7 @@ from typing import Callable, Optional, Tuple
 
 import numpy as np
 
+from .dds_env import dds_env_snapshot
 from .ndvi_fusion import FUSER_STATS_PATH, read_fuser_stats
 
 Vec3 = Tuple[float, float, float]
@@ -65,7 +66,12 @@ QuatXYZW = Tuple[float, float, float, float]
 # the next lever"). Also meta["airborne"], so the round's target metric -- painting cadence over the
 # window the vehicle was actually flying -- stops having to be re-derived by hand from poses.jsonl.
 # Additive: every 1.2 key is unchanged.
-SCHEMA_VERSION = "1.3"
+# 1.4 (2026-08-22) adds meta["dds"] -- the transport stack this clip was actually recorded on
+# (see dds_env.py). Round 3 traced the large-sample loss to Fast DDS SHM segment exhaustion, whose
+# fix is an XML profile whose FAILURE mode is silent (malformed XML falls back to defaults with only
+# a log line). Without this block a lever flight that reads 20 % delivery is unattributable between
+# "the lever did nothing" and "the lever never loaded". Additive: every 1.3 key is unchanged.
+SCHEMA_VERSION = "1.4"
 
 # Altitude above which a recorded frame is counted AIRBORNE. This is a DESCRIPTIVE threshold, not a
 # recording gate: nothing here skips a frame (that is a separate, deliberately-deferred decision --
@@ -253,6 +259,11 @@ class ClipWriter:
         self._first_airborne_stamp_s: Optional[float] = None
         self._last_airborne_stamp_s: Optional[float] = None
         self._t0_stamp_s: Optional[float] = None
+        # Captured HERE, at recorder construction, and not at finalize: by the time this node starts
+        # the whole stack is already up (bridge, fuser and agent all precede it in fly_pipeline.sh),
+        # so every participant's SHM segment already exists and `min_bytes` can see a process that
+        # missed the profile. At finalize the other panes may already be torn down.
+        self.dds = dds_env_snapshot()
         self.origin: Optional[dict] = None  # /ap/gps_global_origin/filtered, set once by the node
         self.pairing_mode = "gz_clock_stamp"  # node overrides to 'arrival_fallback' if no clock stream
 
@@ -386,6 +397,7 @@ class ClipWriter:
                                      "written by a caller that does not track them (pre-1.3 "
                                      "record_node, or a test harness)")}),
             "airborne": self.airborne_summary(),
+            "dds": self.dds,
             "clock_note": ("camera stamps are Gazebo sim time; /ap/pose/filtered stamps are "
                            "ArduPilot's clock (use_sim_time=false) -- poses gz-tagged via a "
                            "native gz clock stream and paired to each frame's stamp; residual in "

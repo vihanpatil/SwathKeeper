@@ -417,5 +417,118 @@ class TestEvidenceYieldFloor(LauncherTestCase):
                 self.assertIn("cannot read the yield", self.floor(frames, cells))
 
 
+class TestBenchTransportArm(unittest.TestCase):
+    """scripts/bench_transport.sh measures the SAME stack the flight flies, and it does that by
+    reading the launcher's payload strings rather than retyping them. If the launcher renames a
+    payload variable the bench would silently bench nothing -- so the coupling is pinned here.
+
+    Host-side and Docker-free, like the rest of this file."""
+
+    BENCH = REPO_ROOT / "scripts" / "bench_transport.sh"
+
+    def test_the_bench_script_exists_and_is_executable(self):
+        self.assertTrue(self.BENCH.exists())
+        self.assertTrue(os.access(self.BENCH, os.X_OK), msg="bench_transport.sh is not executable")
+
+    def test_it_parses_under_bash(self):
+        subprocess.run(["bash", "-n", str(self.BENCH)], check=True)
+
+    def test_it_sources_the_three_payloads_it_needs_from_the_launcher(self):
+        """The whole anti-drift property: the bench must not carry its own copy of a pane one-liner,
+        because a copy is exactly how a bench stops measuring the flight's transport stack."""
+        bench = self.BENCH.read_text()
+        launcher = SCRIPT.read_text()
+        for var in ("INNER_GAZEBO", "INNER_BRIDGE", "INNER_NDVI"):
+            with self.subTest(var=var):
+                self.assertIn(var, bench, msg=f"{var} is not referenced by the bench")
+                self.assertIn(f"{var}=", launcher, msg=f"{var} no longer exists in the launcher")
+        self.assertIn("fly_pipeline.sh", bench)
+        # And it must NOT inline a payload of its own.
+        for smell in ("gz sim -v4", "ros2 run ros_gz_bridge", "fieldguard_planning.ndvi_node"):
+            self.assertNotIn(smell, bench.split("# Usage")[-1].split("set -euo")[0] + "",
+                             msg=f"bench appears to inline the payload {smell!r}")
+
+    def test_the_profile_env_var_is_only_attached_when_a_profile_is_given(self):
+        """The baseline arm must run the exec line the untuned stack actually runs -- an empty
+        FASTRTPS_DEFAULT_PROFILES_FILE would be a third, undocumented condition."""
+        bench = self.BENCH.read_text()
+        self.assertIn("FASTRTPS_DEFAULT_PROFILES_FILE", bench)
+        # The injection is a function with an explicit no-profile branch, not an array: macOS ships
+        # bash 3.2, where expanding an EMPTY array under `set -u` aborts the script -- which is
+        # exactly the baseline arm.
+        self.assertIn("dex()", bench)
+        self.assertIn('if [ -n "$PROFILE" ]; then', bench)
+        self.assertIn("else\n    docker exec ", bench)
+        self.assertNotIn("ENVFLAG", bench)
+
+    def test_the_no_profile_injection_path_survives_strict_mode_bash(self):
+        """bash 3.2 regression guard, reproducing the real abort. `bash -n` does NOT catch it: an
+        EMPTY array expanded as "${a[@]}" under `set -u` is an 'unbound variable' error only at
+        RUNTIME, and the baseline arm is exactly the empty case -- so the first bench arm died
+        mid-bringup after paying for a full Gazebo start."""
+        src = self.BENCH.read_text()
+        body = src.split("dex() {", 1)[1].split("\n}", 1)[0]
+        harness = ('set -euo pipefail\n'
+                   'PROFILE=""\n'
+                   'docker() { printf "ok %s\\n" "$1"; }\n'
+                   'dex() {' + body + '\n}\n'
+                   'dex exec somecontainer bash -c true\n')
+        res = subprocess.run(["/bin/bash", "-c", harness], capture_output=True, text=True)
+        self.assertNotIn("unbound variable", res.stderr)
+        self.assertEqual(res.returncode, 0, msg=res.stderr)
+
+    def test_it_refuses_to_bench_on_top_of_a_live_bringup(self):
+        bench = self.BENCH.read_text()
+        self.assertIn("refusing to bench on top of it", bench)
+
+    def test_it_clears_stale_shm_segments_only_after_the_live_bringup_guard(self):
+        """Orphaned /dev/shm segments outlive a hard-killed participant and make min_bytes report a
+        DEAD default-sized segment as a live participant that missed the profile -- which voids the
+        admissibility check. Clearing is safe ONLY because the guard above has already proved
+        nothing is running, so the ORDER is the property under test, not just the presence."""
+        bench = self.BENCH.read_text()
+        guard = bench.index("refusing to bench on top of it")
+        clear = bench.index("rm -f /dev/shm/fastrtps_*")
+        self.assertLess(guard, clear, msg="stale-segment clear must come AFTER the liveness guard")
+
+
+class TestDdsProfile(unittest.TestCase):
+    """The L2 profile is a committed artifact whose failure mode is silent, so the invariants that
+    make it valid are pinned rather than trusted to review."""
+
+    PROFILE = REPO_ROOT / "config" / "dds" / "fg_fastdds.xml"
+
+    def setUp(self):
+        self.xml = self.PROFILE.read_text()
+
+    def test_profile_exists_and_is_well_formed_xml(self):
+        import xml.etree.ElementTree as ET
+        ET.fromstring(self.xml)   # malformed XML falls back to defaults with only a log line
+
+    def test_segment_size_is_above_max_message_size(self):
+        """SharedMemTransport::init logs an error and REJECTS the descriptor if segment_size <
+        max_message_size -- which would silently leave the stack on defaults."""
+        import xml.etree.ElementTree as ET
+        ns = {"d": "http://www.eprosima.com"}
+        root = ET.fromstring(self.xml)
+        seg = int(root.find(".//d:segment_size", ns).text)
+        mms = int(root.find(".//d:maxMessageSize", ns).text)
+        self.assertGreater(seg, mms)
+        self.assertEqual(seg, 8388608)
+        # 65500 on purpose: raising it is inert while UDPv4 is registered (min across transports).
+        self.assertEqual(mms, 65500)
+
+    def test_udpv4_is_retained_so_a_missed_injection_degrades_rather_than_blacks_out(self):
+        self.assertIn("UDPv4", self.xml)
+        self.assertIn("useBuiltinTransports>false", self.xml.replace(" ", ""))
+
+    def test_port_queue_capacity_is_left_alone_so_the_lever_stays_one_variable(self):
+        """Checked on the PARSED tree, not the raw text -- the prose explains why the knob is
+        absent, and a substring match would fail on its own explanation."""
+        import xml.etree.ElementTree as ET
+        ns = {"d": "http://www.eprosima.com"}
+        self.assertIsNone(ET.fromstring(self.xml).find(".//d:port_queue_capacity", ns))
+
+
 if __name__ == "__main__":
     unittest.main()

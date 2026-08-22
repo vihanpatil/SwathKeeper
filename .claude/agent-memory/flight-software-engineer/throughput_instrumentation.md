@@ -84,6 +84,39 @@ nowhere near F4's 31.09 % from the day before. The 2x shortfall is **environment
 Caveat: a stationary no-SITL scene, so absolute red/ci is not comparable to a flight — only the
 within-bench comparisons are.
 
+## ROUND 3 — ROOT CAUSE FOUND, and the bench says it is fixable (2026-08-22)
+The large-sample loss was never QoS. Fast DDS fragments every sample at **65,384 B even over shared
+memory** (SHM's own `max_message_size` defaults to 65500 and the participant takes the MIN across
+transports, where UDPv4 is hard-capped), and only **eight** fragments fit the default 512 KiB SHM
+segment. On exhaustion Fast DDS **discards the fragment and reports success** — no error, no counter.
+
+**Lever L2** (`config/dds/fg_fastdds.xml`, segment_size 8 MiB = 128 slots, injected via
+`FASTRTPS_DEFAULT_PROFILES_FILE`) measured on a 4-arm interleaved bench, all admissible:
+
+| arm | red/ci | nir/ci | SHM segment min=max |
+|---|---|---|---|
+| B0 baseline | 28.81 % | 96.71 % | 549,408 B |
+| **B1 L2** | **100.0 %** | **100.0 %** | **8,413,728 B** |
+| B0 baseline | 26.40 % | 93.68 % | 549,408 B |
+| **B1 L2** | **100.0 %** | **100.0 %** | **8,413,728 B** |
+
+Both pairs agree, same sign, **3.62x on the red band and zero loss on both**. Bench = 2 participants
+and no SITL/recorder/birds, so these are clean-room numbers — flight will be lower (flight nir/ci was
+46 % where the bench baseline reads 95 %).
+
+**The (1-q)^frags model is FALSIFIED and should not be quoted.** In the SAME arm, same segment, same
+tick, red (15 frags) implies q ≈ 8 %/fragment while nir (10 frags) implies q ≈ 0.5 % — a 24x
+discrepancy. The data supports a **slot-exhaustion threshold**, not iid per-fragment loss: delivery
+collapses once a sample's fragment count materially exceeds the 8 slots, and removing the threshold
+takes both bands to exactly 100 %.
+
+**Two instrumentation traps found live, both now pinned by test.** `/dev/shm/fastrtps_*` includes
+(a) fixed 52,416 B `fastrtps_port*` queues and (b) **zero-byte `<name>_el` companions** beside every
+segment and port — counting either destroys `min_bytes`, which is the only thing that can detect a
+participant that missed the profile. Also: orphaned segments outlive a hard-killed participant, so
+`min_bytes` reported a DEAD default segment as a live miss until the bench started clearing
+`/dev/shm` after its liveness guard.
+
 ## LEVER L1 — KEEP (measured 2026-08-22, F6, host verifiably quiet)
 Making `record_node`'s `/fg/ndvi/image` subscription **RELIABLE** (reliability only; every other
 field copied from `qos_profile_sensor_data`; the publisher was already RELIABLE depth 10) **closed
