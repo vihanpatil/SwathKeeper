@@ -100,6 +100,15 @@ Public main: current as of PR #26 (2026-08-21). Full narrative of how we got her
    delivery 16× worse (3 frames / 1 of 720 cells against 48 / 291), with RTF unchanged (0.585 vs
    0.561) and the mission flown identically; `eval/results/testflight_gate_20260819T021136Z.json` vs
    `..._20260818T222031Z.json`, reasons preserved in `config/ndvi_camera.json`'s `update_rate_note`.
+
+   **Round 2 (2026-08-22): attribution complete — see ADR-013 amendment 7.** Six counters settled
+   what flights would have: pairing is the NIR band's transport loss re-expressed (slop lever
+   disproven twice, `dropped_pair_count` structurally zero), NIR render and the recorder's own
+   logic/disk both exonerated — every remaining loss is transport. F5's baseline came back VOID
+   twice on measured **environment drift** (an unrelated 12-container stack now shares the Docker
+   VM; F4's 31.1 % remains the only clean anchor, n=1). Next: clean re-baseline + F6 (recorder sub
+   RELIABLE) in a user-granted host-quiet window; the 32FC1→16UC1 encoding lever is escalated and
+   held in reserve.
 2. **The full-coverage demo take — FLOWN 2026-08-21.** Clip
    `eval/results/clips/real_flight_20260821T045848Z`, the first full boustrophedon on the tuned
    (both-levers) config, and the first flight anyone flew through the one-command launcher rather

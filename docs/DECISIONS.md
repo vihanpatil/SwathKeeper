@@ -1128,3 +1128,65 @@ driver-start offsets) with the threat cylinder still occupied at an unchanged 4.
 `predict_bird_visibility.py` at the demo take's own 0.407 Hz still returns medians 0 / 0 / 1 on the new
 geometry, so item 1's recording-throughput work (ADR-013 am. 5-6a) is the remaining blocker, not a
 nice-to-have. Criterion 3 stays OPEN; the reason it is open has changed.
+
+### ADR-013 amendment 7 (2026-08-22, throughput round 2 — instrumentation before levers): every lost frame now has a name, and three of four levers died to counters instead of flights
+Amendment 6a asked for "the next counter, not the next lever." This round built six of them
+(fuser: `nir_camera_info_frames`, `unpaired_red_count`, a one-off unpaired-red nearest-NIR
+histogram; recorder: `ndvi_msgs_received`/`dropped_no_writer`/`dropped_no_pose`,
+`on_ndvi_wall_ms` p95/max, `rgb_msgs_received`; finalize: airborne/painting frames + cadences;
+clip schema 1.2→1.3, sidecar 1.0→1.1; +47 tests), flew them twice, and settled more than the
+planned flight program would have:
+
+* **Pairing is not a loss stage — it is the NIR band's transport loss re-expressed.** Both
+  sensors tick one 0.2 s grid; slop is 50 ms; a red fuses iff its OWN tick's NIR survived. The
+  multiplicative model `fused ≈ ticks × P(red) × P(nir)` predicts every instrumented flight
+  (ratio 0.94–1.13). Corollary, verified in source: **`dropped_pair_count` is STRUCTURALLY
+  unreachable in the live node** (the synchronizer's slop IS the guard bound, so no rejectable
+  pair is ever handed over) — its four flights of reassuring zeros measured nothing. The
+  misleading "belt-and-suspenders" comment in `ndvi_node.py` is corrected; the honest number is
+  `unpaired_red_count`.
+* **The slop-widening lever amendment 6a floated is DEAD, twice, without a flight spent on it.**
+  Histogram: 79/79 (F5a) and 70/70 (F5b) unpaired reds had their nearest surviving NIR a full
+  tick away (`ge_tick`; `le_slop` and `slop_to_tick` both 0, evictions 0). Widening below 0.2 s
+  buys nothing; above it pairs different sensor ticks (~0.6 m of motion). Do not fly it; do not
+  amend ADR-007 for it.
+* **NIR render exonerated — the band is TRANSPORT-limited.** `nir_camera_info_frames` 689/690
+  and 676/676 against the RGB control: the thermal sensor ticks at the full 5 Hz. The
+  "render-limited, goal unreachable" branch is falsified.
+* **Recorder logic and disk exonerated — F8 (bind mount) cancelled without flying.**
+  received→written 100 % on both flights, both drop counters 0, `on_ndvi_wall_ms` p95 7.9–17.3 ms
+  against the 200 ms budget: the executor idles while the middleware drops 1.23 MB samples. The
+  fused→recorded gap is pure transport — exactly what F6 (recorder's `/fg/ndvi/image`
+  subscription BEST_EFFORT→RELIABLE against the already-RELIABLE publisher) attacks.
+* **F7 (drop the recorder's raw-RGB arm) cancelled** — user decision (the ADR-003 criterion-2
+  comparison arm is protected for the whole round) and the evidence independently concurs:
+  `/fg/sensor/nir/image` has exactly ONE subscriber and still loses ~65 %, so fan-out is not the
+  dominant term.
+* **Both F5 flights are VOID for absolute yields (clips carry `INVALID_DO_NOT_USE.md`) — and the
+  void itself is the finding: ENVIRONMENT DRIFT, measured.** A 12-container stack from an
+  unrelated project was created on the shared Docker VM at 2026-08-22T0318Z — mid-F5a, and a full
+  day after F1–F4 set the 31.09 % baseline on a VM running `fieldguard-sim` alone. F5b, flown
+  host-quiet by sampling, still returned red/ci 17.31 %. An interleaved bench A/B
+  (instrumented/baseline ×2, Gazebo+bridge+fuser only) then measured the UNINSTRUMENTED code at
+  7.19–15.58 % on the same host — the sign of the A−B difference flips between pairs, so the
+  instrumentation is exonerated and the drift is the cause. **F4 remains the only clean anchor,
+  and it is n=1.**
+* **Two new traps for the record:** (a) host-quiet cannot be judged from one `docker stats`
+  snapshot — sampling caught 267–352 %-of-a-core bursts between quiet snapshots; sample
+  throughout the flight. (b) The exposure control and RTF both PASSED on F5a while contention
+  halved both bands — neither gate detects host load, only a contemporaneous load log does.
+* **Honest ceiling, computed off F4:** closing the recorder hop and the NIR hop entirely takes
+  0.587 Hz airborne to ~1.48 Hz — the bottom edge of the 1.5–2 Hz target with zero margin,
+  because nothing in the kept lever set attacks the RGB band's ~83 % loss. The next candidate
+  there is re-encoding `/fg/ndvi/image` 32FC1→16UC1 (halves the system's largest sample; NDVI is
+  bounded [−1,1], quantization ~3e-5) — **escalated to the user, held in reserve, not built.**
+
+Open: F5c clean re-baseline in a user-granted host-quiet window (the other stack paused), then
+F6, one variable, judged on `(fused_count − ndvi_msgs_received)/fused_count` with
+`on_ndvi_wall_ms` watching for backpressure moving the loss upstream. Standing user decisions
+this round also fixed: deliverables are BOTH short high-evidence flights (the measurement
+instrument) and the full boustrophedon (the product artifact), plus a quantified short-vs-long
+evidence comparison on the final config; a resolution cut stays off the table.
+Owner / roles: flight-software-engineer (built + flew + bench), robotics-sim-engineer scope
+co-owned, qa-safety-reviewer's amendment-6a discipline followed (counters before levers),
+product-lead's user-escalations resolved in-session.
