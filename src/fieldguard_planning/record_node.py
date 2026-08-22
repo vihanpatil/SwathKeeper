@@ -33,7 +33,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from .clip_recorder import ClipWriter, PoseBuffer, StreamingClockParser
+from .clip_recorder import ClipWriter, PoseBuffer, RecorderCounters, StreamingClockParser
 from .ndvi_fusion import load_camera_config
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -72,7 +72,11 @@ def build_node(out_dir: Path):
             self._gz_now: Optional[float] = None   # latest gz sim seconds (native clock stream)
             self._latest_pose = None               # arrival-fallback only (no clock stream)
             self._rgb_by_stamp: dict = {}          # (sec, nanosec) -> np rgb array (bounded)
-            self._dropped_no_pose = 0
+            # Every recorder-side count lives in one pure object (clip_recorder.RecorderCounters)
+            # and is folded into meta.json at finalize. Before this, the ONLY recorder-side number
+            # in any artifact was num_frames, so 180 of the demo take's fused frames vanished with
+            # no way to tell transport loss from an early return (ADR-013 am. 6a).
+            self.counters = RecorderCounters()
             self._warned_no_clock = False
             self._start_clock_stream()
 
@@ -137,6 +141,10 @@ def build_node(out_dir: Path):
                                       "x": p.x, "y": p.y, "z": p.z}
 
         def _on_rgb(self, msg) -> None:
+            # This process is the SECOND independent subscriber to /fg/sensor/rgb/image (ndvi_node
+            # is the first, where the same arrivals are counted as red_frames). Comparing the two
+            # counters from one flight prices the fan-out hypothesis without changing any config.
+            self.counters.rgb_msgs_received += 1
             key = (msg.header.stamp.sec, msg.header.stamp.nanosec)
             arr = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 3)
             self._rgb_by_stamp[key] = arr.copy()
@@ -144,7 +152,28 @@ def build_node(out_dir: Path):
                 self._rgb_by_stamp.pop(next(iter(self._rgb_by_stamp)))
 
         def _on_ndvi(self, msg) -> None:
+            """Arrival accounting + timing; the work is in `_record_ndvi_frame`.
+
+            The counter increments BEFORE any guard, so `fused_count - ndvi_msgs_received` is
+            exactly the frames that died in transport on this hop and never reached Python at all.
+            The wall-clock measurement spans the WHOLE body -- including the ~2.15 MB of synchronous
+            .npy writes and the flushed JSON row that `ClipWriter.add_frame` does on this same
+            single-threaded executor -- because that is the one measurement that separates "the
+            executor was blocked when frames died" from "the executor was idle and the middleware
+            dropped them". `finally`, so a raising callback still records its cost."""
+            t0 = time.monotonic()
+            self.counters.ndvi_msgs_received += 1
+            try:
+                self._record_ndvi_frame(msg)
+            finally:
+                self.counters.observe_on_ndvi_wall_ms((time.monotonic() - t0) * 1000.0)
+
+        def _record_ndvi_frame(self, msg) -> None:
             if self.writer is None:
+                # Silent until 2026-08-21: every fused frame arriving before the first camera_info
+                # was discarded with a bare return. On the F1 gate flight that window was >= 0.92 s
+                # and nothing recorded it.
+                self.counters.dropped_no_writer += 1
                 return  # no intrinsics yet
             stamp_s = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
             ndvi = np.frombuffer(msg.data, dtype=np.float32).reshape(msg.height, msg.width)
@@ -167,11 +196,11 @@ def build_node(out_dir: Path):
                 pos, quat_xyzw, _ = self._latest_pose
                 residual = float("nan")
             else:
-                self._dropped_no_pose += 1
-                if self._dropped_no_pose in (1, 10):
+                self.counters.dropped_no_pose += 1
+                if self.counters.dropped_no_pose in (1, 10):
                     self.get_logger().warn(
-                        f"NDVI frame with no /ap/pose/filtered yet (x{self._dropped_no_pose}) -- "
-                        f"is SITL up with DDS enabled?")
+                        f"NDVI frame with no /ap/pose/filtered yet "
+                        f"(x{self.counters.dropped_no_pose}) -- is SITL up with DDS enabled?")
                 return
 
             self.writer.add_frame(stamp_s, ndvi, pos, quat_xyzw,
@@ -199,12 +228,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         pass
     finally:
         if node.writer is not None:
-            summary = node.writer.finalize()
+            summary = node.writer.finalize(recorder_counters=node.counters.to_meta())
             print(f"\n[record_node] clip finalized: {summary}")
             print(f"[record_node] next: python3 scripts/stitch_ndvi.py --clip {summary['out_dir']}")
         else:
-            print("\n[record_node] NOTHING RECORDED — no camera_info ever arrived "
-                  "(bridge or ndvi_node down?)", file=sys.stderr)
+            # The counters are the diagnosis here, not a footnote: ndvi_msgs_received > 0 with no
+            # writer means fusion was publishing and camera_info never arrived, which is a very
+            # different failure from ndvi_msgs_received == 0.
+            print(f"\n[record_node] NOTHING RECORDED — no camera_info ever arrived "
+                  f"(bridge or ndvi_node down?) counters={node.counters.to_meta()}", file=sys.stderr)
         node.destroy_node()
         if rclpy.ok():  # Ctrl-C may have already shut the context down; a second call raises
             rclpy.shutdown()

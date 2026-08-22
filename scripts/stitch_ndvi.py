@@ -99,6 +99,37 @@ def _pose_from_line(line: dict) -> Tuple[Tuple[float, float, float], Tuple[float
     return pos, (x, y, z, w)
 
 
+def _frame_time_s(line: dict) -> Optional[float]:
+    """A poses.jsonl row's time, in whichever basis the clip carries. Real-render clips record
+    absolute `stamp_sim_s`; the synthetic spike records only relative `t_s`. Both are seconds and
+    both are monotone, so either supports a cadence -- but WHICH one was used is reported alongside
+    the number rather than assumed."""
+    for key in ("stamp_sim_s", "t_s"):
+        if key in line:
+            try:
+                return float(line[key])
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def _cadence_stats(stamps: List[float], prefix: str, basis: Optional[str]) -> dict:
+    """(n-1)/span over a list of frame times -- the same basis `clip_recorder.airborne_summary`
+    uses, so the two cadences in a clip's artifacts are directly comparable. Undefined values are
+    `None`: a cadence with no denominator is EVIDENCE INSUFFICIENT, never 0.0."""
+    n = len(stamps)
+    first = min(stamps) if stamps else None
+    last = max(stamps) if stamps else None
+    span = None if (first is None or last is None) else round(last - first, 3)
+    return {
+        f"{prefix}_first_s": (None if first is None else round(first, 6)),
+        f"{prefix}_last_s": (None if last is None else round(last, 6)),
+        f"{prefix}_span_s": span,
+        f"{prefix}_cadence_hz": (None if (n < 2 or not span) else round((n - 1) / span, 4)),
+        f"{prefix}_time_basis": basis,
+    }
+
+
 def stitch_clip(clip_dir: Path, cells: Sequence[CoverageCell]) -> Tuple[NdviHeatmapGrid, dict]:
     """Accumulate every frame of `clip_dir` into a heatmap grid. Returns (grid, stats). Raises
     ValueError on an empty/self-inconsistent clip -- never returns a silently-empty result."""
@@ -108,6 +139,8 @@ def stitch_clip(clip_dir: Path, cells: Sequence[CoverageCell]) -> Tuple[NdviHeat
 
     zero_update_frames: List[int] = []
     stale_pose_frames: List[int] = []
+    painting_stamps: List[float] = []
+    time_basis: Optional[str] = None
     n_frames = 0
     with (clip_dir / "poses.jsonl").open() as fh:
         for raw in fh:
@@ -128,6 +161,17 @@ def stitch_clip(clip_dir: Path, cells: Sequence[CoverageCell]) -> Tuple[NdviHeat
             pos, quat_xyzw = _pose_from_line(line)
             if grid.accumulate_frame(ndvi, pos, quat_xyzw) == 0:
                 zero_update_frames.append(int(line["frame_id"]))  # bad pose / out of field -- log, don't hide
+            else:
+                # A PAINTING frame: at least one of the 720 canonical cell centres projected inside
+                # the image. This -- not frames_total -- is what a map should be judged by (the
+                # 2026-08-21 demo take recorded 454 frames and painted with 51 of them), and it is
+                # only knowable here, where the projection runs.
+                if time_basis is None:
+                    time_basis = ("stamp_sim_s" if "stamp_sim_s" in line
+                                  else ("t_s" if "t_s" in line else None))
+                t = _frame_time_s(line)
+                if t is not None:
+                    painting_stamps.append(t)
             n_frames += 1
 
     if n_frames == 0:
@@ -137,10 +181,18 @@ def stitch_clip(clip_dir: Path, cells: Sequence[CoverageCell]) -> Tuple[NdviHeat
         raise ValueError(f"stitched {n_frames} frames but not one cell got a sample -- the clip's "
                          f"poses/intrinsics do not image the field (silent-empty stitch forbidden)")
 
+    n_painting = n_frames - len(zero_update_frames)
     stats = {
         "frames_total": n_frames,
         "frames_stale_pose_skipped": stale_pose_frames,
         "frames_zero_update": zero_update_frames,
+        # The round's target metric, made machine-readable. `frames_painting` is the complement of
+        # frames_zero_update by construction; it is written out anyway because "judge a map by
+        # painting frames" only holds if the number is in the artifact instead of derivable by
+        # someone who already knows the rule.
+        "frames_painting": n_painting,
+        "frames_painting_timed": len(painting_stamps),
+        **_cadence_stats(painting_stamps, "painting", time_basis),
         "cells_total": len(cells),
         "cells_imaged": n_imaged,
         "cells_unimaged": len(cells) - n_imaged,
@@ -209,7 +261,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     render_heatmap_png(out_dir / "heatmap.png", grid)
 
     src_kind = "SYNTHETIC" if stats["clip_synthetic"] else "real render"
-    print(f"stitched {stats['frames_total']} frames ({src_kind}, seed={stats['clip_seed']}) -> "
+    print(f"stitched {stats['frames_total']} frames ({src_kind}, seed={stats['clip_seed']}, "
+          f"{stats['frames_painting']} painting @ {stats['painting_cadence_hz']} Hz) -> "
           f"{stats['cells_imaged']}/{stats['cells_total']} cells imaged "
           f"({stats['cells_unimaged']} unimaged, {len(stats['frames_zero_update'])} zero-update, "
           f"{len(stats['frames_stale_pose_skipped'])} stale-pose skipped) -> "

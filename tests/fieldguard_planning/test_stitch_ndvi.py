@@ -125,6 +125,81 @@ class TestStitchClip(unittest.TestCase):
             _, stats = stitch_ndvi.stitch_clip(clip, _cells())
             self.assertEqual(stats["frames_zero_update"], [1])
 
+    # -- painting frames: "judge a map by painting frames" (ADR-013 am. 6) ----
+    def test_painting_frames_are_the_complement_of_zero_update(self):
+        """The metric the docs demand, made machine-readable. The demo take recorded 454 frames and
+        painted with 51 of them, so `frames_total` reads 9x better than the map it produced."""
+        with tempfile.TemporaryDirectory() as td:
+            clip = Path(td)
+            _write_clip(clip, [
+                ((10.0, 20.0, ALT), IDENTITY_WXYZ, _const(0.8)),
+                ((-500.0, -500.0, ALT), IDENTITY_WXYZ, _const(0.5)),   # paints nothing
+                ((40.0, 20.0, ALT), IDENTITY_WXYZ, _const(0.4)),
+            ])
+            _, stats = stitch_ndvi.stitch_clip(clip, _cells())
+            self.assertEqual(stats["frames_total"], 3)
+            self.assertEqual(stats["frames_painting"], 2)
+            self.assertEqual(stats["frames_painting"],
+                             stats["frames_total"] - len(stats["frames_zero_update"]))
+
+    def test_painting_cadence_is_measured_over_the_painting_window_only(self):
+        """(n-1)/span over the frames that PAINTED, matching clip_recorder.airborne_summary's
+        convention so the two cadences in a clip's artifacts are directly comparable. The
+        non-painting frames at either end must not stretch the denominator."""
+        with tempfile.TemporaryDirectory() as td:
+            clip = Path(td)
+            frames = [((-500.0, -500.0, ALT), IDENTITY_WXYZ, _const(0.5))]     # t_s 0, paints none
+            frames += [((10.0 + 30.0 * k, 20.0, ALT), IDENTITY_WXYZ, _const(0.5)) for k in range(3)]
+            frames += [((-500.0, -500.0, ALT), IDENTITY_WXYZ, _const(0.5))]    # t_s 4, paints none
+            _write_clip(clip, frames)     # _write_clip stamps t_s = frame index
+            _, stats = stitch_ndvi.stitch_clip(clip, _cells())
+            self.assertEqual(stats["frames_painting"], 3)
+            self.assertEqual(stats["painting_first_s"], 1.0)
+            self.assertEqual(stats["painting_last_s"], 3.0)
+            self.assertEqual(stats["painting_span_s"], 2.0)
+            self.assertEqual(stats["painting_cadence_hz"], 1.0)
+            self.assertEqual(stats["painting_time_basis"], "t_s")
+
+    def test_a_real_render_clip_uses_the_absolute_sim_stamp_and_says_so(self):
+        """Real clips carry `stamp_sim_s`; the synthetic spike carries only `t_s`. Which basis was
+        used rides in the artifact rather than being assumed by whoever reads it."""
+        with tempfile.TemporaryDirectory() as td:
+            clip = Path(td)
+            _write_clip(clip, [((10.0, 20.0, ALT), IDENTITY_WXYZ, _const(0.8)),
+                               ((40.0, 20.0, ALT), IDENTITY_WXYZ, _const(0.4))])
+            lines = []
+            for k, raw in enumerate((clip / "poses.jsonl").read_text().splitlines()):
+                d = json.loads(raw)
+                d["stamp_sim_s"] = 430.8 + k * 2.0
+                lines.append(json.dumps(d))
+            (clip / "poses.jsonl").write_text("\n".join(lines) + "\n")
+            _, stats = stitch_ndvi.stitch_clip(clip, _cells())
+            self.assertEqual(stats["painting_time_basis"], "stamp_sim_s")
+            self.assertEqual(stats["painting_first_s"], 430.8)
+            self.assertEqual(stats["painting_cadence_hz"], 0.5)
+
+    def test_a_single_painting_frame_has_no_cadence(self):
+        """A rate with no denominator is EVIDENCE INSUFFICIENT, never 0.0."""
+        with tempfile.TemporaryDirectory() as td:
+            clip = Path(td)
+            _write_clip(clip, [((40.0, 20.0, ALT), IDENTITY_WXYZ, _const(0.5))])
+            _, stats = stitch_ndvi.stitch_clip(clip, _cells())
+            self.assertEqual(stats["frames_painting"], 1)
+            self.assertEqual(stats["painting_span_s"], 0.0)
+            self.assertIsNone(stats["painting_cadence_hz"])
+
+    def test_painting_stats_reach_heatmap_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            clip = Path(td) / "clip"
+            clip.mkdir()
+            _write_clip(clip, [((10.0, 20.0, ALT), IDENTITY_WXYZ, _const(0.6)),
+                               ((40.0, 20.0, ALT), IDENTITY_WXYZ, _const(0.6))])
+            out = Path(td) / "out"
+            self.assertEqual(stitch_ndvi.main(["--clip", str(clip), "--out", str(out)]), 0)
+            doc = json.loads((out / "heatmap.json").read_text())
+            self.assertEqual(doc["frames_painting"], 2)
+            self.assertEqual(doc["painting_cadence_hz"], 1.0)
+
     # -- no-silent-empty-stitch guards ---------------------------------------
     def test_empty_clip_raises(self):
         with tempfile.TemporaryDirectory() as td:

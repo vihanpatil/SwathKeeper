@@ -1,1 +1,3 @@
 - [Node/topic map + coverage-debt/control-param notes](node_topic_map.md) — AP_DDS /ap/* contract, avoidance/NDVI node state, test-flight evidence-yield floor params (2026-08-19)
+- [Throughput counters + what they measured](throughput_instrumentation.md) — the slop lever is DEAD, thermal is NOT render-limited, recorder logic drops nothing (2026-08-22)
+- [Host-quiet is a flight gate](host_quiet_confound.md) — other Docker containers halved both bands and voided a flight; how to tell host load from a code regression

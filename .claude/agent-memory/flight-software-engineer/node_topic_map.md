@@ -108,11 +108,12 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
 - `NdviHeatmapGrid` reuses `coverage.py`'s canonical 720-cell grid (same `cell_id`s as the
   coverage-debt ledger) rather than inventing a second grid — a cell never imaged is `None` in
   `mean_grid()`, the NDVI-mapping analog of an explicit coverage-debt cell.
-- **Nothing here has run against the real render yet.** `/fg/sensor/*` topics don't exist until a
-  human runs Gates 0-2 of `docs/runbooks/NDVI_VALIDATION.md` (Docker + real Gazebo thermal-sensor render).
-  All 39 new tests (`test_ndvi_fusion.py`, `test_ndvi_georef.py`) validate against synthetic/
-  hand-computed fixtures only — same "built ahead of Docker validation" pattern as the avoidance
-  policy/executor were before Week-3's Gate 2.
+- **SUPERSEDED 2026-08-18/22 — this HAS run against the real render.** All four ADR-007 gates went
+  green live, the sensor mount was corrected (it faced the horizon from the day it was authored),
+  and multiple real clips + tree-verified heatmaps are committed. The open problem is no longer
+  "does it render" but **recording throughput** — see [[throughput-instrumentation-results]].
+- `/fg/sensor/nir/camera_info` was bridged but had ZERO subscribers until 2026-08-22; `ndvi_node`
+  now counts it as `nir_camera_info_frames`, which is what gave the NIR band a denominator.
 - Added **Gate 3** to `docs/runbooks/NDVI_VALIDATION.md`: re-fly the Week-3 avoidance demo against the new
   `iris_with_gimbal_ndvi` vehicle model (2 new cameras + 40 thermal plugins added render load) and
   confirm dodge->hold->resume still completes + RTF doesn't collapse — a regression check, not a
@@ -125,8 +126,12 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
   collapse) and tied to the `test_2lane` mission — a different mission needs different numbers.
   **Never state the floor has been live-exercised until a real `test-flight` has run against it**
   (as of 2026-08-19 it has not; it is pinned offline against the two committed gate records).
-- Only two test-flights have ever run, both committed under `eval/results/testflight_gate_*.json`;
-  they are the entire dataset for any claim about per-flight recording throughput.
+- **SUPERSEDED:** many test-flights have now run (four one-variable throughput flights on
+  2026-08-21 plus the instrumented baseline on 2026-08-22), all committed under
+  `eval/results/testflight_gate_*.json`. The floor itself is still 12/40 and still n=2-derived.
+- The floor has now been live-exercised, and it FAILED a flight (2026-08-22, 7 frames / 37 cells) —
+  correctly, but the cause was host load, not the pipeline. Always read the counters before
+  believing the floor's suggested diagnosis; see [[host-quiet-is-a-flight-gate]].
 
 ## Field/geofence/mission constants (still true, Week 2 origin)
 - Field: `config/field_polygon.json` — 75m(E) x 60m(N) rectangle, home = (-35.363262, 149.165237,

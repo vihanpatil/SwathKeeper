@@ -15,6 +15,7 @@ import numpy as np  # noqa: E402
 
 from fieldguard_planning.ndvi_fusion import (  # noqa: E402
     FUSER_STATS_STALE_S,
+    NDVI_DTYPE,
     NDVI_ZERO_DENOM_SENTINEL,
     NdviFuser,
     StampedFrame,
@@ -49,9 +50,91 @@ class TestRescaleRed(unittest.TestCase):
     def test_known_values(self):
         red = np.array([0, 128, 255], dtype=np.uint8)
         out = rescale_red(red)
-        self.assertAlmostEqual(out[0], 0.0, places=9)
-        self.assertAlmostEqual(out[1], 128.0 / 255.0, places=9)
-        self.assertAlmostEqual(out[2], 1.0, places=9)
+        # places=6, not 9: the band path works in float32 (ndvi_fusion.NDVI_DTYPE, 2026-08-21),
+        # whose ~7 significant decimal digits cannot represent 128/255 to nine places. The bound
+        # this pin is protecting is float32 exactness, not float64 -- and it is deliberately kept
+        # TIGHT (6 places = 1e-6, against the 3.5e-5 worst-case NDVI deviation the dtype change is
+        # allowed) rather than loosened to whatever passes.
+        self.assertAlmostEqual(out[0], 0.0, places=6)
+        self.assertAlmostEqual(out[1], 128.0 / 255.0, places=6)
+        self.assertAlmostEqual(out[2], 1.0, places=6)
+
+
+class TestFloat32ComputePath(unittest.TestCase):
+    """The band path works in float32 end to end (2026-08-21). The published output was ALWAYS
+    float32 -- `/fg/ndvi/image` is 32FC1 and the clip's .npy is float32 -- so the float64
+    intermediates were ~8 MB of per-frame allocation discarded at the last line, on the
+    single-threaded executor whose next job is draining a 921,600 B image subscription.
+
+    This is NOT bit-identical and these tests exist to state the price rather than hide it."""
+
+    MIN_K, MAX_K, RES = 270.0, 330.0, 0.01
+
+    def _float64_reference(self, red_u8, nir_u16):
+        """What the pre-2026-08-21 path computed, written out longhand so the comparison is against
+        an explicit reference and not against a remembered number."""
+        rho_red = red_u8.astype(np.float64) / 255.0
+        t_k = nir_u16.astype(np.float64) * self.RES
+        rho_nir = np.clip((t_k - self.MIN_K) / (self.MAX_K - self.MIN_K), 0.0, 1.0)
+        denom = rho_nir + rho_red
+        zero = denom == 0.0
+        ndvi = np.where(zero, NDVI_ZERO_DENOM_SENTINEL,
+                        (rho_nir - rho_red) / np.where(zero, 1.0, denom))
+        return ndvi.astype(np.float32)
+
+    def test_every_stage_is_float32_with_no_float64_intermediate(self):
+        red = np.array([[0, 128, 255]], dtype=np.uint8)
+        nir = np.array([[0, 32100, 65535]], dtype=np.uint16)
+        rho_red = rescale_red(red)
+        rho_nir = rescale_nir(nir, self.MIN_K, self.MAX_K, self.RES)
+        ndvi, _ = compute_ndvi(rho_red, rho_nir)
+        self.assertEqual(rho_red.dtype, NDVI_DTYPE)
+        self.assertEqual(rho_nir.dtype, NDVI_DTYPE)
+        self.assertEqual(ndvi.dtype, NDVI_DTYPE)
+        self.assertEqual(NDVI_DTYPE, np.float32)
+
+    def test_float64_input_still_yields_float32_output(self):
+        """Offline tooling and the older tests hand in float64 arrays directly; the published
+        contract must not depend on who called."""
+        ndvi, _ = compute_ndvi(np.array([[0.2]]), np.array([[0.85]]))
+        self.assertEqual(ndvi.dtype, NDVI_DTYPE)
+
+    def test_deviation_from_the_float64_path_is_bounded_on_a_full_adversarial_frame(self):
+        """640x480 of uniform random counts is the WORST case for this change: (nir-red) suffers
+        catastrophic cancellation wherever the two bands land near-equal, so a 1-ulp difference in
+        either rescale is amplified. Measured 3.5e-5; pinned at 1e-4, which is still three orders
+        of magnitude under the smallest decision boundary downstream (the bird/soil NDVI gap is
+        0.360, the provisional detector threshold -0.61, the canopy lift +0.869)."""
+        rng = np.random.default_rng(42)
+        red = rng.integers(0, 256, size=(480, 640)).astype(np.uint8)
+        nir = rng.integers(0, 65536, size=(480, 640)).astype(np.uint16)
+        got, _ = compute_ndvi(rescale_red(red), rescale_nir(nir, self.MIN_K, self.MAX_K, self.RES))
+        ref = self._float64_reference(red, nir)
+        self.assertLess(float(np.max(np.abs(got.astype(np.float64) - ref.astype(np.float64)))), 1e-4)
+
+    def test_the_material_calibration_points_this_world_renders_are_unmoved(self):
+        """The values that actually matter: config/ndvi_camera.json's four authored material
+        temperatures against the soil/canopy red levels this render produces. 1e-6 -- four orders
+        tighter than the adversarial bound above, because these are the numbers ADR-007 Gate 2 and
+        the tree-position gate are quoted in."""
+        for red_u8, nir_raw in ((138, 28200), (52, 32100), (138, 27300), (200, 29100)):
+            red = np.full((1, 1), red_u8, dtype=np.uint8)
+            nir = np.full((1, 1), nir_raw, dtype=np.uint16)
+            got, _ = compute_ndvi(rescale_red(red),
+                                  rescale_nir(nir, self.MIN_K, self.MAX_K, self.RES))
+            ref = self._float64_reference(red, nir)
+            self.assertAlmostEqual(float(got[0, 0]), float(ref[0, 0]), places=6,
+                                   msg=f"red={red_u8} nir_raw={nir_raw}")
+
+    def test_zero_denominator_guard_survives_the_dtype_change(self):
+        red = np.zeros((2, 2), dtype=np.uint8)
+        nir = np.zeros((2, 2), dtype=np.uint16)   # T=0K -> clipped to rho 0 -> denom 0 everywhere
+        ndvi, zero_count = compute_ndvi(rescale_red(red),
+                                        rescale_nir(nir, self.MIN_K, self.MAX_K, self.RES))
+        self.assertEqual(zero_count, 4)
+        self.assertTrue(np.all(ndvi == NDVI_ZERO_DENOM_SENTINEL))
+        self.assertFalse(np.any(np.isnan(ndvi)))
+        self.assertEqual(ndvi.dtype, NDVI_DTYPE)
 
 
 class TestRescaleNir(unittest.TestCase):
