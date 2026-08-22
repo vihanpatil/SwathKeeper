@@ -8,7 +8,8 @@ theater — keep it short and decision-oriented. Follow these steps in order:
 1. **Product Lead sets the goal.** Adopt the `product-lead` lens (read `docs/ROADMAP.md` and the
    product-lead's memory). State in ONE sentence the single goal for this work session and name
    the one outcome that would make the session a failure. Confirm it ladders up to a roadmap
-   milestone and the ~7-8 week deadline.
+   milestone. (The ~7-8-week calendar deadline was dropped 2026-08-18; the scope guard survives —
+   nothing gets added without something cut.)
 
 2. **Tech Lead flags architecture risk.** Adopt the `tech-lead` lens. In 1-3 bullets, call out any
    architecture or interface risk relevant to today's goal (check `docs/DECISIONS.md` and open

@@ -18,12 +18,14 @@ nothing gets added to scope without something else being cut in the same breath,
 | Week 6 — real detector on the seam + comparison arm | ⏳ contract locked (ADR-009); implementation gated on the batched session. **New blocker, measured 2026-08-21:** no clip yet puts a bird in the nadir FOV, so both ADR-003 criterion 3 and the criterion-2 comparison arm have nothing to score (item 3) |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
-Test suite: **301 green, 2 skipped** — 268 in `tests/fieldguard_planning` plus 33 host-side launcher
-tests in `tests/test_fly_pipeline.py`, which need neither Docker nor tmux. CI discovers both (it ran
-only the first until 2026-08-18) and also gates seed-42 FNR, scenario-log drift, flight-log evidence.
-The 10 added 2026-08-21 (`test_score_evidence.py`) pin the eval harness's evidence guards — the
-reason a real-render re-run can no longer return a verdict it did not measure.
-Public main: current as of PR #24 (2026-08-20). Full narrative of how we got here:
+Test suite: **364 green, 2 skipped** (measured 2026-08-21 post-PR #26) — 331 in
+`tests/fieldguard_planning` plus 33 host-side launcher tests in `tests/test_fly_pipeline.py`, which
+need neither Docker nor tmux. CI discovers both (it ran only the first until 2026-08-18) and also
+gates seed-42 FNR, scenario-log drift, flight-log evidence. The 10 added 2026-08-21
+(`test_score_evidence.py`) pin the eval harness's evidence guards — the reason a real-render re-run
+can no longer return a verdict it did not measure; PR #26 added the predictor, tree-gate, and
+ADR-015 geometry pins.
+Public main: current as of PR #26 (2026-08-21). Full narrative of how we got here:
 `docs/BUILD_LOG.md`.
 
 ## Next up, in order

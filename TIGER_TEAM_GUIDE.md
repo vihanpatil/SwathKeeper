@@ -58,9 +58,14 @@ allowlist, a living roadmap, a decision log, a README skeleton, and a project di
    ```
    (`git commit` is set to *ask* for permission in `.claude/settings.json`, so nothing commits
    without your say-so.)
-4. **Confirm your model access.** Agents are assigned `opus` (judgment-heavy roles) or `sonnet`
-   (execution-heavy roles). If your plan can't use one, Claude Code silently falls back to your
-   session model — no error — but see §4.3 to change them explicitly.
+4. **Confirm your model access.** Agents are assigned `opus` (the build lanes and safety/judgment
+   roles — `product-lead`, `tech-lead`, `perception-ml-engineer`, `qa-safety-reviewer`,
+   `robotics-sim-engineer`, `flight-software-engineer`, `devops-reliability-engineer`) or `sonnet`
+   (the narrative lane — `gtm-narrative-lead`), per the 2026-08-21 user directive: Fable 5 runs the
+   main session as planner/orchestrator/verifier only and appears in no agent frontmatter; Opus takes
+   the brunt of build work and every correctness-critical judgment call, Sonnet takes the one lane
+   light enough for it. If your plan can't use one, Claude Code silently falls back to your session
+   model — no error — but see §4.3 to change them explicitly.
 
 ### 1.3 What lives where
 ```
@@ -103,7 +108,9 @@ Per the docs, these escalate from suggestion to guarantee:
 
 ### 2.3 The phases, mapped to roles
 _(Phase labels keep the original week numbers; the calendar deadline was dropped 2026-08-18 — the
-ordering still holds. Weeks 1-4 are complete.)_
+ordering still holds. As of 2026-08-21: Weeks 1-5 are substantially complete; current work is
+recording-throughput round 2, then one re-fly that clears four blockers, then the Week 6 detector and
+the Week 7 endgame — see `docs/ROADMAP.md` for the live version.)_
 - **Weeks 1-2 (stand up the sim + spike):** `robotics-sim-engineer` pins versions and gets a mission
   flying; `perception-ml-engineer` runs the NDVI-vs-RGB spike and records the decision;
   `flight-software-engineer` builds the boustrophedon planner. `tech-lead` locks the interface contracts.
@@ -194,8 +201,9 @@ matches the schema as of July 2026.
 4. **Made evaluation a first-class mandate** ("no 'it works' without a metric") with a home in `eval/` —
    the strongest interview signal in the repo.
 5. **Made the process version-controlled** — `/standup`, `CLAUDE.md`, a living `ROADMAP.md`, the
-   `DECISIONS.md` escalation rule, per-role model assignment (opus for judgment, sonnet for execution),
-   and persistent per-agent memory.
+   `DECISIONS.md` escalation rule, per-role model assignment (opus on the seven build/judgment roles,
+   sonnet on the `gtm-narrative-lead` lane, Fable 5 reserved for the orchestrating main session —
+   2026-08-21 user directive), and persistent per-agent memory.
 
 ### 4.2 Optional next steps you might consider
 - **A `/eval` command** that runs the harness and prints the metric table — makes "show me the
@@ -207,8 +215,11 @@ matches the schema as of July 2026.
 ### 4.3 If you want to change model assignments
 Edit the `model:` line in any agent file. Valid values: `opus`, `sonnet`, `haiku`, `fable`, a full
 model ID, or `inherit` (match your session). To make every agent follow your session model, set each
-to `inherit`. Lowering judgment roles to `sonnet` cuts cost; raising execution roles to `opus` raises
-quality. There's no wrong answer — it's a cost/quality dial.
+to `inherit`. Current split (2026-08-21 user directive): `opus` on the seven build-lane and
+safety/judgment roles, since that's where the brunt of the work and every correctness-critical call
+live; `sonnet` on the lighter `gtm-narrative-lead` lane; Fable 5 kept out of agent frontmatter
+entirely, reserved for the main session as planner/orchestrator/verifier. Departing from that split
+is still a cost/quality dial, not a rule violation — there's no wrong answer.
 
 ---
 
