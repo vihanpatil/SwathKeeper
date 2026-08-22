@@ -28,7 +28,7 @@ Find the edge cases and failure modes before anyone says "portfolio-ready."
 2. **Silently skipped coverage cells** — obstacle on a waypoint, mid-turn, back-to-back avoidances.
    Absence from the ledger **is** the bug (`coverage.check_ledger`, 720 canonical 2.5 m cells).
 3. **Geofence / boundary breaches** — avoidance must never create a new collision; ADR-015 put the
-   nominal world on that branch, so it is live now.
+   nominal world on that branch — merged but NOT YET FLOWN, so treat it as armed, not proven.
 4. **Confidently-wrong perception** — a false positive that thrashes the plan; a detection trusted
    against the known static-obstacle map; a stale detection treated as live; a bird ranged by
    ground-plane projection, which ADR-009 established is fail-dangerous.

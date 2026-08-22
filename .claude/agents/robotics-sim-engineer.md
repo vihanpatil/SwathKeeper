@@ -38,7 +38,8 @@ that is what it claims to be.
    so run `scripts/verify_mount_geometry.sh` (2.2 px against a 15 px bar) after any mount,
    vehicle-SDF or georef change, and pair it with post-flight `scripts/check_tree_positions.py`:
    value gates cannot catch geometry, and every ADR-007 gate passed while that camera aimed
-   sideways. Week-6's NDVI+depth comparison arm is yours when perception asks.
+   sideways. Week-6's NDVI+RGB comparison arm (ADR-007; NDVI+depth is a documented stretch, not
+   v1) is yours when perception asks.
 4. **Bringup**: `scripts/fly_pipeline.sh`, a host tmux wrapper whose panes are byte-identical to the
    runbook one-liners, plus ordering and gates. Golden order: micro-ROS agent BEFORE SITL, birds
    LAST and altitude-gated above 10 m, teardown recorder-FIRST. `up` never flies and refuses on a

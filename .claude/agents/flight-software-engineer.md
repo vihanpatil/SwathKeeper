@@ -38,7 +38,7 @@ you start.
 4. **NDVI pipeline + recording — the current gap (ROADMAP item 1).** `ndvi_node.py` fuses the
    bands, `record_node.py`/`clip_recorder.py` write the clip, the stitch is **offline post-flight**
    (ADR-010) onto the SAME 720-cell grid as the ledger, joined by `cell_id`. The remaining loss is
-   **two-stage** — transport, then a third of surviving RGB frames never pairing. With
+   **two-stage** — transport, then 33-41 % of surviving RGB frames never pairing. With
    `robotics-sim-engineer`: attack pairing / the red-NIR rate gap, and add the counter splitting
    recorder-window from recorder-side loss. Counters ride in the clip's `meta.json` (ADR-013
    am. 5), off the image path — instrumentation must never down a flight.
