@@ -65,16 +65,16 @@ POLL_S=3
 # which mark "not expanding here is the requirement", not an oversight.
 # shellcheck disable=SC2016
 INNER_GAZEBO='source /root/ardu_ws/install/setup.bash && export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH:-}:/root/ardu_ws/install/ardupilot_gazebo/share" && gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard_field.sdf'
-INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
+INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
 # shellcheck disable=SC2016
-INNER_PROBE='source /root/ardu_ws/install/setup.bash && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
-INNER_AGENT='source /root/ardu_ws/install/setup.bash && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
+INNER_PROBE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
+INNER_AGENT='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
 # shellcheck disable=SC2016
 INNER_SITL='cd /root/ardu_ws/src/ardupilot && export PATH="$PWD/Tools/autotest:$PATH" && sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --enable-DDS --add-param-file=/workspace/fieldguard/config/sitl_params/dds_udp.parm'
 # shellcheck disable=SC2016
-INNER_NDVI='source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node'
+INNER_NDVI='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node'
 # shellcheck disable=SC2016
-INNER_RECORD='source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
+INNER_RECORD='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
 INNER_BIRDS='python3 /workspace/fieldguard/scripts/drive_birds.py --rate 2'
 INNER_APT='apt-get update -qq && apt-get install -y -qq ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs'
 # The three the bridge needs at RUNTIME. dpkg-checked in preflight, installed by INNER_APT (which
@@ -87,7 +87,7 @@ DEPS=(ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs)
 # The last line is $INNER_BIRDS itself, not a copy: the altitude-gated path and the `birds` manual
 # override then cannot drift from each other or from the runbook.
 # shellcheck disable=SC2016
-INNER_BIRDS_WATCH='source /root/ardu_ws/install/setup.bash
+INNER_BIRDS_WATCH='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml
 zget() { timeout 10 ros2 topic echo --once "$@" /ap/pose/filtered 2>/dev/null | sed -n "/position:/,/orientation:/ s/^ *z: *//p" | head -n 1; }
 echo "[birds] altitude gate: drive_birds.py --rate 2 starts by itself once /ap/pose/filtered z > 10 m."
 echo "[birds] Birds never start before arming on purpose: set_pose traffic is jitter the EKF cannot"
@@ -225,7 +225,7 @@ probe_gz_topics() {
 
 probe_ros_topics() {
   local n
-  n=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; timeout 15 ros2 topic list" 2>/dev/null |
+  n=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml; timeout 15 ros2 topic list" 2>/dev/null |
       grep -c '^/fg/sensor/' || true)
   [ "$n" -ge 4 ]
 }

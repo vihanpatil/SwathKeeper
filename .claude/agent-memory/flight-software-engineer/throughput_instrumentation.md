@@ -117,6 +117,32 @@ participant that missed the profile. Also: orphaned segments outlive a hard-kill
 `min_bytes` reported a DEAD default segment as a live miss until the bench started clearing
 `/dev/shm` after its liveness guard.
 
+## L2 FLEW AND THE THROUGHPUT PROBLEM IS CLOSED (F9, 2026-08-22)
+The bench held in flight, fully admissible (profile present, SHM segments min=max=8,413,728 across
+all 4 participants):
+
+| | F4 (A+B) | F6 (+L1) | **F9 (+L2)** |
+|---|---|---|---|
+| red/ci | 31.09 % | 20.46 % | **100.00 %** |
+| nir/nir_ci | ~58.9 % | 46.22 % | **100.00 %** |
+| fused / red | 59.4 % | 51.1 % | **100.00 %** (unpaired **0**) |
+| end-to-end | 12.32 % | 10.16 % | **96.46 %** |
+| painting cadence | — | 0.4767 Hz | **5.0 Hz** (502 painting frames) |
+| RGB comparison arm | 57 % | — | **681/681 = 100 %** |
+
+`predict_bird_visibility.py --fps 5.0` now **PASSES** (medians 8/6/11, bird_0 visible at 55/55
+driver-start offsets), so the ADR-003 full-coverage re-fly is bookable — it had been blocked on
+throughput since the demo take.
+
+**Pairing is no longer a stage at all:** `unpaired_red_count` 0, every histogram bucket 0. The
+same-tick model was right all along — pairing loss was purely NIR transport loss re-expressed, and
+fixing transport erased it.
+
+**L1 re-check CLOSED (F9 vs F10, one variable):** dead heat. RELIABLE lost 1.56 % of fused frames,
+BEST_EFFORT 1.71 %; identical 5.0 Hz cadence, 502 painting frames each. **KEPT** on a 0.15-point
+margin, and note L1's round-2 cost (red/ci 25.60 % -> 20.46 % backpressure) has VANISHED — both
+flights sit at 100 % red/ci, because L2 removed the drops the retransmission was repairing.
+
 ## LEVER L1 — KEEP (measured 2026-08-22, F6, host verifiably quiet)
 Making `record_node`'s `/fg/ndvi/image` subscription **RELIABLE** (reliability only; every other
 field copied from `qos_profile_sensor_data`; the publisher was already RELIABLE depth 10) **closed

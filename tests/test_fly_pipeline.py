@@ -492,6 +492,85 @@ class TestBenchTransportArm(unittest.TestCase):
         self.assertLess(guard, clear, msg="stale-segment clear must come AFTER the liveness guard")
 
 
+class TestDdsProfileInjection(unittest.TestCase):
+    """THE partial-injection tripwire (round 3).
+
+    Every process that creates a Fast DDS participant must load the SAME transport profile. Miss one
+    and the gates go green while measuring a different transport stack than the flight — and because
+    the profile only DEGRADES an un-injected participant (UDPv4 is deliberately retained), the
+    symptom is a wrong number, not a crash. There is no other check that can catch this: CI has no
+    sim, `check_render_alive` passes on a single frame, and `verify_mount_geometry` never creates a
+    ROS node at all.
+
+    The invariant pinned here is SAMENESS across every site, not the literal path."""
+
+    VAR = "FASTRTPS_DEFAULT_PROFILES_FILE"
+    # Verified against the image, not guessed: these create Fast DDS participants. Gazebo is
+    # gz-transport, SITL speaks XRCE over plain UDP and never even sources ROS, the raw birds line
+    # shells out to the gz CLI, and the apt line is apt.
+    PARTICIPANTS = ("INNER_BRIDGE", "INNER_PROBE", "INNER_AGENT", "INNER_NDVI", "INNER_RECORD",
+                    "INNER_BIRDS_WATCH")
+    NON_PARTICIPANTS = ("INNER_GAZEBO", "INNER_SITL", "INNER_BIRDS", "INNER_APT")
+
+    def setUp(self):
+        self.src = SCRIPT.read_text()
+
+    def _values(self, text):
+        # Stop at shell separators: the gate-probe site ends the export with `;` and the pane
+        # payloads end it with ` &&`, so a bare \S+ would capture punctuation and report drift that
+        # is not there.
+        import re
+        return re.findall(re.escape(self.VAR) + r"=([^\s;&'\"]+)", text)
+
+    def _payload(self, var):
+        i = self.src.index(var + "=")
+        return self.src[i:self.src.index("\n", i)] if var != "INNER_BIRDS_WATCH" \
+            else self.src[i:self.src.index("\nexec ", i)]
+
+    def test_every_participant_pane_carries_the_profile(self):
+        for var in self.PARTICIPANTS:
+            with self.subTest(pane=var):
+                self.assertIn(self.VAR, self._payload(var),
+                              msg=f"{var} creates a DDS participant but has no {self.VAR}")
+
+    def test_non_participant_panes_do_not_carry_it(self):
+        """Not cosmetic: an export on the SITL or Gazebo pane would imply those processes are on the
+        tuned transport when they are not on DDS at all, and would mislead the next reader."""
+        for var in self.NON_PARTICIPANTS:
+            with self.subTest(pane=var):
+                self.assertNotIn(self.VAR, self._payload(var))
+
+    def test_the_gate_probe_path_is_injected_too(self):
+        """`ctr()` runs probe_ros_topics' `ros2 topic list`, which creates a participant of its own.
+        do_not #8: miss this and gate_bridge measures a different stack than the flight."""
+        self.assertIn(self.VAR, self.src[self.src.index("ros2 topic list") - 400:
+                                         self.src.index("ros2 topic list")])
+
+    def test_the_render_probe_exec_is_injected_too(self):
+        """gate_render_alive has its OWN docker exec that bypasses exec_line — it runs INNER_PROBE,
+        so injecting the payload covers it. Pinned because the coupling is invisible."""
+        self.assertIn('bash -c "$INNER_PROBE"', self.src)
+        self.assertIn(self.VAR, self._payload("INNER_PROBE"))
+
+    def test_all_sites_agree_on_one_value(self):
+        values = set(self._values(self.src))
+        self.assertEqual(len(values), 1,
+                         msg=f"{self.VAR} drifted across sites: {sorted(values)}")
+
+    def test_the_profile_path_points_at_the_committed_file(self):
+        (value,) = set(self._values(self.src))
+        self.assertTrue(value.startswith("/workspace/fieldguard/"), msg=value)
+        repo_rel = value.replace("/workspace/fieldguard/", "", 1)
+        self.assertTrue((REPO_ROOT / repo_rel).exists(),
+                        msg=f"profile path {value} does not exist in the repo as {repo_rel}")
+
+    def test_the_runbook_carries_the_same_value(self):
+        """Option (b): command-level parity is the property being protected, so a human doing the
+        manual bringup flies the SAME transport the launcher does."""
+        runbook_values = set(self._values(RUNBOOK.read_text()))
+        self.assertEqual(runbook_values, set(self._values(self.src)))
+
+
 class TestDdsProfile(unittest.TestCase):
     """The L2 profile is a committed artifact whose failure mode is silent, so the invariants that
     make it valid are pinned rather than trusted to review."""

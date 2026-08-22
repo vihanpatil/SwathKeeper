@@ -93,6 +93,15 @@ def build_node(out_dir: Path):
             # 1.69x painting cadence (0.2823 -> 0.4767 Hz) because the downstream leak was bigger.
             # RE-CHECK THIS TRADE if NIR transport is ever fixed -- with more fused frames arriving,
             # the upstream cost could outgrow the hop it closes.
+            # L1 RE-CHECK CLOSED (2026-08-22, F9 vs F10, ADR-013 am. 8's standing clause): with L2
+            # in place the hop is a DEAD HEAT -- RELIABLE lost 1.56 % of fused frames, BEST_EFFORT
+            # 1.71 %, both at an identical 5.0 Hz painting cadence with 502 painting frames each.
+            # KEPT, on two grounds: the 0.15-point margin favours RELIABLE, and L1's previously
+            # MEASURED cost is gone -- the upstream backpressure that took red/ci 25.60 % -> 20.46 %
+            # in round 2 does not appear at all now (both flights sit at 100 % red/ci), because L2
+            # removed the drops that the retransmission was repairing. So L1 is now free insurance
+            # for the case L2 cannot cover: a segment under pressure again (more participants, a
+            # longer mission, a busier host).
             self.create_subscription(Image, "/fg/ndvi/image", self._on_ndvi,
                                      QoSProfile(depth=qos_profile_sensor_data.depth,
                                                 history=qos_profile_sensor_data.history,
