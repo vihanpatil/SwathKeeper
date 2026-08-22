@@ -54,7 +54,7 @@ def _spike_png_writer():
 def build_node(out_dir: Path):
     import rclpy
     from rclpy.node import Node
-    from rclpy.qos import qos_profile_sensor_data
+    from rclpy.qos import QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
     from geometry_msgs.msg import PoseStamped
     from sensor_msgs.msg import CameraInfo, Image
 
@@ -84,8 +84,20 @@ def build_node(out_dir: Path):
                                      qos_profile_sensor_data)
             self.create_subscription(Image, topics["rgb_image"], self._on_rgb,
                                      qos_profile_sensor_data)
+            # LEVER L1 -- KEPT (F6 vs F5c, 2026-08-22, ADR-013 am. 8). Reliability ONLY; every
+            # other field copied from qos_profile_sensor_data so it stayed a one-variable change.
+            # The publisher at ndvi_node.py is already RELIABLE depth 10, so NACK repair became
+            # available on the 1,228,800 B samples (the largest in the system) and CLOSED this hop:
+            # 62.5% loss (F5c: 96 fused -> 36 received) -> 0.0% (F6: 72 -> 72). The predicted
+            # backpressure was real and is the measured cost: red/ci 25.60% -> 20.46%. Net still
+            # 1.69x painting cadence (0.2823 -> 0.4767 Hz) because the downstream leak was bigger.
+            # RE-CHECK THIS TRADE if NIR transport is ever fixed -- with more fused frames arriving,
+            # the upstream cost could outgrow the hop it closes.
             self.create_subscription(Image, "/fg/ndvi/image", self._on_ndvi,
-                                     qos_profile_sensor_data)
+                                     QoSProfile(depth=qos_profile_sensor_data.depth,
+                                                history=qos_profile_sensor_data.history,
+                                                durability=qos_profile_sensor_data.durability,
+                                                reliability=ReliabilityPolicy.RELIABLE))
             self.create_subscription(PoseStamped, "/ap/pose/filtered", self._on_pose,
                                      qos_profile_sensor_data)
             self.create_subscription(PoseStamped, "/ap/gps_global_origin/filtered", self._on_origin,

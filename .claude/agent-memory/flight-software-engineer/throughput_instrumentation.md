@@ -84,15 +84,32 @@ nowhere near F4's 31.09 % from the day before. The 2x shortfall is **environment
 Caveat: a stationary no-SITL scene, so absolute red/ci is not comparable to a flight — only the
 within-bench comparisons are.
 
+## LEVER L1 — KEEP (measured 2026-08-22, F6, host verifiably quiet)
+Making `record_node`'s `/fg/ndvi/image` subscription **RELIABLE** (reliability only; every other
+field copied from `qos_profile_sensor_data`; the publisher was already RELIABLE depth 10) **closed
+that hop completely**: `fused_count - ndvi_msgs_received` went **62.5 % → 0.0 %** (72 of 72 fused
+frames received). Recorder attribution now closes exactly: 72 received − 70 written − 0 no_writer
+− 2 no_pose = **0 unaccounted**.
+
+**It has a real, predicted cost — do not quote the win without it.** RELIABLE backpressures the
+publisher's executor, pushing loss upstream into the fuser: red/ci **25.60 % → 20.46 %**, nir/nir_ci
+50.82 % → 46.22 %, fused 96 → 72. Net is still strongly positive because the downstream hop was the
+bigger leak: recorded 36 → 70, cells 158 → 301, painting cadence **0.2823 → 0.4767 Hz** (1.69x),
+end-to-end 5.39 % → 10.16 %. If NIR transport is ever fixed, RE-CHECK whether L1 still nets positive
+— the trade could invert.
+
 ## Where the remaining loss lives (F5b, 676 ticks)
 Three independent transport hops, all lossy, and pairing is NOT a fourth:
 `RGB image bridge→fuser 82.7 % lost` · `NIR image bridge→fuser 65.4 % lost` ·
 `NDVI fuser→recorder 84.8 % lost`. Recorder's own logic: 0 % lost.
-**Honest ceiling of the current lever set, computed from the clean F4 baseline:** closing BOTH
-remaining hops (NIR transport, and the NDVI→recorder hop that L1 targets) takes F4's 0.587 Hz
-airborne to ~**1.48 Hz** — the bottom edge of the 1.5-2 Hz target, with zero margin, and only if
-every one of them lands. Reaching the target with margin requires attacking the RGB band's ~83 %
-transport loss, which no lever in the current set touches.
+**UPDATED after F6 (689 ticks), the best config measured:** the NDVI→recorder hop is CLOSED (0 %).
+What is left is `RGB image bridge→fuser 79.5 % lost` and `NIR image bridge→fuser 53.8 % lost`;
+pairing remains fully explained by NIR delivery (model predicts 65.2 fused vs 72 measured, 1.10).
+Best painting cadence **0.4767 Hz**, so **3.1x** is still needed for 1.5 Hz and 4.2x for 2.0 Hz.
+Closing NIR transport entirely buys ~1.96x → ~0.93 Hz — **not enough on its own**. 1.5 Hz needs NIR
+closed AND red/ci back to ~31 % (F4's best-ever). 2.0 Hz needs red/ci ~44 %, beyond anything ever
+measured. Both remaining hops are already `best_effort` at the bridge (lever A), so the residual is
+payload-size fragmentation — which points at the wire-encoding/resolution levers, not at more QoS.
 
 ## Micro-fix measured live
 - **float32 instead of float64** through `rescale_red`/`rescale_nir`/`compute_ndvi`
