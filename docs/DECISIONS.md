@@ -1424,3 +1424,43 @@ owns the driver at flight time and the re-fly's live gate; robotics-sim-engineer
 ADR-012 cadence claim. Deferred without prejudice: issuing the three set_pose calls concurrently
 (would shrink the ~0.5 s latency and the ~2 m hop) — a fidelity change to flight behaviour that
 must not ride along with the labelling re-fly; one variable per flight applies to proof flights too.
+
+### ADR-013 amendment 11 (2026-08-23, the delegated avoidance demo): the loop's first run on the current stack closes the ledger 720/0 — and the runbook, not the orchestrator, decided the flight's scope
+**Delegation note #2:** the user delegated this AVOIDANCE_DEMO.md flight explicitly (same
+mechanism as amendment 10; the rule otherwise stands). Flown via the runbook's 5-line MAVProxy
+recipe; bringup in its order (agent before SITL); DISARMED at 121 s.
+
+* **The event chain, from the flight log:** 19 detections → 1 takeover (AUTO→GUIDED at wp 6,
+  trigger range 9.27 m) → 1 latch + 7 re-latches, **19/19 maneuvers vetted `accepted`, 0
+  rejected**, each re-vetted on the tick it was sent → resume on `threat_cleared` at wp 7.
+  `check_live_flight_log` PASS: **covered=720 debt=0**, partition sums exactly 720 (the 2026-08-18
+  run closed 513/207 — this is the first FULL closure). Invariant checked directly on the
+  artifact: 19 commanded setpoints, 0 overlap with the 984 flown-path points. Honest wrinkle,
+  logged not smoothed: `resumed_same_waypoint: false` — the vehicle passed wp 6 mid-dodge and
+  resumed at 7; ADR-006's MIS_RESTART claim is about not restarting at #1, and the log does not
+  overstate it.
+* **Scope, decided by the runbook over the orchestrator's brief (am. 10's precedent, applied
+  twice):** the threat is the runbook's scripted `--demo` bird on the `detection_source` seam —
+  no bridge, no fuser, no live detection on the real render, and `drive_birds.py` never runs, so
+  the am.-6 applied-pose logger remains UNEXERCISED (its first live outing is the criterion-3
+  re-fly, which runs the flagship path). **What remains genuinely unexercised after this flight
+  is the combination: avoidance driven by a REAL detection off the NDVI render — the ADR-009
+  rule-2 seam, Week 6's work — and it needs a runbook that does not exist yet (avoidance node +
+  bridge/fuser in one bringup). Scoped, not improvised.**
+* **Runbook drift, found and reported rather than adapted around:** (1) AVOIDANCE_DEMO.md
+  delegates bringup to archived WEEK3_VALIDATION.md, whose SITL line lacks `--enable-DDS` and
+  would produce zero `/ap/*` topics — the current canonical line satisfies the runbook's own
+  stated prerequisite and was used; the archive doc needs a pointer fix. (2) Its Gate-1 tree
+  check (`gz topic -l | grep model/tree_row0_0`) is structurally stale — static models advertise
+  no pose topics. (3) No launcher path exists for this flight; it remains 4 manual shells.
+* **Handed to qa-safety-reviewer, from the executor's own audit:** one numerically unstable tick
+  at trigger range 0.052 m — the away-vector flipped and an accepted setpoint carried
+  `swept_tree_clearance_m 0.846` (7-8 m on every other tick), accepted because
+  `lateral_tree_margin_m` is 0.0; re-latched away one tick later. Not a failure in this flight;
+  exactly the class of boundary a regression scenario exists to pin.
+* **Process miss, recorded:** continuous load sampling did not run (sampler raced the tmux
+  session and exited); host-quiet is evidenced by bracketing samples only (pre ~78 % idle, post
+  ~87 %, one container both ends). Immaterial to an event-logic flight; would not be acceptable
+  on a throughput measurement.
+Owner / roles: flight-software-engineer (delegated pilot + executor audit); qa-safety-reviewer
+takes the zero-range tick; robotics-sim-engineer takes the runbook drift fixes.

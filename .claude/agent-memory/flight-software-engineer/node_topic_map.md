@@ -52,6 +52,20 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
   yet, SITL prints `AP: DDS: No ping response, exiting` and NO `/ap/*` data ever flows (the
   avoidance loop then sees a permanently frozen pose). Order: Gazebo -> micro-ROS agent -> SITL
   (`--enable-DDS`) -> the avoidance node.
+- **RE-FLOWN LIVE 2026-08-23** (`eval/results/live_flight_log_20260823T004031Z.json`, first run since
+  2026-08-05): full boustrophedon, one encounter, **coverage ledger closed 720 covered / 0 debt**
+  (the 2026-08-18 run was 513/207). Chain: 19 `detection` -> 1 `takeover` (AUTO->GUIDED at wp 6) ->
+  1 `latch` + 7 `relatch` -> 19 `maneuver` all `accepted`, 0 rejected -> 1 `resume` -> 545
+  `requeue_events`. `check_live_flight_log.py` PASS. The commanded-never-flown invariant verified
+  directly: 19 distinct commanded setpoints, **0 overlap** with the 984 flown-path points.
+- TWO THINGS WORTH KNOWING from that run, both self-reported by the executor rather than hidden:
+  (1) `resume` recorded `resumed_same_waypoint: false` (took over at wp 6, resumed at wp 7) — the
+  drone passed the waypoint during the dodge; ADR-006's "same waypoint" claim is about
+  `MIS_RESTART=0` not restarting the mission, and the log does not overstate it.
+  (2) At `trigger_range_m: 0.052` (drone essentially on top of the bird) the away-vector flipped to
+  [0.758, 0.652] and the accepted setpoint had **swept_tree_clearance_m 0.846** against 7-8 m on
+  every other tick. Still "accepted" because `lateral_tree_margin_m` is 0.0. Re-latched away one tick
+  later. Not a failure, but the one numerically-unstable moment in the encounter — worth a QA look.
 - Demo: `python3 -m fieldguard_planning.avoidance_node --demo` injects a scripted bird at ENU
   (30,30,15) via `proximity_bird_source` (triggers within 10m, lingers 12s) — tightened from an
   earlier wider trigger radius specifically so it doesn't fire on adjacent lanes (< lane spacing).
