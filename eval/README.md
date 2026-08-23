@@ -33,26 +33,41 @@ into reports, not raw frame data.
 
 The synthetic spike clips carry `birds[]` on every `poses.jsonl` line; a clip from the live
 recorder (`src/fieldguard_planning/clip_recorder.py`) does not — nothing in the ROS 2 graph
-publishes bird poses. It doesn't have to: the birds are deterministic. `scripts/drive_birds.py`
-flies the committed `config/birds/farm_world_birds.json` waypoints on the **Gazebo sim clock**, and
-every recorded pose line carries that frame's own gz stamp (`stamp_sim_s`), so a bird's position in
-a frame is exactly `pose_at(stamp_sim_s - t0_sim)`.
+publishes bird poses. `scripts/drive_birds.py` is the only thing that moves them, so it is also the
+only thing that can say where they were.
+
+**Label from the driver's APPLIED-POSE LOG, never from its start anchor alone** (ADR-003
+amendment 6). `pose_at(stamp_sim_s - t0_sim)` is where the driver *asked* the bird to be at that
+instant; the render shows the last pose that *arrived*, one driver tick plus a per-call service
+latency later. Measured on the 2026-08-22 flagship take: **lag 0.12–0.81 s, mean 0.52 s**, putting
+modelled labels a mean **198 px (max 313)** from a bird whose box is **21–47 px** — IoU can never
+match, and every true detection scores as a false positive. The driver therefore logs every
+`set_pose` call (pose, trajectory time, sim-time bracket, landed/failed) next to its sidecar, and
+the annotator replays that.
 
 ```bash
-# 1. the driver writes its anchor at startup (eval/results/bird_drive_<UTCstamp>.json)
-python3 scripts/drive_birds.py                      # prints the sidecar path
+# 1. the driver writes both files at startup (eval/results/bird_drive_<UTCstamp>{.json,_applied.jsonl})
+python3 scripts/drive_birds.py                      # prints both paths
 
-# 2. after the flight, label the clip (writes poses_annotated.jsonl, recording untouched)
+# 2. after the flight, label the clip (writes poses_annotated.jsonl, recording untouched).
+#    The applied log is auto-discovered next to the sidecar; --applied-log names a moved one.
 python3 eval/annotate_real_clip.py --clip eval/results/clips/<clip> \
     --sidecar eval/results/bird_drive_<UTCstamp>.json
 # ... eyeball a line, then adopt it:
 python3 eval/annotate_real_clip.py --clip <clip> --sidecar <same file> --in-place
 ```
 
+Every label carries its own provenance in `label_src`, and it travels into `ground_truth.json`:
+`applied` (measured — the call had landed), `spawn` (exact — nothing had moved the static model
+yet), `generator` (synthetic clip), `modeled` (estimated from t0 alone). **`score.py` refuses to
+issue an ADR-003 verdict on `modeled` or `unknown` labels** — a rate needs a denominator *and* a
+numerator that measured the same thing. A frame that falls inside a call's own bracket is marked
+`label_ambiguous` rather than rounded to a side.
+
 `--bird-t0 <sim seconds>` replaces `--sidecar` for runs older than the sidecar (the driver's
-`t0=...` console line). Labels are **commanded** bird poses, not observed ones (same rule as the
-coverage ledger) — the render lags by one driver tick of sim time, ≈ `period x RTF`, which is
-centimetres at this stack's measured RTF and ~1.2 m only if RTF ever reaches 1.
+`t0=...` console line); those labels are `modeled` by construction. Labels remain **commanded**
+poses, not poses observed back out of Gazebo (same rule as the coverage ledger) — the applied log
+closes the timing half of that gap, not the "did Gazebo do what it was told" half.
 
 Frames recorded **before** the driver started (the recorder always starts first) label at each
 bird's **spawn pose** — the `waypoints[0]` the static model sits at until the first `set_pose`, so

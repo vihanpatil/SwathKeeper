@@ -1341,3 +1341,86 @@ second time (geometry → throughput → ground-truth alignment), each time with
 measured closed.
 Owner / roles: flight-software-engineer (ran the chain, refused to let the artifact stand as a
 detector verdict); perception-ml-engineer owns the annotator fix and the offline re-score.
+
+### ADR-003 amendment 6 (2026-08-22, perception-ml-engineer, criterion 3's ground-truth blocker: measured, fixed at the source, clip re-scored): the render lags the labels by 0.12-0.81 s, no model can recover it, and the harness now refuses to score an estimate
+Amendment 5's hypothesis was right in kind and its proposed fix would not have worked. Both were
+checked before any code changed.
+
+* **The lag is real, and it is TWO terms, not one.** All 22 NDVI-direct detections match a scripted
+  bird's projected position to a mean **6.9 px** (max 17.7) and its projected apparent size to a mean
+  **1.0 px** (max 2.5) once that bird is placed at a trajectory time **0.120-0.805 s (mean 0.524)
+  BEFORE the frame's own stamp. 22/22 explained; zero non-bird detections in 935 frames.** The lag
+  has structure, which is what makes it a mechanism rather than a fit: within one driver hold it
+  grows by exactly the 0.200 s frame period and then drops, giving a hold of **0.427 s of sim**
+  (bird_2) and **0.415 s** (bird_1) independently; on top sits a per-bird floor of **0.120 / 0.380 /
+  0.415 s for bird_0 / bird_1 / bird_2 — ordered by their position in the driver's set_pose loop**,
+  i.e. sequential `gz service` subprocess latency. Falsified alternatives: stale DRONE pose (best at
+  zero staleness, monotonically worse after), a fixed image-space offset (202 px scatter about a
+  47 px mean vector), and a wrong sidecar t0 (which would be constant and shared across birds).
+* **`--rate` never bound, and ADR-012's stale-hop claim is retracted.** RTF measured independently
+  of any detection, from the committed frames' file mtimes against `stamp_sim_s`: 0.94 pre-flight,
+  0.60 airborne, **0.51-0.57 in the three detection windows**. 0.42 s of sim at RTF 0.55 is 0.76 s of
+  wall per tick: **`--rate 2` achieved ~1.3 Hz**, saturated by one clock poll plus three gz-CLI
+  round-trips. ADR-012's "matches the camera's 5 Hz update_rate -- the render never sees a stale hop"
+  is false and is retracted. Consequence beyond labelling: **the birds HOP ~2 m between updates**,
+  one full camera frame wide. Per-frame blob detection is unaffected; any future velocity or track
+  estimate over these clips would not be.
+* **Amendment 5's proposed fix is FALSIFIED, and so is every fixed model.** Mean/max centre residual
+  over the 22 detections: current continuous labels **198.0 / 313.0 px**; the proposed
+  `floor(t/rate)` step **133.1 / 299.9**; a step on the measured 0.43 s hold 129.6 / 224.4; a constant
+  0.56 s lag 61.1 / 350.3; a 2-parameter hold+latency model fitted TO the detections 81.2 / **536.0**.
+  IoU >= 0.3 needs 8-19 px. The reason no grid works: the driver's ticks are WALL-scheduled while RTF
+  moves 0.51-0.94 within one flight, so a fixed sim-time grid drifts out of phase between bursts --
+  and fitting the lag to the detector's own output would have made the resulting score
+  unfalsifiable. The correction is measurement, not a better model.
+* **THE FIX (source-side, so the class closes rather than this instance).** `scripts/drive_birds.py`
+  now writes an applied-pose log beside its sidecar (`bird_drive_<stamp>_applied.jsonl`, schema 1.0;
+  sidecar 1.0 -> 1.1 names it): per set_pose call the pose, the trajectory time, wall stamps around
+  the call, the tick's gz-clock anchor, and **ok/failed**. `eval/annotate_real_clip.py` replays it --
+  a frame shows the last call whose reply had returned, **a failed call holds** (the 16 failures on
+  this take are exactly this case), and frames before the first landed call keep ADR-012 am. 1's
+  exact spawn pose. Wall->sim conversion uses the RTF measured between consecutive tick anchors, so
+  no constant is assumed and no extra subprocess worsens the latency being measured. Frames landing
+  inside a call's own bracket are marked `label_ambiguous` rather than rounded to a side.
+* **THE GUARD (so this cannot print a verdict again).** Every label carries `label_src` --
+  `applied` (measured) / `spawn` (exact) / `generator` (synthetic) / `modeled` / `unknown` -- and it
+  travels into `ground_truth.json`. `eval/score.py` refuses to apply the decision rule when any
+  scored bird-frame is `modeled` or `unknown`. This is the SECOND denominator failure this file has
+  had: am. 1 fixed "no denominator at all"; this one is "a full denominator whose numerator measured
+  something else". The seed-42 synthetic re-run still prints ADOPT at 0.445 / 0.981 / 0.019 /
+  per-bird 0.000, so the guard is not a blanket refusal.
+* **RE-SCORE, verbatim.** Both arms: `TP=0 FP=22(a)/5(b) FN=10`, precision 0.000, recall 0.000,
+  FNR 1.000, per-bird-track FNR 1.000, `evidence = 10 visible bird-frames over 3 birds`,
+  `labels = 10 modeled`; decision rule ->
+  **`EVIDENCE INSUFFICIENT -- no ADR-003 verdict from this clip. This is neither a confirmation nor a
+  refutation: 10 of 10 visible bird-frames carry labels that are not measurements (10 modeled)`**.
+  Amendment 5's printed `AMBIGUOUS -> default to (a)` is therefore **withdrawn**: it was produced by
+  the pre-guard harness from labels that could not support it. The detections themselves reproduce
+  byte-identically.
+* **What this clip DOES establish, alignment-independently (a diagnosis, NOT a scored verdict, and
+  it must not be quoted as precision/recall/FNR):** 22 detections in 935 frames, **all 22 birds,
+  none spurious**; and for **every** lag hypothesis in [0, 0.70] s there is **no frame where a bird
+  was in view and the detector produced nothing** -- at the measured lag band the "bird in view" and
+  "detector fired" frame sets are the same 18 frames, both directions. The NDVI-direct arm looks at
+  least as good on the real render as on the spike. It stays unscored until labels are measured.
+* **Criterion 2 remains blocked, and now with numbers.** `baseline_rgb`'s 5 real-render detections
+  are: three on bird_2 by a **2-LSB blue-channel accident** (bird patch min-channel 111.8 vs soil
+  109.7 -- soil's own minimum is blue at 111) at 8 px against a true 21 px bird, i.e. **IoU 0.145,
+  below the 0.3 bar even with perfect labels**; and two bottom-right corner artifacts with no bird.
+  The documented inversion stands. The clean unblock is a gate2-style per-class PIXEL study on the
+  real render (the evidence path that produced (a)'s -0.61) -- **not** calibrating (b) against (a)'s
+  detections, which would destroy the arms' independence.
+* **Criterion 3 stays OPEN; the reason it is open has changed for the third time** (geometry ->
+  throughput -> ground-truth alignment -> **the alignment fix awaiting one flight**). What remains is
+  no longer analysis: one re-fly with the logging driver, then `eval/run_spike.sh`. The driver half
+  of the fix is **UNGATED until that flight** -- its first live check is that the log exists, its sim
+  span overlaps the clip, and the annotator reports `applied` labels rather than `modeled`.
+* **Regression pinned on the real clip, not a fixture:** `tests/fieldguard_planning/
+  test_bird_label_timing.py` runs against the committed `real_flight_20260822T215516Z` and holds
+  both halves -- detections are birds at a lagged time; modelled labels sit >= 94.98 px away with
+  IoU 0.000 on all 22. Suite 449 -> 477 passed, 2 skipped.
+Owner / roles: perception-ml-engineer (measurement, fix, guard, re-score); flight-software-engineer
+owns the driver at flight time and the re-fly's live gate; robotics-sim-engineer for the retracted
+ADR-012 cadence claim. Deferred without prejudice: issuing the three set_pose calls concurrently
+(would shrink the ~0.5 s latency and the ~2 m hop) — a fidelity change to flight behaviour that
+must not ride along with the labelling re-fly; one variable per flight applies to proof flights too.

@@ -1,45 +1,36 @@
 ---
 name: ndvi-rgb-spike
-description: ADR-003 NDVI-vs-RGB spike — RAN 2026-08-04, recommend ADOPT (a) NDVI-direct on synthetic clip (provisional, pending Gazebo render)
+description: ADR-003 NDVI-vs-RGB — decided on synthetic (ADOPT (a), per-bird FNR 0.000); criterion 3 real-render re-confirmation still OPEN, now on bird-label timing
 metadata:
   type: project
 ---
 
-**RESOLVED (provisionally) 2026-08-04.** Ran the harness end-to-end on synthetic clip
-`sim/spike/out/spike_seed42` (seed 42, 3 birds). Numbers (frame precision/recall/FNR):
-- (a) NDVI-direct: **0.445 / 0.981 / 0.019**, per-bird-track FNR **0.000**.
-- (b) synthetic RGB: **1.000 / 0.981 / 0.019**, per-bird-track FNR **0.000**.
-Both clear the FNR bar; gap 0.000 → **ADOPT (a)** on fidelity tiebreak. The feared NDVI wash-out on
-the bird-over-soil hard case (`bird_1`) did NOT happen (bird reads negative NDVI, soil ~0.15). All
-66 of (a)'s false positives are the ONE static `clutter_0` feature → suppressible by the planned
-static-obstacle map + blob motion-tracking, not random noise. **Caveat:** clip is SYNTHETIC (not a
-Gazebo render); numbers validate the harness + give a strong first signal — confirm on the real
-render before treating ADR-003 as final. tech-lead records the ADR (I did not edit DECISIONS.md).
-Outcome written to `docs/SPIKE_ndvi_vs_rgb.md`. Baseline params: NDVI thresh 0.05, RGB min-channel
-thresh 110, IoU 0.3, blob min_area 6.
+**Framing DECIDED 2026-08-04 on the synthetic clip; criterion 3 (real render) still OPEN.** Do not
+relitigate (a)-vs-(b); do relitigate nothing else about it either — the open item is evidence.
 
----
+Synthetic deciding numbers (`sim/spike/out/spike_seed42`, seed 42, frame precision/recall/FNR):
+- (a) NDVI-direct **0.445 / 0.981 / 0.019**, per-bird-track FNR **0.000**
+- (b) synthetic RGB **1.000 / 0.981 / 0.019**, per-bird-track FNR **0.000**
+→ ADOPT (a) on the fidelity tiebreak. **0.445 is the bar any learned model must beat.** Re-verified
+2026-08-22 after the label-provenance guard landed: reproduces exactly, still prints ADOPT.
 
-Spike plan written 2026-07-27 at `docs/SPIKE_ndvi_vs_rgb.md` to resolve ADR-003
-(detect on NDVI-rendered frames vs. render a synthetic RGB pass for perception).
+**Criterion 3's blocker has moved three times, each time with the previous cause measured closed:**
+geometry (ADR-015) → recording throughput (ADR-013 am. 9-10, 5.0 Hz) → **bird-label timing**
+(ADR-003 am. 6, 2026-08-22 — mine). Current verdict on the flagship clip
+`real_flight_20260822T215516Z`: **EVIDENCE INSUFFICIENT**, and it is the labels, not the detector.
 
-- **Recommended default going in: (a) NDVI-direct** — matches the real single-NDVI-camera
-  hardware. Spike exists to try to falsify that cheaply, not rubber-stamp it.
-- **Decision metric:** precision / recall / **false-negative rate (FNR, the safety-critical one,
-  reported separately, never averaged in)** on one short (~20-40s, 2-3 birds) scripted-bird clip
-  rendered twice (NDVI + RGB) from the same seed/flight. Detection = box with IoU >= 0.3 vs GT.
-  Ground truth is generated from sim (bird actor poses + camera intrinsics + SITL telemetry
-  projected to image boxes), not hand-labeled.
-- **Decision rule:** keep (a) unless it is clearly unsafe. Adopt (a) if per-bird FNR <= 0.10 and
-  within 0.10 FNR of (b). If (a) misses and (b) materially better (FNR gap > 0.10), escalate to
-  product-lead (fidelity vs safety). Ambiguous -> default (a) + follow-up, do not extend spike.
-- **Baseline is classical CV first:** NDVI threshold + morphology + blob detection. No trained
-  model unless it beats this baseline on the same harness.
-- **Time-box: 3 working days**, gated on the sim clip.
+What the flagship clip DOES establish (alignment-independent, so it survives the label defect):
+- 22 NDVI-direct detections in 935 frames; **all 22 sit within 20 px of a scripted bird** at a lag
+  of 0.12-0.81 s and match its projected apparent size to **≤2.5 px**. Zero non-bird detections.
+- **Zero silent frames**: for every lag hypothesis in [0, 0.70] s there is no frame where a bird was
+  in view and the detector produced nothing. At the measured lag band the "bird in view" frame set
+  and the "detector fired" frame set are the SAME 18 frames.
+- So the detector looks strong on the real render — but that is a *diagnosis*, not a scored verdict,
+  and it must not be written up as precision/recall/FNR. Those need measured labels.
+- Criterion 2's RGB arm is still not a comparison arm: `baseline_rgb`'s min-channel birdness is
+  inverted here, and its 5 real-render detections are a 2-LSB blue-channel accident (3 on bird_2 at
+  8 px against a true 21 px → IoU 0.145, would miss even with perfect labels) plus 2 corner
+  artifacts. Do not calibrate it against a clip whose labels are unscoreable.
 
-**Why:** the choice sets fidelity of the whole perception->avoidance loop (priority #1); picking
-RGB for convenience would make the demo depend on a sensor the real drone lacks.
-
-**How to apply:** don't design detector architecture beyond the blob baseline until ADR-003 is
-settled. Note the RGB render is not wasted even if (a) wins — it becomes the NDVI+RGB
-comparison-arm config. See [[eval-harness-core]].
+**Next for an ADOPT/REJECT:** one re-fly with the applied-pose-logging driver, then re-run
+`eval/run_spike.sh`. Nothing else is blocking. See [[bird-label-timing]] and [[eval-harness-core]].

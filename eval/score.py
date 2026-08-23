@@ -33,6 +33,16 @@ FNR_GAP_BAR = 0.10        # (a) must be within this of (b) on frame FNR
 # has yet measured how many bird-frames a trustworthy verdict needs. Raise it when someone has.
 MIN_VISIBLE_BIRD_FRAMES = 1
 
+# Label provenance that a rate may be computed from (`label_src`, set by eval/annotate_real_clip.py
+# and carried through eval/label_from_sim.py). Everything else -- "modeled", "unknown" -- says the
+# label's POSITION is an estimate whose error nothing in the run bounds, and on the 2026-08-22
+# flagship take that error was a mean 198 px (max 313) against a 21-47 px bird: matching cannot
+# survive it, so TP/FP/FN stop meaning what their names say (ADR-003 amendment 6).
+#   generator -- synthetic clip: the generator drew the bird there
+#   spawn     -- the <static> model had not been moved yet (ADR-012 am. 1)
+#   applied   -- the last set_pose that had LANDED by this frame's stamp (driver applied-pose log)
+SCOREABLE_LABEL_SRCS = ("generator", "spawn", "applied")
+
 
 def load_gt(path):
     gt = json.loads(Path(path).read_text())
@@ -71,6 +81,8 @@ def score(gt_by_fid, det_frames, iou_thresh):
     TP = FP = FN = 0
     # per-bird tracking: closest-approach frame (min range while visible), and frames matched
     bird_frames = {}  # bird_id -> list of (frame_id, t_s, range_m, matched_bool)
+    label_srcs = {}   # label_src -> count, over VISIBLE boxes only (the ones a rate divides by)
+    n_ambiguous = 0
     for fid, gf in gt_by_fid.items():
         vis = [(b["bird_id"], b["bbox"]) for b in gf["birds"] if b["visible"]]
         dets = det_by_fid.get(fid, [])
@@ -83,6 +95,9 @@ def score(gt_by_fid, det_frames, iou_thresh):
                 continue
             bird_frames.setdefault(b["bird_id"], []).append(
                 (fid, gf["t_s"], b["range_m"], b["bird_id"] in matched_ids))
+            src = b.get("label_src", "generator")  # legacy GT files predate the key
+            label_srcs[src] = label_srcs.get(src, 0) + 1
+            n_ambiguous += 1 if b.get("label_ambiguous") else 0
 
     precision = TP / (TP + FP) if (TP + FP) else 0.0
     recall = TP / (TP + FN) if (TP + FN) else 0.0
@@ -117,6 +132,12 @@ def score(gt_by_fid, det_frames, iou_thresh):
         # nothing to score and 0.0 reads as "perfect". `decide()` refuses on these, not on the rates.
         "birds_with_visible_frames": len(per_bird),
         "visible_bird_frames": sum(b["visible_frames"] for b in per_bird),
+        # Where the scored labels' POSITIONS came from. Reported next to the counts because a
+        # denominator built from modelled positions is a denominator for a different question.
+        "label_srcs": label_srcs,
+        "unscoreable_label_frames": sum(n for s, n in label_srcs.items()
+                                        if s not in SCOREABLE_LABEL_SRCS),
+        "ambiguous_label_frames": n_ambiguous,
         "per_bird": per_bird,
     }
 
@@ -131,6 +152,11 @@ def print_report(label, m):
           f"(birds not seen before closest approach)")
     print(f"  evidence  = {m['visible_bird_frames']} visible bird-frames over "
           f"{m['birds_with_visible_frames']} birds   <-- the denominator every rate above divides by")
+    srcs = m.get("label_srcs") or {}
+    if srcs:
+        print(f"  labels    = {', '.join(f'{v} {k}' for k, v in sorted(srcs.items()))}"
+              f"{'  (%d ambiguous)' % m['ambiguous_label_frames'] if m.get('ambiguous_label_frames') else ''}"
+              f"   <-- where the boxes above came from")
     print("  per-bird:")
     print(f"    {'bird':8} {'vis':>4} {'hit':>4} {'closest_m':>9} {'det_before_closest':>18}")
     for b in m["per_bird"]:
@@ -148,10 +174,25 @@ def evidence_shortfall(m, birds_in_clip):
     denominator, so the denominator is now checked before the rates are consulted."""
     if m["visible_bird_frames"] < MIN_VISIBLE_BIRD_FRAMES:
         return (f"only {m['visible_bird_frames']} visible bird-frames scored "
-                f"(need >= {MIN_VISIBLE_BIRD_FRAMES})")
+                f"(need >= {MIN_VISIBLE_BIRD_FRAMES}) -- fly a clip that actually puts each bird "
+                f"in frame")
     if m["birds_with_visible_frames"] < birds_in_clip:
         return (f"only {m['birds_with_visible_frames']} of {birds_in_clip} birds were ever visible "
                 f"-- per-bird-track FNR is undefined for the rest")
+    # Second denominator failure, found 2026-08-22 on the flagship take: the count was there (10
+    # bird-frames, 3/3 birds) and the rates were still meaningless, because the LABELS did not
+    # describe the rendered bird. The detector fired on all three birds with blob sizes matching to
+    # 1-2 px and still scored FNR 1.000 -- the boxes were a mean 198 px apart. A denominator of
+    # modelled positions cannot support a rate about a rendered one.
+    bad = m.get("unscoreable_label_frames", 0)
+    if bad:
+        kinds = ", ".join(f"{n} {s}" for s, n in sorted((m.get("label_srcs") or {}).items())
+                          if s not in SCOREABLE_LABEL_SRCS)
+        return (f"{bad} of {m['visible_bird_frames']} visible bird-frames carry labels that are not "
+                f"measurements ({kinds}) -- they say where the driver ASKED the bird to be, not "
+                f"where the render showed it. Re-annotate with the driver's applied-pose log "
+                f"(eval/annotate_real_clip.py --applied-log), or re-fly with a driver that writes "
+                f"one")
     return None
 
 
@@ -168,9 +209,8 @@ def decide(ma, mb, birds_in_clip):
     shortfall = evidence_shortfall(ma, birds_in_clip)
     if shortfall is not None:
         lines.append(f"evidence check FAILED: {shortfall}")
-        return lines, ("EVIDENCE INSUFFICIENT -- no ADR-003 verdict from this clip. This is neither "
-                       "a confirmation nor a refutation; the clip contains nothing to score. Fly a "
-                       "clip that actually puts each bird in frame, then re-run.")
+        return lines, (f"EVIDENCE INSUFFICIENT -- no ADR-003 verdict from this clip. This is "
+                       f"neither a confirmation nor a refutation: {shortfall}.")
     lines.append(f"evidence: {ma['visible_bird_frames']} visible bird-frames, "
                  f"{ma['birds_with_visible_frames']}/{birds_in_clip} birds seen")
     lines.append(f"(a) per-bird FNR = {a_pbf:.3f} (bar <= {PER_BIRD_FNR_BAR})")

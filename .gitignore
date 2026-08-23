@@ -49,6 +49,11 @@ secrets/
 !eval/results/gate2_summary.json
 !eval/results/testflight_gate_*.json
 !eval/results/bird_drive_*.json
+# ...and the applied-pose log beside it (ADR-003 am. 6): a committed clip's bird labels are DERIVED
+# from this file, so without it those labels can never be re-verified — the same lesson as the
+# clobbered demo log. Bounded by flight length (~3k lines / ~0.7 MB for a 14-minute mission), never
+# frame data. Prune stale runs' logs by hand rather than re-ignoring the class.
+!eval/results/bird_drive_*_applied.jsonl
 !eval/results/bench_transport_*.json
 !eval/results/clips/
 eval/results/clips/*

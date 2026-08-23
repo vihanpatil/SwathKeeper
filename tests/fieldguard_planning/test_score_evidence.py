@@ -35,14 +35,23 @@ from label_from_sim import bird_range_m  # noqa: E402
 # regression that re-opens the vacuous path fails on the difference, not on unrelated drift.
 GOOD_A = {"TP": 100, "FP": 125, "FN": 2, "precision": 0.445, "recall": 0.98, "fnr": 0.02,
           "per_bird_track_fnr": 0.0, "birds_with_visible_frames": 3, "visible_bird_frames": 102,
-          "per_bird": []}
+          "label_srcs": {"generator": 102}, "unscoreable_label_frames": 0,
+          "ambiguous_label_frames": 0, "per_bird": []}
 GOOD_B = {"TP": 102, "FP": 0, "FN": 2, "precision": 1.0, "recall": 0.981, "fnr": 0.019,
           "per_bird_track_fnr": 0.0, "birds_with_visible_frames": 3, "visible_bird_frames": 102,
-          "per_bird": []}
+          "label_srcs": {"generator": 102}, "unscoreable_label_frames": 0,
+          "ambiguous_label_frames": 0, "per_bird": []}
 # What the demo take actually produced: nothing at all, every rate 0.0.
 EMPTY = {"TP": 0, "FP": 0, "FN": 0, "precision": 0.0, "recall": 0.0, "fnr": 0.0,
          "per_bird_track_fnr": 0.0, "birds_with_visible_frames": 0, "visible_bird_frames": 0,
+         "label_srcs": {}, "unscoreable_label_frames": 0, "ambiguous_label_frames": 0,
          "per_bird": []}
+# What the 2026-08-22 flagship take produced: a real denominator (10 bird-frames, 3/3 birds) whose
+# labels described a bird the render never showed — every rate 1.000 from a detector that had in
+# fact fired on all three birds.
+MODELED_A = dict(GOOD_A, TP=0, FP=22, FN=10, precision=0.0, recall=0.0, fnr=1.0,
+                 per_bird_track_fnr=1.0, visible_bird_frames=10,
+                 label_srcs={"modeled": 10}, unscoreable_label_frames=10)
 
 
 class TestDecideRefusesWithoutEvidence(unittest.TestCase):
@@ -69,6 +78,65 @@ class TestDecideRefusesWithoutEvidence(unittest.TestCase):
         self.assertIsNone(score.evidence_shortfall(GOOD_A, 3))
         _lines, verdict = score.decide(GOOD_A, GOOD_B, birds_in_clip=3)
         self.assertIn("ADOPT", verdict)
+
+    def test_modeled_labels_are_refused_even_with_a_full_denominator(self):
+        """THE 2026-08-22 regression (ADR-003 am. 6). 10 bird-frames, 3/3 birds — the count guard
+        passes — and the verdict was still meaningless: the labels were pose_at(stamp - t0), which
+        is where the driver ASKED the bird to be, a mean 198 px from where the render put it.
+        A rate needs a denominator AND a numerator that measured the same thing."""
+        _lines, verdict = score.decide(MODELED_A, GOOD_B, birds_in_clip=3)
+        self.assertIn("EVIDENCE INSUFFICIENT", verdict)
+        self.assertNotIn("AMBIGUOUS", verdict)   # what it printed before the guard
+        shortfall = score.evidence_shortfall(MODELED_A, 3)
+        self.assertIn("10 of 10 visible bird-frames", shortfall)
+        self.assertIn("modeled", shortfall)
+
+    def test_unknown_provenance_is_refused_the_same_as_modeled(self):
+        """A real clip labelled by a pre-2026-08-22 annotator carries no provenance at all. Unknown
+        timing scores exactly as badly as known-wrong timing — fail closed, not open."""
+        unknown = dict(MODELED_A, label_srcs={"unknown": 10})
+        self.assertIn("unknown", score.evidence_shortfall(unknown, 3))
+
+    def test_measured_and_exact_provenance_still_decide(self):
+        """The guard must not become a blanket refusal: applied (measured), spawn (exact) and
+        generator (synthetic) labels all support a rate."""
+        for src in ("applied", "spawn", "generator"):
+            with self.subTest(src=src):
+                m = dict(GOOD_A, label_srcs={src: 102}, unscoreable_label_frames=0)
+                self.assertIsNone(score.evidence_shortfall(m, 3))
+                self.assertIn("ADOPT", score.decide(m, GOOD_B, birds_in_clip=3)[1])
+
+    def test_a_mixed_clip_is_refused_on_the_modelled_part(self):
+        mixed = dict(GOOD_A, label_srcs={"applied": 100, "modeled": 2},
+                     unscoreable_label_frames=2)
+        self.assertIn("2 of 102", score.evidence_shortfall(mixed, 3))
+
+    def test_provenance_counts_come_out_of_score_itself(self):
+        """The guard is only as good as the tally feeding it: score() must read label_src off the
+        GT boxes it actually scored, not be told."""
+        gt_by_fid = {
+            0: {"frame_id": 0, "t_s": 0.0,
+                "birds": [{"bird_id": "b0", "bbox": [10, 10, 20, 20], "visible": True,
+                           "range_m": 9.0, "label_src": "modeled"},
+                          {"bird_id": "b1", "bbox": [30, 30, 40, 40], "visible": True,
+                           "range_m": 8.0, "label_src": "applied", "label_ambiguous": True},
+                          # not visible -> not scored -> must not enter the tally
+                          {"bird_id": "b2", "bbox": None, "visible": False, "range_m": None,
+                           "label_src": "modeled"}]},
+        }
+        m = score.score(gt_by_fid, [], iou_thresh=0.3)
+        self.assertEqual(m["label_srcs"], {"modeled": 1, "applied": 1})
+        self.assertEqual(m["unscoreable_label_frames"], 1)
+        self.assertEqual(m["ambiguous_label_frames"], 1)
+
+    def test_legacy_ground_truth_without_the_key_still_scores(self):
+        """Committed synthetic GT predates label_src; treating its absence as unscoreable would
+        retroactively void the seed-42 numbers ADR-003 was decided on."""
+        gt_by_fid = {0: {"frame_id": 0, "t_s": 0.0,
+                         "birds": [{"bird_id": "b", "bbox": [0, 0, 10, 10], "visible": True,
+                                    "range_m": 5.0}]}}
+        m = score.score(gt_by_fid, [{"frame_id": 0, "boxes": [[0, 0, 10, 10]]}], iou_thresh=0.3)
+        self.assertEqual(m["unscoreable_label_frames"], 0)
 
     def test_evidence_counts_come_out_of_score_itself(self):
         """The guard is only as good as the counts feeding it — pin that score() emits them."""
