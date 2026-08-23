@@ -157,7 +157,25 @@ boustrophedon 290.2 (identical); cells per airborne minute 239.2 vs **334.9**. T
 strictly better per minute, because the boustrophedon spreads frames over new ground. Round 2's
 "several short flights beat one long one" no longer holds — do not carry it forward.
 
-## ADR-003 IS NO LONGER THROUGHPUT-BLOCKED — the blocker moved to the HARNESS
+## ADR-003 CRITERION 3 IS CLOSED — ADOPT on the real render (2026-08-23, clip real_flight_20260823T073644Z)
+The criterion-3 re-fly, flown once the am. 6 applied-pose logger existed. Decision rule printed
+**`-> ADOPT (a) NDVI-direct`**: per-bird-track FNR **0.000** (bar <= 0.1), frame FNR 0.150 vs RGB's
+1.000, on **20 visible bird-frames, 3/3 birds**, all **20 labels `applied` (measured)** and
+**0 `modeled`**. NDVI precision 0.708 / recall 0.850 (TP 17 / FP 7 / FN 3); RGB arm 0.000/0.000 —
+still the inverted-birdness bug, untouched by design.
+
+**The label-provenance gate is what unblocked it**, not throughput: `2232 applied / 1536 spawn /
+0 modeled`. The previous take scored FNR 1.000 purely because continuously-interpolated labels sat
+a mean 193.6 px from the render; replaying the driver's ACTUAL applied poses fixed it. Driver
+achieved **1.19 Hz of the 2.00 requested**, 21 of 860 set_pose calls failed (2.4 %) — that gap IS
+the misalignment, now measured instead of modeled.
+
+**Predictor accuracy, first check against measured labels:** predicted medians 8/6/11 vs measured
+2/5/13. bird_1 and bird_2 inside the predicted range; **bird_0 measured 2, BELOW its predicted
+minimum of 3** — the uniform-sampling model is optimistic per-bird even when the total (20 vs 25) is
+close. Do not quote a per-bird median as a floor.
+
+## ADR-003 WAS THROUGHPUT-BLOCKED, THEN HARNESS-BLOCKED (superseded by the above)
 The clip cleared the evidence floor for the first time: **10 visible bird-frames, 3/3 birds seen**
 (previously 0, structurally). But both arms scored **FNR 1.000** and the rule printed
 `AMBIGUOUS -> default to (a)`. **That number is an artifact, not a detector property:**

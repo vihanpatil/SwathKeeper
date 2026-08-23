@@ -1529,3 +1529,38 @@ logic**; R2/R3's live gate carries unchanged. Both historical logs carry `SAFETY
 acknowledgement markers: the checker reports them loudly as ACKNOWLEDGED (exit 0, never VALID);
 an unmarked breach or a stale marker fails hard. A clean log prints its CPA; no detections reads
 NO-CPA-EVIDENCE, never a silent pass. Suite 530 passed / 2 skipped / 2 xfailed.
+
+### ADR-003 amendment 7 (2026-08-23, criterion 3 CLOSED — the real-render re-run on measured labels): ADOPT (a) NDVI-direct
+Flown delegated per ADR-013 am. 10's mechanism (user authorization: "fly it"); the FULL_PIPELINE
+path with ONE variable against the am. 10 take — the am. 6 logging driver, on its first live
+outing. Its gate PASSED: applied-pose log present (860 calls, 839 landed, 21 failed = 2.4 %),
+span overlapping the clip, annotator provenance **2232 applied / 1536 spawn / 0 modeled**. The
+achieved driver rate measured at 1.19 Hz of the requested 2.00 — the misalignment am. 6
+diagnosed, now measured instead of modeled.
+
+**The decision rule, verbatim:** evidence 20 visible bird-frames, 3/3 birds; (a) per-bird FNR
+**0.000** (bar ≤ 0.1); (a) frame FNR 0.150 vs (b) 1.000 → **ADOPT (a) NDVI-direct** — clears the
+per-bird bar and fidelity wins the tiebreak. Arm (a): TP=17 FP=7 FN=3, precision 0.708, recall
+0.850, **every bird detected before closest approach** (bird_0 2/2 at 3.95 m, bird_1 4/5 at
+6.97 m, bird_2 11/13 at 8.97 m). Arm (b) 0.000 across the board — the documented inverted
+birdness, deliberately untouched; criterion 2 still awaits its independent pixel study.
+**Criterion 3's three-cause history closes measured at every step: geometry (ADR-015),
+throughput (ADR-013 am. 6-9), ground truth (am. 5-6), verdict (this).**
+
+* The flight itself: another 720/720 map at a bit-perfect 5.00 Hz (1286 ticks → 100.00 % both
+  bands → 1256 written, 0 unaccounted, end-to-end 97.67 %); tree gate PASS 18/18 imaged; host
+  quiet sampled THROUGHOUT (the am. 11 sampler race fixed and verified writing before arming).
+* **The −0.61 threshold's PROVISIONAL blocker is discharged, the label not yet lifted:** it now
+  has precision/recall behind it (0.708 / 0.850) and supports the decision with margin on the
+  safety bar — but n=20 with 7 FP / 3 FN is thin and 8 of 20 labels are `label_ambiguous`
+  (inside a set_pose bracket). Lifting PROVISIONAL is perception-ml-engineer's call after the FP
+  sources are characterised.
+* **Predictor accuracy, first check against measured labels:** bird_1 (5 vs median 6) and bird_2
+  (13 vs 11) in range; **bird_0 measured 2 against a predicted minimum of 3** — the
+  uniform-sampling model is optimistic per-bird even when the total is close. Do not quote a
+  per-bird median as a floor.
+* No avoidance node on this path by runbook scope: no flight log, hence no CPA verdict — stated,
+  not invented.
+Owner / roles: flight-software-engineer (delegated pilot, gate + chain); perception-ml-engineer
+(owns the PROVISIONAL call and the criterion-2 pixel study); the 0.445 synthetic precision bar
+stands as the bar any learned model must beat.

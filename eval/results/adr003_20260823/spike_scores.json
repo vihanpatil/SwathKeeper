@@ -1,0 +1,112 @@
+{
+ "ground_truth": "eval/results/adr003_20260823/ground_truth.json",
+ "iou_thresh": 0.3,
+ "synthetic": false,
+ "approaches": {
+  "a_ndvi_direct": {
+   "TP": 17,
+   "FP": 7,
+   "FN": 3,
+   "precision": 0.7083333333333334,
+   "recall": 0.85,
+   "fnr": 0.15,
+   "per_bird_track_fnr": 0.0,
+   "birds_with_visible_frames": 3,
+   "visible_bird_frames": 20,
+   "label_srcs": {
+    "applied": 20
+   },
+   "unscoreable_label_frames": 0,
+   "ambiguous_label_frames": 8,
+   "per_bird": [
+    {
+     "bird_id": "bird_0",
+     "visible_frames": 2,
+     "matched_frames": 2,
+     "closest_range_m": 3.95,
+     "t_closest_s": 122.8,
+     "detected_before_closest": true
+    },
+    {
+     "bird_id": "bird_1",
+     "visible_frames": 5,
+     "matched_frames": 4,
+     "closest_range_m": 6.97,
+     "t_closest_s": 122.6,
+     "detected_before_closest": true
+    },
+    {
+     "bird_id": "bird_2",
+     "visible_frames": 13,
+     "matched_frames": 11,
+     "closest_range_m": 8.97,
+     "t_closest_s": 135.0,
+     "detected_before_closest": true
+    }
+   ],
+   "params": {
+    "thresh": -0.61,
+    "thresh_source": "real-render default, PROVISIONAL (gate2 bird/soil midpoint)",
+    "thresh_provisional": true,
+    "min_area": 6,
+    "max_area": 5000
+   }
+  },
+  "b_synthetic_rgb": {
+   "TP": 0,
+   "FP": 4,
+   "FN": 20,
+   "precision": 0.0,
+   "recall": 0.0,
+   "fnr": 1.0,
+   "per_bird_track_fnr": 1.0,
+   "birds_with_visible_frames": 3,
+   "visible_bird_frames": 20,
+   "label_srcs": {
+    "applied": 20
+   },
+   "unscoreable_label_frames": 0,
+   "ambiguous_label_frames": 8,
+   "per_bird": [
+    {
+     "bird_id": "bird_0",
+     "visible_frames": 2,
+     "matched_frames": 0,
+     "closest_range_m": 3.95,
+     "t_closest_s": 122.8,
+     "detected_before_closest": false
+    },
+    {
+     "bird_id": "bird_1",
+     "visible_frames": 5,
+     "matched_frames": 0,
+     "closest_range_m": 6.97,
+     "t_closest_s": 122.6,
+     "detected_before_closest": false
+    },
+    {
+     "bird_id": "bird_2",
+     "visible_frames": 13,
+     "matched_frames": 0,
+     "closest_range_m": 8.97,
+     "t_closest_s": 135.0,
+     "detected_before_closest": false
+    }
+   ],
+   "params": {
+    "thresh": 110,
+    "min_area": 6,
+    "max_area": 5000
+   }
+  }
+ },
+ "birds_in_clip": 3,
+ "decision": {
+  "criteria": [
+   "evidence: 20 visible bird-frames, 3/3 birds seen",
+   "(a) per-bird FNR = 0.000 (bar <= 0.1)",
+   "(a) frame FNR = 0.150 vs (b) frame FNR = 1.000 (gap -0.850, must be <= 0.1)"
+  ],
+  "verdict": "ADOPT (a) NDVI-direct. It clears the per-bird FNR bar and is within 0.1 FNR of RGB -- fidelity wins the tiebreak."
+ }
+}

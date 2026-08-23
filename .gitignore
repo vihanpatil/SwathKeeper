@@ -60,6 +60,10 @@ secrets/
 # frame data. Prune stale runs' logs by hand rather than re-ignoring the class.
 !eval/results/bird_drive_*_applied.jsonl
 !eval/results/bench_transport_*.json
+# The ADR-003 verdict run's scores (am. 7: the ADOPT decision's own evidence — labels,
+# detections, spike_scores; overlays excluded below as regenerable imagery)
+!eval/results/adr003_*/
+eval/results/adr003_*/overlays/
 !eval/results/clips/
 eval/results/clips/*
 !eval/results/clips/real_flight_*/
