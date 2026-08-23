@@ -133,7 +133,7 @@ Public main: current as of PR #26 (2026-08-21). Full narrative of how we got her
    | half of the standard | verdict | evidence |
    |---|---|---|
    | 18 trees at their 18 known positions | **PASS — best canopy evidence to date** | 12/18 imaged, **8 canopy-grade**, median lift **+0.8692** |
-   | birds visible / avoidance exercised | **NOT EXERCISED** | **0 bird-visible frames of 454** |
+   | birds visible / avoidance exercised | **NOT EXERCISED** *(demo take, 2026-08-21)* → **BOTH EXERCISED** since | birds visible: 2026-08-22 flagship take (10 GT frames, 3/3 birds, ADR-013 am. 10); avoidance: 2026-08-23 delegated demo, first FULL ledger closure 720/0, 19/19 vetted (am. 11). Still open: avoidance driven by a REAL detection (the ADR-009 rule-2 seam, Week 6 — needs a combined runbook) |
 
    *Trees.* Method (reconstructed and pinned by reproducing all three published 2026-08-18 figures
    exactly — flight 6 at 5/8, flight 7 at 5/6, and the "+0.87 typical lift" that `README.md` and
