@@ -1464,3 +1464,57 @@ recipe; bringup in its order (agent before SITL); DISARMED at 121 s.
   on a throughput measurement.
 Owner / roles: flight-software-engineer (delegated pilot + executor audit); qa-safety-reviewer
 takes the zero-range tick; robotics-sim-engineer takes the runbook drift fixes.
+
+### ADR-013 amendment 12 (2026-08-23, qa-safety-reviewer adversarial pass on amendment 11): the demo encounter was a de-facto bird strike under green gates — CPA is now the number that must exist
+The zero-range tick amendment 11 handed over was real (S4 below) — and the pass found four
+findings that outrank it. All 19 ticks of the flown encounter replay bit-identically in
+`tests/fieldguard_planning/test_degenerate_range_avoidance.py` (36 tests; CURRENT behavior
+pinned, WANT behavior as paired xfails, mutation-proved).
+
+* **S1 (critical): closest approach to the bird was 0.0518 m against the policy's own
+  `min_bird_clearance_m` 3.0 — every gate green.** From the first accepted DIVERT (range 9.27 m)
+  the vehicle gained 45 mm across-track in six ticks while closing 9.3 m along-track, still at
+  6.57 m/s at CPA, moving AWAY from its own dodge target: candidate 0° (straight away) is a full
+  reversal — the one escape ownship momentum forbids in a head-on closure at 7.7 m/s with 1.56 s
+  of cylinder warning. Nothing in the pipeline computes CPA; "19/19 vetted" is a claim about
+  setpoints. The runbook's proof standard said "avoidance exercised", and it was — the exercise
+  revealed the loop's success metric was missing.
+* **S2 (high, vacuous green):** `is_safe_3d` and the ADR-006 executor backstop are structurally
+  unreachable in the flown configuration (setpoints pinned to 15 m cruise; trees end at 4.8 m) —
+  `gate_reject: 0` meant COULD NOT FIRE. The gate re-arms below ~4.8 m; it is live code, armed
+  and unproven.
+* **S3 (high):** `lateral_tree_margin_m` defaults to **0.0 in code** and no caller or config sets
+  it — the accept boundary IS the exclusion boundary; a dodge exactly tangent to a tree column
+  is accepted (4.7 % of accepted degenerate-range dodges near rows clear by < 0.1 m). Bounded
+  today only by two accidents: obstacle_radius 2.0 vs canopy 1.3 (0.7 m padding) and the
+  10.2 m of altitude separation.
+* **S4 (medium):** the away-vector has no range floor (guard at 1e-9 m): at the flown 0.052 m a
+  0.5 m position error spans 337° of commanded bearing (6.2° at 9.27 m). The executor re-latched
+  on the resulting 20.9 m setpoint jump — setpoint delta read as threat motion on a bird that
+  never moved.
+* **S5 (medium, latent):** the policy is the SOLE boundary authority (no ArduPilot `FENCE_*`
+  set); setpoint-containment implies path-containment only by the polygon's unstated convexity;
+  lanes x=0/x=75 lie ON the boundary (118/984 flown points ε-outside, worst 7.3 cm); `_handle_hold`
+  sends an unvetted setpoint.
+* **Side finding (favourable, unverified):** the camera's 18.46 m swath at 15 m exceeds the 15 m
+  lane pitch, so coverage.py's 7.5 m half-width UNDER-claims — closeable on paper once
+  `verify_mount_geometry.sh` asserts the wide axis is across-track. Not closed until it does.
+
+**Recommendations, ranked (R1 ships now; control-law changes wait for their live gate):**
+R1 add CPA-to-any-detection to `check_live_flight_log.py`, INVALID below `min_bird_clearance_m`
+— it will fail the 2026-08-23 log, correctly (that log gets an acknowledged-finding marker so
+the failure is loud without lying about history). R2 `lateral_tree_margin_m = 1.0` (the 18-tree
+geometry supports it 3×; replaying the encounter keeps 19/19 DIVERT, rotates the bad tick to
++45° at 7.56 m clearance, reduces relatches 7→6). R3 policy flags `range_degenerate` below 1.0 m
+and the executor refuses to RE-LATCH on a degenerate tick (keeps `decide` pure; hold-and-climb
+deliberately NOT chosen — ADR-009 says bird z is the estimate we cannot trust). R4 the
+reversal-preferring candidate order is recorded as an open control-law question (needs closing
+geometry v1 doesn't have) — not ridden along. R5 an ArduPilot FENCE_* polygon as independent
+backstop + lanes moved ≥1 m inboard. R2/R3/R5's live gate: the next avoidance flight, with
+"every swept_tree_clearance_m ≥ 1.0" and "no relatch below 1.0 m range" asserted in the log.
+Not tested, stated plainly: no flights, no dynamics model (no WPNAV_* pinned — stopping-distance
+claims would be invented), one static bird / one altitude / one encounter; the descent case and
+staleness gate remain armed-and-unproven.
+Owner / roles: qa-safety-reviewer (found, pinned, priced); flight-software-engineer takes R1 now
+and R2/R3 behind the next avoidance flight's gate; product-lead: this outranks polish — the
+avoidance story is priority #1 and currently reads better than it flew.
