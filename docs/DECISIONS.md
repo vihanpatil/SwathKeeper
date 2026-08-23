@@ -1518,3 +1518,14 @@ staleness gate remain armed-and-unproven.
 Owner / roles: qa-safety-reviewer (found, pinned, priced); flight-software-engineer takes R1 now
 and R2/R3 behind the next avoidance flight's gate; product-lead: this outranks polish — the
 avoidance story is priority #1 and currently reads better than it flew.
+
+### ADR-013 amendment 12 addendum (2026-08-23, R1's first run): a SECOND breaching flight, five days and one executor revision earlier
+`check_live_flight_log.py` now computes CPA-to-any-detection (horizontal on purpose — ADR-009
+says bird z is the estimate we cannot trust; the bar is read live from `PolicyParams`, one source
+of truth). Its first pass over the committed evidence found the 2026-08-18 avoidance run breached
+too: **CPA 0.0597 m** (61 detections, pre-latch executor) beside the 2026-08-23 run's 0.0518 m —
+same static demo bird, different executor era. **S1 is the escape geometry, not the re-latch
+logic**; R2/R3's live gate carries unchanged. Both historical logs carry `SAFETY_FINDING.md`
+acknowledgement markers: the checker reports them loudly as ACKNOWLEDGED (exit 0, never VALID);
+an unmarked breach or a stale marker fails hard. A clean log prints its CPA; no detections reads
+NO-CPA-EVIDENCE, never a silent pass. Suite 530 passed / 2 skipped / 2 xfailed.

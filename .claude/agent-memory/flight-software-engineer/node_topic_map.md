@@ -58,6 +58,16 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
   1 `latch` + 7 `relatch` -> 19 `maneuver` all `accepted`, 0 rejected -> 1 `resume` -> 545
   `requeue_events`. `check_live_flight_log.py` PASS. The commanded-never-flown invariant verified
   directly: 19 distinct commanded setpoints, **0 overlap** with the 984 flown-path points.
+- **BUT IT WAS A DE-FACTO BIRD STRIKE (ADR-013 am. 12, S1).** CPA to the bird was **0.0518 m**
+  against the policy's own `min_bird_clearance_m` 3.0 — with every gate green, because nothing
+  computed the distance FLOWN. "19/19 maneuvers vetted" is a claim about SETPOINTS. R1 (shipped
+  2026-08-23) adds CPA to `check_live_flight_log.py`, sourced from `PolicyParams`, printed for every
+  log every run. **The 2026-08-18 log breaches too, at 0.0597 m** — found by R1's first run over the
+  committed evidence; that log predates the latch/relatch machinery entirely, so the gap is in the
+  control law's escape geometry, not in the later logging. Breaching history carries a sibling
+  `<log-stem>.SAFETY_FINDING.md` marker -> reports ACKNOWLEDGED (loud, stderr, exit 0); unmarked
+  breach = hard fail; a marker beside a PASSING log = stale acknowledgement = also a hard fail.
+  Markers need their own `.gitignore` allowlist or CI reds out on committed history.
 - TWO THINGS WORTH KNOWING from that run, both self-reported by the executor rather than hidden:
   (1) `resume` recorded `resumed_same_waypoint: false` (took over at wp 6, resumed at wp 7) — the
   drone passed the waypoint during the dodge; ADR-006's "same waypoint" claim is about

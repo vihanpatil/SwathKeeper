@@ -46,6 +46,11 @@ secrets/
 # NOTE the level-by-level pattern: a DIRECTORY exclude (dir/) cannot be pierced by child negations,
 # so each level excludes CONTENTS (dir/*) and re-includes the evidence children.
 !eval/results/live_flight_log_*.json
+# ...and the acknowledged-finding marker beside it (ADR-013 am. 12 R1). LOAD-BEARING FOR CI: the
+# logs above are committed, and check_live_flight_log.py fails HARD on a closest-approach breach
+# that has no marker. Without this line CI checks out the breaching logs without their
+# acknowledgements and goes red on recorded history it cannot re-fly.
+!eval/results/live_flight_log_*.SAFETY_FINDING.md
 !eval/results/gate2_summary.json
 !eval/results/testflight_gate_*.json
 !eval/results/bird_drive_*.json
