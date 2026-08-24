@@ -378,6 +378,7 @@ preflight() {
     printf '  DRY  docker exec %s ps -eo args=          # refuse if a bringup is already live\n' "$CONTAINER"
     printf '  DRY  docker exec %s dpkg -s %s\n' "$CONTAINER" "${DEPS[*]}"
     printf '  DRY  %s\n' "$(exec_line "$INNER_APT")"
+    printf '  DRY  docker exec %s python3 -c import scipy.ndimage   # detector dep; rebuild, never pip\n' "$CONTAINER"
     return 0
   fi
   command -v docker >/dev/null 2>&1 || die "docker is not on PATH — install / start Docker Desktop."
@@ -426,6 +427,23 @@ $(printf '%s\n' "$live" | cut -c1-110 | sed 's/^/      /')
     docker exec "$CONTAINER" bash -c "$INNER_APT" ||
       die "apt install of ros-humble-{actuator-msgs,gps-msgs,vision-msgs} failed — see output above."
     say "bridge runtime deps installed"
+  fi
+
+  # The detector's one non-stdlib dependency, checked in the image that will fly it. scipy.ndimage
+  # IS the morphology of the ADOPTED ADR-003 am.7 NDVI blob detector, so an image without it cannot
+  # run `avoidance_node --detect` at all — and finding that out 90 s into a booked take costs the
+  # take. Deliberately NOT auto-installed like the bridge deps above: a runtime `pip install scipy`
+  # would make the image non-reproducible and re-run every session (rejected band-aid). The fix is
+  # a rebuild; the image now installs python3-scipy (sim/docker/Dockerfile).
+  if docker exec "$CONTAINER" python3 -c 'import scipy.ndimage' >/dev/null 2>&1; then
+    say "detector dep present: scipy.ndimage importable in '$CONTAINER'"
+  else
+    die "scipy is missing inside '$CONTAINER' — this image predates the python3-scipy line in
+  sim/docker/Dockerfile, so 'avoidance_node --detect' (ADR-003 am.7 NDVI blob detector) cannot run.
+  Rebuild, then recreate the container:
+      bash scripts/sim_docker_build.sh
+      bash scripts/sim_docker_run.sh
+  Do NOT pip-install it into the running container: that hides the drift and burns the next session too."
   fi
 }
 

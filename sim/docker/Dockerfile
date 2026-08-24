@@ -81,9 +81,13 @@ RUN wget -q https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gaze
 # libgflags-dev: ros_gz_sim #includes <gflags/gflags.h> and links libgflags at runtime.
 # libdebuginfod1: ardupilot_gazebo's libGstCameraPlugin.so links it; without it the gimbal camera
 # plugin fails to load ("libdebuginfod.so.1: cannot open shared object file").
+# python3-scipy (jammy 1.8.0): scipy.ndimage IS the morphology in
+# fieldguard_planning.ndvi_detect -- the ADOPTED ADR-003 am.7 detector. A numpy
+# reimplementation would void the measured FNR-0.000 transfer, so the image carries the
+# dependency instead of the detector carrying a second implementation.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ccache g++ gawk python3-dev python3-pip python3-pexpect \
-        python3-setuptools python3-numpy python3-pyparsing python3-psutil \
+        python3-setuptools python3-numpy python3-scipy python3-pyparsing python3-psutil \
         rsync libgflags-dev libdebuginfod1 \
     && rm -rf /var/lib/apt/lists/*
 
