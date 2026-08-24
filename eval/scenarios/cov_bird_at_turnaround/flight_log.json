@@ -4622,8 +4622,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -4631,12 +4632,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 10.63,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.29 m",
@@ -4706,8 +4715,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -4715,12 +4725,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 9.22,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.00 m",
@@ -4757,7 +4775,10 @@
         15.0
       ],
       "reason": "no safe divert among 7 candidate directions (boxed in by trees / field edge / other birds) -- holding in GUIDED",
-      "track_id": "intruder_0"
+      "track_id": "intruder_0",
+      "bird_clearance_m": 8.062,
+      "bird_track_id": "intruder_0",
+      "min_bird_clearance_m": 3.0
     },
     {
       "seq": 33,
@@ -4784,7 +4805,10 @@
         15.0
       ],
       "reason": "no safe divert among 7 candidate directions (boxed in by trees / field edge / other birds) -- holding in GUIDED",
-      "track_id": "intruder_0"
+      "track_id": "intruder_0",
+      "bird_clearance_m": 7.28,
+      "bird_track_id": "intruder_0",
+      "min_bird_clearance_m": 3.0
     },
     {
       "seq": 35,
@@ -4844,8 +4868,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -4853,12 +4878,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 7.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.00 m",
@@ -4928,8 +4961,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -4937,12 +4971,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 8.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.00 m",
@@ -5009,7 +5051,7 @@
         "candidates_rejected": [
           {
             "angle_deg": 0.0,
-            "why": "swept path clears tree by only -0.54 m (< 0.00 m required)"
+            "why": "swept path clears tree by only -0.54 m (< 1.00 m required)"
           },
           {
             "angle_deg": 45.0,
@@ -5021,8 +5063,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5030,12 +5073,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 8.246,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert -45 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.43 m",
@@ -5105,8 +5156,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5114,12 +5166,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 8.944,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 2.65 m",
@@ -5151,8 +5211,8 @@
       "tick": 33,
       "kind": "relatch",
       "setpoint_enu": [
-        38.0,
-        46.0,
+        31.414213562,
+        42.100505063,
         15.0
       ],
       "previous_setpoint_enu": [
@@ -5160,7 +5220,7 @@
         49.527864045,
         15.0
       ],
-      "offset_m": 3.652050679,
+      "offset_m": 10.576740526,
       "relatch_threshold_m": 3.0,
       "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
       "track_id": "intruder_0"
@@ -5171,26 +5231,36 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        38.0,
-        46.0,
+        31.414213562,
+        42.100505063,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -45.0,
         "away_unit": [
           0.8,
           -0.6
         ],
-        "swept_tree_clearance_m": 0.236,
-        "candidates_rejected": [],
+        "swept_tree_clearance_m": 6.91,
+        "candidates_rejected": [
+          {
+            "angle_deg": 0.0,
+            "why": "swept path clears tree by only 0.24 m (< 1.00 m required)"
+          },
+          {
+            "angle_deg": 45.0,
+            "why": "swept path clears tree by only -0.41 m (< 1.00 m required)"
+          }
+        ],
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5198,19 +5268,27 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 10.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 0.24 m",
+      "policy_reason": "divert -45 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 6.91 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        38.0,
-        46.0,
+        31.414213562,
+        42.100505063,
         15.0
       ],
       "latch_action": "relatch"
@@ -5240,11 +5318,11 @@
         15.0
       ],
       "previous_setpoint_enu": [
-        38.0,
-        46.0,
+        31.414213562,
+        42.100505063,
         15.0
       ],
-      "offset_m": 3.208484458,
+      "offset_m": 5.717192624,
       "relatch_threshold_m": 3.0,
       "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
       "track_id": "intruder_0"
@@ -5273,8 +5351,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5282,12 +5361,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 11.314,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            22.0,
+            58.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.59 m",

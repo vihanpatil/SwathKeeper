@@ -127,6 +127,29 @@ produce each `flight_log.json`, so the matching `test_safety_scenarios_pending.p
 and pass. The 2 `det_*` (detection-FNR) scenarios stay pending — they need detection artifacts from the
 real NDVI render (Weeks 5-6), not an avoidance flown path; fabricating those would defeat the metric._
 
+### These fixtures are OPEN-LOOP: they do not model separation (2026-08-24, ADR-013 amendment 16)
+
+`generate_flight_logs.py` prescribes the drone's position from `nominal_path()` on every tick and
+never feeds the executor's commanded setpoint back into the next tick's `DroneState`. There is no
+vehicle model here on purpose — the fixture's job is to hold the *stimulus* fixed so the **ledger** is
+the only thing under test. Two consequences, stated so nobody has to rediscover them:
+
+1. **`flown_path_enu` is the scripted lawnmower, not an outcome.** It is byte-identical to
+   `nominal_path()` — pinned by `tests/test_ci_evidence_gate.py::...test_fixtures_are_open_loop...`.
+2. **Their closest approach to the bird is therefore a scenario *parameter*, not a flown result.** The
+   birds are parked ON the lane precisely so a dodge is forced, so three of the four sit inside the
+   3.00 m `min_bird_clearance_m` bar by construction (0.00 m, 1.00 m, 1.00 m; `cov_bird_at_turnaround`
+   is 7.00 m). Regenerating them under a *changed* control law leaves those four numbers bit-identical
+   — measured 2026-08-24, which is the proof that no control law can move them.
+
+**So `scripts/check_live_flight_log.py`'s CPA gate is NOT pointed at this directory, and these files
+must NOT carry `SAFETY_FINDING.md` markers.** That gate scores *flown* separation and belongs to live
+logs (`eval/results/live_flight_log_*.json`), where the path is telemetry. Filing an authored scenario
+parameter as an acknowledged safety finding would dilute the one channel that carries the two real
+historical breaches. What CI *does* gate here: the regenerate-and-diff reproducibility step, and the
+ledger/geofence assertions in `test_safety_scenarios_pending.py` (kept non-skippable by the
+committed-fixture assertion in `tests/test_ci_evidence_gate.py`).
+
 **Runnable-now** scenarios are asserted by `tests/fieldguard_planning/test_coverage.py` and
 `test_mission_geofence.py` against the *current* mission — they are the baseline the avoidance loop
 must not regress below. **Pending** scenarios are asserted by `test_safety_scenarios_pending.py`,
@@ -151,7 +174,14 @@ python3 -m unittest discover -s tests/fieldguard_planning -v
 2. **Camera swath — ✅ CLOSED (2026-08-18).** Live `camera_info` from the first real-render flight
    gives a 9.2 m across-track half-swath at 15 m altitude against the 7.5 m the mission plan
    assumes — lanes overlap, the coverage guarantee holds. See §2.
-3. **Detection realism** — still open. ADR-003's FNR numbers are from a *synthetic* clip;
+3. **No scenario exercises SEPARATION** — open, and it is the R4 (escape-geometry) shaped hole.
+   Every fixture here is open-loop (see §3), so the property "the vehicle stayed ≥ 3.00 m from the
+   bird it dodged" has **no scenario in this directory at all** — it is measured only on live flights,
+   by `check_live_flight_log.py`'s ground-truth CPA. That is why both historical breaches were found
+   by a gate rather than by a test. Closing this needs a fixture that flies the executor's *commanded*
+   setpoints (a vehicle model, however crude), which is exactly the R4 work deliberately cut from v1;
+   until then, do not read a green scenario suite as evidence of clearance.
+4. **Detection realism** — still open. ADR-003's FNR numbers are from a *synthetic* clip;
    `det_bird_over_low_ndvi` must be re-run on the real Gazebo NDVI render before the "no missed
    bird" claim is trusted. The render now exists and real clips are recorded (Gates 0-3 green,
    2026-08-18); what remains is the scored re-run itself — with gap 2 closed, this is genuinely the
