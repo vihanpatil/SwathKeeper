@@ -8,260 +8,183 @@ in `docs/DECISIONS.md`; this file is only ever **the current truth and what's ne
 nothing gets added to scope without something else being cut in the same breath, and every
 `/standup` is still measured against protecting the demo + dashboard exit.
 
-## Where we are (2026-08-21)
+## Where we are (2026-08-24)
 
 | Phase | Status |
 |---|---|
 | Weeks 1-2 — sim foundation + detection decision | ✅ complete (2026-08-04) |
-| Weeks 3-4 — reactive avoidance + coverage-debt loop | ✅ complete, **demonstrated live** (2026-08-05) |
-| Week 5 — NDVI pipeline | 🟢 validation DONE: **all four gates GREEN live** (Gate 0 2026-08-05, Gates 1-3 2026-08-18); mount geometry corrected + gated (ADR-007 am. 5, 2.2 px); first tree-verified heatmaps committed. Recording throughput instrumented + 3× improved 2026-08-21 (5.1× frames, 2.3× cells, ADR-013 am. 6). **Demo take flown 2026-08-21** — best canopy evidence to date (8 canopy-grade trees, median lift +0.8692), item 2. Open: the two-stage frame loss (am. 6a) |
-| Week 6 — real detector on the seam + comparison arm | 🟢 **ADR-003 criterion 3 CLOSED — ADOPT NDVI-direct on the real render (2026-08-23, am. 7)**: per-bird-track FNR 0.000 on measured labels, all birds seen before closest approach, precision 0.708 / recall 0.850. Remaining for Week 6: wire the adopted blob detector into the `detection_source` seam (ADR-009 rule 2, apparent-size ray) + the combined avoidance-with-real-detection runbook + criterion 2's independent RGB pixel study; −0.61 threshold PROVISIONAL pending FP characterisation. Safety pre-req from am. 12: R2/R3 control-law fixes fly with the next avoidance session |
+| Weeks 3-4 — reactive avoidance + coverage-debt loop | ✅ complete, **demonstrated live** (2026-08-05); first FULL ledger closure **720/0**, 19/19 vetted, on the current stack (2026-08-23, ADR-013 am. 11). **Safety asterisk (am. 12):** both historical avoidance flights breached bird clearance at ~5 cm under green gates. CPA is now a gated metric (R1 shipped); R2/R3 landed 2026-08-24 and await their live gate |
+| Week 5 — NDVI pipeline | ✅ closed. Four ADR-007 gates green live; mount geometry corrected + gated (2.2 px). **Recording throughput CLOSED 2026-08-22** (ADR-013 am. 9): the Fast DDS SHM segment was the root cause — 100 % delivery on both bands, painting cadence 0.41 → **5.0 Hz flat**, and the first full-grid map, **720/720 cells**, 18/18 trees imaged / 14 canopy-grade (am. 10) |
+| Week 6 — real detector on the seam + comparison arm | 🟢 **the entire offline half LANDED 2026-08-24 — and every piece of it awaits its live gate on ONE flight.** ADR-003 criterion 3 CLOSED 2026-08-23 (am. 7): ADOPT NDVI-direct, per-bird-track FNR 0.000, precision 0.708 / recall 0.850. Detail below. Still open: criterion 2's independent RGB pixel study (deferred, see cut log); −0.61 stays **PROVISIONAL** pending false-positive characterisation |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
-Test suite: **364 green, 2 skipped** (measured 2026-08-21 post-PR #26) — 331 in
-`tests/fieldguard_planning` plus 33 host-side launcher tests in `tests/test_fly_pipeline.py`, which
-need neither Docker nor tmux. CI discovers both (it ran only the first until 2026-08-18) and also
-gates seed-42 FNR, scenario-log drift, flight-log evidence. The 10 added 2026-08-21
-(`test_score_evidence.py`) pin the eval harness's evidence guards — the reason a real-render re-run
-can no longer return a verdict it did not measure; PR #26 added the predictor, tree-gate, and
-ADR-015 geometry pins.
-Public main: current as of PR #26 (2026-08-21). Full narrative of how we got here:
-`docs/BUILD_LOG.md`.
+### What landed offline 2026-08-24, and what gates each piece
+
+Four things shipped in one session. None of them is *done* by this project's own definition until a
+flight exercises it — "landed offline" is a claim about the host suite, not about the vehicle.
+
+| landed | what it is | its live gate |
+|---|---|---|
+| **The seam** | the ADOPTED am. 7 blob detector on `avoidance_node.py`'s `detection_source` under ADR-009 (`stamp_s` staleness gate, apparent-size ray, **never** ground-plane). ONE clock end to end: absolute Gazebo sim seconds, with a >0.5 s-future tripwire and a refuse-to-start if no `/clock` reading arrives | the flight |
+| **R2 + R3** | `lateral_tree_margin_m` 0.0 → **1.0** and degenerate-range re-latch refusal (ADR-013 am. 12). Priced, not guessed: over 11,856 degenerate cases HOLD 5.64 % → 15.66 %, min accepted swept clearance 0.000 → **1.000 m**, sub-metre tail 28.1 % → **0 %**; the flown encounter still dodges 19/19. Hardened 2026-08-24: the executor re-vets every commanded point against the bird bar; a refusal is now stated as **REFUSED — zero displacement, honours no clearance bar**, and the HOLD it falls through to logs its own bird clearance so the gate can **report it as ungated CONTEXT** (never a verdict; R4 owns escape geometry) | the flight |
+| **GT-CPA** | the safety bar is now measured against the birds' **applied-pose ground truth**, read through the same functions the ADR-003 labels use. Monocular `detection_cpa_m` is demoted to a labelled estimator check and is never a gate. Legacy logs keep their verdict on a versioned branch — both historical breach logs still read ACKNOWLEDGED, byte-identical. Hardened 2026-08-24: `gt_cpa_m` is a segment (polyline) lower bound on **both** axes — a second pass joins each landed bird pose to the drone sub-segment its render window covers, so a bird driven through the drone *between* ticks is now a breach, not a 3.8 m PASS; a frozen clock is priced as a bird-motion debit **measured in seconds off the flight's own stamps** (at/over the bar the gate stands on the clock fault and reports `gt_cpa_gated_m NOT COMPUTED`); `--truth` no longer bypasses the ambiguous-take guard; a detector *rate* floor replaces the zero-check | the flight |
+| **The runbook** | `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` — 7 panes + the 8th `--detect` shell, both preflights, evidence-first teardown, the exact `--truth` scoring line, and a pre-registered expectation | the flight |
+
+**The detector move is provably neutral, which is the claim that mattered most:** re-scoring the
+adopted clip through the new home reproduces `detections_ndvi.json` **bit-identically** (1256 frames,
+24 boxes, −0.61 / 6 / 5000) and the ADOPT verdict with identical numbers. A rewrite wearing am. 7's
+verdict would have cost a flight to re-earn.
+
+**Offline dry run of the whole seam over the adopted clip** — the numbers to compare the flight
+against, not results: boxes bit-identical through the live class; **8 of 1256 frames (1.24 % of the
+645 airborne) would have produced an in-cylinder threat** — bookable, not a dodge storm, though 3 of
+the 8 are bird_1 *lifted into* the ±6 m cylinder by the 0.15 m radius prior's under-ranging; range
+error vs truth **median 1.65 m / max 3.67 m** (n=24, materially worse than the single case am. 7
+quoted); `detect_wall_ms` p95 **4.8** against a 200 ms tick, so the detector will not block the
+executor.
+
+**Then QA's adversarial pass found six open findings in the gate itself** (1 critical, 4 major, 1
+minor, every one reproduced with a probe against the real code). **All six are fixed and
+independently re-verified 2026-08-24**, each pinned by a test proven red against the pre-fix code;
+the re-reviews then opened three shorter rounds, **all closed the same day** (see below). The ADR
+amendments recording all of the above
+are **written**: `docs/DECISIONS.md` **ADR-013 amendments 13-17** (all dated 2026-08-24) carry R2/R3
+offline, the ground-truth CPA gate, the six-finding adversarial pass and its round-3 residuals, and
+the CI denominator + frozen marker-set decision (with the two-half acknowledgement and the run-block
+ratchet recorded in am. 14/17), alongside their companion ADR-003/ADR-009 notes.
+
+Test suite: **877 green, 2 skipped** (measured 2026-08-24, after the round-5 fixes) — 57 host-side
+tests under `tests/`, which need neither Docker nor tmux, plus 822
+collected in `tests/fieldguard_planning` (820 green and the 2 long-standing pending-scenario skips).
+822 + 57 = 879 = 877 + 2 is the consistency check that matters, because `unittest` is the runner that
+makes an unexpected pass red.
+Up from 530/2/2 at session start (870/2 entering the last fix round), with **zero xfailed**: one xfail was promoted to a plain assertion when R2
+landed, the other honestly retired — it asserted that a *frozen artifact* would one day become safe,
+so it could never activate; the breach it stood for is now pinned by a live gate plus BOTH halves of
+its acknowledgement (the marker file and the stem in `ACKNOWLEDGED_BREACH_STEMS`).
+Run **both** runners: `python3 -m pytest tests -q` and
+`python3 -m unittest discover -s tests/fieldguard_planning` — only the second makes an xpass red.
+CI discovers both — host-side discovery is now `-p 'test_*.py'`, so a new `tests/test_*.py` file
+cannot sit un-run — and also gates seed-42 FNR (`check_spike_regression.py`) and flight-log evidence
+(`check_live_flight_log.py` over the two **committed** `eval/results/live_flight_log_*.json`). That
+evidence step is **no longer vacuous**: it prints the file count every run and hard-FAILs on zero,
+where before it printed SKIP…PASS and went green having validated nothing.
+Public main is **behind**: everything since 2026-08-22 — throughput round 3, ADR-003 am. 7, R1, and
+today's four — lives on `feat/throughput-instrumentation`. Full narrative: `docs/BUILD_LOG.md`.
+
+## Standing traps (learned the expensive way; still live)
+
+- **Do not retry `camera.update_rate_hz` 5 → 2** (2026-08-19: 16× *worse* delivery at unchanged RTF).
+  Reasons preserved in `config/ndvi_camera.json`'s `update_rate_note`.
+- **Judge a lever by `red_frames / camera_info_frames`; judge a *map* by painting frames.** The
+  2026-08-21 take's "454 frames" read five times better than the 51-frame artifact it produced.
+- **Cells imaged is not the metric.** Three pre-mount-fix clips imaged *more* cells and *more* trees
+  and returned **zero** canopy-grade trees, with every positive cell 6.4-11.9 m off any tree.
+- **Run the host predictor before booking any flight** (`scripts/predict_bird_visibility.py`, ~1 s).
+  It reads PASS with medians 8/6/11 at 5.0 Hz and FAIL with 1/0/1 at 0.41 Hz. **Refuse the session on
+  medians 0/0/1** — that is how the 2026-08-21 take produced 0 bird-visible frames out of 454.
+- **One open question, unproven at n=3, no ADR until someone separates it:** trees sitting *under* a
+  flight lane read soil-grade (+0.000 / +0.614 / +0.622) while trees imaged from *between* lanes read
+  +0.85…+0.92. Parallax fill vs sample poverty are both consistent. It would matter for the NDVI
+  product, not just for the check.
 
 ## Next up, in order
 
-1. **Recording throughput — instrumented, 3× better, still the gap (2026-08-21).** Four `test-flight`s, one
-   variable at a time, same `test_2lane` mission, with `camera_info_frames` (692 / 699 / 696 / 698)
-   as the control that all four saw the same exposure window. The fuser counters built on 2026-08-20
-   (ADR-013 am. 5) flew for the first time and **named the starving stage on flight one**: the RGB
-   *image* band alone — `red_frames` 73 against 692 `camera_info` messages off the *same sensor
-   tick*, with `dropped_pair_count` **0**. Not a render problem, and not the stale-pair guard: for
-   the frames that never arrive, a payload-size-dependent transport loss. (Pairing turns out to lose
-   a further ~38 % of the frames that *do* arrive — ADR-013 am. 6a, found after these flights.)
+1. **The next avoidance flight — ONE take, four things live-gated.** This is the flight the project
+   has been building toward: the drone dodges a bird **it detected**, not one we injected. It is the
+   only flight on the board because it is the only artifact that can close what landed today —
+   R2's margin, R3's refusal, the GT-CPA gate, and the seam itself all become real on the same take.
+   Runbook: `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` (full boustrophedon, so its NDVI clip also
+   feeds item 2). It has never been flown; every command in it is offline-verified only.
 
-   | flight | config | red/ticks | fused | recorded | cells |
-   |---|---|---|---|---|---|
-   | baseline | as-was | 73 / 692 = **10.5 %** | 45 | 17 | 158 |
-   | lever A | bridge QoS best_effort | 126 / 699 = 18.0 % | 78 | 41 | 125 |
-   | lever B | preview publish gated | 113 / 696 = 16.2 % | 76 | 36 | 150 |
-   | **both (kept)** | A + B | **217 / 698 = 31.1 %** | **129** | **86** | **368 / 720** |
+   **Two preconditions, both host-side, neither optional:**
 
-   **Both levers KEPT — nothing reverted.** *A:* the ros_gz bridge publishes images RELIABLE while
-   every consumer subscribes BEST_EFFORT, so the reliable half was retransmission machinery for
-   ~900 KB samples nobody wanted retransmitted; it is **not settable in the bridge yaml** at the
-   pinned SHA (`bridge_config.cpp:28-36` — nine keys, no QoS, unknown keys silently ignored) but is
-   a per-topic ROS parameter (`factory.hpp:66-79`), now on the Shell-2 one-liner and verified bound
-   before it flew. *B:* `/fg/ndvi/preview` is human-only and **nothing subscribes to it**, yet every
-   fused frame paid a colormap plus two 921,600 B copies plus a no-reader publish on the executor
-   that should have been draining the RGB subscription; now guarded by `get_subscription_count()`.
-   Full record + rejected alternatives: **ADR-013 amendment 6**. Clips
-   `eval/results/clips/real_flight_20260821T03{2316,3001,3644,4116}Z`, gate records
-   `eval/results/testflight_gate_20260821T03{2657,3342,4029,4504}Z.json`.
+   *(a) The image must carry scipy.* `sim/docker/Dockerfile` now installs `python3-scipy` because
+   `scipy.ndimage` **is** the morphology am. 7 adopted. `scripts/sim_docker_build.sh` is multi-hour —
+   run it days ahead, not at session time — then `sim_docker_run.sh` to recreate the container (it
+   also carries `--shm-size=1g`). `fly_pipeline.sh up` refuses to open a single pane until
+   `import scipy.ndimage` works in-container, so a stale image costs 200 ms instead of 90 s into a
+   booked take. If the session *pulls* the GHCR image, that one needs rebuilding and pushing too.
+   The in-container transfer check (re-score the am. 7 clip on jammy's scipy 1.8.0, require
+   bit-identical boxes) is preflight 0c and **has not been run** — host 1.13.1 is the only version
+   verified.
 
-   **Honest reading:** recorded frames are up **5.1×** and cells imaged **2.3×** against the same
-   day's baseline; 368/720 also beats the previous all-time valid 2-lane best (291 off 48 frames,
-   2026-08-18). It is *not* solved, and the remaining loss is in **two** stages, not one: 69 % of RGB
-   frames still die in transport, and ~38 % of the survivors then never pair — `red_frames −
-   fused_count − dropped_pair_count` = 28 / 48 / 37 / 88 across the four flights, flat across both
-   levers because neither touched pairing. End to end that is 12.3 % of sensor ticks reaching the
-   clip, so **the next lever is not necessarily another transport lever** (ADR-013 am. 6a).
-   Two traps for whoever picks this up: (a) judge levers by
-   `red_frames / camera_info_frames`, **not** by `cells_imaged` — lever A's own flight imaged fewer
-   cells than baseline (125 vs 158) on 2.4× the frames, purely because its extra frames landed while
-   the vehicle was slow (climb, far-end turn), and coverage is bought by frames *spread along the
-   lanes* (survey-altitude frames off the takeoff point: 6 → 42); (b) the amendment-4 evidence floor
-   (12 frames / 40 cells) was deliberately **not** raised to match the new yield — one healthy run at
-   the new config is not enough, and it should rise after a second.
-   **First FULL-mission datapoint on the tuned config (2026-08-21 demo take, item 2).** The four
-   flights above were all the short `test_2lane` mission; the demo take flew the full boustrophedon
-   and its `meta.json` carries the first full-mission fuser telemetry. The two-stage picture from
-   amendment 6a holds at 5× the duration, and both stage fractions land where the short flights put
-   them:
+   *(b) The gate must not be able to print a false PASS.* QA's adversarial pass, 2026-08-24:
 
-   | stage | count | of previous stage | of sensor ticks |
+   | # | severity | the gate/law would… | proven |
    |---|---|---|---|
-   | `camera_info_frames` (sensor ticks) | 4257 | — | 100 % |
-   | `red_frames` (RGB images that survived transport) | 962 | **22.6 %** | 22.6 % |
-   | `fused_count` (paired with NIR) | 634 | 65.9 % | 14.9 % |
-   | frames recorded into the clip | 454 | 71.6 % | **10.7 %** |
+   | 1 | **critical** | accept a 0.8 s frozen clock = 5.6 m of bird motion (1.9× the 3.0 m bar) | true CPA 0.0000 m reported as **3.5000 m PASS** |
+   | 2 | major | read `n_stale_dropped` 0 for both "no bird seen" and "every detection expired" | a fully-dead avoidance flight certifies VALID with a vacuous pass |
+   | 3 | major | let R3's refusal command a setpoint the policy's own bird bar forbids | commanded **1.000 m** from the bird against a 3.00 m bar |
+   | 4 | major | minimise CPA over 5 Hz path *vertices*, not the path | true 2.6332 m BREACH reported as **3.0500 m PASS** |
+   | 5 | major | let explicit `--truth` bypass the one-track guard — the runbook's only documented invocation | a second applied log fabricates or hides a breach |
+   | 6 | minor | pass a detector that ran on 1 frame of 1256 (zero-check, not a rate floor) | three vacuous greens stack |
 
-   `dropped_pair_count` **0**, `nir_frames` 2970. The unpaired remainder — `red_frames −
-   fused_count − dropped_pair_count` = **328, i.e. 34.1 % of the RGB frames that did arrive** — sits
-   squarely inside amendment 6a's 33-41 % band, confirming on a full mission that pairing is a
-   second, independent loss stage that neither kept lever touched. End to end 10.7 % against the
-   short flights' 12.3 %.
-   **But the throughput number is not the coverage number, and this flight is where that stops being
-   theoretical:** of the 454 frames recorded, only **51 painted a cell**. 403 painted nothing (401 of
-   them parked at home before arm and after land) and only 42 were above 12 m. Judge a lever by
-   `red_frames / camera_info_frames`, judge a *map* by painting frames — and start reporting the
-   second, because "454 frames" reads five times better than the 51-frame artifact it produced.
+   **All six closed 2026-08-24**, host-side and offline, each pinned by a test proven red against the
+   pre-fix code, with both historical logs still ACKNOWLEDGED byte-identically. This was not new
+   scope; it was the no-band-aids rule applied to the gate that certifies the take. Re-reviews then
+   opened **three shorter rounds, all closed the same day**: the bird axis of the CPA join (a landed
+   pose is scored over its own in-effect window, not at tick instants), the HOLD's own clearance
+   printed as ungated CONTEXT *with a denominator*, R3.8 reading the executor's `gate_reject` events
+   as the backstop's live evidence, am. 16's measured scoping decision for the
+   `eval/scenarios/*/flight_log.json` breaches, the **two-half acknowledgement** (a
+   `SAFETY_FINDING.md` marker no longer buys a green on its own — the log stem must also be pinned in
+   `ACKNOWLEDGED_BREACH_STEMS`, a reviewed diff on the gate), and the **run-block ratchet** (deleting
+   `run` from a schema-2 log used to demote it to the legacy detection-referenced CPA path and turn a
+   ground-truth INVALID into VALID; a log with no run block is now INVALID unless it is pinned
+   pre-seam). The ADR amendments for all of it are **written**: `docs/DECISIONS.md` ADR-013
+   amendments 13-17, all dated 2026-08-24.
 
-   **Lever already disproven — do not retry:** `camera.update_rate_hz` 5 → 2 (2026-08-19) made
-   delivery 16× worse (3 frames / 1 of 720 cells against 48 / 291), with RTF unchanged (0.585 vs
-   0.561) and the mission flown identically; `eval/results/testflight_gate_20260819T021136Z.json` vs
-   `..._20260818T222031Z.json`, reasons preserved in `config/ndvi_camera.json`'s `update_rate_note`.
+   **Pre-registered, before flying:** R2/R3 do **not** fix S1 (escape geometry) and R4 is deferred, so
+   this flight may honestly **FAIL its own GT-CPA gate**. That is a measurement that ranks R4 next,
+   not a wasted take. **What to do if it breaches:** write the `<log-stem>.SAFETY_FINDING.md` marker
+   (the context half — the finding, beside the evidence) and **do NOT add the pin**. Acknowledgement
+   takes *both* halves — the marker *and* the log stem in `ACKNOWLEDGED_BREACH_STEMS`, which is a
+   reviewed diff on the safety gate — precisely so that the runbook's own remedy for a breach cannot
+   also be the one-file way to turn a new bird strike green. So the take **stands at INVALID /
+   exit 1**: that is the correct record for a flight that breached and can be re-flown after R4. The
+   two pinned stems are *historical* logs that cannot be re-flown, and that list is meant to stay two
+   long (`docs/runbooks/AVOIDANCE_REAL_DETECTION.md` §6a). **The one outcome that makes it a failed session
+   is an unscoreable artifact:** no truth track, a detector fed zero frames, or a clock that never
+   advanced. Three bringup preconditions the gate now enforces and the operator must respect —
+   `ndvi_node` publishing `/fg/ndvi/camera_info` *before* the `--detect` shell starts, at least one
+   landed `set_pose` for **every** bird in the config, and evidence-first teardown (Ctrl-C the
+   avoidance shell and wait for `wrote flight log →` **before** `fly_pipeline.sh down`).
 
-   **Round 2 (2026-08-22): attribution complete — see ADR-013 amendment 7.** Six counters settled
-   what flights would have: pairing is the NIR band's transport loss re-expressed (slop lever
-   disproven twice, `dropped_pair_count` structurally zero), NIR render and the recorder's own
-   logic/disk both exonerated — every remaining loss is transport. F5's baseline came back VOID
-   twice on measured **environment drift** (an unrelated 12-container stack now shares the Docker
-   VM; F4's 31.1 % remains the only clean anchor, n=1). **Closed 2026-08-22, ADR-013 am. 8:**
-   F5c re-baselined clean (red/ci 25.6 %, drift confirmed end-to-end; tree lift +0.9888, best on
-   record) and **L1 KEPT** — the NDVI→recorder hop closed 62.5 %→0 % with the attribution identity
-   at zero unaccounted; painting cadence **0.2823 → 0.4767 Hz (1.69×)**.
+   **Watch list for the take, from the offline rehearsal:** re-latch churn (monocular jitter can
+   exceed the executor's 3.0 m re-latch threshold; a replay produced 2 relatches in 5 maneuvers), and
+   the phantom-dodge rate against its 8/1256 prediction. Decide on the measurement, not now.
 
-   **ROUND 3 CLOSES THE THREAD (2026-08-22, ADR-013 am. 9).** Root cause source-verified in Fast
-   DDS 2.6.11: samples fragment at 65,384 B even over shared memory and the default 512 KiB
-   segment holds 8 fragment slots against the 10–19 our frames need; overflow discards silently.
-   Fix = `config/dds/fg_fastdds.xml` (SHM segment → 8 MiB) + `--shm-size=1g`, injected in-pane
-   with runbook parity intact. **F9: 100.00 % delivery on BOTH bands, zero unpaired reds,
-   end-to-end 96.46 %, painting cadence 5.0 Hz** — the full sensor tick; transport is no longer
-   the bottleneck. L1 re-check closed (KEEP, dead heat, old cost vanished). **Predictor: PASS,
-   medians 8/6/11 → the item-3 re-fly is BOOKABLE.** Caveat: 5.0 Hz on 3-min `test_2lane` is not
-   yet proven at boustrophedon length (run-age decay, am. 7); `meta["dds"]` makes it checkable.
-2. **The full-coverage demo take — FLOWN 2026-08-21.** Clip
-   `eval/results/clips/real_flight_20260821T045848Z`, the first full boustrophedon on the tuned
-   (both-levers) config, and the first flight anyone flew through the one-command launcher rather
-   than seven hand-driven shells. **454 frames, 410/720 cells imaged.** Runbook:
-   `docs/runbooks/FULL_PIPELINE_DEMO.md`; the launcher stays a bringup wrapper — the flight itself
-   was human-flown at the MAVProxy prompt, as demo flights always are (ADR-013).
+2. **Full boustrophedon + the short-vs-long evidence study, on the FINAL config.** ADR-013 am. 10
+   answered both questions as byproducts of one flight (n=1 per arm): run-age decay was segment
+   exhaustion wearing a clock's clothes and is retired, and the long mission is the better evidence
+   artifact too — same per-minute frame yield, **1.4× better on cells/min**, because it spreads frames
+   over new ground. What is missing is the same comparison **on the configuration that ships** — R2's
+   margin 1.0, the real detector on the seam, ADR-015 geometry — so the NDVI number quoted in the demo
+   and the dashboard comes off the flown config rather than an earlier one. **Cheap by construction:**
+   item 1's take is already a full boustrophedon, so the long arm rides it for free; only the short
+   `test_2lane` arm and the write-up are extra. If item 1's take is clean, this is a one-hour offline
+   comparison, not a session.
 
-   **Against the runbook's own proof standard, this clip is HALF a pass — and the half it misses was
-   never exercised, not failed.**
+3. **Criterion 2 — the independent RGB pixel study (deferred 2026-08-24; see cut log).** ~1 h,
+   offline, and the clip already exists. Required because `baseline_rgb.py`'s "bright + achromatic"
+   birdness is **inverted on this world**: its 1.000 FNR measures the wrong signal and **must not be
+   quoted as RGB's ceiling** in any interview or README line. Same visit closes the −0.61 threshold's
+   PROVISIONAL flag, which needs false-positive characterisation (7 FP at n=20; on the adopted clip
+   the area filter rejected nothing, so those FPs are real blobs, not speck noise) — that is
+   perception-ml-engineer's call, not a build's.
 
-   | half of the standard | verdict | evidence |
-   |---|---|---|
-   | 18 trees at their 18 known positions | **PASS — best canopy evidence to date** | 12/18 imaged, **8 canopy-grade**, median lift **+0.8692** |
-   | birds visible / avoidance exercised | **NOT EXERCISED** *(demo take, 2026-08-21)* → **BOTH EXERCISED** since | birds visible: 2026-08-22 flagship take (10 GT frames, 3/3 birds, ADR-013 am. 10); avoidance: 2026-08-23 delegated demo, first FULL ledger closure 720/0, 19/19 vetted (am. 11). Still open: avoidance driven by a REAL detection (the ADR-009 rule-2 seam, Week 6 — needs a combined runbook) |
+4. **Doc + evidence long-tail.** The three items that were at the top of this list are **done**
+   (2026-08-24): the ADR amendments for everything that landed that day are written (ADR-013 am.
+   13-17 plus their ADR-003/ADR-009 companions, so `DECISIONS.md` no longer stops at 2026-08-23);
+   the ADR-003 header line no longer contradicts its own amendment 7; and
+   `eval/scenarios/*/flight_log.json` have been regenerated on the shipped control law
+   (`lateral_tree_margin_m` 1.0 — check the `params` block in any `maneuver` event), so they may be
+   quoted as current behaviour again. What remains: the documentation-review fix-list (78 items,
+   ~70 remaining — list + exact edits preserved).
 
-   *Trees.* Method (reconstructed and pinned by reproducing all three published 2026-08-18 figures
-   exactly — flight 6 at 5/8, flight 7 at 5/6, and the "+0.87 typical lift" that `README.md` and
-   `BUILD_LOG.md` both quote, which recomputes to **+0.869196** pooled): every tree centre sits on a
-   grid corner, so its canopy straddles the **four** cells sharing that corner; `imaged` = ≥1 of the
-   four has a mean; `canopy-grade` = best-of-four > 0.0; `lift` = best-of-four − soil modal
-   (−0.437687, on 311 of 410 imaged cells). This clip returns median lift **+0.8692 against the
-   +0.8692 baseline** — dead on to four decimals — and **8 canopy-grade trees against a previous
-   best of 6**. Precision is the strongest single result: **all 9 positive-NDVI cells in the whole
-   410-cell map sit at exactly 1.7678 m from a tree centre** (= a 2.5 m cell's centre-to-corner
-   distance), zero canopy signal anywhere a tree is not, and a 6 m sweep around each soil-grade tree
-   finds no displaced canopy cell — so those are genuine non-detections, not ADR-007-am.5-class
-   mislocation. **Read "best to date" precisely:** three earlier clips imaged *more* cells (697, 586,
-   450) and *more* trees (17, 16, 15) — and returned **zero** canopy-grade trees, with 100 % of their
-   positive cells sitting **6.4-11.9 m** off the nearest tree. That is the pre-mount-fix signature;
-   every post-fix clip puts 100 % of its positive cells at 1.7678 m. Cells imaged is not the metric.
-   *Birds.* 0/0/0 in-frame across all 454 frames and across the 51 that painted a cell — see item 3.
-   Not a regression. **Both causes, separated on 2026-08-21 by `scripts/predict_bird_visibility.py`:**
-   bird_0 was STRUCTURAL (5.0 m off the nearest lane, 1.81 m outside the frame edge at its best
-   moment, unreachable at any cadence) — **fixed by ADR-015**, which moved its patrol line onto the
-   x=15 lane; bird_1 and bird_2 were TIMING (they do cross the lanes, median 3 and 11 frames at the
-   5 Hz sensor tick) and are **still gated on item 1's throughput** — at this take's actual 0.407 Hz
-   even the new geometry predicts medians 0/0/1. The earlier reading of this line ("geometry, not
-   throughput") was half right and is corrected here.
-
-   *The tree half is now a gate, not a look.* The method above was reconstructed by hand; it is now
-   `scripts/check_tree_positions.py` (+ 12 tests reproducing all five published clip figures exactly
-   and rejecting the three horizon-mount clips). Exit 1 on the georef-displacement signature —
-   a positive-NDVI cell farther than 2 m from every tree centre. See the ADR-007 amendment.
-
-   **Open question this raises, worth one line and no more:** all three trees on row 0 sit **on** the
-   x=15 flight lane and returned +0.000 / +0.614 / +0.622, while every tree imaged from *between*
-   lanes returned +0.85…+0.92. Hypothesis (n=3, **unproven**): near-nadir a canopy projects near its
-   true 5.31 m² footprint and splits four ways across the corner it straddles (~21 % fill per 6.25 m²
-   cell → diluted mean), while off-nadir parallax smears a 3.8 m-tall object over more ground-plane
-   area and fills a cell. It predicts that lane spacing which puts orchard rows *under* the lanes
-   systematically under-reads its own trees — which would matter for the NDVI product, not just for
-   this check. **Not established:** two off-lane trees (row2_0 at 10.7 m, row2_5 at 5.4 m) also read
-   soil-grade, both off single-sample cells, so sample poverty is an unseparated competing
-   explanation. No ADR amendment until someone separates them.
-
-   **Also honest about coverage: this is a 51-effective-frame map.** Only **51 of 454** frames painted
-   a single cell (frames 275-325, contiguous); 403 painted nothing and 401 of those sat at home
-   before arm and after land, with just 42 frames above 12 m. All 6 unimaged trees have **24/24** of
-   their quad cells inside the 310 unimaged — the misses are pure coverage, not weak signal.
-3. **ADR-003 real-render re-run (criterion 3) — RUN 2026-08-21, returned EVIDENCE INSUFFICIENT. Open,
-   and its blocker has CHANGED.** Full record: **ADR-003 amendment 1**. The re-run executed cleanly
-   end to end on the item-2 clip and produced **nothing to score**: `annotate_real_clip.py` labelled
-   454/454 frames with 0 refusals (ADR-012 amendment 1 working as intended — 280 pre-driver-start
-   frames labelled at the spawn pose), and `label_from_sim.py` then returned **0 visible bird-boxes
-   over 454 frames**. Precision / recall / FNR / per-bird-track FNR are **undefined** on this clip;
-   the synthetic 0.445 bar has nothing to be compared against. Criterion 2's comparison arm is
-   blocked on the same missing clip.
-
-   **The blocker was geometry, and the geometry half is now CLOSED (ADR-015).** A nadir camera at
-   15 m over birds at 6/8/11 m AGL had a footprint *at bird altitude* of just 4.9×3.7 to 11.1×8.3 m
-   against a **15 m lane pitch**: the ground plane tiles, the bird-altitude plane does not. bird_0
-   patrolled x=20, a fixed 5.0 m off lane x=15 — outside frame on every pass. Closest approach all
-   flight: **14.15 m** slant range, ≈341 px outside the image edge. Cheapest unblocks, in order:
-   (a) **move the birds** in `config/birds/farm_world_birds.json` — **DONE 2026-08-21, ADR-015**, and
-   *not* by lowering them: the recommendation this line used to carry ("2-3 m AGL") was measured to
-   put every bird 12-13 m under cruise, i.e. twice outside the ±6 m avoidance threat cylinder, which
-   trades priority #1 for #2. bird_0's patrol line moved onto the x=15 lane instead (cross-track
-   offset 0, so altitude is free) and took the threat role at 11 m; bird_1 took its 8 m. Predictor
-   now says **PASS**, medians **8/6/11**, no bird structural, threat cylinder still occupied at an
-   unchanged **4.00 m** closest approach. (b) **an offline pre-flight predictor** — **BUILT
-   2026-08-21, see below**; (c) recalibrate both detector thresholds, which the real render moved —
-   **NDVI arm done (provisional), RGB arm still blocked**.
-
-   **What is still open on this item is THROUGHPUT, not geometry.** At the demo take's own 0.407 Hz
-   the new geometry predicts the same medians **0/0/1** as the old; ADR-015 raised the ceiling (total
-   median 14 → 25 frames at the 5 Hz tick) and removed the one bird no cadence could ever reach, but
-   item 1's recording-throughput work is what converts opportunity into a scoreable clip. Run
-   `python3 scripts/predict_bird_visibility.py` before booking the session — it is 1 s on the host.
-
-   **Why the next Docker session is worth booking: ONE re-fly clears four blockers at once** — all
-   four are waiting on the same artifact, a clip with a bird actually in frame:
-   1. **criterion 3** — the NDVI-direct per-bird-track FNR on the real render (this item);
-   2. **criterion 2** — the NDVI-vs-RGB comparison arm, blocked on the same missing clip;
-   3. **item 2's second half** — the runbook proof standard's "birds visible / avoidance exercised",
-      NOT EXERCISED on the demo take;
-   4. **both detector thresholds** — `baseline_ndvi.py`'s −0.61 is PROVISIONAL until it is calibrated
-      against precision/recall rather than pixel means, and `baseline_rgb.py`'s inverted birdness is
-      deliberately untouched until there is a bird to calibrate its absolute scale against.
-
-   **The precondition is not optional, and it is the whole lesson of 2026-08-21:** geometry alone does
-   not deliver that clip. Land item 1's throughput work first, then re-run the predictor at the
-   cadence you actually achieve — if it still reports medians 0/0/1, the session will produce a
-   fourth unscoreable clip and should not be booked.
-   **The premise survives:** class ordering on the real render is canopy +0.531 > trunk −0.026 >
-   soil −0.429 > bird −0.789, a bird-vs-soil gap of **0.360** against ~0.23 synthetic. What broke is
-   a threshold value, not the hypothesis.
-
-   **(b) DONE — `scripts/predict_bird_visibility.py` (ADR-003 amendment 2).** Host-only, 0.8 s, exit 1
-   on a shortfall. Validated by reproduction: replaying the demo take's own poses returns its measured
-   0-of-454, 14.15 m and 341.2 px, and agrees with `label_from_sim.py` on all **1,362 frame×bird
-   decisions**; predicting the same mission from **pure config** at that take's actual 0.407 Hz frame
-   rate gives medians **0/0/1**, i.e. under one expected bird-visible frame in the whole flight.
-   **It also splits the blocker in two, which changes what to do next:** sweeping all 55
-   driver-start offsets at the 5 Hz sensor tick, bird_0 is **0/0/0 at 0 of 55 offsets** — STRUCTURAL,
-   1.81 m outside the frame edge at its best moment, and no throughput or luck can ever show it —
-   while **bird_1 (median 3) and bird_2 (median 11) do cross the lanes** and are limited by *cadence*,
-   not geometry. So (a) is required for bird_0 and item 1's throughput work is what buys the other
-   two. Amendment 1's "more frames cannot fix this" holds for bird_0 only; its 4.31 m half-width was
-   the along-track axis — cross-track is **3.23 m** (ADR-007 mount extrinsic), so the miss is larger
-   than stated, not smaller.
-
-   **(c) NDVI half DONE — threshold `-0.61`, PROVISIONAL (ADR-003 amendment 3).** `baseline_ndvi.py`
-   now resolves its threshold per render from the clip's `meta.json`: synthetic keeps ADR-003's
-   deciding `0.05`, real render gets the gate2 bird/soil midpoint (bird −0.7888, soil −0.4285 →
-   −0.6087), recomputed from `gate2_summary.json` by test so the constant cannot drift from its
-   evidence. Measured on the demo take: at `0.05` the mask covers **≥99.9 % of pixels on 438 of 454
-   frames** (0 detections *by saturation*); at `-0.61` the mask is **empty on all 454**, so the same 0
-   now means "nothing was there". It stays PROVISIONAL — calibrated on pixel means, never on
-   precision/recall — until a bird-visible clip exists. `baseline_rgb.py` is untouched by design.
-
-   **Three harness defects found and fixed on the way** (pinned by `tests/fieldguard_planning/
-   test_score_evidence.py`), the first of which is the reason this item reads "insufficient" rather
-   than "confirmed": `score.py` used to print `-> ADOPT (a) NDVI-direct` on an **empty** ground truth
-   (TP=FP=FN=0 makes every rate 0.000, and the decision rule read four zeros as a clean sweep) —
-   reproduced live against the pre-fix file on this clip's own artifacts, `ADOPT` before,
-   `EVIDENCE INSUFFICIENT` after. Also: `label_from_sim.py` never derived `range_m` on real clips, so
-   per-bird-track FNR silently degraded from "detected before closest approach" to "detected on first
-   sight"; and `baseline_rgb.py` KeyError-ed on any clip with partial RGB (243 of 454 here).
-4. **Doc long-tail**: apply the remaining documentation-review fix-list (78 items, ~70 remaining —
-   list + exact edits preserved; criticals already applied).
-5. **Week 7**: dashboard (replay + avoidance log + NDVI overlay on the shared cell grid), demo
-   video, GTM pass.
+5. **Week 7 — the exit being guarded.** Dashboard (replay + avoidance log + NDVI overlay on the
+   shared cell grid), demo video, GTM pass. Last and light: it is the proof, not the point.
 
 ## Explicit stretch goals (documented, NOT v1 blockers)
 - Full coverage-debt reconciliation (v1 ships "avoid, return to next waypoint" + honest debt,
@@ -274,13 +197,30 @@ Public main: current as of PR #26 (2026-08-21). Full narrative of how we got her
 ## Cut / deferred log
 _(product-lead records cuts here with date + reason — interview material.)_
 
+- **2026-08-24 — safety scope bounded to R2/R3 for v1; R4 and R5 stay RECORDED-OPEN.** ADR-013
+  am. 12 ranked five fixes. R1 shipped, R2 + R3 land and fly on the next avoidance flight. **R4**
+  (reversal-preferring candidate order) needs closing geometry v1 does not have — 18 of 19 replayed
+  ticks still take the straight reversal — and **R5** (ArduPilot `FENCE_*` backstop + lanes moved
+  inboard) bolts a second boundary authority beside a working one. Both are the classic "while we're
+  in there" and are refused on sight until R2/R3 have flown. Recorded-open is not swept under the
+  rug: S1's 0.0518 m CPA stands, and a flight that fails its own GT-CPA gate is the measurement that
+  would promote R4.
+- **2026-08-24 — criterion 2's RGB pixel study deferred behind the avoidance flight.** Perception
+  wanted it this session; product-lead call. The flight live-gates four landed things and criterion 2
+  gates none of them; the study is offline, ~1 h, and its clip already exists, so deferring costs
+  ordering and nothing else. The tradeoff is owed a `docs/DECISIONS.md` entry — that log is free
+  interview material.
+- **2026-08-24 — no detection tracker in v1 (`track_id` stays `None`), and no second staleness
+  expiry.** The policy's threat test is per-frame and the executor latches on geometry, so an ID that
+  exists only to look sophisticated would be untested state; ageing detections out is
+  `max_detection_age_s`'s job and only its job. One source of truth per concept.
 - **2026-08-18 — code-identifier rename deferred (ADR-011):** `fieldguard_planning`, `fg_`/`/fg/*`,
   `farmguard_field.sdf`, `fieldguard-sim` image stay under the old name; the `/fg/*` contract is
-  embedded in ADR-007 and partially live-verified, and renaming verified interfaces for cosmetics
-  re-opens confirmed state for zero functional gain.
-- **2026-08-05 — no YOLOv8 bolt-on for resume keywords.** The metric-driven story is stronger:
-  a classical blob baseline cleared the safety bar; any learned model must beat it on the same
-  harness (the 0.445 synthetic-clip precision bar) before it earns a place.
+  embedded in ADR-007 and live-verified, and renaming verified interfaces for cosmetics re-opens
+  confirmed state for zero functional gain.
+- **2026-08-05 — no YOLOv8 bolt-on for resume keywords.** The metric-driven story is stronger: a
+  classical blob baseline cleared the safety bar and has since been **ADOPTED on the real render**
+  (ADR-003 am. 7). Any learned model must beat it on the same harness before it earns a place.
 - **2026-08-05 — no retrofitted startup narrative.** Sim-only, solo, portfolio-honest framing is
   the asset; inflating it converts the honesty in every ADR into an interview red flag.
 - **2026-08-05 — colcon/ament packaging of the planning package.** Zero demo value; PYTHONPATH

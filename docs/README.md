@@ -10,7 +10,8 @@ Three kinds of documents live here. Know which kind you're holding:
 
 **Runbooks** (`runbooks/` — operational, executed in Docker sessions; named by function):
 - [`runbooks/SIM_BRINGUP.md`](runbooks/SIM_BRINGUP.md) — build the image, bring up Gazebo → micro-ROS agent → SITL (in that order)
-- [`runbooks/AVOIDANCE_DEMO.md`](runbooks/AVOIDANCE_DEMO.md) — reproduce the live reactive-avoidance demo
+- [`runbooks/AVOIDANCE_DEMO.md`](runbooks/AVOIDANCE_DEMO.md) — the scripted-bird (`--demo`) regression arm; its bringup half is superseded (see its banner)
+- [`runbooks/AVOIDANCE_REAL_DETECTION.md`](runbooks/AVOIDANCE_REAL_DETECTION.md) — **the Week-6 take**: `fly_pipeline.sh up` + `avoidance_node --detect` (ADR-009 seam) in one flight, with the predictor precheck, the human-flown rule, and the post-flight gate sequence (GT-CPA + R2/R3, tree gate)
 - [`runbooks/NDVI_VALIDATION.md`](runbooks/NDVI_VALIDATION.md) — the ADR-007 gate record: all four gates ✅ (0: 2026-08-05; 1-3: 2026-08-18) + session logs
 - [`runbooks/FULL_PIPELINE_DEMO.md`](runbooks/FULL_PIPELINE_DEMO.md) — THE showpiece: survey + birds + live NDVI + recording + heatmap, shell by shell
 - [`runbooks/SIM_CI.md`](runbooks/SIM_CI.md) — the headless sim-CI chain: image build, dispatch, cut-list
