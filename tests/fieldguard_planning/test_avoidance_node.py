@@ -1,7 +1,14 @@
-"""Tests for the import-safe helpers in avoidance_node.py (the rclpy node itself is verified live).
+"""Tests for the import-safe helpers in avoidance_node.py (only the rclpy wiring is verified live).
 
-The detection sources (demo stand-ins for the NDVI detector) and `_nearest_upcoming_wp` are
-pure/stdlib and must be right: they drive what the loop reacts to and the resume bookkeeping.
+The scripted detection sources (the ADR-013 am. 2 regression arm, and the A/B against the real
+detector) and `_nearest_upcoming_wp` are pure/stdlib and must be right: they drive what the loop
+reacts to and the resume bookkeeping.
+
+Two sibling files cover the rest of this node, split by dependency tier:
+  * `test_avoidance_node_seam.py` -- `AvoidanceLoop` (clock domain, staleness gate, tick axis), the
+    `run` block, the CLI. Stdlib-only, like this file.
+  * `test_detection_seam.py`      -- the real detector on the seam and the ADR-009 apparent-size
+    ray. numpy + scipy.
 """
 import sys
 import unittest

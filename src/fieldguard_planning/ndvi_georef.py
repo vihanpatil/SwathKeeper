@@ -260,6 +260,49 @@ def project_world_point(point_enu: Vec3, drone_position_enu: Vec3, orientation_q
     return (intr.cx + x_n * intr.fx, intr.cy + y_n * intr.fy, d_cam[2])
 
 
+def range_from_apparent_size(r_px: float, fx: float, physical_radius_m: float) -> Optional[float]:
+    """Pinhole DEPTH (camera +Z) implied by an object's apparent radius in pixels -- the exact
+    inverse of the `r_px = fx * physical_radius_m / depth` relation `project_world_point` documents,
+    and ADR-009 rule 2's ONLY sanctioned way to range a flying obstacle.
+
+    Returns None for a non-positive apparent radius / focal length / physical radius: a zero-width
+    blob implies infinite range, and inventing one silently is how a detector reports a bird on the
+    horizon instead of admitting it cannot measure this one. The caller must handle None.
+
+    The `physical_radius_m` is a PRIOR (the detector cannot measure it), so the depth inherits its
+    error linearly: under-estimating the radius under-estimates the depth, placing the bird NEARER
+    than it is along the ray -- the conservative direction, and the reason
+    `ndvi_detect.BIRD_RADIUS_PRIOR_M` sits deliberately below the world's true bird radius."""
+    if r_px <= 0.0 or fx <= 0.0 or physical_radius_m <= 0.0:
+        return None
+    return fx * physical_radius_m / r_px
+
+
+def pixel_at_depth_to_enu(u_px: float, v_px: float, depth_m: float, intr: CameraIntrinsics,
+                          drone_position_enu: Vec3, orientation_q: Quat,
+                          mount_offset_body_m: Vec3 = MOUNT_OFFSET_BODY_M) -> Vec3:
+    """Un-project a pixel to a world-ENU point at a GIVEN pinhole depth -- the sibling of
+    `intersect_ground_enu`, and the only correct un-projection for a FLYING obstacle.
+
+    Why it exists (ADR-009 rule 2, the fail-dangerous case this module must make impossible):
+    `pixel_to_ground_enu` answers "where does this ray meet the ground", which for a bird 4 m below
+    a 15 m cruise puts it at z=0, i.e. 15 m below ownship -- OUTSIDE the policy's +/-6 m
+    `vertical_threat_m` cylinder. Ground-plane projection therefore SUPPRESSES a real threat, which
+    is the one failure mode the whole avoidance loop exists to prevent. Pinned as an executable
+    assertion in tests/fieldguard_planning/test_detection_seam.py.
+
+    `depth_m` is pinhole depth along camera +Z (what `project_world_point` returns as its third
+    value), NOT slant range: `pixel_to_camera_ray` returns a ray whose z component is exactly 1, so
+    scaling the rotated ray by `depth_m` reproduces the projected point exactly. Round-tripping
+    `project_world_point` -> here recovers the original world point to float precision (tested)."""
+    ray_cam = pixel_to_camera_ray(u_px, v_px, intr)      # z == 1 by construction
+    ray_world = rotate_body_to_world(camera_ray_to_body(ray_cam), orientation_q)
+    cam = camera_world_position(drone_position_enu, orientation_q, mount_offset_body_m)
+    return (cam[0] + depth_m * ray_world[0],
+            cam[1] + depth_m * ray_world[1],
+            cam[2] + depth_m * ray_world[2])
+
+
 def world_enu_to_pixel(point_enu: Vec3, drone_position_enu: Vec3, orientation_q: Quat,
                        intr: CameraIntrinsics,
                        mount_offset_body_m: Vec3 = MOUNT_OFFSET_BODY_M) -> Optional[Tuple[float, float]]:
