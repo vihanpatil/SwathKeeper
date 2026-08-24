@@ -14,9 +14,12 @@
 #           actions/setup-python@v5 python-version "3.12" on ubuntu-latest.
 #
 # Consumers: sim/spike/gen_spike_clip.py (numpy), eval/spike_common.py, eval/label_from_sim.py,
-# eval/baseline_ndvi.py, eval/baseline_rgb.py, eval/blob.py (scipy.ndimage), eval/score.py (stdlib
-# only, no direct third-party import, but shares the same venv for `eval/run_spike.sh`),
-# tests/fieldguard_planning/test_ndvi_fusion.py + test_ndvi_georef.py (numpy only, no scipy).
+# eval/baseline_ndvi.py, eval/baseline_rgb.py, src/fieldguard_planning/ndvi_detect.py
+# (scipy.ndimage -- the ADOPTED ADR-003 detector; it moved out of the deleted eval/blob.py so the
+# flight path and this harness share one implementation, and the sim image installs python3-scipy
+# for the same reason), eval/score.py (stdlib only, no direct third-party import, but shares the
+# same venv for `eval/run_spike.sh`), tests/fieldguard_planning/test_ndvi_fusion.py +
+# test_ndvi_georef.py (numpy only, no scipy) + test_ndvi_detect.py (numpy AND scipy).
 numpy==2.5.1
 scipy==1.18.0
 # Docs-site generator (scripts/build_docs_site.py, ADR-014) -- the second scoped exception, same

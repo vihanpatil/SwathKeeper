@@ -6,8 +6,14 @@ non-vegetation (NDVI ~<= 0), distinctly below both the canopy (~0.78) AND bare s
 is what lets a single threshold survive the bird-over-soil hard case (bird_1): the soil reads 0.15
 but the bird core reads negative, so `ndvi < thresh` isolates the bird even sitting on bare ground.
 
-Pipeline (blob.py): mask = ndvi < thresh -> open/close -> connected components -> area filter.
-Emits detections.json: {frame_id, boxes:[[x0,y0,x1,y1], ...]}.
+Pipeline (`fieldguard_planning.ndvi_detect.detect_ndvi`): mask = ndvi < thresh -> open/close ->
+connected components -> area filter. Emits detections.json: {frame_id, boxes:[[x0,y0,x1,y1], ...]}.
+
+THE DETECTOR ITSELF DOES NOT LIVE HERE. It lives in `src/fieldguard_planning/ndvi_detect.py` so the
+live avoidance node and this offline harness run the SAME code (ADR-003 amendment 7 adopted what
+this file measured; a second implementation in the flight path would be a different detector
+wearing the same verdict). What stays here is the part that is genuinely an eval concern: turning a
+recorded CLIP into detections, and resolving which render's threshold that clip needs.
 
 THE THRESHOLD IS PER-RENDER, and that is not a convenience -- it is the ADR-003 amendment-1
 finding. `ndvi < thresh` only isolates a bird if `thresh` sits BELOW the background it is seen
@@ -27,27 +33,20 @@ from pathlib import Path
 
 import numpy as np
 
-import spike_common as sc
-from blob import detect_blobs
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-# Synthetic spike clips (sim/spike/gen_spike_clip.py). Unchanged, and deliberately so: this is the
-# number ADR-003 was decided on (precision 0.445 / recall 0.981 / per-bird-track FNR 0.000, seed 42)
-# and `scripts/check_spike_regression.py` re-checks those figures. It sits below the synthetic
-# soil (0.15) and above the synthetic bird core (~-0.08).
-SYNTHETIC_THRESH = 0.05
-
-# Real Gazebo render (ADR-007 thermal-as-NIR). Midpoint of the two classes the mask must separate,
-# from the committed real-render evidence in `eval/results/gate2_summary.json` (996 frames):
-#   bird mean NDVI -0.7888  |  soil mean NDVI -0.4285  ->  midpoint -0.6087
-# PROVISIONAL. It is derived from per-class PIXEL statistics, not from a detection score, because
-# no clip yet exists with a bird in frame to tune against (that is ADR-003 criterion 3's open
-# blocker -- see scripts/predict_bird_visibility.py). It replaces a value that was not merely
-# mistuned but saturating, so it cannot be worse; it is not yet VERIFIED, and must be re-checked
-# against precision/recall on the first bird-visible real clip.
-# Pinned to the evidence file by tests/fieldguard_planning/test_baseline_ndvi_threshold.py, which
-# recomputes this midpoint from gate2_summary.json -- so the constant cannot drift from its source.
-REAL_RENDER_THRESH = -0.61
-GATE2_SUMMARY = Path(__file__).resolve().parents[1] / "eval" / "results" / "gate2_summary.json"
+import spike_common as sc  # noqa: E402
+# The detector and its two per-render thresholds, from their single home. Re-exported into this
+# module's namespace because they are part of its surface (--thresh help text, resolve_threshold,
+# the regression tests) -- re-exported, not re-declared: a second copy of `-0.61` is exactly the
+# drift this move exists to make impossible.
+from fieldguard_planning.ndvi_detect import (  # noqa: E402
+    DEFAULT_MAX_AREA,
+    DEFAULT_MIN_AREA,
+    REAL_RENDER_THRESH,
+    SYNTHETIC_THRESH,
+    detect_ndvi,
+)
 
 
 def resolve_threshold(clip_dir: Path, explicit: float | None):
@@ -76,8 +75,7 @@ def run(clip_dir: Path, thresh: float, min_area: int, max_area: int):
     frames = []
     for d in poses:
         ndvi = np.load(Path(clip_dir) / d["ndvi_path"])
-        mask = ndvi < thresh
-        boxes = detect_blobs(mask, min_area, max_area)
+        boxes = detect_ndvi(ndvi, thresh, min_area, max_area)
         frames.append({"frame_id": d["frame_id"], "boxes": boxes})
     return frames
 
@@ -91,16 +89,18 @@ def main():
                     help=f"NDVI below this = bird candidate. Default is resolved from the clip's "
                          f"meta.json: {SYNTHETIC_THRESH} synthetic, {REAL_RENDER_THRESH} real "
                          f"render (gate2 bird/soil midpoint, PROVISIONAL)")
-    ap.add_argument("--min-area", type=int, default=6)
-    ap.add_argument("--max-area", type=int, default=5000)
+    ap.add_argument("--min-area", type=int, default=DEFAULT_MIN_AREA)
+    ap.add_argument("--max-area", type=int, default=DEFAULT_MAX_AREA)
     args = ap.parse_args()
 
     thresh, source = resolve_threshold(args.clip, args.thresh)
     if "PROVISIONAL" in source:
         print(f"[baseline_ndvi] NOTE: threshold {thresh} is PROVISIONAL -- derived from per-class "
-              f"pixel means (eval/results/gate2_summary.json), never yet checked against "
-              f"precision/recall, because no real clip has a bird in frame yet "
-              f"(scripts/predict_bird_visibility.py says why).", file=sys.stderr)
+              f"pixel means (eval/results/gate2_summary.json), not from a detection score. ADR-003 "
+              f"amendment 7 ADOPTED the detector at this value, which says it WORKS (n=20 visible "
+              f"bird-frames, 7 FP / 3 FN, 8 of 20 labels ambiguous) -- not that it is where the "
+              f"threshold belongs. Lifting PROVISIONAL needs the false-positive characterisation, "
+              f"not another passing run.", file=sys.stderr)
 
     frames = run(args.clip, thresh, args.min_area, args.max_area)
     n_det = sum(len(f["boxes"]) for f in frames)

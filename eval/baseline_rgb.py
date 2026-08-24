@@ -25,12 +25,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 
-import spike_common as sc
-from blob import detect_blobs
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+import spike_common as sc  # noqa: E402
+# The SAME blob machinery arm (a) runs, from its single home -- that is what makes the ADR-003
+# comparison apples-to-apples: (a) and (b) differ only in the birdness signal above.
+from fieldguard_planning.ndvi_detect import detect_blobs  # noqa: E402
 
 
 def run(clip_dir: Path, thresh: int, min_area: int, max_area: int):

@@ -12,13 +12,17 @@ Runs scripted scenarios headless and emits metrics — no "it works" without a n
 - `score.py` — the reusable metric core (precision / recall / **FNR** / per-bird-track FNR); the seed of
   the permanent harness. Run the full NDVI-vs-RGB spike with `run_spike.sh` (needs `requirements-eval.txt`).
 - `label_from_sim.py`, `baseline_ndvi.py`, `baseline_rgb.py` — the ADR-003 spike pipeline, built on
-  the shared `blob.py` (one classical-CV detector, used by both arms so the comparison is
-  apples-to-apples) and `spike_common.py` (clip IO). **`baseline_ndvi.py`'s threshold is per-render**
-  and resolved from the clip's own `meta.json`: `0.05` on a synthetic clip (ADR-003's deciding value),
+  `spike_common.py` (clip IO) and on **`src/fieldguard_planning/ndvi_detect.py`, which is where the
+  detector itself lives** (one classical-CV detector, used by both arms so the comparison is
+  apples-to-apples — and by the live avoidance node, so the flight runs the code these numbers were
+  measured on rather than a copy of it). **The threshold is per-render** and `baseline_ndvi.py`
+  resolves it from the clip's own `meta.json`: `0.05` on a synthetic clip (ADR-003's deciding value),
   `-0.61` on a real Gazebo render (the gate2 bird/soil midpoint — real soil reads −0.4377, where 0.05
-  masks the whole image). The real-render value is PROVISIONAL until a clip exists with a bird in
-  frame; ADR-003 amendment 3. Before flying for one, run
-  `scripts/predict_bird_visibility.py` — it says whether the mission can produce one at all.
+  masks the whole image). The real-render value is still PROVISIONAL after ADR-003 amendment 7
+  adopted the detector at it: ADOPT says it works (n=20 bird-frames, 7 FP / 3 FN), not that it is
+  where the threshold belongs — lifting it needs the false-positive characterisation.
+  `tests/fieldguard_planning/test_ndvi_detect.py` pins the detector's boxes against three committed
+  real-render frames and, where the clip is on disk, against the whole 1256-frame adopted run.
 - `scenarios/` — the QA safety scenarios (spec + coverage-debt invariant); `generate_flight_logs.py`
   drives the real avoidance loop to produce each scenario's `flight_log.json`, activating its assertion.
 
