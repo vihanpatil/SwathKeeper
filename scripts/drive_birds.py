@@ -25,6 +25,14 @@ plus an unrecorded service latency after the trajectory time it was computed for
 log turns that unrecorded latency into a measured bracket, so the annotator can replay what the
 renderer was SHOWN instead of modelling what it was asked to show.
 
+THAT LOG IS ALSO THE FLIGHT'S BIRD GROUND TRUTH. Nothing in the ROS 2 graph publishes bird poses,
+so this file is the only record of where the birds actually were: `eval/annotate_real_clip.py`
+labels clips from it, and `scripts/check_live_flight_log.py --truth <log>` measures closest
+approach against it instead of against the detections the drone happened to log (a monocular
+estimate cannot referee its own safety margin — and a MISS at closest approach would otherwise
+score as no-evidence-of-a-breach). Both consumers replay the same two functions, so a wrong
+reconstruction is wrong for the labels and the safety gate together, never quietly for one.
+
 Mechanism: one `gz service /world/<world>/set_pose` call per bird per tick (subprocess, gz CLI —
 no gz-transport Python bindings needed in the container). Loop-restart matches the old actor
 <loop>true</loop> semantics (time wraps modulo the last waypoint's t_s).
@@ -66,7 +74,11 @@ DEFAULT_WORLD = "farmguard_field"
 DEFAULT_SIDECAR_DIR = REPO_ROOT / "eval" / "results"  # gitignored, same home as the flight logs
 
 SIDECAR_SCHEMA_VERSION = "1.1"      # 1.1 adds applied_log (ADR-003 am. 6)
-APPLIED_LOG_SCHEMA_VERSION = "1.0"
+# 1.1 adds clock_wall_s: the wall instant the tick's /clock reading was PARSED. Without it the log
+# claims tick_sim_s was observed at tick_wall_s, which is false by one `gz topic -e -n 1`
+# subprocess -- measured 39 ms median / 146 ms max on the 2026-08-23 take, i.e. up to ~0.8 m of
+# bird motion asserted with false precision. Absent (1.0 logs) the bracket math is unchanged.
+APPLIED_LOG_SCHEMA_VERSION = "1.1"
 
 Pose = Tuple[float, float, float, float]  # (x_m, y_m, z_m, yaw_rad)
 
@@ -142,7 +154,10 @@ def write_run_sidecar(sidecar_dir: Path, t0_sim_s: Optional[float], rate_hz: flo
         "note": ("label a clip with: python3 eval/annotate_real_clip.py --clip <dir> --sidecar "
                  "<this file> -- which replays applied_log (what the renderer was SHOWN). Without "
                  "that log the annotator can only model pose_at(frame.stamp_sim_s - t0_sim_s), "
-                 "which is what the driver ASKED for and lands ~0.4-0.8 s ahead of the render."),
+                 "which is what the driver ASKED for and lands ~0.4-0.8 s ahead of the render. "
+                 "The same applied_log is this flight's bird GROUND TRUTH: "
+                 "scripts/check_live_flight_log.py --truth <applied_log> measures closest approach "
+                 "against it rather than against the drone's own detections."),
     }
     with path.open("w") as fh:
         json.dump(payload, fh, indent=1)
@@ -160,21 +175,29 @@ def applied_log_path_for(sidecar_path: Path) -> Path:
 
 def applied_record(bird_id: str, t_traj_s: float, pose: Pose, ok: bool,
                    tick_sim_s: Optional[float], tick_wall_s: float,
-                   wall_start_s: float, wall_end_s: float) -> dict:
+                   wall_start_s: float, wall_end_s: float,
+                   clock_wall_s: Optional[float] = None) -> dict:
     """One set_pose call as EVIDENCE, not as a plan.
 
-    `t_traj_s` is what was asked for; the four timestamps are when. Times are recorded raw and in
-    two clocks on purpose: `tick_sim_s` is the gz-clock reading this tick's poses were computed
-    from, `tick_wall_s`/`wall_start_s`/`wall_end_s` are `time.monotonic()` around the call. Sim time
-    is what a clip's frames are stamped in, but polling it per call would cost another subprocess
-    per bird and make the very latency being measured worse -- so the wall times are converted to
-    sim OFFLINE by `applied_sim_brackets`, using the RTF measured between consecutive tick anchors.
+    `t_traj_s` is what was asked for; the timestamps are when. Times are recorded raw and in two
+    clocks on purpose: `tick_sim_s` is the gz-clock reading this tick's poses were computed from,
+    `tick_wall_s`/`clock_wall_s`/`wall_start_s`/`wall_end_s` are `time.monotonic()`. Sim time is
+    what a clip's frames are stamped in, but polling it per call would cost another subprocess per
+    bird and make the very latency being measured worse -- so the wall times are converted to sim
+    OFFLINE by `applied_sim_brackets`, using the RTF measured between consecutive tick anchors.
     Nothing here is interpolated at write time: a crashed run leaves usable evidence.
+
+    `clock_wall_s` (schema 1.1) is when that /clock reading was PARSED, and it exists because the
+    reading is not instantaneous: `gz topic -e -t /clock -n 1` is a subprocess that took 39 ms
+    median / 146 ms max on the 2026-08-23 take. So `tick_sim_s` was true at some unknown instant in
+    [`tick_wall_s`, `clock_wall_s`] -- an interval this driver now MEASURES instead of collapsing to
+    its start. Omitted for wall-clock runs (no reading at all) and absent from 1.0 logs, where
+    `applied_sim_brackets` falls back to the old zero-width assumption unchanged.
 
     `ok=False` is as load-bearing as `ok=True`. A failed call means the bird HELD its previous pose,
     and only this record can tell a label that from a pose that landed."""
     x, y, z, yaw = pose
-    return {
+    rec = {
         "bird_id": bird_id,
         "t_traj_s": round(t_traj_s, 6),
         "pos_m": [round(x, 6), round(y, 6), round(z, 6)],
@@ -185,6 +208,9 @@ def applied_record(bird_id: str, t_traj_s: float, pose: Pose, ok: bool,
         "wall_start_s": round(wall_start_s, 6),
         "wall_end_s": round(wall_end_s, 6),
     }
+    if clock_wall_s is not None:
+        rec["clock_wall_s"] = round(clock_wall_s, 6)
+    return rec
 
 
 def applied_sim_brackets(records: Sequence[dict]) -> List[Optional[Tuple[float, float]]]:
@@ -199,20 +225,30 @@ def applied_sim_brackets(records: Sequence[dict]) -> List[Optional[Tuple[float, 
     Wall->sim uses the RTF MEASURED between this tick's anchor and the next one
     (`(sim[k+1]-sim[k]) / (wall[k+1]-wall[k])`), because RTF is not a constant on this stack: over
     the flagship take it ranged 0.94 (pre-flight) to 0.51 (mid-lane). The last tick reuses the
-    previous tick's measured RTF -- the only extrapolation here, and it spans one tick."""
-    ticks: List[Tuple[float, Optional[float]]] = []
+    previous tick's measured RTF -- the only extrapolation here, and it spans one tick.
+
+    The tick's own anchor is an interval too, for the same reason (schema 1.1): `tick_sim_s` was
+    read by a subprocess spanning [`tick_wall_s`, `clock_wall_s`], so the bracket is widened to
+    whichever end of that interval makes it WIDER -- latest possible anchor for the start, earliest
+    for the end. Uncertainty is not allowed to shrink the ambiguous window, because downstream
+    resolves ambiguity conservatively and a falsely-narrow bracket would hand a safety gate a
+    precision the driver never had. Schema 1.0 records (no `clock_wall_s`) keep the old zero-width
+    anchor exactly, so every label and verdict derived from a committed log stays reproducible."""
+    ticks: List[Tuple[float, Optional[float], float]] = []
     for r in records:
-        key = (r["tick_wall_s"], r.get("tick_sim_s"))
+        key = (r["tick_wall_s"], r.get("tick_sim_s"), r.get("clock_wall_s", r["tick_wall_s"]))
         if not ticks or ticks[-1] != key:
             ticks.append(key)
     rtf_by_tick_wall = {}
     prev_rtf = None
-    for i, (w, s) in enumerate(ticks):
+    for i, (w, s, cw) in enumerate(ticks):
         rtf = None
         if s is not None and i + 1 < len(ticks):
-            w2, s2 = ticks[i + 1]
-            if s2 is not None and w2 > w:
-                rtf = (s2 - s) / (w2 - w)
+            _w2, s2, cw2 = ticks[i + 1]
+            # Anchored on the two READINGS' own instants, so the poll cost cancels instead of
+            # biasing the rate (identical to the old tick_wall pairing on 1.0 logs, where cw == w).
+            if s2 is not None and cw2 > cw:
+                rtf = (s2 - s) / (cw2 - cw)
         if rtf is None:
             rtf = prev_rtf  # last tick (or an unusable neighbour): reuse the last measured RTF
         rtf_by_tick_wall[w] = rtf
@@ -230,9 +266,28 @@ def applied_sim_brackets(records: Sequence[dict]) -> List[Optional[Tuple[float, 
         if rtf is None:
             out.append((s0, s0))
             continue
-        out.append((s0 + (r["wall_start_s"] - r["tick_wall_s"]) * rtf,
+        out.append((s0 + (r["wall_start_s"] - r.get("clock_wall_s", r["tick_wall_s"])) * rtf,
                     s0 + (r["wall_end_s"] - r["tick_wall_s"]) * rtf))
     return out
+
+
+def applied_sim_span(records: Sequence[dict]) -> Optional[Tuple[float, float]]:
+    """The sim-time window this truth track actually covers — (earliest landed bracket start,
+    latest landed bracket end) — or None if nothing in it can be placed on the sim clock (a
+    wall-clock run, or a log whose every call failed).
+
+    Landed calls only, so it describes exactly the records `annotate_real_clip.applied_timeline`
+    will answer from: a consumer that SELECTS a truth track by span and then QUERIES it by pose
+    must be asking about the same set of records, or it picks a log it cannot answer from.
+
+    This is the association key for a flight: `scripts/check_live_flight_log.py --truth` matches a
+    log's `tick_stamp_sim_s` span against this. Necessary but NOT sufficient on its own — Gazebo
+    sim time restarts near 0 every run, so two takes overlap trivially and the operator, not the
+    overlap, resolves which log belongs to which flight."""
+    brackets = [b for r, b in zip(records, applied_sim_brackets(records)) if r.get("ok") and b]
+    if not brackets:
+        return None
+    return (min(b[0] for b in brackets), max(b[1] for b in brackets))
 
 
 def read_applied_log(path: Path) -> List[dict]:
@@ -336,6 +391,37 @@ def gz_set_pose(world: str, name: str, pose: Pose, timeout_ms: int = 2000) -> bo
         return False
 
 
+def drive_tick(birds: Sequence[dict], t_traj_s: float, set_pose, log: Optional[AppliedLogWriter],
+               *, tick_sim_s: Optional[float], tick_wall_s: float,
+               clock_wall_s: Optional[float], now=None) -> Tuple[int, int]:
+    """Apply every bird's pose for ONE tick and record what happened. Returns (n_ok, n_failed).
+
+    `set_pose(bird_id, pose) -> bool` is injected rather than called directly, which is the whole
+    reason this is a function: the loop that WRITES the ground truth a safety gate is scored
+    against is then testable without Gazebo, with a fake clock and a fake service, and the
+    per-call timestamps become exactly checkable instead of merely plausible.
+
+    Each bird is timed individually because the birds do not land together: on the flagship take
+    the three lagged 0.12 / 0.38 / 0.42 s by their position in this loop. One record per call, in
+    call order, whether or not it landed."""
+    now = now or time.monotonic   # resolved here, not at import: one clock for the whole tick
+    n_ok = 0
+    n_failed = 0
+    for b in birds:
+        pose = pose_at(t_traj_s, b["waypoints"], b.get("loop", True))
+        call_start = now()
+        ok = set_pose(b["bird_id"], pose)
+        call_end = now()
+        if log is not None:
+            log.write(applied_record(b["bird_id"], t_traj_s, pose, ok, tick_sim_s, tick_wall_s,
+                                     call_start, call_end, clock_wall_s))
+        if ok:
+            n_ok += 1
+        else:
+            n_failed += 1
+    return n_ok, n_failed
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--config", type=Path, default=DEFAULT_BIRDS_CONFIG)
@@ -390,41 +476,43 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"[drive_birds] WARNING: could not write run sidecar ({exc}) — note t0 by hand "
                   f"or a clip recorded now cannot be labelled later", file=sys.stderr)
 
+    def set_pose(name: str, pose: Pose) -> bool:
+        return gz_set_pose(args.world, name, pose)
+
     t_start = time.monotonic()
     period = 1.0 / args.rate
     failures = 0
     successes = 0
     ticks = 0
+    next_failure_report = 1
     last_report = t_start
     try:
         while True:
             tick_begin = time.monotonic()
             if t0_sim is not None:
-                now_sim = gz_sim_now_s()
-                if now_sim is None:
+                # tick_sim is the /clock reading THESE poses were computed from; the poses land
+                # later, by the service round-trip recorded per call. The reading itself is not
+                # instantaneous, so [tick_begin, clock_wall] brackets when it was true.
+                tick_sim = gz_sim_now_s()
+                clock_wall = time.monotonic()
+                if tick_sim is None:
                     time.sleep(period)  # hold this tick; transient /clock hiccup must not kill the run
                     continue
-                t = now_sim - t0_sim
+                t = tick_sim - t0_sim
             else:
+                tick_sim, clock_wall = None, None   # wall-clock run: no reading, no sim anchor
                 t = tick_begin - t_start
-            # tick_sim is the /clock reading THESE poses were computed from; the poses land later,
-            # by the service round-trip recorded per call below. tick_begin anchors that wall->sim.
-            tick_sim = None if t0_sim is None else t0_sim + t
-            for b in birds:
-                pose = pose_at(t, b["waypoints"], b.get("loop", True))
-                call_start = time.monotonic()
-                ok = gz_set_pose(args.world, b["bird_id"], pose)
-                if applied_log is not None:
-                    applied_log.write(applied_record(b["bird_id"], t, pose, ok, tick_sim,
-                                                     tick_begin, call_start, time.monotonic()))
-                if ok:
-                    successes += 1
-                else:
-                    failures += 1
-                    if failures in (5, 25) or failures % 100 == 0:
-                        print(f"[drive_birds] {failures} failed set_pose calls so far "
-                              f"({successes} ok) — heavy load slows service round-trips; the birds "
-                              f"still track sim time, just at fewer updates", file=sys.stderr)
+            n_ok, n_failed = drive_tick(birds, t, set_pose, applied_log, tick_sim_s=tick_sim,
+                                        tick_wall_s=tick_begin, clock_wall_s=clock_wall)
+            successes += n_ok
+            failures += n_failed
+            if failures >= next_failure_report:
+                # First failure, then geometric backoff: an all-failing driver says so within one
+                # tick, and a merely loaded one does not fill the console with the same line.
+                next_failure_report = max(5, failures * 5)
+                print(f"[drive_birds] {failures} failed set_pose calls so far "
+                      f"({successes} ok) — heavy load slows service round-trips; the birds "
+                      f"still track sim time, just at fewer updates", file=sys.stderr)
             ticks += 1
             # Heartbeat every 30s wall so 'working' is visibly different from 'silently failing'.
             # ACHIEVED cadence, not the requested one: --rate is a sleep floor, and on the flagship
@@ -442,9 +530,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"\n[drive_birds] stopped after {elapsed:.1f}s ({successes} ok, {failures} failed "
               f"calls, {ticks / max(1e-9, elapsed):.2f} Hz achieved of {args.rate:.2f} Hz requested)")
         if applied_log is not None:
+            applied_log.close()
             print(f"[drive_birds] applied-pose log: {applied_log.written} records -> "
                   f"{applied_log.path}")
-            applied_log.close()
+            # The window this take's bird ground truth covers, printed where the operator needs it:
+            # the post-flight gate has to be handed the log that overlaps the FLIGHT's sim stamps,
+            # and sim time restarts near 0 every run, so two takes' filenames look alike.
+            try:
+                span = applied_sim_span(read_applied_log(applied_log.path))
+            except OSError:
+                span = None
+            if span is not None:
+                print(f"[drive_birds] bird ground truth covers sim {span[0]:.1f}..{span[1]:.1f}s — "
+                      f"pass it to: python3 scripts/check_live_flight_log.py <flight log> "
+                      f"--truth {applied_log.path}")
         return 0
 
 
