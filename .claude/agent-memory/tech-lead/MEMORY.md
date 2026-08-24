@@ -1,4 +1,8 @@
-- [ADR-003 NDVI detection decided](project_adr003-ndvi-detection.md) — NDVI-direct accepted, pending real-Gazebo-render re-confirmation; no model justified yet
+- [ADR-003 NDVI detection CLOSED](project_adr003-ndvi-detection.md) — ADOPT NDVI-direct on the real render (2026-08-23); −0.61 threshold still PROVISIONAL, no model justified
+- [Week-6 seam: ANSWERED](project_week6-detection-seam-open-questions.md) — binding calls 2026-08-24: gz clock end-to-end, GT-CPA vs applied-pose log, detector single-sourced to src/ + scipy in the image
+- [Avoidance take: gate-clear](project_avoidance-take-blockers.md) — 3 QA rounds all FIXED 2026-08-24 (ADR-013 am. 13-17); scipy rebuild is the last gate; marker set FROZEN at 2 logs; 6 open items
+- [ADR log must track the gate](project_adr-log-must-track-the-gate.md) — DECISIONS.md went stale on the same gate twice; correct today's uncommitted text in place, append once committed
+- [Scenario fixtures are OPEN-LOOP](project_scenario-fixtures-are-open-loop.md) — their CPA is a scenario parameter, not a flown outcome; CPA gate stays scoped to committed live logs (ADR-013 am. 16)
 - [ADR-005 AP_DDS contract locked](project_adr005-apdds-contract.md) — /ap/* map locked to pinned SHA; live-bridge ros2 topic confirmation still owed (batch with ADR-003 in Docker run)
 - [ADR-006 avoidance executor](project_adr006-avoidance-executor.md) — core loop = AUTO->GUIDED->AUTO, our code owns maneuver; cmd in map/ENU, MIS_RESTART=0; live resume confirmation owed
 - [ADR-007 NDVI render](project_adr007-ndvi-render.md) — Red=RGB cam, NIR=thermal sensor repurposed (per-model temp); NDVI in ROS node; /fg/* contract locked; render unproven live (batch w/ ADR-003)

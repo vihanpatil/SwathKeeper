@@ -1,6 +1,6 @@
 ---
 name: node-topic-map
-description: FieldGuard ROS 2 node/topic map, package layout, locked AP_DDS /ap/* contract (Weeks 3-4 live) + Weeks 5-6 NDVI nodes, plus the test-flight gate's evidence-yield floor parameters (2026-08-19)
+description: FieldGuard ROS 2 node/topic map, package layout, locked AP_DDS /ap/* contract (Weeks 3-4 live) + Weeks 5-6 NDVI nodes, the avoidance control parameters incl. R2/R3 as landed 2026-08-24, the two-half CPA-breach acknowledgement contract, and the test-flight gate's evidence-yield floor parameters
 metadata:
   type: project
 ---
@@ -41,8 +41,14 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
 - ADR-006 maneuver shape, CONFIRMED live: `AUTO -> GUIDED -> one 3D-vetted setpoint -> GUIDED ->
   AUTO`, `MIS_RESTART=0` makes AUTO resume the SAME next waypoint (verified: reached #3, took
   control heading to #4, resumed at #4, continued #5-#8, no restart at #1).
-- Safety backstop: every DIVERT setpoint is re-vetted through `GeofenceMap.is_safe_3d` in the
-  executor even though the policy already checked it. Reject -> HOLD, never fly an unvetted point.
+- Safety backstop: every point the executor is about to command is re-vetted on the tick it is
+  commanded, **both halves** — `GeofenceMap.is_safe_3d` (trees/altitude) AND the policy's own
+  `min_bird_clearance_m` against `debug["threat_positions_enu"]`. Reject -> HOLD, never fly an
+  unvetted point. The bird half landed 2026-08-24 (QA round 2): the geofence cannot see a bird, and
+  a LATCHED point is bird-vetted only for the tick it was latched, so an R3 refusal re-commanded a
+  latch the bird had walked to 1.000 m of, `verdict: accepted`, no gate_reject. The bar is read from
+  the maneuver's OWN `debug["params"]` (no second literal in the executor); a maneuver with no
+  params fails OPEN, same doctrine as a missing `range_degenerate` flag.
 - `AvoidanceExecutor.finalize()` builds the terminal coverage ledger from the ACTUAL flown path via
   `coverage.coverage_from_path` — every canonical grid cell is visited exactly once by
   construction, so a cell can never be silently absent from the ledger (worst case: explicit
@@ -64,22 +70,67 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
   2026-08-23) adds CPA to `check_live_flight_log.py`, sourced from `PolicyParams`, printed for every
   log every run. **The 2026-08-18 log breaches too, at 0.0597 m** — found by R1's first run over the
   committed evidence; that log predates the latch/relatch machinery entirely, so the gap is in the
-  control law's escape geometry, not in the later logging. Breaching history carries a sibling
-  `<log-stem>.SAFETY_FINDING.md` marker -> reports ACKNOWLEDGED (loud, stderr, exit 0); unmarked
-  breach = hard fail; a marker beside a PASSING log = stale acknowledgement = also a hard fail.
-  Markers need their own `.gitignore` allowlist or CI reds out on committed history.
+  control law's escape geometry, not in the later logging. ACKNOWLEDGED takes **TWO halves since
+  2026-08-24**: the sibling `<log-stem>.SAFETY_FINDING.md` marker AND the stem pinned in
+  `ACKNOWLEDGED_BREACH_STEMS` inside `check_live_flight_log.py` (a reviewed diff on the gate).
+  Either half alone = INVALID naming the missing half; a marker beside a PASSING log = stale
+  acknowledgement = also a hard fail. **Why two:** the marker alone made the runbook's own remedy
+  for a breach ("keep the log, add the marker") the one-`touch`, no-review way to turn the NEXT
+  bird strike into green CI, in a gitignored directory — with R4 open and the next `--detect` take
+  pre-registered as possibly breaching. The list is meant to stay two long; a breaching NEW take
+  stays INVALID / exit 1 — the operator writes the marker (context) and does NOT add the pin.
+  Markers still need their own `.gitignore` allowlist or CI reds out on committed history. The same
+  file-not-contents doctrine now also guards the gate's LEGACY branch (`PRE_SEAM_LEGACY_STEMS` —
+  see [[detection-seam-live]]).
 - TWO THINGS WORTH KNOWING from that run, both self-reported by the executor rather than hidden:
   (1) `resume` recorded `resumed_same_waypoint: false` (took over at wp 6, resumed at wp 7) — the
   drone passed the waypoint during the dodge; ADR-006's "same waypoint" claim is about
   `MIS_RESTART=0` not restarting the mission, and the log does not overstate it.
   (2) At `trigger_range_m: 0.052` (drone essentially on top of the bird) the away-vector flipped to
   [0.758, 0.652] and the accepted setpoint had **swept_tree_clearance_m 0.846** against 7-8 m on
-  every other tick. Still "accepted" because `lateral_tree_margin_m` is 0.0. Re-latched away one tick
-  later. Not a failure, but the one numerically-unstable moment in the encounter — worth a QA look.
-- Demo: `python3 -m fieldguard_planning.avoidance_node --demo` injects a scripted bird at ENU
-  (30,30,15) via `proximity_bird_source` (triggers within 10m, lingers 12s) — tightened from an
-  earlier wider trigger radius specifically so it doesn't fire on adjacent lanes (< lane spacing).
-  Full recipe: `docs/runbooks/AVOIDANCE_DEMO.md`.
+  every other tick, and the executor re-latched onto that 20.9 m jump. Both are now fixed in code —
+  see the control-parameter block below.
+
+## Avoidance control parameters (the numbers a flight is flown at; one home = `PolicyParams`)
+`AvoidancePolicy.__init__` no longer re-declares any of them: it is `(*, field_polygon=None,
+**params)` forwarding straight to `PolicyParams`, so a constructor default cannot drift from the
+dataclass default that `check_live_flight_log.py` reads as its bar. Unknown knob = TypeError.
+- `lateral_tree_margin_m` **0.0 -> 1.0** (R2, landed 2026-08-24). Measured price on the dense
+  degenerate-range sweep (11 856 cases around three trees): HOLD rate 5.64 % -> 15.66 % (+10.0 pp,
+  a worst-case neighbourhood, not a flight-wide rate), min accepted swept clearance 0.000 ->
+  1.000 m, sub-metre tail 28.1 % -> 0 %. On the flown 19-tick encounter: still 19/19 DIVERT, the
+  degenerate tick rotates +0 -> +45 deg at 7.563 m.
+- `degenerate_range_m` **1.0, new** (R3). A FLAG, not a floor: `decide` still dodges, but publishes
+  `debug["range_degenerate"]`, computed from the ROUNDED `trigger_range_m` that goes into the log so
+  the gate's consistency check holds at the boundary by construction.
+- Executor consequence: a re-latch is REFUSED on a flagged tick and logged as the fourth
+  `latch_action` value, **`relatch_refused_degenerate`** (the other three: `latch`, `relatch`,
+  `recommand_latched`). No latch event is emitted and latch state is untouched — UNLESS the kept
+  latch is now inside `min_bird_clearance_m` of a threat, in which case the refusal falls through to
+  HOLD, drops the dead latch (so the next tick can latch a fresh vetted point) and logs a
+  `gate_reject` carrying `bird_clearance_m` / `bird_track_id` and still labelled
+  `relatch_refused_degenerate`.
+- Policy consequence: every threat-branch maneuver now also carries
+  `debug["threat_positions_enu"]`, parallel to `threat_ids` — the executor's bird backstop and the
+  flight-log gate's R3.7 assertion both read it, so an id with no position would be a threat neither
+  can check.
+- What R3 actually buys, measured, and NOT more: the flown noise-driven setpoint (37.6, 36.6, 15) is
+  never commanded; the re-latch lands one tick later (0.2 s) at 1.192 m where the away-vector is
+  geometry again. Relatches over the encounter 7 -> 6 + 1 refusal. **R2/R3 do NOT fix S1** (CPA
+  0.0518 m); that is R4, the reversal-preferring candidate order `(0, +45, -45, ...)`, still open.
+- `max_detection_age_s` **1.0, a `PolicyParams` DEFAULT** (2026-08-24, follow-up CLOSED same day).
+  It was briefly armed from an `avoidance_node.MAX_DETECTION_AGE_S` constant while the dataclass
+  default stayed None — one knob, two homes — and QA proved the consequence: the flight-log gate's
+  upper-bound branch was dead code, so a log flown at 3600 s scored VALID. The node no longer
+  declares or passes it (a test asserts the node source contains no `MAX_DETECTION_AGE_S =` and no
+  `max_detection_age_s=`). Evidence for 1.0: the adopted clip's `frame_age_sim_s` is p50 0.143 /
+  max 0.156 s (n=1256), ~6x headroom. Unstamped detections still fail OPEN, so the scripted sources
+  are untouched; turning the gate OFF is now an explicit `max_detection_age_s=None`.
+- Two detection sources, mutually exclusive at the CLI: `--demo` (scripted bird at ENU (30,30,15),
+  `proximity_bird_source`, triggers within 10 m, lingers 12 s — tight enough not to fire on adjacent
+  lanes) and `--detect` (the real ADR-003 am. 7 NDVI blob detector — see [[detection-seam-live]]).
+  Demo recipe: `docs/runbooks/AVOIDANCE_DEMO.md`. Both now tag their detections `demo_virtual` /
+  `ndvi_blob` honestly, and the node writes a `run` block (schema 2) into every flight log.
 - `current_waypoint()` is DERIVED (nearest mission waypoint to current pose), not read from AP_DDS —
   no mission-current service exists at the pinned SHA (ADR-006 "why no waypoint-index juggling").
   Fine for resume bookkeeping since ArduPilot's own `MIS_RESTART=0` owns the actual resume.
@@ -113,6 +164,10 @@ Two dependency tiers inside the package (a project-blessed, documented split, no
 - ADR-007 locked contract: IN `/fg/sensor/rgb/image` (rgb8) + `/fg/sensor/nir/image` (mono16) +
   their camera_info; OUT `/fg/ndvi/image` (32FC1 ∈[-1,1], AUTHORITATIVE), `/fg/ndvi/camera_info`,
   `/fg/ndvi/preview` (rgb8, human-only, non-authoritative).
+- `/fg/ndvi/image` now has TWO consumers with deliberately OPPOSITE QoS: `record_node` subscribes
+  RELIABLE depth 10 (it wants every frame) and `avoidance_node --detect` subscribes **BEST_EFFORT
+  depth 1** (a control loop wants the newest frame; a queued backlog is what the staleness gate
+  would throw away one tick late). Do not "unify" them.
 - Files: `ndvi_fusion.py` (pure fusion math + stale-pair guard, numpy), `ndvi_georef.py` (the
   pixel->lat/lon transform + `NdviHeatmapGrid` stitch accumulator, stdlib math for the transform
   itself), `ndvi_node.py` (thin rclpy adapter, `message_filters.ApproximateTimeSynchronizer`).

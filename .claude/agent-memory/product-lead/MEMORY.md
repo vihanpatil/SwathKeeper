@@ -1,4 +1,4 @@
 # Product-Lead Memory Index
 
-- [Phase](phase.md) — Week 5 NDVI phase UNBLOCKED (ADR-007 landed); external-review Week-5 ordering + batched Docker verification
-- [Scope guards](scope-guards.md) — standing "DO NOT ADD SCOPE, guard the exits" call + the two Weeks 5-6 cuts (no YOLO, no startup narrative)
+- [Phase](phase.md) — as of 2026-08-24: Week 6's offline half landed (seam, R2/R3, GT-CPA gate, runbook); everything now waits on ONE flight + the booking bar for it
+- [Scope guards](scope-guards.md) — standing "DO NOT ADD SCOPE, guard the exits" call + the recorded cuts (no YOLO, no startup narrative, no rename, R4/R5 not v1)

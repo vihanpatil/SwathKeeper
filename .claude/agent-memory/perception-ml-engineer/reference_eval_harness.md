@@ -14,8 +14,17 @@ evidence allowlist (clip `meta.json`/`poses.jsonl`/`heatmap/`, `bird_drive_*` si
 
 Pipeline: `annotate_real_clip.py` (real clips: bird labels from the driver's applied-pose log) →
 `label_from_sim.py` (poses → GT boxes via the ONE `ndvi_georef.project_world_point` primitive) →
-`baseline_ndvi.py` / `baseline_rgb.py` (the shared `blob.py` detector) → `score.py`. One-shot:
-`eval/run_spike.sh` with `CLIP=` / `RESULTS=` env overrides.
+`baseline_ndvi.py` / `baseline_rgb.py` → `score.py`. One-shot: `eval/run_spike.sh` with `CLIP=` /
+`RESULTS=` env overrides.
+
+**The detector itself is NOT in `eval/` (moved 2026-08-24, `eval/blob.py` deleted).** It lives in
+`src/fieldguard_planning/ndvi_detect.py` — thresholds, `detect_blobs`, `detect_ndvi` — because the
+live avoidance node must run the code ADR-003 amendment 7 measured, not a second copy of it. Both
+eval arms import it; `eval/` keeps only the CLIP-shaped concerns (per-render threshold resolution
+from `meta.json`, frame IO). If a detector change is ever proposed, the boxes are pinned by
+`tests/fieldguard_planning/test_ndvi_detect.py`: hand-derived morphology semantics + three real
+NDVI frames committed as a fixture + (where the gitignored clip is on disk) the whole 1256-frame
+adopted run, all compared against the committed `eval/results/adr003_20260823/detections_ndvi.json`.
 
 **`score.py` refuses rather than deciding, on two independent grounds — both were live defects:**
 1. **Denominator** (`evidence_shortfall`, 2026-08-21): ≥1 visible bird-frame AND every bird in the
