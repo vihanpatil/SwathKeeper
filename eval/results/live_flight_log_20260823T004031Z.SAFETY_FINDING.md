@@ -45,8 +45,10 @@ in the logging added afterwards.
   relatch refusal, an ArduPilot `FENCE_*` backstop) are deliberately held behind their own live
   gate — the next avoidance flight, which must assert `CPA >= min_bird_clearance_m`, every
   `swept_tree_clearance_m >= 1.0`, and no relatch below 1.0 m range.
-* Pinned bit-for-bit in `tests/fieldguard_planning/test_degenerate_range_avoidance.py` (36 tests),
-  including `test_WANT_the_encounter_holds_the_policys_own_minimum_bird_clearance` as a paired
-  xfail that turns red-as-passing the day a flight clears the bar.
+* Pinned bit-for-bit in `tests/fieldguard_planning/test_degenerate_range_avoidance.py` (36 tests).
+  The paired xfail that stood for this bar has been retired — on a frozen artifact it could never
+  activate — and the bar is now enforced live by `check_live_flight_log.py` plus this marker; the
+  retirement is pinned in
+  `test_the_bird_clearance_bar_this_log_missed_is_carried_by_a_live_gate_and_a_marker`.
 
 Full record: `docs/DECISIONS.md`, ADR-013 amendment 12.
