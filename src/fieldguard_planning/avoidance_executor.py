@@ -16,11 +16,33 @@ documented, well-scoped stretch goal (full reconciliation) left undone on purpos
 
 Design notes on the guarantees this file exists to make impossible-by-construction:
 
-1. **Never fly an unvetted setpoint.** Every DIVERT setpoint is re-vetted through
-   `GeofenceMap.is_safe_3d` here, even though the policy is supposed to have already vetted it --
-   this is the safety BACKSTOP, not the primary check. On rejection the executor falls back to HOLD
-   (hover in GUIDED at the vehicle's last known-safe position) and never sends the rejected point to
-   the vehicle.
+1. **Never fly an unvetted DISPLACEMENT.** Every point this module is about to command the vehicle
+   to MOVE to is re-vetted on the tick it is commanded, against BOTH halves of what makes a dodge
+   target safe: `GeofenceMap.is_safe_3d` (trees + altitude envelope) and the policy's own
+   `min_bird_clearance_m` from the threats logged with this decision
+   (`debug["threat_positions_enu"]`). This is the safety BACKSTOP, not the primary check. On
+   rejection the executor falls back to HOLD and never sends the rejected point to the vehicle.
+   The bird half exists because the geofence half cannot see a bird at all, and a LATCHED point is
+   only ever vetted against where the birds were on the tick it was latched (QA round 2, 2026-08-24:
+   an R3 refusal re-commanded a latch that had become 1.000 m from the bird, against the policy's
+   own 3.00 m bar, with no gate_reject). The bar is read from `debug["params"]` -- the value the
+   POLICY flew for that decision, not a second literal here. A maneuver carrying no params did not
+   come from this policy and gets no bird check (fail OPEN on missing data, the same doctrine as the
+   missing `range_degenerate` flag below); every real maneuver carries them.
+
+   **A HOLD IS EXEMPT, BY CONSTRUCTION, AND THAT IS THE HONEST SCOPE OF THIS GUARANTEE.** A HOLD
+   commands `drone_state.position_enu` -- where the vehicle already is. Zero displacement: it
+   chooses no point, so there is no point to vet, and it cannot honour a clearance bar any more than
+   standing still can. Where that bites (QA round 3, 2026-08-24, finding 2): the R3-refusal branch
+   is only entered when `range_degenerate` is True, i.e. the vehicle is already within
+   `degenerate_range_m` of the bird, so the HOLD setpoint is inside `min_bird_clearance_m` BY
+   CONSTRUCTION -- measured at 41 of 10,000 random control ticks, closest 0.288 m. Rejecting the
+   divert and holding can therefore leave the commanded separation WORSE than the point that was
+   rejected, and no wording here may imply otherwise. Choosing a point that IS outside the bar is
+   escape geometry, which this executor does not do: **R4, open and deliberately uncut.** What a
+   HOLD does guarantee is narrower and still worth having -- it never flies a point the control law
+   forbids. `_handle_hold` logs `bird_clearance_m` on every hold so the artifact shows how close
+   holds got, and `check_live_flight_log.gate_r2_r3` reports the minimum as CONTEXT, never gated.
 2. **Never silently drop a coverage cell.** `finalize()` builds the terminal coverage ledger from the
    ACTUAL flown path (`self.flown_path`, single source of truth -- every position the vehicle
    actually reported occupying, nominal or mid-maneuver; commanded setpoints are NEVER recorded as
@@ -40,8 +62,27 @@ Design notes on the guarantees this file exists to make impossible-by-constructi
    policy setpoint further than `RELATCH_THRESHOLD_M` away -- a genuinely moving threat, not
    recompute drift -- can re-latch, and only if it passes the same 3D re-vet. Latch lifecycle is the
    encounter: set on the first accepted divert, cleared on resume alongside `_wp_at_takeover`.
-   Latching never bypasses guarantee 1 -- every point handed to the sink, latched or fresh, is
-   re-vetted on the tick it is commanded.
+   Latching never bypasses guarantee 1 -- every DISPLACEMENT handed to the sink, latched or fresh,
+   is re-vetted on the tick it is commanded.
+   R3 (ADR-013 am. 12): a re-latch is additionally REFUSED on a tick the policy flagged
+   `debug["range_degenerate"]`. Below `PolicyParams.degenerate_range_m` the setpoint jump is the
+   away-vector's NOISE, not the threat moving -- the flown 2026-08-23 encounter re-latched on a
+   20.9 m jump produced by a static bird the vehicle had crossed. The refusal keeps flying the
+   already-vetted latched point and is logged as `latch_action: relatch_refused_degenerate`, so R3
+   doing its job is visible in the log rather than inferred from a missing `relatch` event. The kept
+   point is re-vetted this tick like every other -- and that is the whole of the claim: a refusal
+   declines an alternative the policy vetted against the CURRENT bird positions in favour of one
+   vetted against older ones, so it is guarantee 1 (now both halves, above) that keeps it honest.
+   When the kept latch has drifted inside `min_bird_clearance_m` of a threat, the refusal declines
+   to command it and HOLDs instead -- which is a refusal to fly a forbidden point, NOT a safer
+   alternative to it (guarantee 1's HOLD paragraph: at degenerate range the hold is inside the bar
+   too, and can be nearer than the point refused).
+   SCOPE on that path, stated so it is a deferral and not a blind spot: rejecting the LATCHED point
+   also kills the latch (otherwise every remaining tick re-rejects the same dead point instead of
+   latching a fresh vetted one), and a FIRST latch at degenerate range is permitted by design -- so
+   the next tick may latch the same noise-driven setpoint fresh. On that one path R3 buys a tick,
+   not a refusal. Widening it means deciding what to fly INSTEAD, which is escape geometry: R4,
+   open.
 
 Vehicle interaction is behind the `VehicleCommandSink` seam so this stays sim-agnostic and
 unit-testable on a bare interpreter; the real ROS 2 binding (`/ap/mode_switch`,
@@ -87,6 +128,56 @@ def _dist_3d(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> fl
     (stdlib-only discipline, same as `geofence.py` / `coverage.py`)."""
     dx, dy, dz = a[0] - b[0], a[1] - b[1], a[2] - b[2]
     return (dx * dx + dy * dy + dz * dz) ** 0.5
+
+
+def _threat_positions(maneuver: AvoidanceManeuver) -> List[Tuple[Tuple[float, float, float], str]]:
+    """[(position_enu, id)] for every in-cylinder threat this decision was taken against.
+
+    The policy writes `debug["threat_positions_enu"]` alongside `debug["threat_ids"]` (same list,
+    same order) precisely so this backstop can see EVERY threat rather than only the trigger -- a
+    dodge away from bird A must not be re-commanded into bird B. Falls back to the triggering
+    detection when the maneuver carries no threat block (a hand-built maneuver / a pre-R3 caller),
+    and to [] when it carries neither."""
+    positions = maneuver.debug.get("threat_positions_enu")
+    ids = maneuver.debug.get("threat_ids") or []
+    out: List[Tuple[Tuple[float, float, float], str]] = []
+    if isinstance(positions, (list, tuple)):
+        for i, pos in enumerate(positions):
+            if not isinstance(pos, (list, tuple)) or len(pos) < 2:
+                continue
+            try:                       # a malformed entry did not come from this policy: skip it
+                xyz = (float(pos[0]), float(pos[1]), float(pos[2]) if len(pos) > 2 else 0.0)
+            except (TypeError, ValueError):
+                continue               # never raise inside the control loop
+            out.append((xyz, str(ids[i]) if i < len(ids) else "?"))
+    if out:
+        return out
+    det = maneuver.triggering_detection
+    return [] if det is None else [(det.position_enu, det.track_id or f"det@{det.frame_id}")]
+
+
+def _nearest_threat(point_enu: Tuple[float, float, float],
+                    maneuver: AvoidanceManeuver) -> Optional[Tuple[float, str]]:
+    """(horizontal distance from `point_enu` to the nearest threat, that threat's id), or None when
+    this maneuver names no threat at all. HORIZONTAL, matching the axis the policy's own
+    `min_bird_clearance_m` gate is expressed in (ADR-009: a bird's z is the estimate we cannot
+    trust, so folding it in could only manufacture clearance)."""
+    best: Optional[Tuple[float, str]] = None
+    for pos, threat_id in _threat_positions(maneuver):
+        dx, dy = point_enu[0] - pos[0], point_enu[1] - pos[1]
+        d = (dx * dx + dy * dy) ** 0.5
+        if best is None or d < best[0]:
+            best = (d, threat_id)
+    return best
+
+
+def _flown_bird_clearance_bar(maneuver: AvoidanceManeuver) -> Optional[float]:
+    """`min_bird_clearance_m` as the POLICY logged it for THIS decision, or None if this maneuver
+    carries no params. One home for the number (`PolicyParams`), read out of the decision itself, so
+    a replayed log is checked against the bar it was flown under rather than today's."""
+    params = maneuver.debug.get("params")
+    bar = params.get("min_bird_clearance_m") if isinstance(params, dict) else None
+    return float(bar) if isinstance(bar, (int, float)) and not isinstance(bar, bool) else None
 
 
 # --------------------------------------------------------------------------------------------------
@@ -251,7 +342,7 @@ class AvoidanceExecutor:
         self._tick += 1
         self._log_detection(maneuver)
         if maneuver.decision is Decision.PROCEED:
-            self._handle_proceed(drone_state)
+            self._handle_proceed(drone_state, maneuver)
         elif maneuver.decision is Decision.HOLD:
             self._handle_hold(drone_state, maneuver)
         elif maneuver.decision is Decision.DIVERT:
@@ -259,8 +350,25 @@ class AvoidanceExecutor:
         else:  # pragma: no cover -- Decision is a closed enum; defensive only
             raise ValueError(f"unhandled Decision: {maneuver.decision!r}")
 
+    @staticmethod
+    def _stale_detail(maneuver: AvoidanceManeuver) -> dict:
+        """`{"debug": {...}}` naming what the ADR-009 staleness gate threw away this tick, or `{}`.
+
+        The gate can silently disable avoidance for a WHOLE flight -- a systematic clock offset or a
+        render stall ages every detection out, the policy returns PROCEED on every tick, and nothing
+        ever reaches the DIVERT branch that used to be the only carrier of `debug`. The one counter
+        that exists to reveal it (`check_live_flight_log.stale_dropped_total`) then read 0, which is
+        also what "no bird was ever seen" reads -- opposite diagnoses, identical artifact (QA round
+        2, 2026-08-24). Written only when something was actually dropped, so a healthy flight pays
+        nothing per tick."""
+        n = maneuver.debug.get("n_stale_dropped")
+        if not n:
+            return {}
+        return {"debug": {"n_stale_dropped": n, "stale_ids": maneuver.debug.get("stale_ids"),
+                          "max_detection_age_s": maneuver.debug.get("max_detection_age_s")}}
+
     # -- decision handlers -----------------------------------------------------------------------
-    def _handle_proceed(self, drone_state: DroneState) -> None:
+    def _handle_proceed(self, drone_state: DroneState, maneuver: AvoidanceManeuver) -> None:
         if self.mode == MODE_GUIDED:
             # Threat cleared -> the SINGLE hand-back after a maneuver (ADR-006: MIS_RESTART=0 resumes
             # the same next waypoint). Not a per-tick toggle -- we only get here once the policy stops
@@ -276,7 +384,7 @@ class AvoidanceExecutor:
             self._latched_setpoint = None   # encounter over -- the next one latches fresh
         self._record_position(drone_state.position_enu)
         self._log("proceed", position_enu=drone_state.position_enu,
-                  wp_index=drone_state.current_wp_index)
+                  wp_index=drone_state.current_wp_index, **self._stale_detail(maneuver))
 
     def _handle_hold(self, drone_state: DroneState, maneuver: AvoidanceManeuver, *,
                      reason: Optional[str] = None) -> None:
@@ -288,14 +396,25 @@ class AvoidanceExecutor:
             self._log("takeover", reason="hold", from_mode=MODE_AUTO, to_mode=MODE_GUIDED,
                       wp_index_at_takeover=wp_at_takeover,
                       track_id=self._track_id(maneuver))
-        # Hover at the vehicle's own (already-safe) current position -- never fly a new, unvetted
-        # point while holding. Coverage does NOT advance: this position was already recorded (or
-        # will be, at most once) -- do not double-count it against the ledger's swath computation
-        # beyond what a stationary hover legitimately images.
+        # Hover at the vehicle's own current position -- ZERO displacement. This is not a vetted
+        # point and does not claim to be one (guarantee 1's HOLD paragraph): it is the vehicle's own
+        # position, so there is nothing to choose and no bar it can honour. Coverage does NOT
+        # advance: this position was already recorded (or will be, at most once) -- do not
+        # double-count it against the ledger's swath computation beyond what a stationary hover
+        # legitimately images.
         self.sink.send_setpoint_enu(drone_state.position_enu)
         self._record_position(drone_state.position_enu)
+        # How close the hold itself is to the nearest threat this decision names. NOT a gate -- a
+        # HOLD honours no bar -- but the artifact must show the number rather than leave the
+        # question to an argument (QA round 3, 2026-08-24, finding 2). None when the maneuver names
+        # no threat, e.g. a hand-built HOLD or a geofence-only reject.
+        near = _nearest_threat(drone_state.position_enu, maneuver)
         self._log("hold", position_enu=drone_state.position_enu,
-                  reason=reason or maneuver.reason, track_id=self._track_id(maneuver))
+                  reason=reason or maneuver.reason, track_id=self._track_id(maneuver),
+                  bird_clearance_m=(None if near is None else round(near[0], 3)),
+                  bird_track_id=(None if near is None else near[1]),
+                  min_bird_clearance_m=_flown_bird_clearance_bar(maneuver),
+                  **self._stale_detail(maneuver))
 
     def _handle_divert(self, drone_state: DroneState, maneuver: AvoidanceManeuver) -> None:
         policy_setpoint = maneuver.setpoint_enu
@@ -308,29 +427,75 @@ class AvoidanceExecutor:
         # makes it a re-latch candidate. `latch_action is None` means "re-commanding the latch".
         latched = self._latched_setpoint
         offset_m: Optional[float] = None
+        relatch_refused = False
         if latched is None:
             setpoint, latch_action = policy_setpoint, "latch"
         else:
             offset_m = _dist_3d(policy_setpoint, latched)
-            if offset_m > RELATCH_THRESHOLD_M:
-                setpoint, latch_action = policy_setpoint, "relatch"
-            else:
+            if offset_m <= RELATCH_THRESHOLD_M:
                 setpoint, latch_action = latched, None
+            elif maneuver.debug.get("range_degenerate"):
+                # R3: the jump is big enough to look like a moving threat, but the policy computed
+                # it at a trigger range where the away-vector's DIRECTION is noise. Keep the
+                # already-vetted latch; do not chase the noise. (A FIRST latch at degenerate range
+                # is still permitted -- am. 12 scoped R3 to re-latch, and refusing the first latch
+                # would mean not dodging at all.)
+                setpoint, latch_action = latched, None
+                relatch_refused = True
+            else:
+                setpoint, latch_action = policy_setpoint, "relatch"
+        # What the event log calls this tick's latch handling. A refusal leaves `latch_action` None
+        # -- no latch/relatch event, no state change -- so this label is the ONLY place R3 shows up,
+        # and it must therefore always be written, on the reject path too.
+        latch_label = ("relatch_refused_degenerate" if relatch_refused
+                       else latch_action or "recommand_latched")
 
         # SAFETY BACKSTOP (ADR-006): re-vet whatever point we are about to command -- fresh, re-latch
         # candidate, or the latched point on its Nth re-command -- regardless of what the policy
         # already checked. The latch is a smoothing rule, never a way to skip this gate. Reject ->
         # HOLD. Never call sink.send_setpoint_enu on a rejected point.
+        #
+        # TWO halves, because the geofence half cannot see a bird (guarantee 1). Trees do not move,
+        # so re-vetting a latch against them is nearly free; BIRDS do, and a latched point is only
+        # ever bird-vetted against where they were when it was latched. The bird half is what stops
+        # a re-command -- including an R3 refusal's -- from flying a point the policy would refuse
+        # to place today. A FRESH policy setpoint passes it by construction (the policy applies the
+        # same bar to the same threats), so this costs an honest dodge nothing.
         safe = self.geofence.is_safe_3d(
             setpoint, vertical_margin_m=self.vertical_margin_m, alt_bounds=self.alt_bounds)
-        if not safe:
-            unsafe_obstacle = self.geofence.unsafe_obstacle_3d(setpoint, self.vertical_margin_m)
+        near = _nearest_threat(setpoint, maneuver)
+        bar = _flown_bird_clearance_bar(maneuver)
+        bird_reject = near is not None and bar is not None and near[0] < bar
+        if not safe or bird_reject:
+            unsafe_obstacle = (self.geofence.unsafe_obstacle_3d(setpoint, self.vertical_margin_m)
+                               if not safe else None)
             self._log(
                 "gate_reject", setpoint_enu=setpoint,
                 obstacle_id=unsafe_obstacle.id if unsafe_obstacle else None,
-                reason="DIVERT setpoint failed 3D geofence/altitude re-vet; falling back to HOLD",
+                bird_clearance_m=(None if near is None else round(near[0], 3)),
+                bird_track_id=(None if near is None else near[1]),
+                min_bird_clearance_m=bar,
+                # Say what a rejection IS. It is a refusal to fly a forbidden point, not the
+                # selection of a safer one: the executor has no escape geometry (R4, open), so it
+                # commands zero displacement instead. At degenerate range the vehicle is already
+                # inside the bar, so the hold can be NEARER the bird than the point just refused --
+                # calling that "falling back to HOLD" read as though HOLD were the safer option
+                # (QA round 3, 2026-08-24, finding 2).
+                reason=("DIVERT setpoint failed the 3D geofence/altitude re-vet and is REFUSED. No "
+                        "vetted alternative exists this tick, so the executor commands zero "
+                        "displacement (HOLD) -- a refusal to fly a forbidden point, not a safer "
+                        "point. Choosing one is escape geometry: R4, open."
+                        if not safe else
+                        f"DIVERT setpoint sits {near[0]:.3f} m from bird {near[1]}, inside the "
+                        f"policy's own min_bird_clearance_m {bar:.2f} m, and is REFUSED. No vetted "
+                        f"alternative exists this tick, so the executor commands zero displacement "
+                        f"(HOLD). A HOLD honours NO clearance bar -- at degenerate range the "
+                        f"vehicle is inside the bar by construction and the hold can be nearer the "
+                        f"bird than the point just refused (see the hold event's own "
+                        f"bird_clearance_m). Choosing a point that IS outside the bar is escape "
+                        f"geometry: R4, open."),
                 policy_reason=maneuver.reason, track_id=self._track_id(maneuver),
-                latch_action=latch_action or "recommand_latched",
+                latch_action=latch_label,
             )
             # A rejected fresh/re-latch candidate leaves any existing latch intact -- the point we
             # are already flying is still vetted and still good. But if the LATCHED point itself
@@ -374,7 +539,7 @@ class AvoidanceExecutor:
                   # What the policy wanted this tick vs what we actually flew: equal on the latching
                   # tick, and on later ticks this is the paper trail for the ignored drift.
                   policy_setpoint_enu=policy_setpoint,
-                  latch_action=latch_action or "recommand_latched")
+                  latch_action=latch_label)
 
         # Audit-only: which cells were "in the shadow" of this divert, for the event log / a human
         # reading it later. finalize() is the actual source of truth for coverage status.

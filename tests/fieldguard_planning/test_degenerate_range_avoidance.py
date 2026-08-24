@@ -19,12 +19,11 @@ fix can be proven to move them:
       saturates at 180 deg as soon as eps >= r. ADR-009 ranges birds by apparent size; its error at
       15 m is metres, so at r = 0.052 m the commanded dodge direction is 100% noise.
 
-  M2  MARGIN.   Gate 2 of the vet is `if seg.clearance_m < p.lateral_tree_margin_m`
-      (avoidance_policy.py:385) and `lateral_tree_margin_m` defaults to 0.0
-      (avoidance_policy.py:80) and is set by NO caller -- `avoidance_node.py:122` constructs the
-      policy with `field_polygon=` and `cruise_alt_m=` only. So the ACCEPTANCE boundary coincides
-      exactly with the EXCLUSION boundary: a swept path tangent to a tree column is accepted with
-      0.000 m to spare. This is range-independent; the degenerate tick merely sampled it.
+  M2  MARGIN.   Gate 2 of the vet is `if seg.clearance_m < p.lateral_tree_margin_m`, and
+      `lateral_tree_margin_m` USED TO default to 0.0, set by no caller. So the ACCEPTANCE boundary
+      coincided exactly with the EXCLUSION boundary: a swept path tangent to a tree column was
+      accepted with 0.000 m to spare. This is range-independent; the degenerate tick merely
+      sampled it. FIXED 2026-08-24 by R2 -- see STATUS.
 
   M3  SELECTION. At r -> 0 the other gates stop discriminating: every candidate direction increases
       separation from a bird you are already on top of, and every 10 m dodge clears
@@ -40,18 +39,32 @@ WHAT IS AND IS NOT BOUNDED (see the class docstrings for the numbers)
     `test_convexity_is_what_makes_setpoint_containment_imply_path_containment` is the tripwire.
   * Separation from the BIRD is not bounded at all: the flown CPA was 0.0518 m.
 
-CONVENTIONS
-  * `test_CURRENT_*` pins today's behaviour, including where today's behaviour is wrong. Each one
-    names the recommendation that should break it. When the fix lands these tests MUST fail -- that
-    is the point; update them with the ADR amendment, do not weaken them.
-  * `test_WANT_*` is `@unittest.expectedFailure`: the invariant we want. It flips to "unexpected
-    success" (a RED unittest run) the moment a fix makes it true. Self-activating, zero edits.
-    NOTE: pytest reports an unexpected success as xpass, which is not red by default -- the
-    canonical CI invocation `python3 -m unittest discover -s tests/fieldguard_planning` is what
-    makes these bite. The `test_CURRENT_*` pins fail under BOTH runners; they are the real gate.
+STATUS (2026-08-24): R2 and R3 have LANDED (ADR-013 amendment 12).
+  * M2 is fixed in code: `PolicyParams.lateral_tree_margin_m` is now 1.0, and the flight-log gate
+    reads the bar from that same dataclass. Every assertion below that pins the AS-FLOWN behaviour
+    now passes `lateral_tree_margin_m=0.0` EXPLICITLY (see `TestFlownTick329.AS_FLOWN` and
+    `build_sweep(margin_m=0.0)`). The historical finding is preserved as history rather than
+    deleted -- and it can no longer be mistaken for what the vehicle would do today.
+  * M1 is NOT fixed and is not claimed to be: the away-vector still has no range floor. R3 changes
+    nothing about the DIRECTION; it stops the EXECUTOR from re-latching onto a noise-driven
+    setpoint (pinned in `test_degenerate_relatch_refusal.py`). R4 -- the reversal-preferring
+    candidate order that made the flown dodge useless -- is still open, and S1's 0.0518 m CPA is
+    therefore still open.
 
-No policy/executor/geofence code is modified by this file. A control-law change cannot be
-live-gated offline and is not QA's to ship.
+CONVENTIONS
+  * `test_CURRENT_*` / `test_AS_FLOWN_*` pin behaviour that was flown, including where it was
+    wrong. When a fix lands these MUST be re-pinned against the params the flight actually used,
+    with the ADR amendment -- never weakened, never deleted.
+  * `test_WANT_*` was `@unittest.expectedFailure`: an invariant that flips to "unexpected success"
+    (RED under `python3 -m unittest discover`, and also under pytest) the moment a fix makes it
+    true. Both are gone: the R2 one flipped and is now a plain assertion, and the CPA one was a
+    permanent xfail on a FROZEN artifact -- a self-activating tripwire that could never activate,
+    because the flown path it reads can never change. It is now stated as what it is
+    (`TestFlightLogArtifact`), and the live bar it stands for is enforced by
+    `scripts/check_live_flight_log.py` on every NEW flight.
+
+This file modifies no source; it pins `avoidance_policy` / `avoidance_executor` / `geofence`
+behaviour from the outside.
 
 stdlib unittest only. Run: python3 -m unittest discover -s tests/fieldguard_planning -v
 """
@@ -149,8 +162,9 @@ class _SweepMixin:
     @classmethod
     def build_sweep(cls, margin_m=None):
         """`margin_m=None` means 'whatever the policy's own default is' -- deliberately NOT pinned
-        to 0.0, so that the day `lateral_tree_margin_m` gains a nonzero default this sweep follows
-        it and the CURRENT/WANT pair below flips on its own. Pass a number only to PRICE a margin."""
+        to a literal, so this sweep follows `lateral_tree_margin_m` wherever it goes (that is what
+        made the R2 pair flip on its own when the default moved 0.0 -> 1.0). Pass a number to price
+        a margin or to replay the AS-FLOWN 0.0."""
         overrides = {} if margin_m is None else {"lateral_tree_margin_m": margin_m}
         geo = GeofenceMap.from_file()
         poly = load_field_polygon()
@@ -199,9 +213,16 @@ class TestFlownTick329(unittest.TestCase):
     bit-identical on a bare interpreter. Heading is irrelevant here and deliberately so -- the
     heading-fallback branch needs |r| < 1e-9 m, which no tick of this encounter reached.
 
-    THIS WHOLE CLASS IS PINNED TO THE AS-FLOWN CONTROL LAW. Any change to the policy is expected to
-    break it -- that is the alarm working. Re-pin it against the flight log of the flight that
-    proves the change, never against a replay of the change itself."""
+    THIS WHOLE CLASS IS PINNED TO THE AS-FLOWN CONTROL LAW, which since 2026-08-24 means pinned to
+    `AS_FLOWN` params rather than to policy DEFAULTS: R2 moved `lateral_tree_margin_m` 0.0 -> 1.0,
+    and a replay of the flown ticks under today's defaults is a replay of a flight that never
+    happened. Re-pin against the flight log of the flight that proves a change, never against a
+    replay of the change itself."""
+
+    # The params the 2026-08-23 flight ACTUALLY flew. Only the margin differs from today's
+    # defaults; naming it here keeps 'what was flown' in exactly one place, and keeps the encounter
+    # replaying bit-identically no matter how many more knobs move afterwards.
+    AS_FLOWN = {"lateral_tree_margin_m": 0.0}
 
     @classmethod
     def setUpClass(cls):
@@ -209,11 +230,16 @@ class TestFlownTick329(unittest.TestCase):
         cls.pol = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=CRUISE_ALT_M)
 
     def _decide(self, tick_row, **overrides):
+        """Replays a flown tick under AS_FLOWN params; `overrides` win, so a caller can price a
+        different control law against the same geometry."""
         _, pos, _, _, _, _ = tick_row
-        return self.pol.decide(_bird(DEMO_BIRD_ENU), _drone(pos), self.geo, **overrides)
+        params = {**self.AS_FLOWN, **overrides}
+        return self.pol.decide(_bird(DEMO_BIRD_ENU), _drone(pos), self.geo, **params)
 
     def test_whole_encounter_replays_bit_identically(self):
-        """All 19 ticks: same decision, same away-unit, same swept clearance, same trigger range."""
+        """All 19 ticks under AS_FLOWN params: same decision, same away-unit, same swept clearance,
+        same trigger range. The flight log is a frozen fact; this is the assertion that keeps it
+        reproducible from source no matter what the current control law does."""
         for row in ENCOUNTER:
             tick, pos, rng, away, clr, _ = row
             with self.subTest(tick=tick):
@@ -232,16 +258,21 @@ class TestFlownTick329(unittest.TestCase):
                          "the vet rejected NOTHING on the degenerate tick -- the first candidate, "
                          "whose direction is noise, was taken")
 
-    def test_CURRENT_vet_accepts_the_degenerate_tick_because_the_margin_is_zero(self):
-        """R2 (nonzero lateral_tree_margin_m) must break this test. 0.846 m of swept clearance is
-        accepted only because the required margin is 0.0."""
-        m = self._decide(TICK_329)
-        self.assertEqual(m.debug["params"]["lateral_tree_margin_m"], 0.0)
-        self.assertEqual(m.debug["swept_tree_clearance_m"], 0.846)
+    def test_AS_FLOWN_the_vet_accepted_the_degenerate_tick_because_the_margin_was_zero(self):
+        """WHY the flown tick was accepted, and that R2 is what changed it. 0.846 m of swept
+        clearance passed only because the required margin was 0.0; at today's default the same
+        candidate is REJECTED by name, in the same debug dict the flight log carries."""
+        flown = self._decide(TICK_329)
+        self.assertEqual(flown.debug["params"]["lateral_tree_margin_m"], 0.0)
+        self.assertEqual(flown.debug["swept_tree_clearance_m"], 0.846)
         seg = self.geo.segment_clearance(TICK_329[1][:2], SETPOINT_329[:2])
         self.assertEqual(seg.obstacle.id, "tree_row1_3")
         self.assertAlmostEqual(seg.clearance_m + OBSTACLE_R_M, 2.846, places=3,
                                msg="distance from the swept path to the TRUNK")
+        today = self._decide(TICK_329, lateral_tree_margin_m=PolicyParams().lateral_tree_margin_m)
+        self.assertEqual([r["angle_deg"] for r in today.debug["candidates_rejected"]], [0.0])
+        self.assertIn("swept path clears tree by only 0.85 m",
+                      today.debug["candidates_rejected"][0]["why"])
 
     def test_one_tick_of_range_collapse_costs_7_metres_of_tree_clearance(self):
         """tick 328 -> 329: range 1.280 -> 0.052 m, clearance 7.879 -> 0.846 m. The discontinuity,
@@ -261,17 +292,20 @@ class TestFlownTick329(unittest.TestCase):
         self.assertAlmostEqual(jump, 20.894, places=3)
         self.assertGreater(jump, 3.0, "RELATCH_THRESHOLD_M")
 
-    def test_margin_of_one_metre_would_have_rotated_this_tick_and_kept_all_19_diverts(self):
-        """R2 priced on the flown encounter: at lateral_tree_margin_m=1.0 the degenerate tick is
+    def test_the_landed_margin_rotates_this_tick_and_keeps_all_19_diverts(self):
+        """R2's price on the flown encounter, re-run against the LANDED default (read from
+        PolicyParams, not a literal, so this follows any future change): the degenerate tick is
         rejected at +0 deg and taken at +45 deg with 7.563 m of clearance, and every one of the 19
         ticks still DIVERTs -- the 19/19 vetted encounter is preserved, not traded away."""
+        margin = PolicyParams().lateral_tree_margin_m
+        self.assertEqual(margin, 1.0, "R2's landed value; if it moved, re-price this encounter")
         n_divert = 0
         for row in ENCOUNTER:
-            m = self._decide(row, lateral_tree_margin_m=1.0)
+            m = self._decide(row, lateral_tree_margin_m=margin)
             n_divert += (m.decision is Decision.DIVERT)
         self.assertEqual(n_divert, 19, "a margin that costs a DIVERT is not free -- re-price it")
 
-        m = self._decide(TICK_329, lateral_tree_margin_m=1.0)
+        m = self._decide(TICK_329, lateral_tree_margin_m=margin)
         self.assertIs(m.decision, Decision.DIVERT)
         self.assertEqual(m.debug["candidate_angle_deg"], 45.0)
         self.assertEqual(len(m.debug["candidates_rejected"]), 1)
@@ -299,11 +333,21 @@ class TestAwayVectorDegeneracy(unittest.TestCase):
         self.assertIsNotNone(_unit((0.052, 0.0)),
                              "the flown degenerate range is NOT caught by the existing guard")
 
-    def test_no_range_floor_parameter_exists(self):
-        """Source-of-truth tripwire for R1: the day a range floor is added to PolicyParams this
-        fails, and whoever added it updates this file and the ADR together."""
+    def test_the_degenerate_range_knob_is_a_flag_not_a_range_floor(self):
+        """R3 landed `degenerate_range_m`, and this pins WHICH kind of knob it is. A FLOOR would
+        suppress the decision below the range (no dodge at all, span -> 0 deg); R3 instead publishes
+        `range_degenerate` and lets the EXECUTOR refuse to re-latch, so the policy still returns its
+        best-effort dodge at 0.052 m. The day someone turns it into a floor -- or adds a second
+        range knob -- this fails and they update this file and the ADR together."""
+        self.assertIn("degenerate_range_m", PolicyParams.__dataclass_fields__)
+        self.assertEqual(PolicyParams().degenerate_range_m, 1.0)
         self.assertNotIn("min_trigger_range_m", PolicyParams.__dataclass_fields__)
         self.assertFalse([f for f in PolicyParams.__dataclass_fields__ if "range_floor" in f])
+        # Flag, not floor: still DIVERTs at the flown degenerate range, and says so in the debug.
+        m = self.pol.decide(_bird(DEMO_BIRD_ENU), _drone(TICK_329[1]), self.geo)
+        self.assertIs(m.decision, Decision.DIVERT)
+        self.assertTrue(m.debug["range_degenerate"])
+        self.assertEqual(m.debug["params"]["degenerate_range_m"], 1.0)
 
     def _bearing_set(self, r, eps, n=48):
         """Commanded dodge bearings as the bird ESTIMATE is perturbed by `eps` m in every direction,
@@ -324,14 +368,16 @@ class TestAwayVectorDegeneracy(unittest.TestCase):
 
         ADR-009 ranges a bird from its apparent size, an estimator whose error at 15 m is metres,
         not centimetres. At the flown range of 0.052 m, a 0.5 m position error lets the commanded
-        dodge point almost anywhere: measured bearing span 337.1 deg (the residual ~23 deg gap is
-        where the tree gate rotates the candidate, not where the geometry constrains it). Even a
-        5 cm error -- the size of the range itself -- spans 153.2 deg. At 9.27 m, the range this
-        same encounter triggered at, the same 0.5 m error moves the dodge by 6.2 deg.
+        dodge point almost anywhere: measured bearing span 323.3 deg at today's 1.0 m margin
+        (337.1 deg as flown at 0.0 -- the difference is where the tree gate rotates a candidate,
+        not where the geometry constrains it). Even a 5 cm error -- the size of the range itself --
+        spans >150 deg. At 9.27 m, the range this same encounter triggered at, the same 0.5 m error
+        moves the dodge by 6.2 deg.
 
         Threshold 300 deg, not 337: this test is about M1 (direction) and must NOT be tripped by an
-        M2 margin change, which only rotates a few more candidates (measured 323.3 deg at margin
-        1.0). Only a real range floor collapses it -- to 0.0 deg, since no dodge is emitted."""
+        M2 margin change, which only rotates a few more candidates. R3 does not touch it either --
+        a re-latch refusal is executor state, not direction. Only a real range floor collapses it,
+        to 0.0 deg, since no dodge would be emitted at all."""
         near = self._bearing_set(TICK_329[2], eps=0.5, n=72)
         near_tiny = self._bearing_set(TICK_329[2], eps=0.05, n=72)
         far = self._bearing_set(9.272, eps=0.5, n=72)
@@ -371,45 +417,63 @@ class TestAwayVectorDegeneracy(unittest.TestCase):
 
 
 # ==================================================================================================
-class TestZeroLateralTreeMargin(_SweepMixin, unittest.TestCase):
-    """M2: `lateral_tree_margin_m` is 0.0 BY CODE DEFAULT and by no caller overriding it, so the
-    vet's accept boundary IS the exclusion boundary. Range-independent: the degenerate tick did not
-    create this tail, it sampled it."""
+class TestLateralTreeMargin(_SweepMixin, unittest.TestCase):
+    """M2, before and after R2. `lateral_tree_margin_m` WAS 0.0 by code default and by no caller
+    overriding it, so the vet's accept boundary was the exclusion boundary; it is now 1.0. Both
+    regimes are measured here over the same ~12k-decision sweep, because the historical tail is the
+    evidence that the fix was needed and the current floor is the invariant it bought.
+
+    `sweep` follows the policy default (so it tracks any future change); `sweep0` is the AS-FLOWN
+    0.0 and never moves."""
 
     @classmethod
     def setUpClass(cls):
-        cls.sweep = cls.build_sweep()   # policy default margin, whatever it currently is
+        cls.sweep = cls.build_sweep()                  # policy default margin, whatever it now is
+        cls.sweep0 = cls.build_sweep(margin_m=0.0)     # the as-flown regime, pinned forever
 
-    def test_margin_default_is_zero_and_the_live_node_leaves_it_zero(self):
-        """The answer to 'margin floor 0.0 by config or by code?': by CODE. There is no config for
-        it, and avoidance_node.py builds the policy with field_polygon + cruise_alt_m only."""
-        self.assertEqual(PolicyParams().lateral_tree_margin_m, 0.0)
-        as_flown = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=CRUISE_ALT_M)
-        self.assertEqual(as_flown.params.lateral_tree_margin_m, 0.0)
+    def test_margin_default_is_one_metre_and_the_live_node_still_does_not_set_it(self):
+        """R2 landed in the POLICY, which is the only place it can be one source of truth: the
+        flight-log gate reads the bar from this same dataclass, so a node-side override would let
+        the two disagree silently. Hence both halves: the value is 1.0, and no caller sets it."""
+        self.assertEqual(PolicyParams().lateral_tree_margin_m, 1.0)
+        built = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=CRUISE_ALT_M)
+        self.assertEqual(built.params.lateral_tree_margin_m, 1.0,
+                         "the constructor default drifted from the dataclass default")
         node_src = (REPO_ROOT / "src" / "fieldguard_planning" / "avoidance_node.py").read_text()
         self.assertNotIn("lateral_tree_margin_m", node_src,
-                         "if the node starts setting the margin, re-price this whole file")
+                         "the node must not set the margin -- PolicyParams is its one home")
 
-    def test_CURRENT_a_swept_path_exactly_tangent_to_a_tree_column_is_accepted(self):
-        """R2 must break this test. Exact geometry, no float fuzz: drone (9,3), bird 0.052 m due
+    def test_AS_FLOWN_a_swept_path_exactly_tangent_to_a_tree_column_was_accepted(self):
+        """The zero-margin defect, exact geometry, no float fuzz: drone (9,3), bird 0.052 m due
         west, dodge due east to (19,3). tree_row0_0 sits at (15,5) with obstacle_radius 2.0, so the
         segment y=3 is EXACTLY tangent to its exclusion column -- clearance 0.000 m -- and the vet
-        accepts, because the test is `clearance < 0.0`."""
+        accepted it, because the test was `clearance < 0.0`. Under today's margin the same tangent
+        candidate is refused and the dodge is rotated away."""
         geo, pol = self.sweep["geo"], self.sweep["policy"]
         drone_xy = (9.0, 3.0)
-        m = pol.decide(_bird((8.948, 3.0, CRUISE_ALT_M)), _drone((*drone_xy, CRUISE_ALT_M)), geo)
-        self.assertIs(m.decision, Decision.DIVERT)
-        self.assertEqual(m.setpoint_enu, (19.0, 3.0, CRUISE_ALT_M))
-        seg = geo.segment_clearance(drone_xy, m.setpoint_enu[:2])
+        bird, drone = _bird((8.948, 3.0, CRUISE_ALT_M)), _drone((*drone_xy, CRUISE_ALT_M))
+
+        flown = pol.decide(bird, drone, geo, lateral_tree_margin_m=0.0)
+        self.assertIs(flown.decision, Decision.DIVERT)
+        self.assertEqual(flown.setpoint_enu, (19.0, 3.0, CRUISE_ALT_M))
+        seg = geo.segment_clearance(drone_xy, flown.setpoint_enu[:2])
         self.assertEqual(seg.obstacle.id, "tree_row0_0")
         self.assertEqual(seg.clearance_m, 0.0)
-        self.assertEqual(m.debug["swept_tree_clearance_m"], 0.0)
+        self.assertEqual(flown.debug["swept_tree_clearance_m"], 0.0)
 
-    def test_CURRENT_sweep_finds_a_sub_centimetre_accepted_clearance(self):
-        """R2 must break this test. Population statistic over the degenerate regime, so nobody can
-        call the flown 0.846 m a one-off: on a 1 m grid around three trees at the flown range,
-        today's vet accepts dodges down to 0.000 m of swept clearance."""
-        clears = self.accepted_clearances()
+        today = pol.decide(bird, drone, geo)
+        self.assertNotEqual(today.setpoint_enu, flown.setpoint_enu,
+                            "the tangent dodge is still being flown")
+        if today.decision is Decision.DIVERT:
+            self.assertGreaterEqual(today.debug["swept_tree_clearance_m"],
+                                    PolicyParams().lateral_tree_margin_m)
+        self.assertEqual([r["angle_deg"] for r in today.debug["candidates_rejected"]][:1], [0.0])
+
+    def test_AS_FLOWN_the_sweep_found_a_sub_centimetre_accepted_clearance(self):
+        """Population statistic over the degenerate regime at margin 0.0, so nobody can call the
+        flown 0.846 m a one-off: on a 1 m grid around three trees at the flown range, the as-flown
+        vet accepted dodges down to 0.000 m of swept clearance."""
+        clears = self.accepted_clearances(self.sweep0)
         self.assertGreater(len(clears), 5000, "sweep degenerated -- it must actually measure something")
         self.assertLessEqual(min(clears), 0.01)
         self.assertGreaterEqual(sum(1 for c in clears if c < 0.1) / len(clears), 0.04,
@@ -417,23 +481,25 @@ class TestZeroLateralTreeMargin(_SweepMixin, unittest.TestCase):
         self.assertGreaterEqual(sum(1 for c in clears if c < 1.0) / len(clears), 0.25,
                                 ">=25% clear by <1 m")
 
-    @unittest.expectedFailure
-    def test_WANT_every_accepted_dodge_keeps_one_metre_of_swept_tree_clearance(self):
-        """The invariant R2 buys. Self-activating: goes 'unexpected success' (red under unittest)
-        the moment a nonzero margin lands. 1.0 m is what the 18-tree geometry supports -- see
-        TestWhatTheGeometrySupports."""
-        self.assertGreaterEqual(min(self.accepted_clearances()), 1.0)
+    def test_every_accepted_dodge_keeps_the_full_lateral_tree_margin(self):
+        """The invariant R2 bought, and the one the next flight's log is gated on (every logged
+        `swept_tree_clearance_m` >= the margin). Was the `test_WANT_*` xfail until 2026-08-24; it
+        flipped on its own the moment the default moved, exactly as designed. The bar is read from
+        PolicyParams so this cannot pass by asserting yesterday's number."""
+        bar = PolicyParams().lateral_tree_margin_m
+        self.assertGreaterEqual(bar, 1.0, "1.0 m is what the 18-tree geometry supports (3x headroom)")
+        self.assertGreaterEqual(min(self.accepted_clearances()), bar)
 
-    def test_a_margin_of_one_metre_actually_delivers_it(self):
-        """Not an aspiration: run the same sweep with margin 1.0 and confirm the tail is gone and
-        the HOLD rate stays sane. The FIX is proven offline; only its FLIGHT behaviour needs a gate."""
-        fixed = self.build_sweep(margin_m=1.0)
-        clears = self.accepted_clearances(fixed)
-        self.assertGreaterEqual(min(clears), 1.0)
+    def test_the_margin_costs_less_than_15_points_of_hold_rate(self):
+        """The price, measured on the same sweep rather than argued: forbidding the tangent tail
+        must not turn dodges into holds all round the orchard. Compared against the as-flown 0.0
+        regime, so this stays a real comparison after the default moved."""
+        hold_rate_flown = self.sweep0["n_hold"] / self.sweep0["n_case"]
         hold_rate_now = self.sweep["n_hold"] / self.sweep["n_case"]
-        hold_rate_fix = fixed["n_hold"] / fixed["n_case"]
-        self.assertLess(hold_rate_fix - hold_rate_now, 0.15,
+        self.assertLess(hold_rate_now - hold_rate_flown, 0.15,
                         "a margin that turns dodges into holds near every tree is not free")
+        self.assertGreater(len(self.sweep["accepted"]), 5000,
+                           "the margin emptied the sweep -- it would be measuring nothing")
 
 
 # ==================================================================================================
@@ -463,10 +529,11 @@ class TestConsequenceIsBoundedByGeometryNotByTheGate(_SweepMixin, unittest.TestC
                 self.fail(f"accepted dodge sweeps INSIDE a tree column: {drone_xy} -> {sp} ({clr} m)")
 
     def test_tangent_acceptance_still_clears_the_physical_canopy_by_0_70_m(self):
-        """Padding, not a decision: obstacle_radius 2.0 - canopy_radius 1.3. Today the worst
-        accepted swept path is exactly 0.700 m from the leaves -- every metre of it donated by the
-        obstacle-radius padding, none of it chosen by the vet. Asserted as a FLOOR so a fix that
-        raises it stays green and a world change that shrinks the padding goes red."""
+        """Padding, not a decision: obstacle_radius 2.0 - canopy_radius 1.3. AS FLOWN the worst
+        accepted swept path was exactly 0.700 m from the leaves -- every centimetre of it donated by
+        the obstacle-radius padding, none of it chosen by the vet. R2 raises it to 1.700 m, and this
+        stays asserted as a FLOOR: a fix that raises the number keeps it green, a world change that
+        shrinks the padding turns it red."""
         worst = min(self.accepted_clearances())
         self.assertGreaterEqual(worst + OBSTACLE_R_M - CANOPY_R_M, 0.700 - 1e-9)
 
@@ -685,14 +752,39 @@ class TestFlightLogArtifact(unittest.TestCase):
         worst = max(max(-p[0], p[0] - 75.0, -p[1], p[1] - 60.0) for _, p in outside)
         self.assertAlmostEqual(worst, 0.073, places=3)
 
-    @unittest.expectedFailure
-    def test_WANT_the_encounter_holds_the_policys_own_minimum_bird_clearance(self):
-        """The bar the flight missed, stated as the invariant a re-fly must clear: CPA >= 3.0 m
-        (`min_bird_clearance_m` -- the policy already refuses to place a SETPOINT closer than this,
-        so flying closer than it is inconsistent on its face). Self-activating: goes red-as-passing
-        the day a flight clears it."""
+    def test_the_bird_clearance_bar_this_log_missed_is_carried_by_a_live_gate_and_a_marker(self):
+        """RETIRED XFAIL (2026-08-24) -- and why it was retired rather than satisfied.
+
+        `test_WANT_the_encounter_holds_the_policys_own_minimum_bird_clearance` asserted CPA >= 3.0 m
+        on THIS log under `@unittest.expectedFailure`, meant to flip red-as-passing "the day a
+        flight clears the bar". It never could: the artifact is frozen, its flown path is a
+        historical fact, and no code change can move it. A self-activating tripwire pointed at a
+        constant is a permanent xfail wearing a tripwire's clothes. R2 and R3, the fixes that did
+        land, deliberately do NOT address S1 (the escape geometry -- R4, still open), so nothing in
+        this session is entitled to make that assertion pass either.
+
+        The invariant therefore lives where it can actually bite, and this pins that both halves
+        exist:
+          1. `scripts/check_live_flight_log.py` computes CPA against `min_bird_clearance_m` for
+             every log on every run and fails a NEW breaching flight (R1, shipped 2026-08-23);
+          2. this log carries a `SAFETY_FINDING` marker, which is what makes its breach a loud
+             ACKNOWLEDGED rather than a silent pass -- delete the marker and the checker fails hard.
+        The breach itself stays pinned, unweakened, in
+        `test_CURRENT_closest_point_of_approach_was_5_centimetres`."""
         cpa = min(math.dist(p[:2], DEMO_BIRD_ENU[:2]) for p in self.path)
-        self.assertGreaterEqual(cpa, PolicyParams().min_bird_clearance_m)
+        self.assertLess(cpa, PolicyParams().min_bird_clearance_m,
+                        "this log's breach is this test's premise -- see the CURRENT pin above")
+        marker = LIVE_LOG.with_name(LIVE_LOG.stem + ".SAFETY_FINDING.md")
+        self.assertTrue(marker.exists(),
+                        f"{marker.name} is missing: the breach would read as unremarked history")
+        self.assertIn(f"{cpa:.4f}", marker.read_text(),
+                      "the marker must state the measured number, not a vague finding")
+        checker = (REPO_ROOT / "scripts" / "check_live_flight_log.py").read_text()
+        for token in ("min_bird_clearance_m", "SAFETY_FINDING"):
+            self.assertIn(token, checker,
+                          f"check_live_flight_log.py no longer references {token} -- the live CPA "
+                          f"gate or its acknowledgement mechanism regressed, and this log's bar "
+                          f"went back to being enforced by nothing")
 
 
 if __name__ == "__main__":
