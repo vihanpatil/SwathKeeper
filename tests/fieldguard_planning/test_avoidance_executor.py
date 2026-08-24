@@ -244,5 +244,75 @@ class TestAvoidanceExecutor(unittest.TestCase):
         self.assertEqual(len(ex.event_log), events_after_first)  # no duplicated debt events
 
 
+class TestTheStalenessGateCannotKillAFlightSILENTLY(unittest.TestCase):
+    """QA ROUND 2, FINDING 2, the probe: 20 ticks with a bird 2 m horizontal / 1 m below the drone
+    -- squarely inside the threat cylinder on every one -- flown through the REAL policy and the
+    REAL executor, twice. Fresh stamps: 20 detections, 20 maneuvers. Every stamp 60 s old: 0
+    detections, 0 maneuvers, 20 PROCEEDs -- avoidance completely dead.
+
+    The defect was that `n_stale_dropped` rode ONLY on an accepted-DIVERT `maneuver` event, and
+    all-stale is precisely the case that never produces one. So the counter whose whole job is to
+    tell "every detection expired" from "no bird was ever seen" read **0 in both arms**, and the
+    flight certified VALID with `R2/R3 PASS (vacuous)` and `n_stale_dropped=0`. Trigger in the air:
+    any systematic sub-second clock offset (the node's domain tripwire only fires on stamps in the
+    FUTURE), or a render stall longer than the 1.0 s bound."""
+
+    def _fly(self, stamp_age_s):
+        from fieldguard_planning.avoidance_policy import AvoidancePolicy
+        from fieldguard_planning.coverage import load_field_polygon
+        pol = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=15.0)
+        ex, sink = _exec()
+        now = 1000.0
+        for i in range(20):
+            drone = _drone(30.0, 10.0 + 0.1 * i)
+            bird = Detection((32.0, 10.0 + 0.1 * i, 14.0), frame_id=i, track_id="bird_0",
+                             stamp_s=now + 0.2 * i - stamp_age_s)
+            ex.step(drone, pol.decide(bird, drone, ex.geofence, now_s=now + 0.2 * i))
+        return ex
+
+    @staticmethod
+    def _stale_total(ex):
+        """`check_live_flight_log.stale_dropped_total`'s rule, applied to the live event log."""
+        return sum(e["debug"].get("n_stale_dropped") or 0 for e in ex.event_log
+                   if isinstance(e.get("debug"), dict))
+
+    def test_fresh_detections_engage_the_loop_and_drop_nothing(self):
+        ex = self._fly(stamp_age_s=0.0)
+        self.assertEqual(len(_events(ex, "detection")), 20)
+        self.assertEqual(len(_events(ex, "maneuver")), 20)
+        self.assertEqual(self._stale_total(ex), 0)
+
+    def test_every_detection_expiring_is_COUNTABLE_and_not_a_silent_zero(self):
+        ex = self._fly(stamp_age_s=60.0)
+        self.assertEqual(_events(ex, "detection"), [])        # the loop never engaged...
+        self.assertEqual(_events(ex, "maneuver"), [])
+        self.assertEqual(len(_events(ex, "proceed")), 20)
+        self.assertEqual(self._stale_total(ex), 20)           # ...and the artifact says WHY
+        proceed = _events(ex, "proceed")[0]
+        self.assertEqual(proceed["debug"]["n_stale_dropped"], 1)
+        self.assertEqual(proceed["debug"]["stale_ids"], ["bird_0"])
+        self.assertEqual(proceed["debug"]["max_detection_age_s"], 1.0)
+
+    def test_a_flight_that_saw_nothing_stays_distinguishable_from_one_that_expired(self):
+        """The other half of the diagnosis: no detections at all must NOT grow a stale count, or the
+        two cases become the same artifact again from the opposite direction."""
+        ex, _ = _exec()
+        for i in range(5):
+            ex.step(_drone(30.0, 10.0 + i), AvoidanceManeuver(decision=Decision.PROCEED))
+        self.assertEqual(self._stale_total(ex), 0)
+        self.assertTrue(all("debug" not in e for e in _events(ex, "proceed")),
+                        "a healthy tick must not pay for a debug dict it has nothing to put in")
+
+    def test_a_HOLD_carries_the_count_too_so_a_partial_drop_is_not_lost(self):
+        """Stale drops travel with whatever decision the tick produced -- a tick that dropped an old
+        bird and HELD for a live one must not lose the count on its way to the log."""
+        ex, _ = _exec()
+        mv = AvoidanceManeuver(decision=Decision.HOLD, reason="boxed in",
+                               debug={"n_stale_dropped": 2, "stale_ids": ["a", "b"]})
+        ex.step(_drone(30.0, 10.0), mv)
+        self.assertEqual(_events(ex, "hold")[0]["debug"]["n_stale_dropped"], 2)
+        self.assertEqual(self._stale_total(ex), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

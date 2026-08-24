@@ -1,0 +1,108 @@
+{
+ "schema_version": "1.4",
+ "synthetic": false,
+ "pending_gazebo_replacement": false,
+ "generator": "src/fieldguard_planning/record_node.py (live real-render recorder)",
+ "seed": null,
+ "num_frames": 681,
+ "num_rgb_frames": 681,
+ "num_stale_pose_pairs": 0,
+ "pose_pairing": "gz_clock_stamp",
+ "stale_pair_bound_s": 0.35,
+ "image_width_px": 640,
+ "image_height_px": 480,
+ "coordinate_frame": "world ENU meters (x=East, y=North, z=Up), REP-103 convention",
+ "camera": {
+  "image_width_px": 640,
+  "image_height_px": 480,
+  "fx": 520.0057601928711,
+  "fy": 520.0057983398438,
+  "cx": 320.0,
+  "cy": 240.0
+ },
+ "camera_extrinsic": {
+  "mount": "rigid nadir (ADR-007 fg_sensor_mount), fixed for entire clip",
+  "offset_from_drone_m": [
+   0.0,
+   0.0,
+   -0.08
+  ]
+ },
+ "gps_global_origin": null,
+ "fuser": {
+  "fused_count": 706,
+  "dropped_pair_count": 0,
+  "unpaired_red_count": 0,
+  "red_frames": 706,
+  "nir_frames": 707,
+  "camera_info_frames": 706,
+  "nir_camera_info_frames": 707,
+  "unpaired_red_nearest_nir": {
+   "classified": 0,
+   "le_slop": 0,
+   "slop_to_tick": 0,
+   "ge_tick": 0,
+   "no_nir_in_window": 0,
+   "pending": 10,
+   "evicted_undrained": 0,
+   "slop_s": 0.05,
+   "tick_s": 0.2,
+   "settle_s": 2.0
+  },
+  "last_fused_stamp_sim_s": 147.2,
+  "update_rate_hz": 5.0,
+  "max_delta_s": 0.05,
+  "sync_queue_size": 60,
+  "stats_schema_version": "1.1",
+  "writer": "src/fieldguard_planning/ndvi_node.py",
+  "pid": 2400,
+  "wall_time_s": 1787422211.6341295,
+  "written_utc": "2026-08-22T18:10:11Z",
+  "present": true,
+  "source": "/workspace/fieldguard/eval/results/ndvi_fuser_stats.json",
+  "stats_age_s": 1.028,
+  "stats_stale": false,
+  "stats_stale_after_s": 5.0
+ },
+ "recorder": {
+  "present": true,
+  "ndvi_msgs_received": 695,
+  "rgb_msgs_received": 696,
+  "dropped_no_writer": 0,
+  "dropped_no_pose": 14,
+  "on_ndvi_wall_ms_p95": 6.747,
+  "on_ndvi_wall_ms_max": 12.101,
+  "on_ndvi_wall_ms_n": 695,
+  "on_ndvi_wall_ms_window": 20000,
+  "note": "ndvi_msgs_received counts every /fg/ndvi/image message this process's callback was handed, BEFORE any guard; fused_count minus it is the transport loss on that hop. wall_ms times the whole _on_ndvi body including the synchronous .npy/.jsonl writes; null means no sample, never zero."
+ },
+ "airborne": {
+  "z_threshold_m": 1.0,
+  "frames": 524,
+  "frames_total": 681,
+  "first_stamp_sim_s": 33.8,
+  "last_stamp_sim_s": 138.4,
+  "span_s": 104.6,
+  "cadence_hz": 5.0,
+  "note": "cadence_hz = (frames-1)/span_s over the airborne window only -- the basis the ADR-015 predictor's --fps expects. It is frame OPPORTUNITY along the lanes, not painting yield: the frames that PAINTED a cell are counted by scripts/stitch_ndvi.py into heatmap.json (frames_painting), because whether a frame paints depends on the projection, which is an offline post-flight question (ADR-010)."
+ },
+ "dds": {
+  "rmw": "rmw_fastrtps_cpp",
+  "rmw_source": "default",
+  "profiles_file": "/workspace/fieldguard/config/dds/fg_fastdds.xml",
+  "profiles_file_present": true,
+  "shm_capacity_bytes": 1073741824,
+  "shm_free_bytes": 1031426048,
+  "shm_segments": {
+   "count": 4,
+   "min_bytes": 8413728,
+   "max_bytes": 8413728
+  },
+  "rmem_max": 212992,
+  "wmem_max": 212992,
+  "unreadable": {},
+  "note": "shm_segments EXCLUDES fastrtps_port* (fixed 52,416 B port queues). max_bytes proves a profile loaded (default segment file is 549,408 B); min_bytes proves no participant missed it. Socket buffers are recorded, not tunable: /proc/sys is read-only here and --sysctl is rejected by runc on this kernel."
+ },
+ "clock_note": "camera stamps are Gazebo sim time; /ap/pose/filtered stamps are ArduPilot's clock (use_sim_time=false) -- poses gz-tagged via a native gz clock stream and paired to each frame's stamp; residual in poses.jsonl pose_pair_residual_s, stale pairs flagged pose_pair_stale",
+ "ndvi_dtype": "float32, numpy.save (.npy), values in [-1, 1]"
+}

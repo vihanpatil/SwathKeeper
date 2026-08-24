@@ -65,16 +65,16 @@ POLL_S=3
 # which mark "not expanding here is the requirement", not an oversight.
 # shellcheck disable=SC2016
 INNER_GAZEBO='source /root/ardu_ws/install/setup.bash && export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH:-}:/root/ardu_ws/install/ardupilot_gazebo/share" && gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard_field.sdf'
-INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
+INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
 # shellcheck disable=SC2016
-INNER_PROBE='source /root/ardu_ws/install/setup.bash && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
-INNER_AGENT='source /root/ardu_ws/install/setup.bash && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
+INNER_PROBE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
+INNER_AGENT='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
 # shellcheck disable=SC2016
 INNER_SITL='cd /root/ardu_ws/src/ardupilot && export PATH="$PWD/Tools/autotest:$PATH" && sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --enable-DDS --add-param-file=/workspace/fieldguard/config/sitl_params/dds_udp.parm'
 # shellcheck disable=SC2016
-INNER_NDVI='source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node'
+INNER_NDVI='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node'
 # shellcheck disable=SC2016
-INNER_RECORD='source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
+INNER_RECORD='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
 INNER_BIRDS='python3 /workspace/fieldguard/scripts/drive_birds.py --rate 2'
 INNER_APT='apt-get update -qq && apt-get install -y -qq ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs'
 # The three the bridge needs at RUNTIME. dpkg-checked in preflight, installed by INNER_APT (which
@@ -87,7 +87,7 @@ DEPS=(ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs)
 # The last line is $INNER_BIRDS itself, not a copy: the altitude-gated path and the `birds` manual
 # override then cannot drift from each other or from the runbook.
 # shellcheck disable=SC2016
-INNER_BIRDS_WATCH='source /root/ardu_ws/install/setup.bash
+INNER_BIRDS_WATCH='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml
 zget() { timeout 10 ros2 topic echo --once "$@" /ap/pose/filtered 2>/dev/null | sed -n "/position:/,/orientation:/ s/^ *z: *//p" | head -n 1; }
 echo "[birds] altitude gate: drive_birds.py --rate 2 starts by itself once /ap/pose/filtered z > 10 m."
 echo "[birds] Birds never start before arming on purpose: set_pose traffic is jitter the EKF cannot"
@@ -225,7 +225,7 @@ probe_gz_topics() {
 
 probe_ros_topics() {
   local n
-  n=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; timeout 15 ros2 topic list" 2>/dev/null |
+  n=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml; timeout 15 ros2 topic list" 2>/dev/null |
       grep -c '^/fg/sensor/' || true)
   [ "$n" -ge 4 ]
 }
@@ -378,6 +378,7 @@ preflight() {
     printf '  DRY  docker exec %s ps -eo args=          # refuse if a bringup is already live\n' "$CONTAINER"
     printf '  DRY  docker exec %s dpkg -s %s\n' "$CONTAINER" "${DEPS[*]}"
     printf '  DRY  %s\n' "$(exec_line "$INNER_APT")"
+    printf '  DRY  docker exec %s python3 -c import scipy.ndimage   # detector dep; rebuild, never pip\n' "$CONTAINER"
     return 0
   fi
   command -v docker >/dev/null 2>&1 || die "docker is not on PATH — install / start Docker Desktop."
@@ -426,6 +427,23 @@ $(printf '%s\n' "$live" | cut -c1-110 | sed 's/^/      /')
     docker exec "$CONTAINER" bash -c "$INNER_APT" ||
       die "apt install of ros-humble-{actuator-msgs,gps-msgs,vision-msgs} failed — see output above."
     say "bridge runtime deps installed"
+  fi
+
+  # The detector's one non-stdlib dependency, checked in the image that will fly it. scipy.ndimage
+  # IS the morphology of the ADOPTED ADR-003 am.7 NDVI blob detector, so an image without it cannot
+  # run `avoidance_node --detect` at all — and finding that out 90 s into a booked take costs the
+  # take. Deliberately NOT auto-installed like the bridge deps above: a runtime `pip install scipy`
+  # would make the image non-reproducible and re-run every session (rejected band-aid). The fix is
+  # a rebuild; the image now installs python3-scipy (sim/docker/Dockerfile).
+  if docker exec "$CONTAINER" python3 -c 'import scipy.ndimage' >/dev/null 2>&1; then
+    say "detector dep present: scipy.ndimage importable in '$CONTAINER'"
+  else
+    die "scipy is missing inside '$CONTAINER' — this image predates the python3-scipy line in
+  sim/docker/Dockerfile, so 'avoidance_node --detect' (ADR-003 am.7 NDVI blob detector) cannot run.
+  Rebuild, then recreate the container:
+      bash scripts/sim_docker_build.sh
+      bash scripts/sim_docker_run.sh
+  Do NOT pip-install it into the running container: that hides the drift and burns the next session too."
   fi
 }
 
@@ -746,17 +764,19 @@ TF_FRAMES=""; TF_CELLS=""
 # 16x throughput collapse is not gating the thing it exists for, so the LAST gate is on the
 # evidence yield, read off the artifacts themselves.
 #
-# The numbers below are FLOORS DERIVED FROM n=2 — the only two test-flights that have ever run,
-# both on $TF_MISSION_NAME (a different mission needs different numbers):
-#   2026-08-18  5 Hz baseline, healthy:   48 frames / 291 cells  -> clears by 4.0x / 7.3x
-#   2026-08-19  2 Hz collapse, unusable:   3 frames /   1 cell   -> fails both, decisively
-# Set at roughly a quarter of the healthy frame count and a seventh of its cell count: far enough
-# below the one healthy run that ordinary variance on a busy laptop cannot flake them, far enough
-# above the one bad run to catch any collapse within 4x of the measured one. They are floors, not
-# targets — a flight that merely clears them is still a poor flight, just not a regression. Raise
-# them once more healthy runs exist; do not raise them off a single good number.
-TF_MIN_FRAMES=12
-TF_MIN_CELLS=40
+# The numbers below are FLOORS, RAISED 2026-08-22 off TWO healthy runs at the operative
+# A+B+L1+L2 transport config (ADR-013 am. 4's own rule — never raise off a single good number):
+#   2026-08-22  F9 test_2lane, healthy:        681 frames / 417 cells  -> clears by 2.3x / 2.1x
+#   2026-08-22  full boustrophedon, healthy:   935 frames / 720 cells  (context, not an anchor —
+#                                              different mission; anchors are $TF_MISSION_NAME only)
+#   history: 2026-08-18 pre-transport-fix healthy was 48/291; 2026-08-19's 2 Hz collapse was 3/1;
+#   the pre-L2 configs (F4 86, F6 70 frames) would now FAIL — deliberately: a silent transport
+#   regression (profile not loading, segment back at 512 KiB) is exactly what this floor exists
+#   to catch, and every such config delivers under 300 frames on this mission.
+# They are floors, not targets — a flight that merely clears them is still a poor flight, just
+# not a regression. Raise them again only off two healthy runs at whatever config is operative.
+TF_MIN_FRAMES=300
+TF_MIN_CELLS=200
 
 # One integer out of a JSON artifact; empty when the file, the key, or the type is not there.
 # Python, not grep: these files have nested keys a regex would eventually read the wrong one of.

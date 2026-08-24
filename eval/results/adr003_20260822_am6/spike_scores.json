@@ -1,0 +1,110 @@
+{
+ "ground_truth": "eval/results/adr003_20260822_am6/ground_truth.json",
+ "iou_thresh": 0.3,
+ "synthetic": false,
+ "approaches": {
+  "a_ndvi_direct": {
+   "TP": 0,
+   "FP": 22,
+   "FN": 10,
+   "precision": 0.0,
+   "recall": 0.0,
+   "fnr": 1.0,
+   "per_bird_track_fnr": 1.0,
+   "birds_with_visible_frames": 3,
+   "visible_bird_frames": 10,
+   "label_srcs": {
+    "modeled": 10
+   },
+   "unscoreable_label_frames": 10,
+   "ambiguous_label_frames": 0,
+   "per_bird": [
+    {
+     "bird_id": "bird_0",
+     "visible_frames": 2,
+     "matched_frames": 0,
+     "closest_range_m": 3.96,
+     "t_closest_s": 66.4,
+     "detected_before_closest": false
+    },
+    {
+     "bird_id": "bird_1",
+     "visible_frames": 3,
+     "matched_frames": 0,
+     "closest_range_m": 7.22,
+     "t_closest_s": 79.2,
+     "detected_before_closest": false
+    },
+    {
+     "bird_id": "bird_2",
+     "visible_frames": 5,
+     "matched_frames": 0,
+     "closest_range_m": 9.24,
+     "t_closest_s": 91.6,
+     "detected_before_closest": false
+    }
+   ],
+   "params": {
+    "thresh": -0.61,
+    "thresh_source": "real-render default, PROVISIONAL (gate2 bird/soil midpoint)",
+    "thresh_provisional": true,
+    "min_area": 6,
+    "max_area": 5000
+   }
+  },
+  "b_synthetic_rgb": {
+   "TP": 0,
+   "FP": 5,
+   "FN": 10,
+   "precision": 0.0,
+   "recall": 0.0,
+   "fnr": 1.0,
+   "per_bird_track_fnr": 1.0,
+   "birds_with_visible_frames": 3,
+   "visible_bird_frames": 10,
+   "label_srcs": {
+    "modeled": 10
+   },
+   "unscoreable_label_frames": 10,
+   "ambiguous_label_frames": 0,
+   "per_bird": [
+    {
+     "bird_id": "bird_0",
+     "visible_frames": 2,
+     "matched_frames": 0,
+     "closest_range_m": 3.96,
+     "t_closest_s": 66.4,
+     "detected_before_closest": false
+    },
+    {
+     "bird_id": "bird_1",
+     "visible_frames": 3,
+     "matched_frames": 0,
+     "closest_range_m": 7.22,
+     "t_closest_s": 79.2,
+     "detected_before_closest": false
+    },
+    {
+     "bird_id": "bird_2",
+     "visible_frames": 5,
+     "matched_frames": 0,
+     "closest_range_m": 9.24,
+     "t_closest_s": 91.6,
+     "detected_before_closest": false
+    }
+   ],
+   "params": {
+    "thresh": 110,
+    "min_area": 6,
+    "max_area": 5000
+   }
+  }
+ },
+ "birds_in_clip": 3,
+ "decision": {
+  "criteria": [
+   "evidence check FAILED: 10 of 10 visible bird-frames carry labels that are not measurements (10 modeled) -- they say where the driver ASKED the bird to be, not where the render showed it. Re-annotate with the driver's applied-pose log (eval/annotate_real_clip.py --applied-log), or re-fly with a driver that writes one"
+  ],
+  "verdict": "EVIDENCE INSUFFICIENT -- no ADR-003 verdict from this clip. This is neither a confirmation nor a refutation: 10 of 10 visible bird-frames carry labels that are not measurements (10 modeled) -- they say where the driver ASKED the bird to be, not where the render showed it. Re-annotate with the driver's applied-pose log (eval/annotate_real_clip.py --applied-log), or re-fly with a driver that writes one."
+ }
+}

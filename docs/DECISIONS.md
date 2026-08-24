@@ -53,7 +53,7 @@ Owner / roles: product-lead, tech-lead, flight-software-engineer.
 
 ---
 
-## ADR-003: NDVI-vs-RGB detection approach  (2026-08-04, status: ACCEPTED — confirmation-pending; criterion 3 ATTEMPTED 2026-08-21 and returned EVIDENCE INSUFFICIENT, see amendments 1-3)
+## ADR-003: NDVI-vs-RGB detection approach  (2026-08-04, status: ACCEPTED — **criterion 3 CLOSED 2026-08-23, verdict ADOPT on the real render** (amendment 7): per-bird-track FNR 0.000 on measured labels, precision 0.708 / recall 0.850, every bird detected before closest approach. The 2026-08-21 attempt that returned EVIDENCE INSUFFICIENT is amendments 1-3 and is superseded, not deleted. Still open: criterion 2's independent RGB pixel study, and the −0.61 real-render threshold stays PROVISIONAL at n=20)
 Decision: Detect directly on the **NDVI-rendered frame itself** (approach (a), NDVI-direct), faithful
 to the single-NDVI-camera hardware (ADR-000). The synthetic-RGB pass (b) is **retained but not as the
 detection path** — it becomes the NDVI+RGB comparison arm that quantifies what a second sensor buys.
@@ -1128,3 +1128,1477 @@ driver-start offsets) with the threat cylinder still occupied at an unchanged 4.
 `predict_bird_visibility.py` at the demo take's own 0.407 Hz still returns medians 0 / 0 / 1 on the new
 geometry, so item 1's recording-throughput work (ADR-013 am. 5-6a) is the remaining blocker, not a
 nice-to-have. Criterion 3 stays OPEN; the reason it is open has changed.
+
+### ADR-013 amendment 7 (2026-08-22, throughput round 2 — instrumentation before levers): every lost frame now has a name, and three of four levers died to counters instead of flights
+Amendment 6a asked for "the next counter, not the next lever." This round built six of them
+(fuser: `nir_camera_info_frames`, `unpaired_red_count`, a one-off unpaired-red nearest-NIR
+histogram; recorder: `ndvi_msgs_received`/`dropped_no_writer`/`dropped_no_pose`,
+`on_ndvi_wall_ms` p95/max, `rgb_msgs_received`; finalize: airborne/painting frames + cadences;
+clip schema 1.2→1.3, sidecar 1.0→1.1; +47 tests), flew them twice, and settled more than the
+planned flight program would have:
+
+* **Pairing is not a loss stage — it is the NIR band's transport loss re-expressed.** Both
+  sensors tick one 0.2 s grid; slop is 50 ms; a red fuses iff its OWN tick's NIR survived. The
+  multiplicative model `fused ≈ ticks × P(red) × P(nir)` predicts every instrumented flight
+  (ratio 0.94–1.13). Corollary, verified in source: **`dropped_pair_count` is STRUCTURALLY
+  unreachable in the live node** (the synchronizer's slop IS the guard bound, so no rejectable
+  pair is ever handed over) — its four flights of reassuring zeros measured nothing. The
+  misleading "belt-and-suspenders" comment in `ndvi_node.py` is corrected; the honest number is
+  `unpaired_red_count`.
+* **The slop-widening lever amendment 6a floated is DEAD, twice, without a flight spent on it.**
+  Histogram: 79/79 (F5a) and 70/70 (F5b) unpaired reds had their nearest surviving NIR a full
+  tick away (`ge_tick`; `le_slop` and `slop_to_tick` both 0, evictions 0). Widening below 0.2 s
+  buys nothing; above it pairs different sensor ticks (~0.6 m of motion). Do not fly it; do not
+  amend ADR-007 for it.
+* **NIR render exonerated — the band is TRANSPORT-limited.** `nir_camera_info_frames` 689/690
+  and 676/676 against the RGB control: the thermal sensor ticks at the full 5 Hz. The
+  "render-limited, goal unreachable" branch is falsified.
+* **Recorder logic and disk exonerated — F8 (bind mount) cancelled without flying.**
+  received→written 100 % on both flights, both drop counters 0, `on_ndvi_wall_ms` p95 7.9–17.3 ms
+  against the 200 ms budget: the executor idles while the middleware drops 1.23 MB samples. The
+  fused→recorded gap is pure transport — exactly what F6 (recorder's `/fg/ndvi/image`
+  subscription BEST_EFFORT→RELIABLE against the already-RELIABLE publisher) attacks.
+* **F7 (drop the recorder's raw-RGB arm) cancelled** — user decision (the ADR-003 criterion-2
+  comparison arm is protected for the whole round) and the evidence independently concurs:
+  `/fg/sensor/nir/image` has exactly ONE subscriber and still loses ~65 %, so fan-out is not the
+  dominant term.
+* **Both F5 flights are VOID for absolute yields (clips carry `INVALID_DO_NOT_USE.md`) — and the
+  void itself is the finding: ENVIRONMENT DRIFT, measured.** A 12-container stack from an
+  unrelated project was created on the shared Docker VM at 2026-08-22T0318Z — mid-F5a, and a full
+  day after F1–F4 set the 31.09 % baseline on a VM running `fieldguard-sim` alone. F5b, flown
+  host-quiet by sampling, still returned red/ci 17.31 %. An interleaved bench A/B
+  (instrumented/baseline ×2, Gazebo+bridge+fuser only) then measured the UNINSTRUMENTED code at
+  7.19–15.58 % on the same host — the sign of the A−B difference flips between pairs, so the
+  instrumentation is exonerated and the drift is the cause. **F4 remains the only clean anchor,
+  and it is n=1.**
+* **Two new traps for the record:** (a) host-quiet cannot be judged from one `docker stats`
+  snapshot — sampling caught 267–352 %-of-a-core bursts between quiet snapshots; sample
+  throughout the flight. (b) The exposure control and RTF both PASSED on F5a while contention
+  halved both bands — neither gate detects host load, only a contemporaneous load log does.
+* **Honest ceiling, computed off F4:** closing the recorder hop and the NIR hop entirely takes
+  0.587 Hz airborne to ~1.48 Hz — the bottom edge of the 1.5–2 Hz target with zero margin,
+  because nothing in the kept lever set attacks the RGB band's ~83 % loss. The next candidate
+  there is re-encoding `/fg/ndvi/image` 32FC1→16UC1 (halves the system's largest sample; NDVI is
+  bounded [−1,1], quantization ~3e-5) — **escalated to the user, held in reserve, not built.**
+
+Open: F5c clean re-baseline in a user-granted host-quiet window (the other stack paused), then
+F6, one variable, judged on `(fused_count − ndvi_msgs_received)/fused_count` with
+`on_ndvi_wall_ms` watching for backpressure moving the loss upstream. Standing user decisions
+this round also fixed: deliverables are BOTH short high-evidence flights (the measurement
+instrument) and the full boustrophedon (the product artifact), plus a quantified short-vs-long
+evidence comparison on the final config; a resolution cut stays off the table.
+Owner / roles: flight-software-engineer (built + flew + bench), robotics-sim-engineer scope
+co-owned, qa-safety-reviewer's amendment-6a discipline followed (counters before levers),
+product-lead's user-escalations resolved in-session.
+
+### ADR-013 amendment 8 (2026-08-22, throughput round 2 closes): L1 is a KEEP with an honest cost, the attribution closes to zero, and the remaining gap has a single mechanism
+F5c and F6 flew back-to-back on the restored clean host (load sampled throughout, other-container
+CPU 0.0 % on every sample), one variable apart:
+
+* **Environment drift is confirmed end-to-end.** The same code that read red/ci 17.31 % against
+  13 containers read **25.60 %** on the clean host (F5c). With the bench A/B of amendment 7, the
+  2× shortfall is closed as fully environmental. F5c is also the **second healthy run at the A+B
+  config** (tree gate PASS at lift **+0.9888**, the best on record) — amendment 4's rule now
+  PERMITS raising the evidence floor for A+B, but the operative config moved to A+B+L1 the same
+  hour at n=1, so the floor deliberately stays 12/40 until the L1 config has its own second
+  healthy run. Anchors if raised later: the lower healthy A+B run is 36 frames / 158 cells.
+* **L1 (recorder `/fg/ndvi/image` subscription BEST_EFFORT→RELIABLE): KEEP.** It closed its hop
+  completely — NDVI→recorder transport loss **62.5 % → 0.0 %** — and the attribution identity
+  closed exactly (received − written − no_writer − no_pose = **0** unaccounted), which was the
+  round's whole goal. The predicted backpressure was real and is the recorded cost: red/ci
+  25.60 % → 20.46 %, fused 96 → 72. Net **painting cadence 0.2823 → 0.4767 Hz (1.69×)**, recorded
+  1.94×, cells 1.91× — the downstream leak was the bigger one. **Standing re-check:** if NIR
+  transport is ever materially improved, re-fly the L1 trade — the upstream cost could outgrow
+  the hop it closes.
+* **The slop lever is dead across five flights** (histogram `ge_tick` 79/79, 70/70, 73/73, 66/66
+  with zero in every other bucket). Retired permanently.
+* **Where the remaining 3.1–4.2× lives, and what it is NOT:** best measured painting cadence is
+  0.4767 Hz against the 1.5–2 Hz target. The only losses left are the two sensor-image hops,
+  bridge→fuser (RGB **79.5 %**, NIR **53.8 %** on F6) — both already `best_effort`, so the QoS
+  lever class is exhausted; closing NIR alone computes to ~0.93 Hz, not enough without red
+  recovering too. The mechanism left standing is **payload-size fragmentation on an entirely
+  untuned DDS layer** (nothing in the repo sets `RMW_IMPLEMENTATION`, a DDS profile, or
+  `--shm-size`; amendment 7's escalated 16UC1 lever targeted the NDVI hop, which L1 just closed —
+  that escalation is SUPERSEDED). Next round follows amendment 6a's discipline again:
+  **instrument the DDS baseline before pulling a DDS lever** — record the active RMW, transports,
+  and `/dev/shm` capacity into the artifact, then lever one variable at a time.
+Owner / roles: flight-software-engineer (flew + measured), qa-safety-reviewer's counters-first
+discipline held for a second consecutive round; the floor decision follows amendment 4's own rule.
+
+### ADR-013 amendment 9 (2026-08-22, throughput round 3 — the transport root cause, fixed): painting cadence 0.48 → 5.0 Hz; the recording-throughput thread that began in amendment 4 is CLOSED
+The mechanism, source-verified in Fast DDS 2.6.11 (the pinned image's only RMW): every large
+sample fragments at **65,384 B even over shared memory** — SHM's own `max_message_size` defaults
+to 65500, UDPv4 is hard-capped there, and a participant takes the MINIMUM across transports. The
+default SHM segment is **512 KiB = 8 fragment slots**, against 10 (NIR), 15 (RGB) and 19 (NDVI)
+fragments per sample; on overflow Fast DDS **silently discards and reports success** (the discard
+path logs at logInfo, compiled out of release builds). Amendment 8's L1 result was the unwitting
+control experiment: RELIABLE never made the transport faster, it NACK_FRAG-repaired the fragments
+the segment was dropping. One honest correction: the iid per-fragment-loss model is **falsified**
+(red implied ~8 %/fragment while NIR implied ~0.5 % in the same arm) — the data supports a
+slot-exhaustion threshold. The anchors that hold: 65,384 B/fragment, 8 slots per default segment.
+
+* **Lever L2 — KEPT: `config/dds/fg_fastdds.xml`, SHM segment 512 KiB → 8 MiB (128 slots).** QoS
+  untouched; orthogonal to kept levers A/B/L1. Enabled by `--shm-size=1g` at container re-create
+  (`sim_docker_run.sh` + the duplicated SIM_BRINGUP.md block, same commit; named-volume gate
+  passed first). Bench (interleaved ×2, admissibility = segment min AND max ≈ 8.4 MB): red/ci
+  28.8/26.4 % → **100.0 %**, nir → **100.0 %**, both pairs.
+* **F9, the one-variable confirmation flight (A+B+L1+L2): red/ci 706/706 = 100.00 %, NIR
+  707/707 = 100.00 %, `unpaired_red_count` 0 with every histogram bucket 0** — pairing has ceased
+  to exist as a loss stage, exactly as amendment 7's same-tick model predicted. End-to-end
+  96.46 %; **painting 502 frames / 5.0 Hz** (target was 1.5–2; round started at 0.4767); cells
+  417/720 on `test_2lane`; the protected RGB comparison arm at 681/681 = 100 %. Attribution
+  closes to zero unaccounted. Tree gate PASS.
+* **Amendment 8's standing L1 re-check — CLOSED, KEEP (F10, one variable):** RELIABLE 1.56 % vs
+  BEST_EFFORT 1.71 % hop loss at identical 5.0 Hz / 502 painting frames. L1's measured round-2
+  cost is gone (both flights 100 % red/ci) because L2 removed the drops the repair traffic
+  amplified. L1 stays as free insurance for a segment under pressure again.
+* **Injection = in-pane exports (user decision):** `FASTRTPS_DEFAULT_PROFILES_FILE` exported
+  inside the six participant pane payloads + `ctr()`'s probe, runbook mirrored in the same change
+  — ADR-013's command-level parity claim stays fully true; 7 tripwire tests pin it (participants
+  carry it, non-participants must not, both probe paths covered, single value, path resolves,
+  runbook agrees).
+* **L4 (SHM-only, zero-fragmentation) — SHELVED, decided:** the user delegated and leaned
+  host-side; L2 saturated the metric without closing the door, and a reachable DDS graph keeps
+  `ros2 topic echo` against a live sim available to anyone exploring the project. Revisit only if
+  a longer mission underperforms, and with the user, since it closes that door.
+* **Dead ends, measured so nobody re-walks them:** `net.core.rmem_max` is 212,992 and unraisable
+  here (/proc/sys read-only in-container; `docker run --sysctl` rejected by runc on this Docker
+  Desktop); XML socket-buffer knobs silently clamp to it; `FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA`
+  landed in Fast DDS 2.10/2.11, not 2.6.11; CycloneDDS is not installed and its 1,344 B fragments
+  would be ~24× the loss surface; the micro-ROS agent is hard-linked against rmw_fastrtps, so an
+  RMW switch would split the graph.
+* **Floor unchanged at 12/40** — one healthy run at the operative A+B+L1+L2 config (F9; F10
+  differs by one variable). Amendment 4's rule, third application. **Caveat carried forward:**
+  5.0 Hz on a 3-minute `test_2lane` is not a promise for the 14-minute boustrophedon — round 2
+  measured real run-age decay, and `meta["dds"]` now makes transport state checkable per clip.
+
+**Consequence: `predict_bird_visibility.py --fps 5.0` → PASS, medians 8/6/11, bird_0 visible at
+55/55 driver-start offsets. The ADR-003 full-coverage re-fly — four blockers behind one clip — is
+BOOKABLE for the first time since the demo take. Per ADR-013, the user flies it.**
+Owner / roles: flight-software-engineer (built, benched, flew all of round 3),
+robotics-sim-engineer scope co-owned, qa-safety-reviewer's instrument-before-lever discipline
+held for a third consecutive round; injection-parity and L4 decisions escalated to and returned
+from the user.
+
+### ADR-013 amendment 10 (2026-08-22, the delegated flagship take): 720/720 cells at a dead-flat 5.00 Hz; two round-2 conclusions honestly reversed; the floor finally rises
+**Delegation note (the human-flown rule, exercised knowingly):** the user delegated THIS
+full-coverage boustrophedon take to Claude explicitly (offered the choice, chose "Claude flies,
+with ADR note"). The flight was flown by driving the runbook's own 7-line MAVProxy recipe into
+the pane via tmux send-keys — the operator's keystrokes, not a new scripted mode. The
+demo-flights-stay-human-flown rule otherwise STANDS; future delegations get their own dated note.
+
+The take (clip `real_flight_20260822T215516Z`, admissible: 5/5 participants on 8,413,728 B
+segments): **956 sensor ticks → 956 red = 956 NIR = 956 fused (100.00 % at every fuser stage,
+unpaired 0) → 948 received → 935 written, 0 unaccounted; end-to-end 97.80 %** against the
+2026-08-21 demo take's 10.7 %. **Painting 624 frames at exactly 5.00 Hz — all 623 inter-frame
+gaps are 0.200 s — and cells 720/720: the first full-grid, correctly-georeferenced map in the
+project's history.** Tree gate PASS, 18/18 imaged, 14 canopy-grade, all 16 positive cells within
+2.0 m. Birds visible for the first time ever: 10 ground-truth bird-frames, 3/3 birds — ADR-003's
+evidence floor cleared (its verdict and the new blocker live in the ADR-003 amendment).
+
+* **Round-2 conclusion reversed #1 — run-age decay does not exist.** The decay was segment
+  exhaustion wearing a clock's clothes: with L2 in place the cadence is bit-perfect at full
+  mission length. Amendment 7's decay measurements stand as data; their "elapsed time" reading
+  is retired.
+* **Round-2 conclusion reversed #2 — short flights do not out-yield long ones.** Same config,
+  same per-minute frame yield (288 vs 290 painting frames/airborne-min); the boustrophedon is
+  **1.4× better on cells/min** because it spreads frames over new ground. The user's evidence
+  study lands the opposite of its round-2 premise: measure with short flights for one-variable
+  discipline, but the long mission is the better evidence artifact too, not just the product one.
+* **Evidence floor RAISED 12/40 → 300/200** (amendment 4's rule satisfied: two healthy runs at
+  the operative config — F9 681/417 on the anchor mission, the take 935/720 as context). Every
+  pre-L2 config now fails it, deliberately: a silently unloaded profile is the exact regression
+  the floor exists to catch.
+* **Avoidance was NOT exercised, correctly:** FULL_PIPELINE_DEMO.md's own scope excludes the
+  avoidance node ("Not in this flight"), and the pilot-agent followed the runbook over the
+  orchestrator's contrary expectation — the right call, recorded here as precedent. The
+  avoidance-on-real-render half of the proof standard needs the separate AVOIDANCE_DEMO.md
+  flight, which awaits its own booking (and its own delegation decision).
+Owner / roles: flight-software-engineer (flew as delegated pilot, ran the full evaluation chain);
+qa-safety-reviewer discipline: verdicts reported exactly as the harness printed them, artifact
+FNR flagged as artifact rather than buried.
+
+### ADR-003 amendment 5 (2026-08-22, criterion 3 re-run on the delegated flagship take): the evidence floor clears for the first time — and the blocker moves from throughput to harness ground-truth alignment
+The re-run executed on `real_flight_20260822T215516Z` (scores in `eval/results/adr003_20260822/`)
+and **cleared the evidence floor for the first time: 10 visible bird-frames, 3/3 birds seen** —
+every prior attempt returned EVIDENCE INSUFFICIENT on zero. The harness printed, verbatim: both
+arms at per-bird-track FNR 1.000, gap +0.000 → **AMBIGUOUS → default to (a) + scoped follow-up
+ticket**. That verdict stands as printed, and this amendment is the scoped follow-up.
+
+**The 1.000 is a measurement artifact, not a detector result — diagnosed, not asserted:** the
+NDVI-direct detector fired on **exactly the 18 bird frames** (331-333, 392-398, 455-462) with
+blob sizes matching ground truth to **1-2 px across four ranges** (47×47 vs 45×45 at 3.96 m;
+21×21 vs 20×21 at 9.24 m) — the same physical objects — but ground-truth box centres sit a mean
+**193.6 px** from the detections, so IoU ≥ 0.3 can never match: every true detection scores FP,
+every bird scores FN. Leading hypothesis (consistent, unproven): `drive_birds.py --rate 2` moves
+birds in **0.5 s steps** while `annotate_real_clip.py` interpolates the trajectory continuously,
+so the RENDERED bird lags the annotated one by up to 0.5 s (implied offsets 0.7-4.4 m, the right
+order; 16 failed `set_pose` calls compound it). **This was invisible at 0.407 Hz and only became
+measurable at 5 Hz.** Fix direction: the annotator must replay the driver's own step function
+(`t0 + k/rate`), never the continuous path. Re-score is offline — the clip is scoreable as
+recorded; no re-fly is needed. Criterion 3 stays OPEN; the reason it is open has changed for the
+second time (geometry → throughput → ground-truth alignment), each time with the previous cause
+measured closed.
+Owner / roles: flight-software-engineer (ran the chain, refused to let the artifact stand as a
+detector verdict); perception-ml-engineer owns the annotator fix and the offline re-score.
+
+### ADR-003 amendment 6 (2026-08-22, perception-ml-engineer, criterion 3's ground-truth blocker: measured, fixed at the source, clip re-scored): the render lags the labels by 0.12-0.81 s, no model can recover it, and the harness now refuses to score an estimate
+Amendment 5's hypothesis was right in kind and its proposed fix would not have worked. Both were
+checked before any code changed.
+
+* **The lag is real, and it is TWO terms, not one.** All 22 NDVI-direct detections match a scripted
+  bird's projected position to a mean **6.9 px** (max 17.7) and its projected apparent size to a mean
+  **1.0 px** (max 2.5) once that bird is placed at a trajectory time **0.120-0.805 s (mean 0.524)
+  BEFORE the frame's own stamp. 22/22 explained; zero non-bird detections in 935 frames.** The lag
+  has structure, which is what makes it a mechanism rather than a fit: within one driver hold it
+  grows by exactly the 0.200 s frame period and then drops, giving a hold of **0.427 s of sim**
+  (bird_2) and **0.415 s** (bird_1) independently; on top sits a per-bird floor of **0.120 / 0.380 /
+  0.415 s for bird_0 / bird_1 / bird_2 — ordered by their position in the driver's set_pose loop**,
+  i.e. sequential `gz service` subprocess latency. Falsified alternatives: stale DRONE pose (best at
+  zero staleness, monotonically worse after), a fixed image-space offset (202 px scatter about a
+  47 px mean vector), and a wrong sidecar t0 (which would be constant and shared across birds).
+* **`--rate` never bound, and ADR-012's stale-hop claim is retracted.** RTF measured independently
+  of any detection, from the committed frames' file mtimes against `stamp_sim_s`: 0.94 pre-flight,
+  0.60 airborne, **0.51-0.57 in the three detection windows**. 0.42 s of sim at RTF 0.55 is 0.76 s of
+  wall per tick: **`--rate 2` achieved ~1.3 Hz**, saturated by one clock poll plus three gz-CLI
+  round-trips. ADR-012's "matches the camera's 5 Hz update_rate -- the render never sees a stale hop"
+  is false and is retracted. Consequence beyond labelling: **the birds HOP ~2 m between updates**,
+  one full camera frame wide. Per-frame blob detection is unaffected; any future velocity or track
+  estimate over these clips would not be.
+* **Amendment 5's proposed fix is FALSIFIED, and so is every fixed model.** Mean/max centre residual
+  over the 22 detections: current continuous labels **198.0 / 313.0 px**; the proposed
+  `floor(t/rate)` step **133.1 / 299.9**; a step on the measured 0.43 s hold 129.6 / 224.4; a constant
+  0.56 s lag 61.1 / 350.3; a 2-parameter hold+latency model fitted TO the detections 81.2 / **536.0**.
+  IoU >= 0.3 needs 8-19 px. The reason no grid works: the driver's ticks are WALL-scheduled while RTF
+  moves 0.51-0.94 within one flight, so a fixed sim-time grid drifts out of phase between bursts --
+  and fitting the lag to the detector's own output would have made the resulting score
+  unfalsifiable. The correction is measurement, not a better model.
+* **THE FIX (source-side, so the class closes rather than this instance).** `scripts/drive_birds.py`
+  now writes an applied-pose log beside its sidecar (`bird_drive_<stamp>_applied.jsonl`, schema 1.0;
+  sidecar 1.0 -> 1.1 names it): per set_pose call the pose, the trajectory time, wall stamps around
+  the call, the tick's gz-clock anchor, and **ok/failed**. `eval/annotate_real_clip.py` replays it --
+  a frame shows the last call whose reply had returned, **a failed call holds** (the 16 failures on
+  this take are exactly this case), and frames before the first landed call keep ADR-012 am. 1's
+  exact spawn pose. Wall->sim conversion uses the RTF measured between consecutive tick anchors, so
+  no constant is assumed and no extra subprocess worsens the latency being measured. Frames landing
+  inside a call's own bracket are marked `label_ambiguous` rather than rounded to a side.
+* **THE GUARD (so this cannot print a verdict again).** Every label carries `label_src` --
+  `applied` (measured) / `spawn` (exact) / `generator` (synthetic) / `modeled` / `unknown` -- and it
+  travels into `ground_truth.json`. `eval/score.py` refuses to apply the decision rule when any
+  scored bird-frame is `modeled` or `unknown`. This is the SECOND denominator failure this file has
+  had: am. 1 fixed "no denominator at all"; this one is "a full denominator whose numerator measured
+  something else". The seed-42 synthetic re-run still prints ADOPT at 0.445 / 0.981 / 0.019 /
+  per-bird 0.000, so the guard is not a blanket refusal.
+* **RE-SCORE, verbatim.** Both arms: `TP=0 FP=22(a)/5(b) FN=10`, precision 0.000, recall 0.000,
+  FNR 1.000, per-bird-track FNR 1.000, `evidence = 10 visible bird-frames over 3 birds`,
+  `labels = 10 modeled`; decision rule ->
+  **`EVIDENCE INSUFFICIENT -- no ADR-003 verdict from this clip. This is neither a confirmation nor a
+  refutation: 10 of 10 visible bird-frames carry labels that are not measurements (10 modeled)`**.
+  Amendment 5's printed `AMBIGUOUS -> default to (a)` is therefore **withdrawn**: it was produced by
+  the pre-guard harness from labels that could not support it. The detections themselves reproduce
+  byte-identically.
+* **What this clip DOES establish, alignment-independently (a diagnosis, NOT a scored verdict, and
+  it must not be quoted as precision/recall/FNR):** 22 detections in 935 frames, **all 22 birds,
+  none spurious**; and for **every** lag hypothesis in [0, 0.70] s there is **no frame where a bird
+  was in view and the detector produced nothing** -- at the measured lag band the "bird in view" and
+  "detector fired" frame sets are the same 18 frames, both directions. The NDVI-direct arm looks at
+  least as good on the real render as on the spike. It stays unscored until labels are measured.
+* **Criterion 2 remains blocked, and now with numbers.** `baseline_rgb`'s 5 real-render detections
+  are: three on bird_2 by a **2-LSB blue-channel accident** (bird patch min-channel 111.8 vs soil
+  109.7 -- soil's own minimum is blue at 111) at 8 px against a true 21 px bird, i.e. **IoU 0.145,
+  below the 0.3 bar even with perfect labels**; and two bottom-right corner artifacts with no bird.
+  The documented inversion stands. The clean unblock is a gate2-style per-class PIXEL study on the
+  real render (the evidence path that produced (a)'s -0.61) -- **not** calibrating (b) against (a)'s
+  detections, which would destroy the arms' independence.
+* **Criterion 3 stays OPEN; the reason it is open has changed for the third time** (geometry ->
+  throughput -> ground-truth alignment -> **the alignment fix awaiting one flight**). What remains is
+  no longer analysis: one re-fly with the logging driver, then `eval/run_spike.sh`. The driver half
+  of the fix is **UNGATED until that flight** -- its first live check is that the log exists, its sim
+  span overlaps the clip, and the annotator reports `applied` labels rather than `modeled`.
+* **Regression pinned on the real clip, not a fixture:** `tests/fieldguard_planning/
+  test_bird_label_timing.py` runs against the committed `real_flight_20260822T215516Z` and holds
+  both halves -- detections are birds at a lagged time; modelled labels sit >= 94.98 px away with
+  IoU 0.000 on all 22. Suite 449 -> 477 passed, 2 skipped.
+Owner / roles: perception-ml-engineer (measurement, fix, guard, re-score); flight-software-engineer
+owns the driver at flight time and the re-fly's live gate; robotics-sim-engineer for the retracted
+ADR-012 cadence claim. Deferred without prejudice: issuing the three set_pose calls concurrently
+(would shrink the ~0.5 s latency and the ~2 m hop) — a fidelity change to flight behaviour that
+must not ride along with the labelling re-fly; one variable per flight applies to proof flights too.
+
+### ADR-013 amendment 11 (2026-08-23, the delegated avoidance demo): the loop's first run on the current stack closes the ledger 720/0 — and the runbook, not the orchestrator, decided the flight's scope
+**Delegation note #2:** the user delegated this AVOIDANCE_DEMO.md flight explicitly (same
+mechanism as amendment 10; the rule otherwise stands). Flown via the runbook's 5-line MAVProxy
+recipe; bringup in its order (agent before SITL); DISARMED at 121 s.
+
+* **The event chain, from the flight log:** 19 detections → 1 takeover (AUTO→GUIDED at wp 6,
+  trigger range 9.27 m) → 1 latch + 7 re-latches, **19/19 maneuvers vetted `accepted`, 0
+  rejected**, each re-vetted on the tick it was sent → resume on `threat_cleared` at wp 7.
+  `check_live_flight_log` PASS: **covered=720 debt=0**, partition sums exactly 720 (the 2026-08-18
+  run closed 513/207 — this is the first FULL closure). Invariant checked directly on the
+  artifact: 19 commanded setpoints, 0 overlap with the 984 flown-path points. Honest wrinkle,
+  logged not smoothed: `resumed_same_waypoint: false` — the vehicle passed wp 6 mid-dodge and
+  resumed at 7; ADR-006's MIS_RESTART claim is about not restarting at #1, and the log does not
+  overstate it.
+* **Scope, decided by the runbook over the orchestrator's brief (am. 10's precedent, applied
+  twice):** the threat is the runbook's scripted `--demo` bird on the `detection_source` seam —
+  no bridge, no fuser, no live detection on the real render, and `drive_birds.py` never runs, so
+  the am.-6 applied-pose logger remains UNEXERCISED (its first live outing is the criterion-3
+  re-fly, which runs the flagship path). **What remains genuinely unexercised after this flight
+  is the combination: avoidance driven by a REAL detection off the NDVI render — the ADR-009
+  rule-2 seam, Week 6's work — and it needs a runbook that does not exist yet (avoidance node +
+  bridge/fuser in one bringup). Scoped, not improvised.**
+* **Runbook drift, found and reported rather than adapted around:** (1) AVOIDANCE_DEMO.md
+  delegates bringup to archived WEEK3_VALIDATION.md, whose SITL line lacks `--enable-DDS` and
+  would produce zero `/ap/*` topics — the current canonical line satisfies the runbook's own
+  stated prerequisite and was used; the archive doc needs a pointer fix. (2) Its Gate-1 tree
+  check (`gz topic -l | grep model/tree_row0_0`) is structurally stale — static models advertise
+  no pose topics. (3) No launcher path exists for this flight; it remains 4 manual shells.
+* **Handed to qa-safety-reviewer, from the executor's own audit:** one numerically unstable tick
+  at trigger range 0.052 m — the away-vector flipped and an accepted setpoint carried
+  `swept_tree_clearance_m 0.846` (7-8 m on every other tick), accepted because
+  `lateral_tree_margin_m` is 0.0; re-latched away one tick later. Not a failure in this flight;
+  exactly the class of boundary a regression scenario exists to pin.
+* **Process miss, recorded:** continuous load sampling did not run (sampler raced the tmux
+  session and exited); host-quiet is evidenced by bracketing samples only (pre ~78 % idle, post
+  ~87 %, one container both ends). Immaterial to an event-logic flight; would not be acceptable
+  on a throughput measurement.
+Owner / roles: flight-software-engineer (delegated pilot + executor audit); qa-safety-reviewer
+takes the zero-range tick; robotics-sim-engineer takes the runbook drift fixes.
+
+### ADR-013 amendment 12 (2026-08-23, qa-safety-reviewer adversarial pass on amendment 11): the demo encounter was a de-facto bird strike under green gates — CPA is now the number that must exist
+The zero-range tick amendment 11 handed over was real (S4 below) — and the pass found four
+findings that outrank it. All 19 ticks of the flown encounter replay bit-identically in
+`tests/fieldguard_planning/test_degenerate_range_avoidance.py` (36 tests; CURRENT behavior
+pinned, WANT behavior as paired xfails, mutation-proved).
+
+* **S1 (critical): closest approach to the bird was 0.0518 m against the policy's own
+  `min_bird_clearance_m` 3.0 — every gate green.** From the first accepted DIVERT (range 9.27 m)
+  the vehicle gained 45 mm across-track in six ticks while closing 9.3 m along-track, still at
+  6.57 m/s at CPA, moving AWAY from its own dodge target: candidate 0° (straight away) is a full
+  reversal — the one escape ownship momentum forbids in a head-on closure at 7.7 m/s with 1.56 s
+  of cylinder warning. Nothing in the pipeline computes CPA; "19/19 vetted" is a claim about
+  setpoints. The runbook's proof standard said "avoidance exercised", and it was — the exercise
+  revealed the loop's success metric was missing.
+* **S2 (high, vacuous green):** `is_safe_3d` and the ADR-006 executor backstop are structurally
+  unreachable in the flown configuration (setpoints pinned to 15 m cruise; trees end at 4.8 m) —
+  `gate_reject: 0` meant COULD NOT FIRE. The gate re-arms below ~4.8 m; it is live code, armed
+  and unproven.
+* **S3 (high):** `lateral_tree_margin_m` defaults to **0.0 in code** and no caller or config sets
+  it — the accept boundary IS the exclusion boundary; a dodge exactly tangent to a tree column
+  is accepted (4.7 % of accepted degenerate-range dodges near rows clear by < 0.1 m). Bounded
+  today only by two accidents: obstacle_radius 2.0 vs canopy 1.3 (0.7 m padding) and the
+  10.2 m of altitude separation.
+* **S4 (medium):** the away-vector has no range floor (guard at 1e-9 m): at the flown 0.052 m a
+  0.5 m position error spans 337° of commanded bearing (6.2° at 9.27 m). The executor re-latched
+  on the resulting 20.9 m setpoint jump — setpoint delta read as threat motion on a bird that
+  never moved.
+* **S5 (medium, latent):** the policy is the SOLE boundary authority (no ArduPilot `FENCE_*`
+  set); setpoint-containment implies path-containment only by the polygon's unstated convexity;
+  lanes x=0/x=75 lie ON the boundary (118/984 flown points ε-outside, worst 7.3 cm); `_handle_hold`
+  sends an unvetted setpoint.
+* **Side finding (favourable, unverified):** the camera's 18.46 m swath at 15 m exceeds the 15 m
+  lane pitch, so coverage.py's 7.5 m half-width UNDER-claims — closeable on paper once
+  `verify_mount_geometry.sh` asserts the wide axis is across-track. Not closed until it does.
+
+**Recommendations, ranked (R1 ships now; control-law changes wait for their live gate):**
+R1 add CPA-to-any-detection to `check_live_flight_log.py`, INVALID below `min_bird_clearance_m`
+— it will fail the 2026-08-23 log, correctly (that log gets an acknowledged-finding marker so
+the failure is loud without lying about history). R2 `lateral_tree_margin_m = 1.0` (the 18-tree
+geometry supports it 3×; replaying the encounter keeps 19/19 DIVERT, rotates the bad tick to
++45° at 7.56 m clearance, reduces relatches 7→6). R3 policy flags `range_degenerate` below 1.0 m
+and the executor refuses to RE-LATCH on a degenerate tick (keeps `decide` pure; hold-and-climb
+deliberately NOT chosen — ADR-009 says bird z is the estimate we cannot trust). R4 the
+reversal-preferring candidate order is recorded as an open control-law question (needs closing
+geometry v1 doesn't have) — not ridden along. R5 an ArduPilot FENCE_* polygon as independent
+backstop + lanes moved ≥1 m inboard. R2/R3/R5's live gate: the next avoidance flight, with
+"every swept_tree_clearance_m ≥ 1.0" and "no relatch below 1.0 m range" asserted in the log.
+Not tested, stated plainly: no flights, no dynamics model (no WPNAV_* pinned — stopping-distance
+claims would be invented), one static bird / one altitude / one encounter; the descent case and
+staleness gate remain armed-and-unproven.
+Owner / roles: qa-safety-reviewer (found, pinned, priced); flight-software-engineer takes R1 now
+and R2/R3 behind the next avoidance flight's gate; product-lead: this outranks polish — the
+avoidance story is priority #1 and currently reads better than it flew.
+
+### ADR-013 amendment 12 addendum (2026-08-23, R1's first run): a SECOND breaching flight, five days and one executor revision earlier
+`check_live_flight_log.py` now computes CPA-to-any-detection (horizontal on purpose — ADR-009
+says bird z is the estimate we cannot trust; the bar is read live from `PolicyParams`, one source
+of truth). Its first pass over the committed evidence found the 2026-08-18 avoidance run breached
+too: **CPA 0.0597 m** (61 detections, pre-latch executor) beside the 2026-08-23 run's 0.0518 m —
+same static demo bird, different executor era. **S1 is the escape geometry, not the re-latch
+logic**; R2/R3's live gate carries unchanged. Both historical logs carry `SAFETY_FINDING.md`
+acknowledgement markers: the checker reports them loudly as ACKNOWLEDGED (exit 0, never VALID);
+an unmarked breach or a stale marker fails hard. A clean log prints its CPA; no detections reads
+NO-CPA-EVIDENCE, never a silent pass. Suite 530 passed / 2 skipped / 2 xfailed.
+
+### ADR-003 amendment 7 (2026-08-23, criterion 3 CLOSED — the real-render re-run on measured labels): ADOPT (a) NDVI-direct
+Flown delegated per ADR-013 am. 10's mechanism (user authorization: "fly it"); the FULL_PIPELINE
+path with ONE variable against the am. 10 take — the am. 6 logging driver, on its first live
+outing. Its gate PASSED: applied-pose log present (860 calls, 839 landed, 21 failed = 2.4 %),
+span overlapping the clip, annotator provenance **2232 applied / 1536 spawn / 0 modeled**. The
+achieved driver rate measured at 1.19 Hz of the requested 2.00 — the misalignment am. 6
+diagnosed, now measured instead of modeled.
+
+**The decision rule, verbatim:** evidence 20 visible bird-frames, 3/3 birds; (a) per-bird FNR
+**0.000** (bar ≤ 0.1); (a) frame FNR 0.150 vs (b) 1.000 → **ADOPT (a) NDVI-direct** — clears the
+per-bird bar and fidelity wins the tiebreak. Arm (a): TP=17 FP=7 FN=3, precision 0.708, recall
+0.850, **every bird detected before closest approach** (bird_0 2/2 at 3.95 m, bird_1 4/5 at
+6.97 m, bird_2 11/13 at 8.97 m). Arm (b) 0.000 across the board — the documented inverted
+birdness, deliberately untouched; criterion 2 still awaits its independent pixel study.
+**Criterion 3's three-cause history closes measured at every step: geometry (ADR-015),
+throughput (ADR-013 am. 6-9), ground truth (am. 5-6), verdict (this).**
+
+* The flight itself: another 720/720 map at a bit-perfect 5.00 Hz (1286 ticks → 100.00 % both
+  bands → 1256 written, 0 unaccounted, end-to-end 97.67 %); tree gate PASS 18/18 imaged; host
+  quiet sampled THROUGHOUT (the am. 11 sampler race fixed and verified writing before arming).
+* **The −0.61 threshold's PROVISIONAL blocker is discharged, the label not yet lifted:** it now
+  has precision/recall behind it (0.708 / 0.850) and supports the decision with margin on the
+  safety bar — but n=20 with 7 FP / 3 FN is thin and 8 of 20 labels are `label_ambiguous`
+  (inside a set_pose bracket). Lifting PROVISIONAL is perception-ml-engineer's call after the FP
+  sources are characterised.
+* **Predictor accuracy, first check against measured labels:** bird_1 (5 vs median 6) and bird_2
+  (13 vs 11) in range; **bird_0 measured 2 against a predicted minimum of 3** — the
+  uniform-sampling model is optimistic per-bird even when the total is close. Do not quote a
+  per-bird median as a floor.
+* No avoidance node on this path by runbook scope: no flight log, hence no CPA verdict — stated,
+  not invented.
+Owner / roles: flight-software-engineer (delegated pilot, gate + chain); perception-ml-engineer
+(owns the PROVISIONAL call and the criterion-2 pixel study); the 0.445 synthetic precision bar
+stands as the bar any learned model must beat.
+
+### ADR-003 amendment 8 (2026-08-24, the adopted detector gets ONE home): `src/fieldguard_planning/ndvi_detect.py`, proved by a bit-identical re-score
+Decision: the am. 7 ADOPTED core (`SYNTHETIC_THRESH`, `REAL_RENDER_THRESH`, `detect_blobs`,
+`detect_ndvi`) moves **verbatim** into `src/fieldguard_planning/ndvi_detect.py`; `eval/blob.py` is
+**deleted, not shimmed**; `eval/baseline_ndvi.py` and `eval/baseline_rgb.py` import the core and
+re-export the constants instead of re-declaring them (pinned by a test). The live node and the eval
+harness now run the same lines. Alternative(s) rejected: a numpy reimplementation so the container
+needs no scipy — a hand-rolled morphology is a different detector wearing the same verdict, and
+re-earning ADOPT costs a flight; a shim left at `eval/blob.py` — two homes for one concept.
+
+**Equivalence gate — PASS, bit-identical, both arms** (host numpy 1.26.4 / scipy 1.13.1), the check
+the artifact cannot fake: `baseline_ndvi.py` on `eval/results/clips/real_flight_20260823T073644Z`
+→ thresh −0.61 → **24 detections over 1256 frames**, `frames` **identical** to the committed
+`eval/results/adr003_20260823/detections_ndvi.json`, `params` identical (−0.61 / min_area 6 /
+max_area 5000, `thresh_provisional: true`); `baseline_rgb.py` → thresh 110 → 4 detections,
+identical. `score.py --iou 0.3` reproduced `spike_scores.json` by dict equality: TP=17 FP=7 FN=3,
+precision **0.708**, recall **0.850**, frame FNR 0.150, **per-bird-track FNR 0.000**, 20 visible
+bird-frames over 3 birds (8 `label_ambiguous`), verdict **ADOPT (a) NDVI-direct**. The synthetic arm
+re-ran end-to-end too (seed 42: TP=53 FP=66 FN=1, precision 0.4454, FNR 0.0185, per-bird 0.000) and
+still passes `scripts/check_spike_regression.py`. A pre-change baseline was captured first, so the
+move is provably neutral rather than coincidentally green.
+
+* **Regression pinned three independent ways** (`tests/fieldguard_planning/test_ndvi_detect.py`, 29
+  tests): hand-derived morphology semantics worked out before running (half-open boxes, area counted
+  POST-morphology — a 5×5 square is 21 px, not 25 — 8-connected labelling, raster order, no
+  mutation); three real float32 NDVI frames committed as a 24 KB `.npz` whose expected boxes are
+  READ FROM the artifact, not retyped, and whose arrays are compared element-wise to the clip's own
+  `.npy` where the clip is on disk; and the whole 1256-frame clip re-scored (skipped in CI, where the
+  gitignored `.npy` bulk is absent).
+* **Finding — the image border is structurally invisible to this detector.** Closing ends in an
+  erosion with `border_value=0`, so the outermost row/column can never survive; the committed
+  evidence obeys it exactly (across all 24 boxes: min x0 = 1, max x1 = 639 = W−1, max y1 = 479).
+  Consequence for the ADR-009 ray: a bird straddling the frame edge measures 1 px small on that side
+  and is therefore ranged slightly **farther** than it is — ~2-5 % of range on a 20-50 px blob,
+  small but one-sided and un-conservative. Now a test with the derivation written down; no code.
+* **Finding — the area filter was never binding on the adopted clip.** All 24 accepted components
+  measured 94-1781 px against bars of 6 and 5000, and no frame produced mask pixels the filter then
+  rejected. 6/5000 are speck/saturation guards, not tuning — so the 7 FPs are real blobs, which is
+  what the FP characterisation has to explain.
+* **−0.61 stays PROVISIONAL** and is now an explicit node argument (`--ndvi-thresh`, ADR-009 am. 1),
+  marked in three places: the constant's comment, the node's startup warning, and
+  `run.detector.thresh_provisional` in the flight log. Lifting it remains perception-ml-engineer's
+  call after the FP characterisation. A now-false line in `baseline_ndvi.py`'s stderr warning
+  ("never yet checked against precision/recall") was corrected — am. 7 closed that.
+* **Transfer is verified on ONE scipy version.** Host 1.13.1 only; CI pins 1.18.0 (the new test file
+  IS that check — a red there is a genuine finding that the ADOPTED verdict does not transfer to the
+  pinned dependency, not a flaky test) and the container ships jammy's 1.8.0 (unrun — ADR-004 am. 1).
+* Criterion 2 is unchanged and still **not a comparison**: `baseline_rgb`'s birdness is inverted on
+  this world, so its 1.000 FNR measures the wrong signal and must not be quoted as RGB's ceiling.
+Owner / roles: perception-ml-engineer (core, the PROVISIONAL call, criterion 2); tech-lead (recorded).
+
+### ADR-004 amendment 1 (2026-08-24, the image gains the detector's one dependency): `python3-scipy`, and a rebuild becomes a flight precondition
+Decision: add `python3-scipy` as **one token** on the existing ArduPilot-build-deps apt line in
+`sim/docker/Dockerfile` (no new layer, no pip), because `scipy.ndimage` IS the morphology the ADOPT
+verdict was measured on (ADR-003 am. 8). Alternative(s) rejected: `pip install scipy` at container
+runtime — a band-aid that makes the image non-reproducible and re-runs every session; a numpy
+reimplementation — voids the measured transfer; running the detector host-side over a topic bridge —
+invents a new hop on the band that has starved this system twice (ADR-013 am. 7-9).
+
+* **Consequence, and it is on the critical path: the image must be rebuilt before the take** —
+  `scripts/sim_docker_build.sh` then `scripts/sim_docker_run.sh` (multi-hour), plus the GHCR image if
+  the session pulls rather than builds (`sim-image.yml`'s push trigger is commented out — manual
+  `workflow_dispatch`). Until then `fly_pipeline.sh up` **refuses**, by design, including for demo
+  takes.
+* The tripwire lands in the EXISTING `preflight()` seam: `docker exec fieldguard-sim python3 -c
+  'import scipy.ndimage'` (~200 ms), which **dies with the two rebuild commands** rather than
+  apt-installing like the bridge-deps block above it — scipy missing means the IMAGE is stale, and
+  pip-installing would hide the drift and burn the next session too. A matching `--dry-run` line keeps
+  the enumeration parity `tests/test_fly_pipeline.py` pins. Node-side, `--detect` exits 2 with the
+  rebuild instruction on `ImportError`; there is no numpy fallback, ever.
+* `sim/docker/Dockerfile.ci` deliberately untouched (build-only image, never runs the detector), so
+  **no CI job exercises the container-side import** — the preflight is the only gate on it. Named,
+  not fixed: adding scipy to the CI image grows a multi-hour build for zero coverage of a path CI
+  cannot run.
+* **Unproven until a human rebuilds:** apt availability of `python3-scipy` on jammy (both prior image
+  bugs — the dash SHELL and the emptied apt lists — surfaced only at build time), and the 1.8.0
+  behaviour transfer. The runbook's preflight 0c re-scores the am. 7 clip in-container and requires
+  bit-identical boxes; any diff is a scipy behaviour change and the flight does not fly.
+Owner / roles: devops-reliability-engineer (image + preflight), robotics-sim-engineer (rebuild),
+tech-lead (recorded).
+
+### ADR-009 amendment 1 (2026-08-24, the seam is WIRED — offline): one clock domain end-to-end, the staleness gate finally armed, and the ray implemented with its ground-plane counter-proof as a test
+Status: both contract rules are implemented behind `avoidance_node --detect` and measured offline.
+**Nothing here has flown** — this stays confirmation-pending until the next avoidance flight.
+
+**Rule 1 — the clock. BINDING: absolute Gazebo sim seconds, end to end, inside `avoidance_node`.**
+The mechanism is the one `record_node`/`clip_recorder` already ship — a native `gz topic -e -t
+/clock` subprocess feeding `StreamingClockParser`, plus a `PoseBuffer` — reused, not reinvented;
+never a bridged `/clock` (bridging it collapsed the fused frame rate ~8× when measured live
+2026-08-18).
+* **The defect it fixes, and the worse one the obvious fix would have been.** The node built
+  `t = get_clock().now() − t0` (elapsed wall seconds) and called `decide_multi` with **no `now_s`**,
+  so `max_detection_age_s` could never evaluate. Passing that same `t` would have been WORSE: NDVI
+  stamps are absolute gz seconds, so `age = elapsed − absolute` is large and **negative** — every
+  detection reads fresh forever, silently, because unstamped detections fail OPEN by design.
+* **Tripwire:** a detection stamped more than `CLOCK_DOMAIN_BOUND_S = 0.5` s in the future counts a
+  `clock_domain_violation` (warn on the 1st and 10th); the flight-log gate fails any schema-2 log
+  with violations > 0. Offline proof, paired: absolute stamps against an elapsed clock violate on
+  **every** tick, and the same 60 s-old detection is PROCEED (`n_stale_dropped=1`) on the right clock
+  and **DIVERT** on the wrong one — a test that only checked "stale is dropped" would pass with the
+  clocks crossed.
+* `--detect` **refuses to start** without a clock reading (10 s poll, exit 3): a startup check is
+  cheaper than a burnt take. Without `--detect` the clock stays optional, so `--demo` is unchanged.
+* Each NDVI frame pairs to `PoseBuffer.nearest(frame stamp)`, not to the latest pose: at 7.7 m/s an
+  0.4 s pairing error is 3 m of bird-position error — exactly the magnitude that destabilises the
+  away-vector. `DroneState` for the policy still uses the latest pose; different uses, both correct.
+* **The gate is now ARMED: `PolicyParams.max_detection_age_s` None → 1.0**, with ONE home — the
+  node's constant is deleted, not aliased (the anti-drift shape R2 established). `avoidance_node`
+  declares nothing and passes nothing; it carries a NOTE naming where the bound lives, and a test
+  reads the node's own source to pin the absence, because "one knob, two homes" is only prevented by
+  something that fails when the second home reappears. Evidence, not taste: the am. 7 clip's own
+  `frame_age_sim_s` is min 0.061 / p50 0.143 / p95 0.149 / **max 0.156 s** (n=1256), so 1.0 s is ~6×
+  the measured max and ~3× worst-case-plus-one-control-period. Unstamped detections still fail OPEN.
+* **What the gate throws away is now in the artifact.** `n_stale_dropped` / `stale_ids` /
+  `max_detection_age_s` ride the PROCEED and HOLD events too, not only an accepted DIVERT — written
+  only when something was actually dropped, so a healthy tick pays nothing. All-stale is precisely
+  the case that produces PROCEED, so before this the counter that exists to reveal a dead loop read
+  0 exactly when the loop was dead (`gate_detector_ran` reads the pair — ADR-013 am. 14 (b); the
+  probe that forced it is am. 15 F2).
+
+**Rule 2 — the ray, implemented.** `range_from_apparent_size` and `pixel_at_depth_to_enu` land in
+`ndvi_georef.py` beside their forward twin `project_world_point` (round-trip < 1e-9);
+`box_to_detection` uses r_px = 0.25·((x1−x0)+(y1−y0)), the same disc convention the labeller builds
+GT boxes with; `pixel_to_ground_enu` is never called on this path. **The ADR's rationale is now an
+executable assertion, not prose:** same pixel, same pose — the ray DIVERTs, the ground plane
+PROCEEDs, because it puts the bird at |dz| = 15 m against `vertical_threat_m` 6.0. That test is the
+interview slide.
+* **The "conservative inflation factor" of the original ADR is COLLAPSED into one number:**
+  `BIRD_RADIUS_PRIOR_M = 0.15` against the world's true 0.18 m. Zc scales linearly with R, so two
+  multiplicative knobs for one scalar is a speculative flag; under-estimating radius under-estimates
+  range, which places the bird NEARER — dodge early rather than late — and it stops the detector
+  reading the answer out of the world config it is meant to be inferring.
+* **Measured consequence, both directions, offline over the adopted clip** (1256 frames, 645
+  airborne): **range-estimate error vs applied-pose truth median 1.65 m / max 3.67 m (n=24)** —
+  materially larger than the single 3.27-vs-3.92 m case am. 7 quoted. And a new finding:
+  under-ranging is conservative for RANGE but **not** for the cylinder test, because it shrinks |dz|
+  too. It biases opposite to the border-trim bias in ADR-003 am. 8; neither is worth code yet.
+
+**The pre-flight dry run, with a denominator** (the number that decided bookability): running the
+live `NdviDetectionSource` over the adopted clip's own poses/intrinsics reproduced the committed
+boxes **bit-identically** (24 boxes / 20 frames) and would have produced an in-cylinder threat on
+**8 of 1256 frames (0.64 %), 8 of 645 airborne (1.24 %)**, in ~3 clusters — bookable, not a dodge
+storm. Five of the eight coincide with a real in-cylinder bird; **the other three are bird_1 (true
+|dz| 7 m) lifted INTO the ±6 m cylinder by the prior's under-ranging** (estimated |dz| 5.85-5.99 m).
+`detect_wall_ms` p95 **4.8** / max 26.9 ms against the 200 ms tick, so the detector will not block
+the single-threaded executor. A dress rehearsal (101 encounter frames → `PoseBuffer` → `on_frame` →
+tick → run block → `check_live_flight_log.py`) had the gate consume the artifact, auto-discover the
+truth track, and print `gt_cpa_m 0.177 m` vs `detection_cpa_m 0.026 m` at 101/101 truth coverage.
+It also produced **2 relatches in 5 maneuvers**: monocular jitter can exceed the executor's
+`RELATCH_THRESHOLD_M` 3.0 m, so re-latch churn is the live watch item — the lever is that threshold
+or a tracker, decided on the flown measurement, not now.
+
+**Deliberate non-features, each a component NOT built:** no tracker (`track_id=None` — the threat
+test is per-frame and the executor latches on geometry, so an ID that exists to look sophisticated
+would be untested state); no second expiry inside the source (ageing out is `max_detection_age_s`'s
+job and only its job).
+
+**Surface decisions, one sentence each.** The threshold is a **CLI argument** (`--ndvi-thresh`), not
+a ROS 2 parameter: there is not one `declare_parameter` anywhere in `src/`, and the number that
+matters is the one recorded in the artifact, not the one queryable at runtime. Intrinsics come from
+the LIVE `/fg/ndvi/camera_info`, never `config/ndvi_camera.json` — the config is what we asked for,
+the message is what we got — and the pre-`camera_info` window is COUNTED (`dropped_no_intrinsics`),
+because a silently-discarded window is exactly the defect ADR-013 am. 6a found in the recorder. The
+NDVI subscription is BEST_EFFORT depth 1: a control loop wants the newest frame, not every frame,
+and this keeps a third reader off the RELIABLE NACK-repair path am. 8 priced. `argparse` is now
+strict (an unknown flag exits 2) so a typo cannot silently fly a no-detector flight. The per-tick
+path was extracted as a pure `AvoidanceLoop` (stdlib, no rclpy) precisely so the clock bug could be
+driven with a deliberately wrong clock; the node is thin wiring around it and writes
+`log["run"]` (schema 2) itself, leaving the executor's signature untouched.
+
+**Also corrected while there:** `proximity_bird_source` / `scripted_bird_source` now tag
+`source="demo_virtual"` instead of inheriting `Detection`'s `"ndvi_blob"` default — a virtual bird
+had been claiming to be an NDVI blob in every log ever flown, and the safety gate branches on that tag.
+
+**Not flown, stated plainly:** the gz CLI subprocess, the live BEST_EFFORT subscription, the
+`camera_info` arming window and the startup refusal have never run against a real Gazebo. The dry run
+and the dress rehearsal replayed recorded frames through the identical code path — as close as the
+host can get.
+Owner / roles: flight-software-engineer (seam, node, clock); perception-ml-engineer (detector core,
+threshold); qa-safety-reviewer (the gate that reads it); tech-lead (the binding calls above).
+
+### ADR-012 amendment 2 (2026-08-24, the applied-pose log is promoted to the flight's GATED ground truth): schema 1.1 measures the /clock poll instead of assuming it away
+Decision: the bird ground truth the new CPA gate scores against is the applied-pose log
+`drive_birds.py` already writes — **no writer redesign**, because the log already recorded gz-stamped,
+applied-only poses. It is read by the gate through the SAME functions that build the ADR-003 labels
+(`read_applied_log` / `applied_sim_brackets` / `applied_timeline` / `pose_from_applied` / `pose_at`),
+imported and never re-implemented: if the bird-pose reconstruction is ever wrong, the labels and the
+safety gate must be wrong together, never one silently right.
+
+* **The defect an audit found, measured not suspected.** The log claimed `tick_sim_s` was observed at
+  `tick_wall_s` — but `tick_wall_s` is taken BEFORE the `gz topic -e -t /clock -n 1` subprocess that
+  produces the reading. On the 2026-08-23 take that poll cost **39 ms median / 42 ms p95 / 146 ms
+  max**; at that flight's measured RTF (0.34-0.93, median 0.58) it is up to ~0.8 m of bird motion
+  asserted with false precision, against a 3.0 m clearance bar and two 5 cm historical breaches.
+* **Applied-pose schema 1.1** adds `clock_wall_s` (the instant the reading was parsed), so the tick
+  anchor is an interval the driver MEASURES rather than a point it assumes; `applied_sim_brackets`
+  widens each bracket over that interval (latest possible start, earliest possible end) so
+  uncertainty can only widen the ambiguous window, never narrow it. A test proves the change is
+  load-bearing: on identical data the old zero-width anchor places the bracket AFTER the pose had
+  already landed — a confident wrong label with no ambiguity flag.
+* **Backward compatibility pinned on the real artifact:** schema-1.0 records take the old path
+  exactly, and the committed 860-record am. 7 log (839 landed / 21 failed, 3 birds, sim
+  110.383-262.481 s) reconstructs **bit-identically** against HEAD's implementation. ADR-003 am. 7's
+  labels cannot move retroactively.
+* **Honest cost:** bracket widening raises the `label_ambiguous` rate ~16 % on FUTURE clips.
+  `eval/score.py` counts those rather than dropping them, so this is a disclosure, not a regression.
+* **Testable without Gazebo:** `drive_tick(...)` extracted with the set_pose service and the clock
+  injected, plus a `FakeGazebo` whose replies consume wall time and land at instants nothing records
+  — which let `main()` itself be flown offline, and caught a real bug (`now=time.monotonic` as a
+  default argument binds the clock at import, so per-call timestamps would have come from a different
+  clock than the tick anchors). 31 tests.
+* **Operator path:** on Ctrl-C the driver prints the sim window its truth covers and the exact
+  `check_live_flight_log.py ... --truth <path>` line, because sim time restarts near 0 every run and
+  every take's log otherwise looks alike.
+* Unflown: schema 1.1 has never been written by a real flight — expect `clock_wall_s − tick_wall_s`
+  ≈ 0.039 s in the first one. `--once T_S` still writes no applied log (deterministic Gate-2 shots),
+  so a flight that used it would have no truth track and, under ADR-013 am. 14, would be INVALID.
+Owner / roles: robotics-sim-engineer (writer + audit); qa-safety-reviewer (consumer); tech-lead.
+
+### ADR-013 amendment 13 (2026-08-24, am. 12's R2 and R3 are LANDED — offline): the price is measured, the assertions exist, the LIVE gate is still owed
+**R2 — `lateral_tree_margin_m` 0.0 → 1.0**, changed at its ONE home (`PolicyParams`). While there,
+`AvoidancePolicy.__init__`'s duplicate 12-parameter signature was deleted in favour of
+`(*, field_polygon=None, **params)` forwarding straight to the dataclass — one sentence: a
+constructor default that can drift from the dataclass default the checker reads as its bar is exactly
+how a safety knob gets raised in one place and flown from the other. An unknown knob is now a
+TypeError, never a silently ignored kwarg.
+* **Price, measured on the 11,856-case degenerate sweep:** HOLD 5.64 % → **15.66 %** (+10.0 pp on a
+  deliberately tree-dense worst case, under am. 12's 15 pp bar); min accepted swept clearance 0.000 →
+  **1.000 m**; sub-metre tail 28.1 % → **0 %**. On the flown encounter: still **19/19 DIVERT**, and
+  the degenerate tick rotates +0° → **+45° at 7.563 m** clearance.
+
+**R3 — degenerate-range re-latch refusal**, split exactly as am. 12 specified. The policy attaches
+`debug["range_degenerate"]` to every threat-branch maneuver (DIVERT *and* HOLD), computed from the
+**rounded** `trigger_range_m` that actually reaches the log, so the gate's flag/number identity holds
+by construction at the boundary rather than usually — a flag derived from a number nobody can see is
+a flag nobody can audit. `decide` stays pure. The executor, on a jump past `RELATCH_THRESHOLD_M` at a
+flagged tick, keeps the already-vetted latch and logs a **fourth** `latch_action` value,
+`relatch_refused_degenerate`; no latch event, no state change, so R3 is countable only from that
+field. A maneuver with no flag (pre-R3 caller) keeps exact pre-R3 behaviour, pinned.
+
+* **What R3 buys, and no more:** replaying the 19 flown ticks through the real policy + executor, the
+  noise-driven setpoint (37.6, 36.6, 15) — built from an away-vector a 5 cm position error could have
+  pointed anywhere — is **never commanded**; the re-latch lands one tick later (0.2 s) at 1.192 m
+  where the away-vector is geometry again. Relatches 7 → 6 + 1 refusal. The harness first reproduces
+  the flight's entire `latch_action` column at as-flown params before claiming any delta.
+* **R3's scope, stated so nobody reads it as a safety property:** R3 refuses only a *re*-latch. The
+  bird-reject path kills the latch outright, and a FIRST latch at degenerate range is still
+  permitted — so on that path R3 buys **one tick (0.2 s) of delay**, not a permanent refusal to act
+  on a degenerate range. What actually keeps a degenerate-range setpoint from being commanded is the
+  executor's bird-clearance backstop below, not R3.
+
+**R3's own backstop — the executor's guarantee 1 gains a second half.** A refusal keeps a point that
+was bird-vetted on the tick it was LATCHED, and the executor's only backstop was `is_safe_3d`, which
+cannot see a bird at all: the refusal could therefore command a point the policy would refuse to
+place today (measured: 1.000 m from the bird against the 3.00 m bar — am. 15 F3). The fix is
+deliberately **wider than the refusal**, because the ordinary re-command path has the identical hole
+and a refusal-only guard would leave the gate asserting more than the control law guarantees: every
+point this module hands to the sink is now re-vetted against `is_safe_3d` **and**
+`min_bird_clearance_m` over `debug["threat_positions_enu"]` — the policy writes those positions
+beside `threat_ids`, so ALL in-cylinder threats are covered, not only the trigger. The bar is read
+from that maneuver's own logged `debug["params"]`, never a second literal in the executor, and a
+maneuver carrying no params fails OPEN (the same doctrine as the missing `range_degenerate` flag).
+Rejection logs `gate_reject` with `bird_clearance_m` / `bird_track_id`, keeps the
+`relatch_refused_degenerate` label, drops the dead latch so the next tick can latch fresh, and HOLDs.
+* **What that claim is, exactly, stated so it cannot be read wider — and the guarantee is now NAMED
+  for its own scope.** The vetting covers the point this module COMMANDS a DISPLACEMENT to, which is
+  why guarantee 1 reads **"Never fly an unvetted DISPLACEMENT"** (round 3 renamed it from the wider
+  wording it used to carry). The HOLD it falls back to is the vehicle's own current position — ZERO
+  displacement, so it chooses no point, honours no clearance bar, and **can be nearer the bird than
+  the point it just refused** (measured on one worked geometry: refused at 1.000 m, held at
+  0.400 m). On the degenerate branch that hover point is inside the bar **by construction**, since
+  the branch is only entered within `degenerate_range_m` of the trigger bird. So the guarantee is
+  "this module never commands a NEW point inside the policy's bird bar", not "the vehicle stays 3 m
+  from every bird". Proximity is escape geometry, and escape geometry is R4. The exemption is written
+  into the module docstring as its own paragraph carrying those numbers, so the scope cannot be read
+  wider from the code either.
+* **Second-order behaviour, recorded rather than patched:** a bird-reject drops the latch, so the next
+  tick may latch the same setpoint FRESH (a first latch at degenerate range is permitted by design).
+  On that path the refusal is the same one-tick (0.2 s) delay measured above, not a permanent refusal.
+  That sentence now also lives in the executor's design note 3, next to the code it describes.
+
+**The assertions, in `check_live_flight_log.py`, schema-2 logs only, every bar read from
+`PolicyParams()` at call time and never a literal** (the R1 precedent: a second `3.0` in the checker
+would let gate and control law drift apart silently): every maneuver's `swept_tree_clearance_m` ≥ the
+flown `lateral_tree_margin_m`; the flown margin ≥ today's default; **no `relatch` with
+`trigger_range_m` below `degenerate_range_m`** — gated on the NUMBER, so a lying flag cannot buy a
+re-latch; the flag/number identity (a mismatch means policy and executor are at different versions);
+the flown `degenerate_range_m` ≥ today's default; and **R3.7** — every COMMANDED `setpoint_enu` kept
+`min_bird_clearance_m` from every position in that decision's `debug.threat_positions_enu`, the same
+inequality the executor now applies live, re-checked offline on the artifact. Refusals are counted
+and reported — R3 doing its job must be visible, not inferred. With zero accepted dodges the line
+reads **`R2/R3 PASS (vacuous): 0 accepted dodges to check`** in those words, because a gate that
+passed because it measured nothing must say so.
+* **R3.7's honest scope, because the executor fix moved the evidence — and R3.8, which reads where
+  it moved TO:** on a log the CURRENT executor writes, a commanded point inside the bar becomes a
+  `gate_reject`, never a `maneuver`, so R3.7's BREACH branch is the **exhaustion** property
+  (defence-in-depth over replayed, older or hand-edited logs, and over the executor's documented
+  fail-OPEN path when a maneuver carries no `debug["params"]`); its live value is the
+  missing-`threat_positions_enu` branch, since a maneuver whose commanded point cannot be checked at
+  all is a hard problem. The `gate_reject` events are where a current flight's evidence lands, and
+  **`gate_r2_r3` now reads them (R3.8, round 3)**: rejects are counted, bird-bar rejects split from
+  geofence rejects, the closest refused point reported as the backstop WORKING, each scored against
+  the bar THAT FLIGHT flew, and a reject explaining itself with neither an `obstacle_id` nor a
+  sub-bar `bird_clearance_m` is a hard problem — the only way field-name drift there could stay
+  silent. The layering is deliberate and worth saying out loud: **the executor fails OPEN on missing
+  data, the gate fails CLOSED on it.**
+
+**Test fallout, handled without weakening anything.** Both xfails are gone.
+`test_WANT_every_accepted_dodge_keeps_one_metre_of_swept_tree_clearance` flipped on its own and is
+now a plain assertion reading the bar from `PolicyParams`.
+`test_WANT_the_encounter_holds_the_policys_own_minimum_bird_clearance` **could not be promoted
+honestly** — it asserts CPA ≥ 3.0 on a FROZEN
+artifact whose flown path no code change can move, and R2/R3 explicitly do not fix S1; it was a
+permanent xfail wearing a tripwire's clothes. It is retired, with the 0.0518 m breach still pinned in
+the CURRENT test, the marker's existence asserted, and the bar moved to where it can actually bite —
+`test_the_bird_clearance_bar_this_log_missed_is_carried_by_a_live_gate_and_a_marker`, which the
+2026-08-23 `SAFETY_FINDING.md` now names in place of its stale xfail bullet, so the marker and the
+suite point at the same live gate. **Nothing in the suite now asserts that flight was
+safe**, and a genuinely self-activating tripwire replaced the dead one: `test_R4_is_still_open` goes
+red the day the reversal-preferring candidate order changes. Every `test_CURRENT_*` pin was re-pinned
+by passing the AS-FLOWN params explicitly (margin 0.0) — history preserved, not deleted, and no
+longer confusable with what the vehicle would do today.
+
+**R4 and R5 are recorded as CUT TO OPEN for v1.** 18 of the 19 replayed ticks still take candidate 0°
+(straight reversal) and S1's 0.0518 m stands; R5 (an ArduPilot `FENCE_*` polygon as an independent
+backstop, lanes ≥ 1 m inboard) is untouched. Deliberate deferrals, named so they are decisions rather
+than blind spots: the latched setpoint's swept path is **not** re-vetted as ownship moves (the
+executor re-vets the POINT, not the segment); a FIRST latch at degenerate range is still permitted
+(am. 12 scoped R3 to re-latch); `_handle_hold` still sends an unvetted setpoint (S5) — now with a
+number on it, 41 of 10,000 swept control ticks commanded a hover inside the 3.00 m bird bar, closest
+0.288 m, and since round 3 that number **reaches the artifact**: the executor logs
+`bird_clearance_m` / `bird_track_id` / `min_bird_clearance_m` on every hold and `gate_r2_r3` prints
+the minimum as `[CONTEXT, NEVER GATED]`, so the first `--detect` take will QUANTIFY R4's gap instead
+of leaving it to an argument; `is_safe_3d` remains structurally unreachable at cruise (S2).
+
+**The live gate is still owed.** None of this has flown. The next avoidance flight is R2/R3's gate,
+and the expectation is **pre-registered here, before the take**: because R4 is not in it, that flight
+may honestly FAIL its own GT-CPA gate — a pre-registered failure is a measurement that ranks R4 next,
+not a wasted take. **A breaching NEW flight is INVALID and stays INVALID.** Acknowledgement takes TWO
+halves and only one of them is the operator's: **write the `<log-stem>.SAFETY_FINDING.md` marker**
+(the context half — the written finding, beside the evidence, so the next reader gets the reason with
+the verdict) **and do NOT add the pin**. The pin — the log stem in `ACKNOWLEDGED_BREACH_STEMS`, a
+reviewed diff on the safety gate — is what turns a breach into exit 0, and it exists for recorded
+history that cannot be re-flown. A take that can be re-flown after R4 is a failed take, and pinning it
+would make "add a file" the documented remedy for a red gate. So the marker is written, the pin is
+not, and the gate says **INVALID / exit 1 naming the missing half** — which is the correct record. The
+acknowledged set is therefore **frozen at the two historical stems** (2026-08-18, 2026-08-23); a third
+is an ADR-level act that must name why that flight cannot be re-flown. See am. 17 for both halves as
+shipped, and `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` §6a for the operator's version.
+
+**Separately, and resolved rather than left as a question: `eval/scenarios/*/flight_log.json` do not
+model separation, so the CPA gate must not be pointed at them.** Run by hand, 3 of the 4 read INVALID
+on the legacy CPA path (cov_bird_over_cell **0.0000 m**, cov_two_birds_simultaneous **1.0000 m**,
+geo_avoid_into_tree **1.0000 m**; only cov_bird_at_turnaround passes at 7.0000 m) — verified
+**pre-existing at HEAD**, identical verdicts under the committed-HEAD checker, not a session
+regression. The reason is the harness, not the control law: `generate_flight_logs.py` walks the drone
+along `nominal_path()` whatever the executor commands, so all four logs have exactly 116 path points
+however many dodges they contain, and the "CPA" is the distance from a lawnmower lane to a STATIONARY
+bird the fixture parked on it. They are decision/ledger fixtures with an open-loop vehicle; adding
+them to CI's `check_live_flight_log.py` line would turn CI red on fixture geometry and teach the team
+to widen a safety gate. Cheapest correct fix, and it is one sentence of prose: say so in
+`eval/scenarios/README.md`. Note also that CI's existing line is NOT vacuous — `.gitignore` un-ignores
+`eval/results/live_flight_log_*.json`, both historical logs are tracked, and CI runs the gate on them
+(ACKNOWLEDGED, exit 0) on every push. The scenario logs' params are still stale (margin 0.0, no
+`threat_positions_enu`); regeneration is one command (`python3 eval/scenarios/generate_flight_logs.py`)
+and was deliberately NOT part of this round, so the diff stayed reviewable — **am. 16, later the same
+day, regenerated them** (owed anyway, because today's control-law changes would otherwise have turned
+CI's regenerate-and-diff step red on the first commit) and closed this call with a measured
+open-loop proof.
+Owner / roles: flight-software-engineer (policy + executor); qa-safety-reviewer (assertions);
+product-lead (R4/R5 remain cut for v1); tech-lead (recorded, and the `eval/scenarios` call above).
+
+### ADR-013 amendment 14 (2026-08-24, am. 12 R1's successor): GROUND-TRUTH CPA is the gated number, detection-CPA is demoted to an estimator check, and no truth track is a hard fail
+Decision, the whiteboard sentence: **CPA is measured against whatever is genuinely ground truth for
+that flight, and when the threat is an estimate the estimate is not allowed to be the referee.**
+R1 shipped a CPA computed from the flight's own logged detections — correct while the bird was a
+constant we chose, self-referential the moment a real detector supplies the positions.
+
+* **Versioned, so history keeps the verdict it was flown under.** `check_live_flight_log.py` branches
+  on `run.schema_version`. Absent → today's path byte-for-byte: the two historical breach logs
+  (**0.0597 m** 2026-08-18, **0.0518 m** 2026-08-23) were verified to have no `run` key and still
+  report ACKNOWLEDGED with byte-identical wording, exit 0 (re-verified at the close of the fix round
+  by diffing stdout AND stderr against the same invocation of the committed-HEAD checker: zero bytes
+  different). The four `eval/scenarios` logs take that same legacy path unchanged — 3 of the 4 read
+  INVALID on it, which is a property of the fixture, not of this gate (am. 13). A
+  `run` block that is unreadable or below version 2 is **INVALID, not quietly demoted** — demotion
+  onto the weaker detection-referenced CPA is a downgrade attack, not a default. The node always
+  writes the block, so the new contract cannot be flown without meeting it.
+  **Corrected in place, round 5:** this bullet used to end "no filename special cases, ever", and that
+  is precisely what left the door open — with the branch keyed on CONTENTS alone, `del log["run"]`
+  demoted a schema-2 flight to the legacy path and a ground-truth INVALID came back VALID. Absence of
+  a run block is now a legacy signal **only for logs pinned as pre-seam** (`PRE_SEAM_LEGACY_STEMS`,
+  plus the `eval/scenarios/<name>/flight_log.json` shape); everything else is INVALID. The pin is
+  deliberately a property of the FILE rather than of its contents, because that is the one thing a
+  log's author cannot edit: adding a stem is a reviewed diff on this gate, exactly as with
+  `ACKNOWLEDGED_BREACH_STEMS`. Full reasoning and the del-`run` probe: am. 17.
+* **GT-CPA** (`detector.source == "ndvi_blob"`): minimum **horizontal** distance over (tick, bird)
+  pairs that have truth coverage AND satisfy |bird_z − drone_z| ≤ `PolicyParams().vertical_threat_m`
+  (6.0), against `min_bird_clearance_m` 3.0. Measured over the flown **polyline**, not its vertices,
+  and in **TWO passes — one per axis of the discretisation, with `gt_cpa_m` the minimum over both**
+  (`cpa_from` names which pass produced it). Pass 1 walks the TICKS: each tick's bird candidate set
+  is scored point-to-**segment** against BOTH segments bounding that tick, so a pose that landed
+  after the tick meets the segment the drone was actually flying, and it is the only pass that can
+  answer before a bird's first landed call. Pass 2 walks the LANDED BIRD POSES: every `set_pose` call
+  is scored against exactly the piece of drone polyline its own in-effect window covers (endpoints
+  interpolated along the bounding ticks), so a pose whose whole window falls between two ticks is no
+  longer invisible — the tick grid stops mattering. Both halves were forced by a probe: F4 in am. 15
+  closed the drone axis, and round 3 (am. 17) closed the bird one, which was the larger half because
+  the bird is the faster body. The vertical scoping is not
+  optional — bird_1 and bird_2
+  patrol 7-9 m below cruise and pass under the lanes constantly, so an unscoped horizontal bar would
+  fail every flight forever and mean nothing; the band is the policy's own threat definition, read
+  from `PolicyParams`, so gate and control law cannot drift. Horizontal not 3D because folding
+  altitude in can only manufacture clearance and ADR-009 says bird z is the estimate we cannot trust;
+  the 3D distance and vertical separation are reported as non-gating context, so "but it was 4 m
+  below" is answered inside the artifact. Ambiguity inside a `set_pose` bracket resolves to the
+  **nearer** candidate: uncertainty must not buy clearance.
+* **No truth track = INVALID, including when the flight logged zero detections** — because zero
+  detections is exactly what a missed bird looks like, and the old "NO-CPA-EVIDENCE → VALID" path is
+  the hole a real detector re-opens. Refused as no-truth: absent file, a wall-clock driver run, an
+  all-calls-failed log, no sim-span overlap, more than one overlapping candidate, or a bird the world
+  config does not define. **`--truth` selects, it does not silence:** the candidate scan runs
+  unconditionally, so naming one log while a second overlaps the same sim window is `AMBIGUOUS TAKE`
+  → INVALID, naming the other file. Every tick carrying an avoidance event must have truth, and
+  `truth coverage N/M ticks` prints on every flight — a rate with a denominator. Round 3 added the
+  **second** denominator that number never was: `truth poses scored K/N landed set_pose call(s)`, the
+  BIRD axis's own coverage, because tick coverage reads 100 % whether or not a landed bird pose was
+  ever looked at.
+* **Detection-CPA demoted, never gated:** printed as `detection_cpa_m (ESTIMATOR CHECK, NOT A SAFETY
+  GATE)` beside `range_estimate_error_at_cpa_m` — the measured argument ADR-009 says the
+  second-sensor comparison arm exists to make. Both directions are pinned: a detector claiming 1 cm
+  while truth says 8 m still PASSES; one claiming 8 m while truth says 5 cm still FAILS.
+  `demo_virtual` keeps R1's detection gate unchanged (that bird's logged position IS truth); source
+  `none` must carry zero encounter events.
+* **Three gates beyond the six enumerated, all named:** `max_detection_age_s` must be ARMED for an
+  `ndvi_blob` flight (flown as None, the ADR-009 staleness gate cannot fire at all — the hole in the
+  artifact rather than the code); an encounter tick outside `1..len(flown_path_enu)` counts as blind,
+  not skipped; and zero accepted dodges says `PASS (vacuous)` out loud.
+* **Mutation-proven, 12/12.** Every gate was mutated one line at a time in a scratch copy — drop the
+  vertical scoping, make the band edge exclusive, fall back to detections when truth is missing, gate
+  R3 on the flag, disable the knob floors, disable R2, skip the encounter-truth requirement, skip
+  off-path ticks, resolve ambiguity in the flight's favour, ignore clock violations, let a marker
+  waive failed gates, drop the vacuous label — and every mutant was killed. The headline regression
+  flies ONE artifact twice: identical path, identical (absent) detections, legacy **VALID** →
+  schema-2 **INVALID at 0.0500 m**.
+* **Its own adversarial pass then found four defects an exit code of 0 could not see; all four fixed
+  the same day.** (a) A **frozen time axis** — source, violations and length do not move when the
+  clock stops; stamps may now not go backwards, a zero-span axis is refused, and a frozen run is
+  **PRICED, never permitted by a free constant**: `freeze_debit_m` = the hidden sim-time window ×
+  the fastest bird the config scripts, subtracted from `gt_cpa_m` before it meets the bar, and a
+  debit that reaches `min_bird_clearance_m` is a hard CLOCK fault instead — at which point
+  `gt_cpa_gated_m` prints **NOT COMPUTED** rather than a negative separation, because a flight that
+  measured nothing is not a close pass. The window is **measured from the flight's own stamps**, not
+  converted from a nominal tick rate, so the price does not depend on the loop having run at 5 Hz:
+  today's bar is crossed by **0.428 s** of hidden sim time (3.00 m ÷ 7.0043 m/s) at any tick count.
+  Derivation and the two probes that successively replaced the bound: F1 in am. 15, then am. 17.
+  (b) **`run.detector.counters`
+  were written by the node and read by nothing** — `frames_detected_on == 0` is a hard INVALID
+  ("DETECTOR NEVER RAN: 0 of N NDVI messages"), chosen over the softer option because R2/R3's vacuous
+  case is a legitimate flight whereas an armed detector fed zero frames is a broken bringup; and the
+  same counters carry a **rate floor** (`MIN_DETECT_RATE = 0.90`, justification in F6) so 1 frame of
+  1256 cannot pass as a detect half. (c) **An invented
+  spawn-pose bird** — a bird with zero landed `set_pose` calls is now omitted from the truth answer
+  and named as a hard failure; `answered_from_spawn K/M ticks` prints with per-bird landed counts. On
+  the real artifact with bird_0's records stripped, a fabricated `gt_cpa_m 0.0000` breach became
+  NONE-IN-BAND plus INVALID naming bird_0. (d) The **staleness bound had no floor in the artifact** —
+  a log flown at 3600 s is now INVALID unpatched.
+* **New operational preconditions the gate enforces** (each silent until post-flight otherwise, so
+  they belong in the runbook): `ndvi_node` must already be publishing `/fg/ndvi/camera_info` when the
+  `--detect` shell starts; `drive_birds` must land at least one `set_pose` for **every** bird in the
+  config; the gz clock must keep advancing.
+* **Reported, not gated — deliberate, and each with a reason:** partial truth coverage (gating it
+  needs a minimum-coverage number nobody has evidence for yet); `n_stale_dropped` totals, whose ONE
+  gated combination is "drops > 0 AND zero engagements" (am. 15 F2) because that is the combination
+  that means avoidance was dead — the totals themselves stay a reading, since "every detection
+  expired" and "no bird was ever seen" are opposite diagnoses; and the missed-detection
+  line "bird truly inside the cylinder on N tick(s); the loop engaged on M" — gating that would
+  measure geometry, since a bird behind the drone is invisible to a forward-facing camera, but a
+  large N−M on the first real-detector flight IS the FNR finding and will only be seen if someone
+  reads the line.
+* **One combined runbook**, `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`: `fly_pipeline.sh up` (7
+  panes, whose one-liners it deliberately does not re-spell — one source of truth per command) plus
+  an 8th `docker exec` shell for `--detect`; both scipy preflights; the ADR-015 geometry precheck
+  verified at the intended cadence (`predict_bird_visibility.py --fps 5.0` → PASS, medians 8/6/11; at
+  0.41 Hz → FAIL, 1/0/1 — the abort rule with a worked example); **evidence-first teardown** spelled
+  out in order (Ctrl-C the avoidance shell and wait for `wrote flight log →`, THEN `fly_pipeline.sh
+  down`, which is already recorder-first); and the exact `--truth` scoring line. `avoidance_node` is
+  deliberately NOT a `fly_pipeline.sh` pane and NOT in its `pkill` list — it writes the flight log in
+  a `finally` after `rclpy.spin`, so a `pkill -9` would destroy the evidence the flight exists to
+  produce, and ADR-013's own rule is that a one-liner flies once before it earns a pane.
+  `AVOIDANCE_DEMO.md` keeps the `--demo` arm alive behind a precise partial-supersession banner.
+  Known gap, documented rather than patched: `fly_pipeline.sh`'s already-running refusal does not
+  grep `avoidance_node`, so a surviving 8th shell is invisible to the next `up`.
+Owner / roles: qa-safety-reviewer (gate, mutations, the four fixes); flight-software-engineer (the
+node block it reads); robotics-sim-engineer (runbook); tech-lead (recorded).
+
+### ADR-013 amendment 15 (2026-08-24, adversarial pass on the NEW gate, and the round that closed it): six findings — four take-blocking — all six FIXED, each pinned by a test proven red against the pre-fix code
+The gate of am. 14 was itself reviewed after its fixes landed, and the six defects it found were
+fixed in the same session. Two rules make those fixes evidence rather than assertion. Every fix ships
+with a test that was RUN against the pre-fix file and seen to FAIL (the originals were swapped back
+in: 19 checker tests red, 6 executor/policy tests red, then restored) — a test written after a fix
+proves only that the fix agrees with itself. And the re-review did not re-run the fix
+author's tests: it rebuilt the pre-fix code in a shadow tree and ran the SAME probe against pre and
+post for each finding, so what is recorded below is a difference, not an agreement. Each entry reads
+finding → fix → the number.
+
+* **F1 (critical) — the frozen-clock bound was sized against the wrong denominator; it is now a
+  DERIVED debit, not a free constant.** A frozen `tick_stamp_sim_s` axis does not harm detection
+  freshness (the 1.0 s staleness bound it borrowed): it corrupts the **truth join**, and that error
+  scales with **bird speed**. bird_1 flies 7.0 m/s, so the permitted 0.8 s freeze was **5.6 m of bird
+  motion pinned to one instant — 1.9× the 3.0 m bar the gate exists to enforce**; five ticks
+  straddling a true **0.0000 m** pass, all reading one stamp, reported `gt_cpa_m 3.5000 m → PASS`
+  with zero clock problems. **Fix:** `MAX_FROZEN_TICKS` is deleted and the derivation written at the
+  top of the checker. A frozen stamp misplaces the BIRD, never the drone (`flown_path_enu` is
+  telemetry and F4's fix walks the polyline between those points), so the join error is bounded by
+  `v_bird_max × frozen_span`: `max_bird_speed_m_s()` reads `config/birds/farm_world_birds.json`
+  (7.0043 m/s, bird_1 — re-scripting a faster bird tightens the gate by itself), and the frozen span
+  was priced — **in this round only** — at the nominal `(N−1)/5 Hz`, the one assumption round 3
+  removed (below). ONE inequality, two consequences: `freeze_debit_m` is subtracted
+  from `gt_cpa_m` before it meets the bar, and a debit that reaches `min_bird_clearance_m` fails in
+  `gate_clock` as a CLOCK fault — which, unlike a CPA breach, no `SAFETY_FINDING` marker can
+  acknowledge, because a broken clock measured nothing rather than measuring a close pass.
+  **Override, stated:** the bird-only term was used, not the reviewer's suggested bird + drone closing
+  speed — the drone term double-counts a position the frozen stamp does not date, and at 17.3 m/s it
+  would hard-fail any two-tick scheduler jitter. **Measured after:** the finding's own 5-tick probe
+  returns INVALID (debit 5.6034 m, plus the un-acknowledgeable clock fault); a 3-tick freeze turns its
+  flattering 3.5000 m into a debited BREACH; the boundary sits exactly where 3.00 m ÷ 7.0043 m/s =
+  **0.428 s** of hidden sim time does.
+  **Superseded in part the same day (round 3, am. 17), and the difference matters:** the inequality
+  and both consequences stand, but the nominal-rate span is gone — the window is now measured from
+  the flight's own stamps, so a freeze is priced in SECONDS and the tick→metres table this bullet
+  originally quoted (2/3/4/5/6 ticks → 1.4009 … 7.0043 m, "1-3 debited, 4+ fail") describes a gate
+  that no longer exists. The negative `gt_cpa_gated_m` that pricing could print was removed with it.
+* **F2 (major) — the staleness gate could silently disable avoidance for a whole flight, and the one
+  counter designed to reveal it read 0 exactly then.** `n_stale_dropped` rode `maneuver.debug`, which
+  the executor copied only onto an accepted-DIVERT event; all-stale produces PROCEED, which logged no
+  debug. Proven on one 20-tick encounter with a bird inside the cylinder every tick: fresh stamps gave
+  20 detections / 20 maneuvers, 60 s-old stamps gave 0 / 0 / 20 proceeds, and `stale_dropped_total()`
+  returned **0 in both cases** — while the artifact printed the affirmatively wrong diagnosis, "every
+  box fell OUTSIDE the threat cylinder". Triggered by any systematic sub-0.5 s clock offset (the
+  tripwire only fires on FUTURE stamps), a render stall > 1.0 s, or a freeze under F1's old bound.
+  **Fix:** the executor writes `n_stale_dropped` / `stale_ids` / `max_detection_age_s` onto proceed
+  and hold events as well (ADR-009 am. 1), only when non-zero so a healthy tick pays nothing, and
+  `gate_detector_ran` fails the combination "stale drops > 0 AND zero detection events" as
+  **AVOIDANCE WAS DEAD**, saying the honest opposite case (boxes > 0, 0 engagements, 0 stale drops =
+  every box outside the cylinder) in words rather than leaving it to an absent number. **Measured
+  after:** the same all-stale run reports `stale_dropped_total = 20`, `n_detection_events = 0`,
+  AVOIDANCE WAS DEAD; `_log_detection` writes no debug, so there is exactly one debug-bearing event
+  per tick and no double count. The runbook sentence that pre-committed the operator to the wrong
+  diagnosis ("a vacuous pass is usually a cadence/phase miss") is replaced by a three-way diagnosis
+  keyed to the numbers the gate prints.
+* **F3 (major) — R3's refusal could command a point the policy's own bird-clearance guarantee
+  forbids.** Proven end-to-end through the real policy, executor and geofence on the committed
+  polygon: at a degenerate tick the executor kept the latch and commanded a point **1.000 m from the
+  bird** against `min_bird_clearance_m` 3.00, verdict `accepted`, no `gate_reject` — while the
+  policy's fresh setpoint was 10.400 m clear. The only backstop was `is_safe_3d` (trees + altitude),
+  which never looks at a bird and is structurally unreachable at cruise (S2). **Fix, with the scope
+  deliberately WIDENED (am. 13):** the backstop gains a bird half over `debug["threat_positions_enu"]`
+  on every commanded point, not only refusals, because the ordinary re-command path had the identical
+  hole and a refusal-only guard would leave the gate asserting more than the control law guarantees;
+  rejection logs `gate_reject` with `bird_clearance_m` / `bird_track_id`, drops the dead latch and
+  HOLDs; R3.7 re-checks the same inequality offline. The module docstring's "cannot make anything less
+  safe" — true of the geofence guarantee, not the bird one — is corrected. **Measured after:** the
+  finding's geometry logs `gate_reject`, `bird_clearance_m 1.0`, and a reason naming the 3.00 m bar.
+  **What it does NOT fix, named here rather than implied:** the HOLD it falls through to commands the
+  vehicle's own position, 0.400 m from that same bird — closer than the point it refused (residual 2;
+  round 3 made those two numbers reach the artifact instead of a probe — am. 17).
+* **F4 (major) — `gt_cpa_m` was a minimum over the 5 Hz flown-path VERTICES, not over the path.** It
+  never evaluated between two logged ticks, nor the pair (drone at tick i, bird at its post-teleport
+  pose) even though that configuration physically occurred. Measured on the real 2026-08-23 log:
+  drone step p50 0.747 / p95 1.892 / **max 2.052 m** per tick; the bird teleports 3.16 m per
+  `set_pose`. Both discretisations bias the same fail-dangerous way. Proven twice: a true 2.8200 m
+  polyline CPA reported **3.0008 m → PASS**, and a teleport case with a true continuous minimum of
+  2.6332 m reported **3.0500 m → PASS**. **Fix, ~8 stdlib lines:** `_point_segment_xy_m`, with each
+  tick's bird candidate set scored against BOTH segments bounding that tick's vertex — so a pose that
+  landed after the tick meets the segment the drone was actually flying. **Measured after, and the
+  lower-bound claim was verified rather than accepted:** the hand case now reports 2.8200 m → BREACH,
+  and 300 randomised encounters (4-9 ticks, dt 0.2-0.5 s, drone steps 0.5-2.05 m, teleport rates
+  1.9-5.0 Hz, random headings) scored against an independent densely-sampled model of the continuous
+  encounter produced **zero** trials where `gt_cpa_m` over-reported the true minimum. The drone axis
+  is now a true lower bound; the bird axis is not (residual 1 — closed in round 3, am. 17, which made
+  the same claim true on both axes).
+* **F5 (major) — `--truth` bypassed the "exactly one overlapping truth track" guard entirely**, and
+  the runbook's only documented invocation is `ls -t ... | head -1`. One aborted takeoff, or the
+  documented `fly_pipeline.sh birds` override, leaves two applied logs for one take; every tick before
+  the chosen log's first landed call was then answered from **config spawn poses** — bird_0 sits at
+  (15, 5, 11), directly under mission lane x=15. Proven on that literal scenario: VALID, `truth
+  coverage 3/3 ticks`, `gt_cpa_m 20.0000 m`, with `answered_from_spawn 2/3` as a note that looks
+  identical to the legitimate case. **Fix:** `resolve_truth` runs `truth_candidates()`
+  unconditionally — `--truth` says WHICH log to score against, not that the others do not exist.
+  **Measured after:** the same scenario is INVALID with `AMBIGUOUS TAKE`, naming the other overlapping
+  applied log; the no-usable-stamps case still falls through to the existing hard failure.
+* **F6 (minor) — `gate_detector_ran` was a zero-check, not a rate check** on the take's headline
+  claim: 1 detected frame of 1256 passed without comment, though this project's own precedent (am. 4)
+  is that evidence bars are FLOORS with numbers behind them. **Fix:** `MIN_DETECT_RATE = 0.90` on
+  `frames_detected_on / ndvi_msgs_received`, and the rate prints with BOTH raw counts on every flight.
+  The number has a measurement behind it: the offline dry run is 1256/1256 = 100 %, the only
+  legitimate loss is startup ordering (frames published before `/fg/ndvi/camera_info` lands) which
+  costs ~3 % if it eats the first ten seconds of a five-minute take at 5 Hz, so 0.90 is ~3× that worst
+  plausible transient and far above the defect it exists to catch, which loses 90-100 %. **Measured
+  sweep** over frames_detected_on = 1256 / 1130 / 1129 / 1 / 0 of 1256: VALID / BARELY RAN / BARELY
+  RAN / BARELY RAN / NEVER RAN, against a pre-fix gate that passed all but the last. **Revisable on
+  the first `--detect` flight's number — revised there, not widened after a failure.** The related
+  item stays code-free as ranked: the node refuses to start without a gz clock reading but has **no
+  equivalent startup guard on `/fg/ndvi/camera_info`**, so that class is caught post-flight.
+
+**What the re-review then found still standing, ranked as of that round. None of it blocked the take,
+and the reason was the same each time: it is recomputable from artifacts the flight already retains,
+or it is R4. FIVE OF THE SIX WERE THEN CLOSED IN ROUND 3 (am. 17) — each item below carries its
+disposition, so this list is a record of what was found, never a to-do that outlived its fix.**
+1. **(major) `gt_cpa_m` is a true lower bound over the drone POLYLINE and still a VERTEX sample of
+   the BIRD.** `ground_truth_cpa` iterates TICKS and asks `candidates_at(t_i)`, so a landed
+   `set_pose` whose whole in-effect window falls between two ticks is never scored — and the bird is
+   the faster body (7.00 m/s against the drone's measured p50 0.747 m/tick), so F4 closed the smaller
+   half. Proven: at a 0.70 s sim tick period with the driver at its measured 1.84 calls/s/bird, the
+   gate reports `gt_cpa_m 3.8067 m → VALID` on a bird driven straight through a hovering drone (true
+   0.0000 m), with a healthy clock, no freeze, and `truth coverage 24/24 ticks`. Today's margin is
+   genuine: 5 Hz wall × measured RTF 0.605 = 0.121 s sim/tick, 4.5× finer than the driver's 0.543 s
+   inter-call interval, and the never-scored fraction of the committed 839-pose applied log is
+   **0.0 % at 0.121 s/tick**, 3.2 % at 0.50, 29.6 % at 0.80, 41.6 % at 1.00. The defect is that the
+   margin is unmeasured and unprinted on the one number the take is booked to produce: `truth coverage
+   K/N ticks` reads 100 % regardless, and the inverse rate — landed calls covered by a tick — has no
+   denominator anywhere. In doctrine, cheap either way: print `truth_poses_scored K/N`, or score each
+   landed call against the drone polyline over ITS OWN in-effect window so the tick grid stops
+   mattering at all. **Not a re-fly risk:** both inputs (`flown_path_enu` and the applied log) are
+   retained, so the number is recomputable after the flight.
+   → **CLOSED (round 3, am. 17): BOTH suggestions taken** — the second pass scores every landed call
+   over its own window, and `truth_poses_scored/total` prints as that axis's denominator.
+2. **(major) the HOLD the executor falls through to vets nothing.** `_handle_hold` sends the vehicle's
+   current position with neither `is_safe_3d` nor the bird bar applied, and on the degenerate branch
+   that point is inside the bar BY CONSTRUCTION (the branch is only entered within
+   `degenerate_range_m` of the trigger bird). Swept: 400 random encounters × 25 ticks = 10,000 control
+   ticks through the real policy + executor + geofence gave 22 R3 refusals and **41 HOLD ticks
+   commanding a setpoint inside the 3.00 m bar, closest 0.288 m**, read by nothing. This is S5 + R4
+   rather than a measurement bug — the cure is escape geometry, cut for v1 — so the claim in am. 13 is
+   narrowed to what the code does and `gt_cpa_m` still catches the flown proximity at the headline.
+   → **CLOSED AS HONESTY, NOT AS R4 (round 3, am. 17):** the hold's own clearance is now logged and
+   printed as ungated CONTEXT, guarantee 1 is renamed for the scope it actually has, and the reject
+   reason says REFUSED rather than implying a safer alternative. **R4 itself stays open and uncut.**
+3. **(major) R3.7's BREACH branch cannot fire on a log the CURRENT executor writes.** The executor
+   converts exactly that case into a `gate_reject`, and `gate_r2_r3` only reads `maneuver` events, so
+   R3.7 is defence-in-depth over replayed, older or hand-edited logs while a live flight's evidence
+   lands in `gate_reject`'s `bird_clearance_m` / `bird_track_id`, which nothing reads. The reviewer
+   named it as their own family: a gate that is green because the thing it measured was removed. Scope
+   is now stated in am. 13; gating those fields is the open work.
+   → **CLOSED (round 3, am. 17): R3.8 gates them**, and R3.7 is restated as the exhaustion property
+   it always was.
+4. **(minor) the freeze debit is priced at the NOMINAL 5 Hz.** A span of `(N−1)/5 Hz`
+   bounds sim seconds by wall seconds only if the ROS timer really fires at 5 Hz, and the derivation
+   names only the RTF > 1 caveat — the less likely half on a box that has twice lost >90 % of its
+   frames to CPU starvation, and the two faults are correlated (a node whose clock reader stalls three
+   ticks may be a starved node). Measured under-pricing: at an achieved 0.35 s/tick a 3-tick freeze
+   hides 4.903 m and is priced 2.802 m (1.75×); at 1.00 s/tick a 2-tick freeze hides 7.004 m and is
+   priced 1.401 m (5.0×). No verdict flipped in those probes — the honest neighbouring ticks still
+   bracket the pass — and it needs ~1.26 s/tick to bite, ~10× today's 0.121 s. The log already
+   MEASURES the quantity: `stamp_advance` walks the stamps, so pricing the debit off them removes the
+   assumption outright.
+   → **CLOSED (round 3, am. 17), and more strictly than the suggestion:** the round-3 fix did NOT take
+   the proposed mean-rate division (`span_s/advanced` is still an average, and an average under-prices
+   the worst run). It brackets each frozen run between the stamp it read and the next stamp that
+   ADVANCED, which is assumption-free.
+5. **(minor) the detector floor's failure sentence rounds to a contradiction:** 1130/1256 = 0.899681
+   fails while the message prints "= 90.0%, below the 90% floor". One character (`:.2%`), and it
+   matters because a floor is met near the floor — an operator reading that in a scrollback files it
+   as a gate bug and may widen the very number F6 says to revise only on a measurement.
+   → **CLOSED (round 3, am. 17):** `_floor_pct` TRUNCATES rather than rounds, so 1130/1256 prints
+   89.96 % and no failing rate can ever print the floor it just missed.
+6. **(minor) `MIN_DETECT_RATE = 0.90` has never been measured in the air** — an offline dry run plus a
+   modelled startup transient. Revise it on the first take's number.
+   → **STILL OPEN, and it is the only one of the six that is.** It closes on a flight, not on a fix;
+   round 3 removed the misleading "90.0 %" sentence that made widening it after a failure tempting.
+
+**Tech-lead's call: the GATE no longer blocks the take.** F1, F3, F4 and F5 would each have made the
+take unbookable and F2 would have made its result unreadable — a gate that reports 3.0008 m on a
+2.82 m pass, or scores the flight against a bird nobody watched, spends the flight and hands back the
+wrong answer. All six are fixed, each pinned by a test proven red first, and each re-verified against
+pre-fix code by someone who did not write it.
+What remains before the take is operational, not evidential — the scipy image rebuild and its
+in-container equivalence re-score (ADR-004 am. 1) — plus the pre-registered risk that this flight
+honestly FAILS its own GT-CPA gate, because R4 is not in it. The six residuals are ranked, not
+blocking: 1, 4 and 5 are recomputable or cosmetic on a flight whose inputs are all retained, 2 is R4
+wearing a different hat, and 3 is defence-in-depth on a branch the executor now prevents. Residual 1
+is the one to close first, because it is the missing denominator under the only number the take exists
+to produce. (Ranking honoured: round 3 closed 1 first, then 2, 3, 4 and 5 — am. 17.)
+
+**Session state (2026-08-24, at the close of THIS round — round 2; round 3's numbers are in am. 17),
+measured not remembered.** Suite
+**833 passed / 2 skipped / 0 xfailed / 0 xpassed** (`python3 -m pytest tests -q`), against 805/2
+before this round; `unittest discover -s tests/fieldguard_planning` → **783 OK (skipped=2)** and
+`unittest discover -s tests -p 'test_fly_pipeline.py'` → **52 OK** (the host-side pattern CI used at
+the time; am. 16 widened it to `-p 'test_*.py'` so a new host-side file cannot sit un-run).
+783 + 52 = 835 = 833 + 2 is the
+consistency check that matters, because unittest is the runner that makes an unexpected pass RED. The
+2 skips are the self-activating pending detection scenarios (`det_bird_crosses_path`,
+`det_bird_over_low_ndvi`), unchanged. The legacy path was re-verified by byte-comparison rather than
+by re-reading: both historical logs still print ACKNOWLEDGED SAFETY FINDING (0.0597 m, 0.0518 m) and
+exit 0, with stdout AND stderr identical to the committed-HEAD checker. The ADR-003 equivalence gate
+rode along rather than being taken on trust: `test_ndvi_detect.py`'s whole-clip re-score RAN (29
+passed, 0 skipped — the clip is on this disk) and stayed bit-identical, so the ADOPTED verdict is
+still the one this code produces. Everything landed this session is **offline**: no Docker, no
+Gazebo, no ROS 2, no flight. The image rebuild, the in-container scipy transfer check, and every live
+behaviour of the seam and the gate remain unproven.
+Owner / roles: qa-safety-reviewer (found and priced all six, and re-reviewed the fixes against
+pre-fix code); flight-software-engineer (F2/F3 and the executor backstop); tech-lead (the booking call
+and the residual ranking above); product-lead (arbitrates if this is argued).
+
+### ADR-013 amendment 16 (2026-08-24, round-3 finding 4 — what CI's CPA gate is pointed at): the filed premise is corrected by measurement, the scenario fixtures are scoped OUT with a proof, and the gate now prints its denominator
+
+**The finding, as filed.** "CI invokes `check_live_flight_log.py eval/results/*flight_log*.json`;
+`eval/results/` is gitignored, so in CI the glob matches nothing, the script prints SKIP and exits 0.
+The R1 CPA gate is therefore, in CI, entirely vacuous… Meanwhile three of the four committed
+`eval/scenarios/*/flight_log.json` are in CPA breach (0.0000 m, 1.0000 m, 1.0000 m). Adding them to
+the CI line turns CI red today — which is the point." The reviewer explicitly surfaced the treatment
+as a decision rather than guessing it. Both halves were checked before either was acted on.
+
+**Correction 1 (measured, not argued): the CI gate is NOT vacuous at HEAD.** `.gitignore` ignores
+`eval/results/*` and then **re-includes `!eval/results/live_flight_log_*.json`**, and two live logs
+are committed under that rule. Reproduced the CI environment exactly — `git archive HEAD | tar -x`
+into a clean tree, then the literal step — and the glob matched **2 files**; the gate ran, printed
+both CPAs, and reported each as an ACKNOWLEDGED SAFETY FINDING (**0.0597 m**, 2026-08-18;
+**0.0518 m**, 2026-08-23) before exiting 0. So the R1 CPA gate has been executing on real committed
+evidence on every push since it landed, and the marker mechanism is exercised there too. Recorded
+because the remedy the finding proposed — point the same gate at the scenario fixtures — would have
+been wrong twice: it was not needed to make the gate real, and (correction 2) it would have gated a
+number no control law can move.
+
+**Correction 2: the scenario fixtures' "CPA" is a scenario PARAMETER, not a flown outcome — so the
+CPA gate does not apply to them, and they get no `SAFETY_FINDING.md` markers.** The proof is
+structural and was then confirmed by experiment. `eval/scenarios/generate_flight_logs.py` prescribes
+the drone's `DroneState` from `nominal_path()` on every tick and never feeds the executor's commanded
+setpoint back into the next tick — there is no vehicle model, deliberately, because the fixture holds
+the *stimulus* fixed so the **ledger** is the only thing under test. Measured consequences:
+`flown_path_enu` is **byte-identical to the scripted lawnmower** in all four fixtures, and the birds
+are parked **on** the lane because that is what forces the dodge the scenario is about. The
+experiment that settles it: regenerating all four under **today's landed control law** (R2 lateral
+tree margin + the R3/bird-clearance backstop of am. 13/15) moved 1-5 commanded setpoints per scenario
+by up to **17.205 m** and raised the worst *commanded* bird gap in `cov_bird_over_cell` from 10.0000 m
+to 12.0000 m — while the flown CPA stayed **bit-identical at 0.0000 / 7.0000 / 1.0000 / 1.0000 m**.
+A number that a 17 m change in the control law cannot move by 1 nm is not measuring the control law.
+* **Rejected — acknowledge them with `SAFETY_FINDING.md` markers.** One sentence: it would file an
+  authored scenario parameter as a safety finding and dilute the one channel that carries the two
+  real historical breaches, which is the channel's whole value.
+* **Rejected — move the birds off the lane so the fixtures pass the CPA gate.** The bird is on the
+  lane *because* that is the stimulus; moving it makes four scenarios stop testing anything.
+* **Accepted — scope stated, in the two places a reader will actually look:** a new "these fixtures
+  are OPEN-LOOP" section in `eval/scenarios/README.md` §3 and a comment on the CI step itself.
+
+**What the finding surfaced that IS real, and is fixed: the gate had no denominator.** The step
+asserted nothing about how many files it had been shown, and its own comment asserted the opposite of
+the truth ("eval/results/ is gitignored, so this normally SKIPs"). It was one `.gitignore` edit, one
+rename or one deletion away from matching zero files, printing `SKIP … PASS: all present flight logs
+valid` and going green having validated nothing — this repo's own forbidden failure mode, and the
+reason it was invisible is that nobody had ever seen the step's file count. **Fix (ci.yml side):**
+`shopt -s nullglob`, collect the matches into an array, **print the count on every run**, hard-FAIL on
+zero with a message naming the two ways it can happen, then pass the explicit list to the checker.
+* **Why ci.yml and not a `--fail-on-empty` flag in the checker** (the alternative offered): the
+  checker's SKIP-on-absent contract is correct for a tool a human points at a path, "this CI run must
+  have evidence to chew on" is a property of the *job*, and a `--fail-on-empty` flag on a safety tool
+  is also a `--dont-fail-on-empty` flag for anyone who finds the gate inconvenient.
+
+**Fixtures regenerated, and why that was owed anyway.** Today's control-law changes had already made
+the four committed fixtures stale, so CI's existing regenerate-and-diff step would have gone red on
+the first commit of this session's work. They are regenerated in place. Reproducibility was verified
+before the output was trusted, not after: **five consecutive runs produced byte-identical files**
+(the generator takes no runtime randomness — fixed per-scenario seeds and static bird poses — and
+`_round_floats` at 1e-9 is the pre-existing cross-platform libm guard). Ledger outcome unchanged in
+all four: **720 cells, 144 debt, 116 path points**; maneuver counts unchanged (13 / 8 / 16 / 11);
+only `relatch` counts moved (6→5 in `cov_bird_over_cell`, 6→8 in `geo_avoid_into_tree`).
+
+**What CI executes on the scenario fixtures, since the CPA gate does not** — both were already true
+and are now *guaranteed* rather than incidental: the regenerate-and-diff reproducibility step, and
+the ledger-honesty (P1-P4) + no-lying-covered + tree-band + field-polygon assertions in
+`test_safety_scenarios_pending.py`. Those assertions are **self-activating, which means they SKIP on
+a missing fixture** — the same vacuity in a different costume — so `tests/test_ci_evidence_gate.py`
+now asserts every generator scenario has a *committed* fixture. Its pattern
+`unittest discover -s tests -p 'test_*.py'` replaces the single-filename pattern for the same reason:
+a new host-side test file must not be able to sit un-run (verified on Python 3.12 that discovery does
+not recurse into `tests/fieldguard_planning`, so nothing runs twice).
+
+**Pinned by tests proven red against the pre-fix step, per this project's rule.** The adversarial one
+extracts the *real* step body out of `ci.yml` and runs it in a tree with no matching logs: pre-fix it
+exits **0** printing "PASS: all present flight logs valid"; post-fix it exits **1** printing
+`matched: 0`. Two more pin the denominators (the glob matches ≥1 committed file; every scenario has a
+committed fixture), one runs the step hermetically on copies of the committed evidence and requires
+exit 0, and one pins the open-loop fact this whole scoping decision rests on — **if the generator ever
+becomes closed-loop, `flown_path_enu` stops equalling `nominal_path()`, that test goes red, and this
+amendment must be re-read before CI is touched.** The two ACKNOWLEDGED historical logs were
+re-verified by byte-comparison, not by re-reading: stdout AND stderr identical to the committed-HEAD
+checker, exit 0.
+
+**Left open, deliberately, and named rather than implied.** No scenario in `eval/scenarios/` exercises
+separation *at all* — every fixture is open-loop, so "the vehicle stayed ≥ 3.00 m from the bird it
+dodged" is measured only on live flights by the ground-truth CPA gate. That is why both historical
+breaches were found by a gate and not by a test, and closing it needs a fixture that flies the
+executor's *commanded* setpoints, i.e. a vehicle model — which is R4 (escape geometry), cut from v1
+by the Product Lead. Recorded in `eval/scenarios/README.md` §4 as an open safety gap so a green
+scenario suite is never read as evidence of clearance.
+Owner / roles: tech-lead (this call, the ci.yml and scenario-README text); qa-safety-reviewer (filed
+the finding and the three breaching fixtures); product-lead (owns R4's continued exclusion).
+
+### ADR-013 amendment 17 (2026-08-24, round 3 — the adversarial pass on am. 15's own fixes): five of the six residuals CLOSED, the BIRD axis of the CPA join stops being a sample, the HOLD stops implying safety, and this log is corrected to match the code
+The gate was reviewed a third time, after am. 15's fixes landed. Seven findings, four must-fix.
+**Finding 4** (what CI's CPA gate is actually pointed at) is recorded in **am. 16** — premise
+correction, open-loop proof and rejected alternatives — and is not repeated here. **Finding 6** was
+this log itself, and this amendment is its fix (below). The other five are code and all five are
+fixed, each pinned by a test **run against the pre-fix file and seen to FAIL**: backed out one at a
+time they turn 5 / 6 / 5 / 3 / 3 tests red respectively, with **no collateral failures in any
+back-out** — which is the check that each pin is on its fix and not on the weather. The re-review
+then rebuilt the pre-fix code in a shadow tree and ran its OWN probes against pre and post, so what
+is recorded below is a measured difference, not an agreement.
+
+* **F1 (major) — `gt_cpa_m` was a true lower bound on the DRONE axis and still a VERTEX SAMPLE on the
+  BIRD axis** (am. 15 residual 1, the one ranked to close first). `ground_truth_cpa` iterated ticks
+  and asked `candidates_at(t_i)`, so a landed `set_pose` whose whole in-effect window fell between
+  two ticks was never scored — and the bird is the faster body (7.0043 m/s scripted against the
+  drone's measured p50 0.747 m/tick). **Fix: two passes, and `gt_cpa_m` is the minimum over both.**
+  New `pose_windows(truth)` yields, per landed call, the sim-time window over which that pose could
+  have been rendered — it OPENS at the call's `sim_start` and CLOSES at the NEXT call's `sim_end`,
+  which is exactly the interval `pose_from_applied` can return it over, ambiguous bracket included,
+  so the two agree by construction rather than by coincidence; the last call holds to
+  `TruthTrack.span[1]`. Pass 2 scores each pose point-to-segment against the **drone sub-segment that
+  window covers**, endpoints interpolated along the bounding tick stamps, joined by a monotone
+  two-pointer. **Pass 1 is KEPT and is not redundant:** it is the only pass that can answer before a
+  bird's first landed call, where the truth is the spawn pose. New report keys
+  `truth_poses_total` / `truth_poses_scored` give the bird axis the denominator tick coverage never
+  was, and `cpa_from` names which pass produced the number (`tick_sample` | `pose_window`).
+  * **Measured:** the finding's probe — a bird driven through a hovering drone between two ticks at a
+    0.70 s tick period — reported `gt_cpa_m 3.8067 m → VALID` and now reports **0.0000 m → BREACH**,
+    `cpa_from='pose_window'`. The re-review reproduced the direction on its own geometry (3.8010 m →
+    0.0000 m) and re-falsified the lower-bound claim independently: 300 randomised trials plus 200
+    three-bird interleaved-window trials aimed at the new two-pointer, scored against a densely
+    time-sampled model built from the checker's own truth accessor — **0 over-reports, worst
+    0.000000 m**. On the committed 839-pose track the join scores 838-839/839 poses at every cadence
+    from 0.121 to 1.00 s/tick in **0.08 s**, where the tick-only pass would have missed 0.0 / 3.2 /
+    9.3 / 29.6 / 41.6 % of them. The windows on the real artifact are well-formed (0 with end < start,
+    0 non-monotone starts, length p50 0.569 s / max 7.30 s, and the long ones are exact — nothing
+    else moves a bird).
+  * **Freeze interaction, written into the code so it is not re-derived later:** pose windows are
+    gz-native truth-log timestamps and do not depend on `run.tick_stamp_sim_s` at all; the DRONE side
+    of the join still does, so `freeze_debit_m` prices exactly that, unchanged.
+* **F2 (major) — the HOLD the R3 refusal falls through to vets neither half of guarantee 1** (residual
+  2). **Fixed as HONESTY AND MEASUREMENT, not as R4 — the call, with the alternative rejected:** at
+  degenerate range the vehicle is inside the bird bar BY CONSTRUCTION, so there is no strictly-better
+  *vetted* alternative to choose that is not escape geometry; choosing a point that IS outside the
+  bar means deciding a direction, which is R4, cut for v1. Shipping a direction inside an executor
+  fix round would have landed escape geometry with no gate on it — the band-aid this project's own
+  rule forbids. So the code stops implying otherwise and starts printing the number instead:
+  (a) `_handle_hold` logs `bird_clearance_m` / `bird_track_id` / `min_bird_clearance_m` on every hold
+  (None when the decision names no threat); (b) the `gate_reject` reason no longer says "falling back
+  to HOLD" — it says REFUSED, zero displacement, honours NO clearance bar, **can be nearer the bird
+  than the point refused**, R4 owns escape geometry; (c) `gate_r2_r3` reports the minimum hold-tick
+  clearance as `[CONTEXT, NEVER GATED]` and PRE-REGISTERS holds inside the bar at degenerate range as
+  the known R4-open signature, so that line on the first take is an expected reading and not a new
+  finding; (d) guarantee 1 is renamed **"Never fly an unvetted DISPLACEMENT"** with an explicit
+  HOLD-IS-EXEMPT-BY-CONSTRUCTION paragraph carrying the measured numbers.
+  * **Measured:** the worked geometry through the real policy + executor + geofence logs a reject at
+    **1.000 m** and a hold at **0.400 m** — the artifact now states, in its own numbers, that the
+    refusal made commanded separation 2.5× worse. Exhaustion sweeps: 10,000 control ticks gave 41
+    HOLD ticks inside the 3.00 m bar, closest **0.288 m** (am. 15's sweep); the re-review's own
+    geometry, also 10,000 ticks, gave 2597 holds, **2597 of 2597 carrying the number**, 332 inside
+    the bar, closest 0.029 m. The two counts differ because the geometries differ — the point that
+    survives both is that every hold now reports its clearance.
+* **F3 (major) — R3.7 read the event the am. 15 F3 fix had removed** (residual 3). `gate_r2_r3` now
+  consumes `gate_reject` events (**R3.8**): counts them, splits bird-bar from geofence rejects,
+  reports the closest refused point as the backstop WORKING, scores each against the bar THAT FLIGHT
+  flew, and **FAILS a reject that names neither an obstacle nor a sub-bar bird clearance** — the only
+  way field-name drift there could have stayed silent. R3.7's BREACH branch is restated as what it
+  is: the **exhaustion** property, unreachable on a log the current executor produces and therefore a
+  defence against an older or edited one. **The layering is deliberate and worth saying out loud on a
+  whiteboard: the executor fails OPEN on missing data, the gate fails CLOSED on it.** The re-review
+  found the one path on which R3.7 IS live today and verified it: a maneuver whose debug carries no
+  `params` gets no bird check in the executor (documented fail-open), is commanded, is logged as a
+  maneuver — and R3.7 catches it offline. A 10,000-tick sweep confirmed 0 maneuvers commanding inside
+  the bar.
+* **F5 (minor by rank, structural by nature) — the freeze debit was still priced at a NOMINAL rate**
+  (residual 4). `stamp_advance` now measures `frozen_window_s` from the flight's own stamps: a run of
+  ticks all reading sim second `v` is closed by the next stamp that ADVANCED, `v_next`, and costs at
+  most `v_next − v` — assumption-free, because a clock reading never runs ahead of sim time, so `v`
+  is its own lower bound and the bound is loose by at most one tick period. The **WORST** run is
+  priced, not the longest (seconds hidden, not ticks repeated). A trailing run with no closing stamp
+  is priced at the flight's own measured mean sim-step × run length. `freeze_debit_m` now takes
+  SECONDS, and `frozen_span_s` / `CONTROL_HZ` are deleted from the gate — **one home per concept:
+  `CONTROL_HZ` lives in `avoidance_node`.** The re-review's suggested `span_s/advanced` was
+  deliberately NOT taken: an average under-prices the worst run.
+  * **Measured:** the round-3 probe stamps `[100.0, 100.5, 101.0, 101.0, 101.0, 102.5, 103.0, 103.5]`
+    priced 0.400 s = **2.8017 m** under the old rule and PASSED; they measure 1.500 s = **10.5065 m**
+    and are now a hard, un-acknowledgeable clock fault (re-verified in this file's own arithmetic:
+    `frozen_at` = (tick 3, 3 ticks, 101.000 s), `frozen_window_s` 1.500). Worst-not-longest verified
+    on a case built for it: a 5-tick run hiding 0.2 s loses to a 2-tick run hiding 2.0 s.
+  * **One consequence FIXED rather than shipped:** when the debit reaches the bar the gate used to
+    subtract it anyway and print "flew within −7.0065 m" plus a CPA BREACH on a flight that measured
+    nothing. It now prints **`gt_cpa_gated_m NOT COMPUTED`** and stands on the clock fault, because
+    an unmeasured flight and a close pass are opposite claims.
+* **F7 (minor) — the detector floor's failure sentence printed the floor it had just failed.** New
+  `_floor_pct` TRUNCATES the rate to the digits it prints, used for the note, the failure message and
+  the floor itself. Verified in this file's own run: 1130/1256 prints **89.96 %** (was "90.0 %,
+  below the 90 % floor"), 1131/1256 prints 90.04 %, the floor prints 90.00 %. Truncation makes the
+  printed digits a true statement about the comparison in both directions — anything that prints
+  90.00 % really is ≥ 0.9000 — so no operator reads a failing gate as a gate bug and widens
+  `MIN_DETECT_RATE` after a failure, which am. 15 F6 says is the one thing not to do.
+
+**F6 — the finding was this log, and the rule it forces.** For two consecutive rounds `DECISIONS.md`
+described a gate the code did not implement: round 2 left `MAX_FROZEN_TICKS` prescriptions behind
+after it was deleted, and round 3 found am. 15 still stating the freeze bound as
+`(N−1)/CONTROL_HZ`, still quoting a negative `gt_cpa_gated_m` print and a tick→metres table that the
+stamp-measured pricing had removed, still prescribing `max(1/CONTROL_HZ, span_s/advanced)` as the fix
+— while `test_check_live_flight_log_schema2.py` asserts those very symbols are ABSENT from the
+checker. **The doc and the test contradicted each other inside the same repo, which is the same
+family as a green gate that measured nothing.** Fix, and the doctrine, stated once so it is not
+argued again:
+* Every amendment written today is still **uncommitted session text**, so it is corrected **IN
+  PLACE** — am. 13's R3.7 scope and its HOLD/marker/scenario paragraphs, am. 14's GT-CPA and
+  frozen-axis bullets, am. 15's F1 numbers and all six residual dispositions. **Once committed this
+  file is APPEND-ONLY** and the identical corrections become a new amendment. This is the last window
+  in which that distinction applies to today's text.
+* What is never corrected in place is the RECORD of what each round found. Superseded numbers are
+  marked superseded, not deleted: "the freeze bound was sized wrong twice, and here is each wrong
+  denominator" is the interview answer, not an embarrassment to tidy away.
+* The general rule this makes explicit: **a fix that changes a gate's behaviour is not done until the
+  ADR text that describes that gate is changed in the same session.** Two rounds of drift is the
+  evidence for the rule.
+
+**Decision, mine, with the alternative rejected — the ACKNOWLEDGED marker set is FROZEN at the two
+historical logs** (`live_flight_log_20260818T144711Z`, `live_flight_log_20260823T004031Z`). A
+`SAFETY_FINDING.md` marker turns a CPA breach into exit 0, and the mechanism exists for recorded
+history that **cannot be re-flown**. R4 is open, am. 13 pre-registers that the next take may honestly
+breach, and the runbook's §6 row tells the operator to keep the log with a marker — so an unbounded
+marker set makes "add a file" the documented remedy for a red gate, and every subsequent push is
+green with a bird strike sitting in the evidence directory. A take that can be re-flown after R4 is a
+**failed take**, not an acknowledged finding.
+* **Rejected — leave the mechanism unbounded and rely on review.** One sentence: nothing in the repo
+  states which logs may be acknowledged, so the bound would exist only in the reviewer's memory, and
+  the composition above makes forgetting it green.
+* **LANDED this round (am. 14 lineage) — acknowledgement is a TWO-STEP contract, and both steps are
+  reviewed.** A breach exits 0 only if the log carries its `SAFETY_FINDING.md` marker **and** its
+  stem is pinned in `ACKNOWLEDGED_BREACH_STEMS` in `scripts/check_live_flight_log.py`; either half
+  alone is INVALID, and the failure message names the missing half so an operator is told what to do
+  rather than guessing. **A marker alone was rejected** because a marker is a gitignored-adjacent
+  file an operator can add in the same motion that produced the red gate — the remedy and the
+  finding would be authored by the same hand, unreviewed — whereas the pinned stem forces a diff on
+  the safety gate itself, which is the artifact a reviewer already reads. The bound is the point: two
+  stems, and a third requires a deliberate edit with a reason.
+* **LANDED (round 4, same day)** — the `AVOIDANCE_REAL_DETECTION.md` §6 row no longer sends the
+  operator down the one-file path. §6a now states both halves, and states the *correct action after a
+  real breach in so many words*: **write the marker, do NOT add the pin, let the take stand at
+  INVALID / exit 1** — the pinned stems are historical logs that cannot be re-flown, and the list is
+  meant to stay two long. The §6 verdict table's breach row reads "Not for a green, **and there is no
+  one-file way to make it one**". Pinned by
+  `test_check_live_flight_log.py::test_the_runbook_tells_the_operator_about_BOTH_halves`, which
+  asserts the runbook names `ACKNOWLEDGED_BREACH_STEMS` by its own constant name and not only the
+  marker suffix — so the doc cannot drift back without a red test.
+* **EXTENDED (round 5, same day) — the same ratchet, applied to the LEGACY PATH ITSELF.** Pinning
+  *which breaches are acknowledged* left a wider door open: `run_block_problem` returned None when
+  the `run` key was simply ABSENT, so `del log["run"]` demoted a schema-2 flight to the legacy
+  detection-referenced CPA path — and a ground-truth-gated INVALID (the detector missed the bird at
+  closest approach, so the legacy metric has no evidence at all) came back **VALID
+  "NO-CPA-EVIDENCE"**, by deleting one key in a gitignored directory. A log with no run block now
+  takes the legacy path **only if it is pinned pre-seam**: the two historical stems in
+  `PRE_SEAM_LEGACY_STEMS` (by STEM, because CI copies those logs into a tmp tree to run this gate
+  hermetically) plus the `eval/scenarios/<name>/flight_log.json` fixtures (by SHAPE, because their
+  generator drives the policy + executor OFF-ROS — no clock, no detector, no bird driver — so there
+  is nothing for a run block to record, and because that set is meant to grow while the stem list is
+  not). Anything else with no run block is **INVALID**, and the message says exactly that: every
+  flight since the 2026-08-24 seam writes one, so its absence is a fault or tampering. The two lists
+  are separate constants that happen to hold the same two stems — both pre-seam live logs breached —
+  because they answer different questions ("may this log be scored on the old gate?" vs "is this
+  breach reviewed?"). Pinned by the del-`run` probe itself
+  (`test_THE_PROBE_deleting_the_run_key_cannot_downgrade_a_failing_flight`), plus the pinned contents
+  of the list and the fixture-shape anchor. Both historical logs re-verified byte-identical on stdout
+  AND stderr, and the four scenario fixtures keep their verdicts.
+
+**Verified suite and evidence state (2026-08-24, close of round 3), measured in this pass, not
+remembered.** `python3 -m pytest tests -q` → **860 passed / 2 skipped / 0 xfailed** (entering the
+round: 833/2, so +27 tests across the five checker/executor fixes and am. 16's CI evidence gate);
+`unittest discover -s tests/fieldguard_planning` → **805 OK (skipped=2)**;
+`unittest discover -s tests -p 'test_*.py'` → **57 OK** (am. 16's widened pattern). 805 + 57 = 862 =
+860 + 2 is the consistency check that matters, because unittest is the runner that makes an
+unexpected pass RED. The schema-2 gate alone carries **160** tests. The 2 skips are still the
+self-activating pending detection scenarios (`det_bird_crosses_path`, `det_bird_over_low_ndvi`).
+**The two ACKNOWLEDGED historical logs still exit 0** on the default glob, printing 0.0597 m
+(2026-08-18) and 0.0518 m (2026-08-23) — the legacy path was not touched this round, and both were
+re-verified by byte-comparison of stdout AND stderr against the committed-HEAD checker. Everything in
+rounds 1-3 is **offline**: no Docker, no Gazebo, no ROS 2, no flight.
+
+**Re-measured at the close of round 5 (2026-08-24), superseding the numbers above as the CURRENT
+state — the round-3 figures stay as the record of that round.** `pytest tests -q` → **877 passed / 2
+skipped / 0 xfailed** (entering round 5: 870/2, so +7 across the run-block ratchet and the hold
+field-drift widening); `unittest discover -s tests/fieldguard_planning` → **822 OK (skipped=2)**;
+`unittest discover -s tests -p 'test_*.py'` → **57 OK**. 822 + 57 = 879 = 877 + 2, the same
+consistency check. The two ACKNOWLEDGED historical logs were re-verified byte-identical on stdout AND
+stderr against the committed-HEAD checker *again* after the ratchet landed (they are pinned pre-seam,
+so they still take the legacy path), and the four `eval/scenarios/*/flight_log.json` fixtures keep
+their existing verdicts (3 INVALID on authored, open-loop breaches + 1 VALID, am. 16). Still
+**offline**: no Docker, no Gazebo, no ROS 2, no flight.
+
+**Still open after this round, ranked, and none of it blocks the take.**
+1. **R4 (escape geometry) stays open and uncut** — Product Lead's call, unchanged. What changed is
+   that the first `--detect` take will now MEASURE its gap (the hold-clearance CONTEXT line) instead
+   of leaving it to an argument. Expect that line on any take with a close encounter: **book R4 on
+   the number, do not re-fly for it.**
+2. `MIN_DETECT_RATE = 0.90` still has no in-air measurement behind it (am. 15 residual 6). Revise it
+   on the first take's number; never widen it after a failure.
+3. **The clock gate's FALSE-POSITIVE rate is unpriced, and a clock fault is un-acknowledgeable by
+   design.** After F5 the debit crosses the whole bar at 3.00 ÷ 7.0043 = **0.428 s** of hidden sim
+   time, and `_gz_now` is fed by a `gz topic -e -t /clock` subprocess reader thread on a box this
+   project has twice documented starving — so a sub-second reader stall makes a booked session a hard
+   `gate_clock` INVALID. That is the CORRECT conservative behaviour (an unmeasured flight is not a
+   safe flight) and it is not the finding; the finding is that nobody has priced how often it fires
+   on a healthy take, and the runbook's §6 booking table has no row for it, so the artifact would
+   read like a control-law failure to anyone skimming. Owed: that row, and the base rate off the
+   first take's stamps.
+4. ~~The hold CONTEXT note has no denominator and disappears silently if `bird_clearance_m` is ever
+   dropped.~~ **CLOSED (rounds 4-5).** The line now prints on every schema-2 log **with its
+   denominator** (`holds with a threat=N of M hold(s)`, including `0 of 0` — a take that measured
+   nothing about hold separation says so instead of falling silent), and a hold with **no usable**
+   `bird_clearance_m` is a hard FIELD-DRIFT failure on the same rule R3.8 applies to a `gate_reject`.
+   Round 5 closed the quieter half of that: a present value of the wrong TYPE (`"2.5"`, `{}`, `True`)
+   was refused by `_num` and therefore fell into the "this hold named no threat" bucket, so a hold
+   whose clearance had turned into a string read exactly like a hold with no bird near it while the
+   hold COUNT kept rising. Drift is now *absent key OR unusable value*; an explicit `None` remains
+   legitimate, because that is what `_handle_hold` writes when the decision names no threat. It still
+   cannot flip a verdict on separation — it is explicitly ungated — but it is the number R4 will be
+   booked on, so it may not go blank.
+5. Two residual assumptions in the freeze bound, both written into the derivation comment rather than
+   left implicit: a TRAILING frozen run has no closing stamp and is priced at the flight's own mean
+   sim-step, and `v_next − v` under-prices a reader whose lag was still growing when it recovered.
+   Worth revisiting only if a real flight ends on a frozen axis.
+6. ~~`docs/ROADMAP.md` is stale on this round.~~ **CLOSED (round 5, 2026-08-24.)** It now carries the
+   measured 877/2/0 + 822 + 57 counts, says the ADR amendments are written rather than owed, and its
+   pre-registered breach remedy states the two-half contract (marker = context, pin = reviewed diff;
+   **after a real R4 breach: marker only, and the take stands INVALID**) instead of the self-service
+   green the old sentence described. Its doc long-tail item lost the three entries that had
+   landed — the amendments, the ADR-003 header line, and the scenario fixtures, which are regenerated
+   on `lateral_tree_margin_m` 1.0 and therefore describe the shipped control law again.
+Owner / roles: qa-safety-reviewer (filed all seven and re-verified the fixes against rebuilt pre-fix
+code); flight-software-engineer (F1/F3/F5/F7 in the checker, F2 in the executor); tech-lead (this
+amendment, the in-place correction doctrine, the frozen marker set, and the ranking above);
+product-lead (owns R4's continued exclusion and arbitrates if the marker call is argued).

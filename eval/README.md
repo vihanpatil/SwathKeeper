@@ -12,13 +12,17 @@ Runs scripted scenarios headless and emits metrics — no "it works" without a n
 - `score.py` — the reusable metric core (precision / recall / **FNR** / per-bird-track FNR); the seed of
   the permanent harness. Run the full NDVI-vs-RGB spike with `run_spike.sh` (needs `requirements-eval.txt`).
 - `label_from_sim.py`, `baseline_ndvi.py`, `baseline_rgb.py` — the ADR-003 spike pipeline, built on
-  the shared `blob.py` (one classical-CV detector, used by both arms so the comparison is
-  apples-to-apples) and `spike_common.py` (clip IO). **`baseline_ndvi.py`'s threshold is per-render**
-  and resolved from the clip's own `meta.json`: `0.05` on a synthetic clip (ADR-003's deciding value),
+  `spike_common.py` (clip IO) and on **`src/fieldguard_planning/ndvi_detect.py`, which is where the
+  detector itself lives** (one classical-CV detector, used by both arms so the comparison is
+  apples-to-apples — and by the live avoidance node, so the flight runs the code these numbers were
+  measured on rather than a copy of it). **The threshold is per-render** and `baseline_ndvi.py`
+  resolves it from the clip's own `meta.json`: `0.05` on a synthetic clip (ADR-003's deciding value),
   `-0.61` on a real Gazebo render (the gate2 bird/soil midpoint — real soil reads −0.4377, where 0.05
-  masks the whole image). The real-render value is PROVISIONAL until a clip exists with a bird in
-  frame; ADR-003 amendment 3. Before flying for one, run
-  `scripts/predict_bird_visibility.py` — it says whether the mission can produce one at all.
+  masks the whole image). The real-render value is still PROVISIONAL after ADR-003 amendment 7
+  adopted the detector at it: ADOPT says it works (n=20 bird-frames, 7 FP / 3 FN), not that it is
+  where the threshold belongs — lifting it needs the false-positive characterisation.
+  `tests/fieldguard_planning/test_ndvi_detect.py` pins the detector's boxes against three committed
+  real-render frames and, where the clip is on disk, against the whole 1256-frame adopted run.
 - `scenarios/` — the QA safety scenarios (spec + coverage-debt invariant); `generate_flight_logs.py`
   drives the real avoidance loop to produce each scenario's `flight_log.json`, activating its assertion.
 
@@ -33,26 +37,41 @@ into reports, not raw frame data.
 
 The synthetic spike clips carry `birds[]` on every `poses.jsonl` line; a clip from the live
 recorder (`src/fieldguard_planning/clip_recorder.py`) does not — nothing in the ROS 2 graph
-publishes bird poses. It doesn't have to: the birds are deterministic. `scripts/drive_birds.py`
-flies the committed `config/birds/farm_world_birds.json` waypoints on the **Gazebo sim clock**, and
-every recorded pose line carries that frame's own gz stamp (`stamp_sim_s`), so a bird's position in
-a frame is exactly `pose_at(stamp_sim_s - t0_sim)`.
+publishes bird poses. `scripts/drive_birds.py` is the only thing that moves them, so it is also the
+only thing that can say where they were.
+
+**Label from the driver's APPLIED-POSE LOG, never from its start anchor alone** (ADR-003
+amendment 6). `pose_at(stamp_sim_s - t0_sim)` is where the driver *asked* the bird to be at that
+instant; the render shows the last pose that *arrived*, one driver tick plus a per-call service
+latency later. Measured on the 2026-08-22 flagship take: **lag 0.12–0.81 s, mean 0.52 s**, putting
+modelled labels a mean **198 px (max 313)** from a bird whose box is **21–47 px** — IoU can never
+match, and every true detection scores as a false positive. The driver therefore logs every
+`set_pose` call (pose, trajectory time, sim-time bracket, landed/failed) next to its sidecar, and
+the annotator replays that.
 
 ```bash
-# 1. the driver writes its anchor at startup (eval/results/bird_drive_<UTCstamp>.json)
-python3 scripts/drive_birds.py                      # prints the sidecar path
+# 1. the driver writes both files at startup (eval/results/bird_drive_<UTCstamp>{.json,_applied.jsonl})
+python3 scripts/drive_birds.py                      # prints both paths
 
-# 2. after the flight, label the clip (writes poses_annotated.jsonl, recording untouched)
+# 2. after the flight, label the clip (writes poses_annotated.jsonl, recording untouched).
+#    The applied log is auto-discovered next to the sidecar; --applied-log names a moved one.
 python3 eval/annotate_real_clip.py --clip eval/results/clips/<clip> \
     --sidecar eval/results/bird_drive_<UTCstamp>.json
 # ... eyeball a line, then adopt it:
 python3 eval/annotate_real_clip.py --clip <clip> --sidecar <same file> --in-place
 ```
 
+Every label carries its own provenance in `label_src`, and it travels into `ground_truth.json`:
+`applied` (measured — the call had landed), `spawn` (exact — nothing had moved the static model
+yet), `generator` (synthetic clip), `modeled` (estimated from t0 alone). **`score.py` refuses to
+issue an ADR-003 verdict on `modeled` or `unknown` labels** — a rate needs a denominator *and* a
+numerator that measured the same thing. A frame that falls inside a call's own bracket is marked
+`label_ambiguous` rather than rounded to a side.
+
 `--bird-t0 <sim seconds>` replaces `--sidecar` for runs older than the sidecar (the driver's
-`t0=...` console line). Labels are **commanded** bird poses, not observed ones (same rule as the
-coverage ledger) — the render lags by one driver tick of sim time, ≈ `period x RTF`, which is
-centimetres at this stack's measured RTF and ~1.2 m only if RTF ever reaches 1.
+`t0=...` console line); those labels are `modeled` by construction. Labels remain **commanded**
+poses, not poses observed back out of Gazebo (same rule as the coverage ledger) — the applied log
+closes the timing half of that gap, not the "did Gazebo do what it was told" half.
 
 Frames recorded **before** the driver started (the recorder always starts first) label at each
 bird's **spawn pose** — the `waypoints[0]` the static model sits at until the first `set_pose`, so

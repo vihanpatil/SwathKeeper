@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  SwathKeeper — Fast DDS transport profile (lever L2, round 3, 2026-08-22).
+
+  WHAT THIS FIXES, and why it is not a QoS change.
+  Every large sample on this stack fragments at 65,384 B *even over shared memory*: the SHM
+  transport's own max_message_size defaults to 65500, UDPv4 is hard-capped at 65500, and a
+  participant takes the MINIMUM max_message_size across its registered transports. Fast DDS 2.6.11's
+  default SHM segment is 512 KiB (patched in at SharedMemTransport::init, the descriptor default is
+  literally 0), which holds exactly EIGHT of those fragments — 524288 / 65384 = 8.02. Anything
+  needing more overflows, and on overflow Fast DDS DISCARDS the fragment and reports success:
+  alloc_buffer ignores the blocking deadline, throws, and the transport catch logs at logInfo, which
+  is compiled out of release builds. Silent loss, no counter, no warning.
+
+  That model predicts every number this project has measured, monotonically in fragment count:
+    camera_info  ~500 B      =  1 fragment  (fits)  -> 100 %  delivered   (the control)
+    nir mono16    614,400 B  = 10 fragments > 8     ->  46.2 % delivered
+    rgb8          921,600 B  = 15 fragments > 8     ->  20.5 % delivered
+    ndvi 32FC1  1,228,800 B  = 19 fragments > 8     ->  37.5 % delivered pre-RELIABLE, 100 % after
+  Implied per-fragment loss is a consistent 5-10 % across all three bands. The /fg/ndvi/image result
+  is the control experiment: RELIABLE (lever L1) did not make the transport faster, it added
+  NACK_FRAG retransmission of the fragments the segment was dropping.
+
+  THE CHANGE: segment_size 512 KiB -> 8 MiB = 128 fragment slots (16x), ~5 sensor ticks of buffering
+  against the bridge's ~25 fragments/tick. maxMessageSize stays at 65500 ON PURPOSE — raising it
+  does nothing while UDPv4 is registered (the min-across-transports rule), and segment_size must
+  stay ABOVE max_message_size or SharedMemTransport::init logs an error and rejects the descriptor.
+  Zero-fragmentation requires dropping UDPv4 entirely; that is a separate, higher-risk lever (L4)
+  and is deliberately NOT in this file.
+
+  port_queue_capacity is deliberately left at its 512 default: the 8-slot segment is the binding
+  constraint, and bundling a second SHM knob would make a landed win unattributable.
+
+  HOW IT IS LOADED: FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml
+  (the repo is bind-mounted read/write, same precedent as config/sitl_params/dds_udp.parm). The env
+  var must reach EVERY process that creates a Fast DDS participant — `bash -c` is non-interactive and
+  never sources .bashrc, so an rc-file export reaches nothing.
+
+  VERIFY IT ACTUALLY LOADED — malformed XML falls back to defaults with only a log line:
+    ls -l /dev/shm/fastrtps_* | grep -v port
+  Default segment files measure 549,408 B (512 KiB + ~25 KB header). With this profile they must
+  measure ~8.4 MB, and the MINIMUM must be raised too — a 549,408 B segment still in the set means
+  some participant missed the env var. `dds_env_snapshot()` reports exactly those two numbers into
+  every clip's meta["dds"] (schema 1.4).
+
+  SIZING: Fast DDS memsets the whole segment at init, so each participant costs its full
+  segment_size in /dev/shm. 6 participants x 8 MiB = 48 MB, which does NOT fit the stock 64 MB
+  /dev/shm alongside everything else — scripts/sim_docker_run.sh raises the container's shm-size to
+  1g for this reason. The failure mode if it does not fit is participant-creation failure at
+  bringup: loud and safe, not slow. (No double hyphen anywhere in this comment on purpose: it is
+  illegal inside an XML comment and would make the whole profile unparseable, which Fast DDS
+  reports by falling back to defaults with only a log line.)
+-->
+<dds xmlns="http://www.eprosima.com">
+  <profiles>
+    <transport_descriptors>
+
+      <transport_descriptor>
+        <transport_id>fg_shm</transport_id>
+        <type>SHM</type>
+        <!-- 8 MiB = 128 fragment slots at 65,384 B, against 8 in the 512 KiB default. -->
+        <segment_size>8388608</segment_size>
+        <!-- Left at the default. Raising it is inert while UDPv4 is registered (min across
+             transports) and would break the segment_size > max_message_size invariant if raised
+             past 8 MiB. -->
+        <maxMessageSize>65500</maxMessageSize>
+      </transport_descriptor>
+
+      <!-- UDPv4 is RETAINED. useBuiltinTransports=false replaces the whole default transport set,
+           so without this descriptor the participant would become SHM-only — which is lever L4, a
+           different experiment with a different risk profile (no UDP locator means any process that
+           misses the env var cannot reach these participants AT ALL, and the container's DDS graph
+           stops being reachable from outside). Keeping UDPv4 here means a process that misses the
+           profile still communicates, just over UDP: this lever DEGRADES, it does not black out. -->
+      <transport_descriptor>
+        <transport_id>fg_udp</transport_id>
+        <type>UDPv4</type>
+      </transport_descriptor>
+
+    </transport_descriptors>
+
+    <participant profile_name="fg_default" is_default_profile="true">
+      <rtps>
+        <userTransports>
+          <transport_id>fg_shm</transport_id>
+          <transport_id>fg_udp</transport_id>
+        </userTransports>
+        <!-- Required: otherwise the builtin UDPv4/SHM pair is registered IN ADDITION to the
+             descriptors above, and the default-sized builtin SHM transport would be the one that
+             carries the data. -->
+        <useBuiltinTransports>false</useBuiltinTransports>
+      </rtps>
+    </participant>
+
+  </profiles>
+</dds>

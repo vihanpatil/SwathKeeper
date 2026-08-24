@@ -38,9 +38,10 @@ documented stretch goal.
    resampling. Topics `/fg/sensor/*` → `ros_gz` bridge (four topics, live-verified 2026-08-18). Sun
    shadows are OFF in the world: the thermal band ignores illumination but Red does not, so a cast
    shadow darkens Red alone and reads as false vegetation (ADR-007 amendment — found via the
-   drone's own shadow reading NDVI-positive). A second-sensor configuration (NDVI+depth) is
-   **planned as the Week-6 comparison arm — not built yet** — to measure what a second sensor buys
-   against the ADR-009 monocular range estimate.
+   drone's own shadow reading NDVI-positive). A second-sensor configuration (NDVI+RGB, reusing the
+   RGB camera already needed for the Red band — ADR-007; NDVI+depth is a documented stretch, not
+   v1) is **planned as the Week-6 comparison arm — not built yet** — to measure what a second
+   sensor buys against the ADR-009 monocular range estimate.
 3. **Perception:** classical blob detector directly on NDVI frames (ADR-003 — NDVI-direct beat the
    bar: per-bird-track FNR 0.000 on the fixed-seed clip; any learned model must beat the same
    harness before it earns a place). Trees are a **pre-known static-obstacle map** (ADR-001,

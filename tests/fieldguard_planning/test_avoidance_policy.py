@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from fieldguard_planning.avoidance_types import Detection, DroneState, Decision  # noqa: E402
-from fieldguard_planning.avoidance_policy import AvoidancePolicy  # noqa: E402
+from fieldguard_planning.avoidance_policy import AvoidancePolicy, PolicyParams  # noqa: E402
 from fieldguard_planning.geofence import GeofenceMap  # noqa: E402
 
 
@@ -120,10 +120,11 @@ class TestAvoidancePolicy(unittest.TestCase):
 
 
 class TestDetectionStaleness(unittest.TestCase):
-    """Staleness gate (`Detection.stamp_s` + `max_detection_age_s`): once the real detector replaces
-    the --demo bird behind the detection_source seam, an old frame must not be able to trigger a
-    phantom dodge or sit in the threat set masking a live threat. Gate is OFF by default so all
-    pre-existing behavior (and every unstamped source) is untouched."""
+    """Staleness gate (`Detection.stamp_s` + `max_detection_age_s`): now that the real detector sits
+    behind the detection_source seam, an old frame must not be able to trigger a phantom dodge or
+    sit in the threat set masking a live threat. The bound is ARMED BY DEFAULT at 1.0 s
+    (2026-08-24); unstamped sources are still untouched because the gate fails OPEN when it cannot
+    compute an age."""
 
     @classmethod
     def setUpClass(cls):
@@ -162,9 +163,23 @@ class TestDetectionStaleness(unittest.TestCase):
         m = self.pol.decide(det, _drone(30, 30), self.geo, now_s=1000.0)
         self.assertIs(m.decision, Decision.DIVERT)
 
-    def test_gate_off_by_default_ignores_stamps(self):
-        # default policy (max_detection_age_s=None): even an ancient stamp changes nothing
+    def test_the_gate_is_ARMED_by_default_and_the_bound_has_one_home(self):
+        """The default is 1.0 s, not None (2026-08-24). It used to be None while `avoidance_node`
+        armed 1.0 s from a constant of its own -- one knob, two homes -- which left the flight-log
+        gate's upper bound (`gate_staleness`) dead code: a log flown at a 3600 s tolerance passed as
+        current behaviour. An ancient stamp is now ABSENT under a bare `AvoidancePolicy()`."""
+        self.assertEqual(PolicyParams().max_detection_age_s, 1.0)
         pol = AvoidancePolicy()
+        det = Detection(position_enu=(33.0, 30.0, 15.0), frame_id=10, track_id="bird_0",
+                        stamp_s=0.0)
+        m = pol.decide(det, _drone(30, 30), self.geo, now_s=1.0e6)
+        self.assertIs(m.decision, Decision.PROCEED)
+        self.assertEqual(m.debug.get("n_stale_dropped"), 1)
+
+    def test_the_gate_can_still_be_turned_off_explicitly(self):
+        """Off is a deliberate act, not the default: a scenario that replays recorded detections on
+        a foreign clock has to say so."""
+        pol = AvoidancePolicy(max_detection_age_s=None)
         det = Detection(position_enu=(33.0, 30.0, 15.0), frame_id=10, track_id="bird_0",
                         stamp_s=0.0)
         m = pol.decide(det, _drone(30, 30), self.geo, now_s=1.0e6)

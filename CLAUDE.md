@@ -45,17 +45,23 @@ paths. Do NOT "helpfully" rename them; the `/fg/*` contract is live-verified (AD
 - v1 replanning = **"avoid, return to next waypoint"** first; full coverage-debt reconciliation is a
   documented **stretch goal**, not a v1 blocker.
 - MVP obstacle density = **2-3 scripted bird trajectories**, not a flock. Keep the loop debuggable.
-- NDVI-vs-RGB detection = **DECIDED (ADR-003): NDVI-direct** — the classical blob baseline hit
-  per-bird-track FNR 0.000 on the spike, so no trained model is justified yet; re-confirmation on
-  the real Gazebo render is the still-pending item (tooling ready; needs a full-coverage recording).
+- NDVI-vs-RGB detection = **DECIDED (ADR-003): NDVI-direct — CONFIRMED ON THE REAL RENDER
+  (criterion 3 CLOSED, ADOPT, 2026-08-23, am. 7)**: per-bird-track FNR 0.000 on measured
+  (applied-pose) labels, every bird detected before closest approach, precision 0.708 / recall
+  0.850. The −0.61 real-render threshold stays PROVISIONAL (n=20); criterion 2's comparison arm
+  still needs an independent RGB pixel study (birdness is INVERTED on this world).
 - NDVI render mechanism = **ADR-007: RGB camera Red channel + Gazebo thermal sensor repurposed as
   synthetic NIR**, fused in a ROS 2 node. **All four gates GREEN live** (Gate 0 2026-08-05;
   Gates 1-3 2026-08-18: bridge, bands canopy 0.854 > soil 0.212 > bird 0.040, avoidance
   regression). Sensor mount corrected same day (was horizon-facing since authoring — Gazebo
   cameras look along +X; ADR-007 amendment 5) and geometry is now GATED:
   `scripts/verify_mount_geometry.sh` (2.2 px). First tree-verified real-render heatmaps committed.
-  Open: recording throughput (fused-frame delivery limits per-flight coverage) + the ADR-003
-  real-render re-run.
+  Recording throughput **SOLVED 2026-08-22 (ADR-013 am. 6-9)**: the Fast DDS SHM segment was the
+  root cause (silent fragment discard); `config/dds/fg_fastdds.xml` + `--shm-size=1g` took
+  delivery to 100 % both bands, painting cadence 0.41 → **5.0 Hz flat**, full 720/720 maps.
+  Safety asterisk from the avoidance QA (am. 12): both historical avoidance flights breached
+  bird clearance (CPA ~5 cm) under green gates — CPA is now a gated metric; control-law fixes
+  R2/R3 await their live gate on the next avoidance flight.
 - Real-detector contract = **ADR-009**: detections carry `stamp_s` (policy staleness gate); bird
   position from apparent-size ray, **never** ground-plane projection (fail-dangerous at altitude).
 - Coverage-ledger honesty = commanded setpoints are **never** recorded as flown

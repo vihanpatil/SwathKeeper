@@ -25,7 +25,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "eval"))
 
-from drive_birds import parse_sim_time_s, pose_at, set_pose_request, write_run_sidecar  # noqa: E402
+from drive_birds import (  # noqa: E402
+    AppliedLogWriter, applied_log_path_for, applied_record, applied_sim_brackets, parse_sim_time_s,
+    pose_at, read_applied_log, set_pose_request, write_run_sidecar,
+)
 import annotate_real_clip as arc  # noqa: E402
 
 WPS = [
@@ -184,6 +187,239 @@ class TestRunSidecar(unittest.TestCase):
                 arc.t0_from_sidecar(side)
 
 
+def applied(bird_id, t_traj, pos, ok=True, tick_sim=None, tick_wall=0.0,
+            start=None, end=None):
+    """One applied-pose record, with the timestamps spelled out at the call site."""
+    return applied_record(bird_id, t_traj, (pos[0], pos[1], pos[2], 0.0), ok, tick_sim, tick_wall,
+                          tick_wall if start is None else start,
+                          (tick_wall if start is None else start) + 0.05 if end is None else end)
+
+
+class TestAppliedLog(unittest.TestCase):
+    """The applied-pose log is the fix for ADR-003 amendment 6: without it a label says where the
+    driver ASKED the bird to be, and the render was measured a mean 198 px away from that."""
+
+    def test_log_path_is_derived_from_the_sidecar_it_belongs_to(self):
+        self.assertEqual(applied_log_path_for(Path("/r/bird_drive_20260822T215608Z.json")).name,
+                         "bird_drive_20260822T215608Z_applied.jsonl")
+
+    def test_record_keeps_the_request_and_all_four_clocks(self):
+        r = applied_record("bird_0", 12.5, (1.0, 2.0, 3.0, 0.5), True, 66.0, 100.0, 100.02, 100.19)
+        self.assertEqual(r["bird_id"], "bird_0")
+        self.assertEqual(r["t_traj_s"], 12.5)
+        self.assertEqual(r["pos_m"], [1.0, 2.0, 3.0])
+        self.assertTrue(r["ok"])
+        self.assertEqual((r["tick_sim_s"], r["tick_wall_s"]), (66.0, 100.0))
+        self.assertEqual((r["wall_start_s"], r["wall_end_s"]), (100.02, 100.19))
+
+    def test_brackets_convert_wall_to_sim_at_the_MEASURED_rtf(self):
+        """RTF is not 1 and not constant on this stack (0.94 pre-flight to 0.51 mid-lane on the
+        flagship take), so the conversion uses the rate measured between consecutive tick anchors,
+        never an assumed one."""
+        recs = [applied("bird_0", 0.0, (0, 0, 0), tick_sim=100.0, tick_wall=0.0, start=0.1, end=0.3),
+                applied("bird_0", 0.5, (1, 0, 0), tick_sim=100.5, tick_wall=1.0, start=1.1, end=1.3)]
+        # tick 0 -> tick 1: 0.5 s of sim over 1.0 s of wall = RTF 0.5
+        b0, b1 = applied_sim_brackets(recs)
+        self.assertAlmostEqual(b0[0], 100.05)   # 100.0 + 0.1*0.5
+        self.assertAlmostEqual(b0[1], 100.15)
+        self.assertAlmostEqual(b1[0], 100.55)   # last tick reuses the last measured RTF
+        self.assertAlmostEqual(b1[1], 100.65)
+
+    def test_three_birds_in_one_tick_get_three_different_brackets(self):
+        """The per-call latency is the point: on the flagship take the three birds' lags ordered by
+        their position in the loop (0.12 / 0.38 / 0.42 s), i.e. one shared tick anchor is not
+        enough to place them."""
+        recs = [applied("bird_0", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.0, end=0.2),
+                applied("bird_1", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.2, end=0.4),
+                applied("bird_2", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.4, end=0.6),
+                applied("bird_0", 1.0, (1, 0, 0), tick_sim=11.0, tick_wall=1.0, start=1.0, end=1.2)]
+        ends = [b[1] for b in applied_sim_brackets(recs)]
+        self.assertAlmostEqual(ends[0], 10.2)
+        self.assertAlmostEqual(ends[1], 10.4)
+        self.assertAlmostEqual(ends[2], 10.6)
+        self.assertNotEqual(ends[0], ends[2])
+
+    def test_single_tick_collapses_to_the_anchor_rather_than_inventing_a_rate(self):
+        recs = [applied("bird_0", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.0, end=0.9)]
+        self.assertEqual(applied_sim_brackets(recs), [(10.0, 10.0)])
+
+    def test_wall_clock_run_records_have_no_sim_bracket_at_all(self):
+        recs = [applied("bird_0", 0.0, (0, 0, 0), tick_sim=None, tick_wall=0.0)]
+        self.assertEqual(applied_sim_brackets(recs), [None])
+
+    def test_writer_appends_flushes_and_survives_an_unwritable_path(self):
+        with tempfile.TemporaryDirectory() as td:
+            w = AppliedLogWriter(Path(td) / "log.jsonl")
+            w.write(applied("bird_0", 0.0, (0, 0, 0), tick_sim=1.0))
+            # flushed per call: readable BEFORE close, because a Ctrl-C'd flight must keep its poses
+            self.assertEqual(len(read_applied_log(w.path)), 1)
+            w.write(applied("bird_1", 0.0, (0, 0, 0), tick_sim=1.0))
+            w.close()
+            self.assertEqual(w.written, 2)
+            self.assertEqual([r["bird_id"] for r in read_applied_log(w.path)],
+                             ["bird_0", "bird_1"])
+        # A read-only mount must never stop a flight: the writer disables itself, silently to the
+        # birds and loudly to stderr.
+        dead = AppliedLogWriter(Path(td) / "gone" / "nested" / "log.jsonl")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            dead.write(applied("bird_0", 0.0, (0, 0, 0), tick_sim=1.0))
+            dead.write(applied("bird_0", 0.1, (0, 0, 0), tick_sim=1.1))
+        self.assertEqual(dead.written, 0)
+        self.assertIn("applied-pose log disabled", err.getvalue())
+
+    def test_truncated_final_line_costs_one_record_not_the_run(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "log.jsonl"
+            good = json.dumps(applied("bird_0", 0.0, (0, 0, 0), tick_sim=1.0))
+            p.write_text(good + "\n" + good + "\n" + good[:20])
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(len(read_applied_log(p)), 2)
+
+
+class TestAppliedReplay(unittest.TestCase):
+    """`applied_timeline` + `pose_from_applied` answer one question: what pose was the RENDERER
+    showing at this frame's stamp? Not what the driver asked for at it."""
+
+    def _timeline(self, recs):
+        return arc.applied_timeline(recs)
+
+    def test_pose_holds_between_applies_and_is_never_ahead_of_one(self):
+        tl = self._timeline([
+            applied("b", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.0, end=0.1),
+            applied("b", 1.0, (5, 0, 0), tick_sim=11.0, tick_wall=1.0, start=1.0, end=1.1),
+        ])["b"]
+        self.assertEqual(arc.pose_from_applied(tl, 10.5)[0], (0.0, 0.0, 0.0))   # first still held
+        self.assertEqual(arc.pose_from_applied(tl, 11.09)[0], (0.0, 0.0, 0.0))  # call in flight
+        self.assertEqual(arc.pose_from_applied(tl, 11.2)[0], (5.0, 0.0, 0.0))   # landed
+
+    def test_a_failed_call_means_the_bird_HELD_and_so_must_the_label(self):
+        """16 set_pose calls failed on the flagship take. A failed call changed nothing in the
+        render, so a label that moves the bird on it is a label of a bird that was never there."""
+        tl = self._timeline([
+            applied("b", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.0, end=0.1),
+            applied("b", 1.0, (5, 0, 0), ok=False, tick_sim=11.0, tick_wall=1.0, start=1.0, end=1.1),
+            applied("b", 2.0, (9, 0, 0), tick_sim=12.0, tick_wall=2.0, start=2.0, end=2.1),
+        ])["b"]
+        self.assertEqual(arc.pose_from_applied(tl, 11.5)[0], (0.0, 0.0, 0.0))   # held, not (5,0,0)
+        self.assertEqual(arc.pose_from_applied(tl, 12.5)[0], (9.0, 0.0, 0.0))
+
+    def test_before_the_first_landed_call_there_is_no_applied_pose(self):
+        tl = self._timeline([
+            applied("b", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.0, end=0.1)])["b"]
+        self.assertIsNone(arc.pose_from_applied(tl, 9.0))
+
+    def test_a_frame_inside_a_call_bracket_is_reported_ambiguous_not_rounded(self):
+        tl = self._timeline([
+            applied("b", 0.0, (0, 0, 0), tick_sim=10.0, tick_wall=0.0, start=0.0, end=0.1),
+            applied("b", 1.0, (5, 0, 0), tick_sim=11.0, tick_wall=1.0, start=1.0, end=1.4),
+        ])["b"]
+        pos, _t, ambiguous = arc.pose_from_applied(tl, 11.2)   # request out, reply not back
+        self.assertEqual(pos, (0.0, 0.0, 0.0))
+        self.assertTrue(ambiguous)
+        self.assertFalse(arc.pose_from_applied(tl, 11.5)[2])
+
+    def test_failed_and_unclocked_records_never_enter_the_timeline(self):
+        tl = self._timeline([
+            applied("b", 0.0, (0, 0, 0), ok=False, tick_sim=10.0),
+            applied("b", 1.0, (1, 0, 0), tick_sim=None, tick_wall=1.0),
+            applied("b", 2.0, (2, 0, 0), tick_sim=12.0, tick_wall=2.0),
+        ])
+        self.assertEqual(len(tl["b"]), 1)
+
+    def test_annotate_lines_labels_from_the_log_and_says_so(self):
+        recs = [
+            applied("bird_0", 0.0, (0, 0, 10), tick_sim=100.0, tick_wall=0.0, start=0.0, end=0.1),
+            applied("bird_1", 0.0, (5, 30, 11), tick_sim=100.0, tick_wall=0.0, start=0.1, end=0.2),
+            applied("bird_0", 5.0, (10, 0, 10), tick_sim=105.0, tick_wall=5.0, start=5.0, end=5.1),
+            applied("bird_1", 5.0, (30, 30, 11), tick_sim=105.0, tick_wall=5.0, start=5.1, end=5.2),
+        ]
+        lines = [pose_line(0, 99.0), pose_line(1, 103.0), pose_line(2, 107.0)]
+        out, stats = arc.annotate_lines(lines, BIRDS_CFG["birds"], 100.0,
+                                        arc.applied_timeline(recs))
+        # frame 0 predates every landed call -> the static spawn pose, and that is EXACT
+        self.assertEqual([b["label_src"] for b in out[0]["birds"]], ["spawn", "spawn"])
+        self.assertEqual(out[0]["birds"][0]["pos_m"], [0.0, 0.0, 10.0])
+        # frame 1: the t=0 poses have landed, the t=5 ones have not -> held at t=0
+        self.assertEqual([b["label_src"] for b in out[1]["birds"]], ["applied", "applied"])
+        self.assertEqual(out[1]["birds"][1]["pos_m"], [5.0, 30.0, 11.0])
+        self.assertEqual(out[1]["birds"][1]["traj_t_s"], 0.0)
+        # frame 2: t=5 landed. The MODEL would have said pose_at(7.0) here — the whole bug.
+        self.assertEqual(out[2]["birds"][0]["pos_m"], [10.0, 0.0, 10.0])
+        self.assertNotEqual(out[2]["birds"][0]["pos_m"],
+                            [round(c, 6) for c in pose_at(7.0, WPS)[:3]])
+        self.assertEqual(stats["label_src_counts"], {"spawn": 2, "applied": 4, "modeled": 0})
+
+    def test_without_a_log_every_post_t0_label_is_marked_modeled(self):
+        out, stats = arc.annotate_lines([pose_line(0, 99.0), pose_line(1, 105.0)],
+                                        BIRDS_CFG["birds"], 100.0)
+        self.assertEqual([b["label_src"] for b in out[0]["birds"]], ["spawn", "spawn"])
+        self.assertEqual([b["label_src"] for b in out[1]["birds"]], ["modeled", "modeled"])
+        self.assertEqual(stats["label_src_counts"], {"spawn": 2, "applied": 0, "modeled": 2})
+
+    def test_cli_auto_discovers_the_log_next_to_the_sidecar(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            clip = make_clip(tmp, [100.0, 105.0])
+            sidecar = write_run_sidecar(tmp, 100.0, 2.0, write_cfg(tmp),
+                                        ["bird_0", "bird_1"], "farmguard_field")
+            log = applied_log_path_for(sidecar)
+            log.write_text("".join(json.dumps(r) + "\n" for r in [
+                applied("bird_0", 0.0, (0, 0, 10), tick_sim=100.0, tick_wall=0.0, end=0.1),
+                applied("bird_1", 0.0, (5, 30, 11), tick_sim=100.0, tick_wall=0.0, end=0.1),
+                applied("bird_0", 4.0, (8, 0, 10), tick_sim=104.0, tick_wall=4.0, start=4.0, end=4.1),
+                applied("bird_1", 4.0, (25, 30, 11), tick_sim=104.0, tick_wall=4.0, start=4.0, end=4.1),
+            ]))
+            rc, out, err = run_cli(["--clip", str(clip), "--sidecar", str(sidecar),
+                                    "--config", str(write_cfg(tmp))])
+            self.assertEqual(rc, 0)
+            self.assertIn("applied-pose log", out)
+            self.assertNotIn("MODELED", err)
+            written = arc.read_poses(clip / "poses_annotated.jsonl")
+            self.assertEqual(written[1]["birds"][0]["pos_m"], [8.0, 0.0, 10.0])
+            # ...and --no-applied-log reproduces the old modelled labelling, loudly
+            rc, _out, err = run_cli(["--clip", str(clip), "--sidecar", str(sidecar),
+                                     "--config", str(write_cfg(tmp)), "--no-applied-log"])
+            self.assertEqual(rc, 0)
+            self.assertIn("MODELED", err)
+
+    def test_a_log_from_another_run_is_called_out_not_silently_replayed(self):
+        """Holding the wrong log produces a full clip of confident spawn-pose labels — the same
+        shape of quiet-wrong-answer the pre-driver lead-in note exists to catch."""
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            clip = make_clip(tmp, [100.0, 100.2])          # sim 100.0..100.2
+            sidecar = write_run_sidecar(tmp, 100.0, 2.0, write_cfg(tmp),
+                                        ["bird_0", "bird_1"], "farmguard_field")
+            applied_log_path_for(sidecar).write_text("".join(json.dumps(r) + "\n" for r in [
+                applied("bird_0", 0.0, (0, 0, 10), tick_sim=900.0, tick_wall=0.0, end=0.1),
+                applied("bird_1", 0.0, (5, 30, 11), tick_sim=900.0, tick_wall=0.0, end=0.1),
+                applied("bird_0", 1.0, (2, 0, 10), tick_sim=901.0, tick_wall=1.0, start=1.0, end=1.1),
+            ]))
+            rc, _out, err = run_cli(["--clip", str(clip), "--sidecar", str(sidecar),
+                                     "--config", str(write_cfg(tmp))])
+            self.assertEqual(rc, 0)
+            self.assertIn("do not overlap", err)
+
+    def test_a_bird_the_log_never_moved_is_called_out(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            clip = make_clip(tmp, [100.0, 105.0])
+            sidecar = write_run_sidecar(tmp, 100.0, 2.0, write_cfg(tmp),
+                                        ["bird_0", "bird_1"], "farmguard_field")
+            applied_log_path_for(sidecar).write_text("".join(json.dumps(r) + "\n" for r in [
+                applied("bird_0", 0.0, (0, 0, 10), tick_sim=100.0, tick_wall=0.0, end=0.1),
+                applied("bird_0", 4.0, (8, 0, 10), tick_sim=104.0, tick_wall=4.0, start=4.0, end=4.1),
+            ]))
+            rc, _out, err = run_cli(["--clip", str(clip), "--sidecar", str(sidecar),
+                                     "--config", str(write_cfg(tmp))])
+            self.assertEqual(rc, 0)
+            self.assertIn("bird_1", err)
+            self.assertIn("no landed set_pose", err)
+            written = arc.read_poses(clip / "poses_annotated.jsonl")
+            self.assertEqual([b["label_src"] for b in written[1]["birds"]], ["applied", "spawn"])
+
+
 class TestAnnotateRealClip(unittest.TestCase):
     """Labels for a real clip = pose_at(stamp_sim_s - t0) — the driver's own interpolation, not a
     second copy of it."""
@@ -207,7 +443,8 @@ class TestAnnotateRealClip(unittest.TestCase):
     def test_entries_carry_exactly_what_label_from_sim_requires(self):
         annotated, _ = arc.annotate_lines([pose_line(0, 101.0)], BIRDS_CFG["birds"], 100.0)
         entry = annotated[0]["birds"][0]
-        self.assertEqual(set(entry), {"bird_id", "pos_m", "physical_radius_m", "traj_t_s"})
+        self.assertEqual(set(entry),
+                         {"bird_id", "pos_m", "physical_radius_m", "traj_t_s", "label_src"})
         self.assertEqual(entry["bird_id"], "bird_0")
         self.assertEqual(entry["physical_radius_m"], 0.18)          # from the config, per bird
         self.assertEqual(annotated[0]["birds"][1]["physical_radius_m"], 0.25)

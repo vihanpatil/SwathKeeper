@@ -6078,8 +6078,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6087,12 +6088,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 11.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6143,8 +6152,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6152,12 +6162,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 9.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6227,8 +6245,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6236,12 +6255,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 7.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6292,8 +6319,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6301,12 +6329,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 5.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6376,8 +6412,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6385,13 +6422,26 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 3.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6442,8 +6492,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6451,13 +6502,26 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 1.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6489,7 +6553,7 @@
       "tick": 71,
       "kind": "relatch",
       "setpoint_enu": [
-        37.928932188,
+        52.071067812,
         33.071067812,
         15.0
       ],
@@ -6509,22 +6573,26 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        37.928932188,
+        52.071067812,
         33.071067812,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 45.0,
+        "candidate_angle_deg": -45.0,
         "away_unit": [
           0.0,
           1.0
         ],
-        "swept_tree_clearance_m": 0.828,
+        "swept_tree_clearance_m": 3.099,
         "candidates_rejected": [
           {
             "angle_deg": 0.0,
             "why": "setpoint moves CLOSER to bird intruder_1 (7.00 -> 3.00 m)"
+          },
+          {
+            "angle_deg": 45.0,
+            "why": "swept path clears tree by only 0.83 m (< 1.00 m required)"
           }
         ],
         "params": {
@@ -6532,8 +6600,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6541,19 +6610,32 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 1.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
-      "policy_reason": "divert +45 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 0.83 m",
+      "policy_reason": "divert -45 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.10 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        37.928932188,
+        52.071067812,
         33.071067812,
         15.0
       ],
@@ -6584,7 +6666,7 @@
         15.0
       ],
       "previous_setpoint_enu": [
-        37.928932188,
+        52.071067812,
         33.071067812,
         15.0
       ],
@@ -6617,8 +6699,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6626,13 +6709,26 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 3.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6702,8 +6798,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6711,13 +6808,26 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 3.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6792,8 +6902,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6801,13 +6912,26 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 1.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +45 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.83 m",
@@ -6877,8 +7001,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6886,13 +7011,26 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 1.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -6943,8 +7081,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6952,13 +7091,26 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 3.0,
+        "range_degenerate": false,
         "n_threats": 2,
         "threat_ids": [
           "intruder_0",
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            25.0,
+            15.0
+          ],
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -7028,8 +7180,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -7037,12 +7190,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 5.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -7093,8 +7254,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -7102,12 +7264,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 7.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -7177,8 +7347,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -7186,12 +7357,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 9.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
@@ -7242,8 +7421,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -7251,12 +7431,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 11.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_1"
+        ],
+        "threat_positions_enu": [
+          [
+            45.0,
+            33.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",

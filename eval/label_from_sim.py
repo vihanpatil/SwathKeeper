@@ -98,7 +98,16 @@ def build_ground_truth(clip_dir: Path):
                 proj = project_bird_oriented(b["pos_m"], d["drone"]["pos_m"], quat_xyzw,
                                              mount_offset, intr)
             entry = {"bird_id": b["bird_id"], "bbox": None, "visible": False,
-                     "range_m": bird_range_m(b, cam_pos)}
+                     "range_m": bird_range_m(b, cam_pos),
+                     # How well this label's POSITION is known, carried through untouched from
+                     # annotate_real_clip. "generator" is the synthetic clips' default: their
+                     # birds[] is where the generator drew the bird, exact by construction. A real
+                     # clip that arrives without the key was labelled by a pre-2026-08-22 annotator
+                     # and its timing is unknown, which scores the same as modeled -- unscoreable.
+                     "label_src": b.get("label_src", "generator" if meta.get("synthetic")
+                                        else "unknown")}
+            if b.get("label_ambiguous"):
+                entry["label_ambiguous"] = True
             if proj is not None:
                 u, v, zc = proj
                 r_px = intr["fx"] * b["physical_radius_m"] / zc
@@ -168,6 +177,14 @@ def main():
 
     n_vis = sum(1 for f in gt["frames"] for b in f["birds"] if b["visible"])
     print(f"[label_from_sim] {len(gt['frames'])} frames, {n_vis} visible bird-boxes -> {out}")
+    srcs = {}
+    for f in gt["frames"]:
+        for b in f["birds"]:
+            if b["visible"]:
+                srcs[b["label_src"]] = srcs.get(b["label_src"], 0) + 1
+    if srcs:
+        print(f"[label_from_sim] visible-box label provenance: "
+              f"{', '.join(f'{v} {k}' for k, v in sorted(srcs.items()))}")
 
     if args.verify:
         if disagreements:

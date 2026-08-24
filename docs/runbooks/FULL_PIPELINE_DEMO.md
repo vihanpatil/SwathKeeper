@@ -153,7 +153,7 @@ models, the drone with its ADR-007 dual-band camera pair (RGB Red + thermal-as-s
 ## Shell 2 — the sensor bridge (Gazebo → ROS 2)
 
 ```bash
-docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
 ```
 *What's happening:* the locked `/fg/*` contract crosses into ROS 2. The two `qos_overrides` are the
 **image** topics only: the bridge publishes RELIABLE by default, and every consumer of these topics
@@ -179,7 +179,7 @@ gate existed — values-only gates cannot catch geometry.
 ## Pre-flight probe — is the render actually alive? (30 seconds, do NOT skip)
 
 ```bash
-docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
 ```
 *What's happening:* one RGB frame is checked for the sky-flat render-degradation signature
 (channel-balanced near-white). A long-lived Gazebo instance can silently degrade after hours of
@@ -192,7 +192,7 @@ that has been up for hours.**
 ## Shell 3 — the micro-ROS agent (start BEFORE SITL — the golden rule)
 
 ```bash
-docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
 ```
 *What's happening:* the DDS doorway ArduPilot's ROS 2 interface walks through. It must be
 listening before SITL boots or the `/ap/*` topics never appear.
@@ -212,7 +212,7 @@ CPU spike earns `Arm: Accels inconsistent` (if you get it anyway: wait 30 s, ret
 ## Shell 6 — the NDVI fusion node (start it BEFORE Shell 7)
 
 ```bash
-docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node'
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.ndvi_node'
 ```
 *What's happening:* Red + synthetic-NIR frames pair by stamp and fuse into the authoritative
 `/fg/ndvi/image` (NDVI = (NIR−Red)/(NIR+Red), per pixel, live). That topic's stamp is the georef
@@ -226,7 +226,7 @@ design, which is not a fault.
 ## Shell 7 — the clip recorder (the evidence)
 
 ```bash
-docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
 ```
 *What's happening:* every fused frame is written in the spike schema with a pose selected by
 **gz-clock stamp pairing** — the recorder streams Gazebo's clock natively (a `gz topic`

@@ -1,0 +1,19 @@
+{
+ "schema_version": "1.1",
+ "driver": "scripts/drive_birds.py",
+ "written_utc": "2026-08-23T07:38:36Z",
+ "world": "farmguard_field",
+ "clock": "sim",
+ "t0_sim_s": 110.339,
+ "rate_hz": 2.0,
+ "config": "/workspace/fieldguard/config/birds/farm_world_birds.json",
+ "config_name": "farm_world_birds.json",
+ "bird_ids": [
+  "bird_0",
+  "bird_1",
+  "bird_2"
+ ],
+ "applied_log": "bird_drive_20260823T073836Z_applied.jsonl",
+ "applied_log_schema_version": "1.0",
+ "note": "label a clip with: python3 eval/annotate_real_clip.py --clip <dir> --sidecar <this file> -- which replays applied_log (what the renderer was SHOWN). Without that log the annotator can only model pose_at(frame.stamp_sim_s - t0_sim_s), which is what the driver ASKED for and lands ~0.4-0.8 s ahead of the render."
+}

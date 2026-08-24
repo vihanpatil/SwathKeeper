@@ -1,0 +1,17 @@
+{
+ "schema_version": "1.0",
+ "driver": "scripts/drive_birds.py",
+ "written_utc": "2026-08-22T03:17:50Z",
+ "world": "farmguard_field",
+ "clock": "sim",
+ "t0_sim_s": 44.801,
+ "rate_hz": 2.0,
+ "config": "/workspace/fieldguard/config/birds/farm_world_birds.json",
+ "config_name": "farm_world_birds.json",
+ "bird_ids": [
+  "bird_0",
+  "bird_1",
+  "bird_2"
+ ],
+ "note": "bird trajectory time for a recorded frame = frame.stamp_sim_s - t0_sim_s; label a clip with: python3 eval/annotate_real_clip.py --clip <dir> --sidecar <this file>"
+}

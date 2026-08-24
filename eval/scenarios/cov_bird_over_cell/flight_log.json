@@ -5445,8 +5445,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5454,12 +5455,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 12.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -5510,8 +5519,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5519,12 +5529,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 10.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -5594,8 +5612,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5603,12 +5622,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 8.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -5659,8 +5686,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5668,12 +5696,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 6.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -5743,8 +5779,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5752,12 +5789,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 4.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -5808,8 +5853,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5817,12 +5863,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 2.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -5852,30 +5906,11 @@
     {
       "seq": 54,
       "tick": 44,
-      "kind": "relatch",
-      "setpoint_enu": [
-        20.0,
-        29.999963268,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        30.0,
-        44.0,
-        15.0
-      ],
-      "offset_m": 17.204680424,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 55,
-      "tick": 44,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        20.0,
-        29.999963268,
+        30.0,
+        44.0,
         15.0
       ],
       "verdict": "accepted",
@@ -5892,8 +5927,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5901,12 +5937,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 0.0,
+        "range_degenerate": true,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 5.07 m",
@@ -5916,10 +5960,10 @@
         29.999963268,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_degenerate"
     },
     {
-      "seq": 56,
+      "seq": 55,
       "tick": 45,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -5934,7 +5978,7 @@
       "decision": "divert"
     },
     {
-      "seq": 57,
+      "seq": 56,
       "tick": 45,
       "kind": "relatch",
       "setpoint_enu": [
@@ -5943,17 +5987,17 @@
         15.0
       ],
       "previous_setpoint_enu": [
-        20.0,
-        29.999963268,
+        30.0,
+        44.0,
         15.0
       ],
-      "offset_m": 15.620471133,
+      "offset_m": 26.0,
       "relatch_threshold_m": 3.0,
       "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
       "track_id": "intruder_0"
     },
     {
-      "seq": 58,
+      "seq": 57,
       "tick": 45,
       "kind": "maneuver",
       "decision": "divert",
@@ -5976,8 +6020,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5985,12 +6030,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 2.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -6003,7 +6056,7 @@
       "latch_action": "relatch"
     },
     {
-      "seq": 59,
+      "seq": 58,
       "tick": 46,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6018,7 +6071,7 @@
       "decision": "divert"
     },
     {
-      "seq": 60,
+      "seq": 59,
       "tick": 46,
       "kind": "maneuver",
       "decision": "divert",
@@ -6041,8 +6094,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6050,12 +6104,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 4.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -6068,7 +6130,7 @@
       "latch_action": "recommand_latched"
     },
     {
-      "seq": 61,
+      "seq": 60,
       "tick": 47,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6083,7 +6145,7 @@
       "decision": "divert"
     },
     {
-      "seq": 62,
+      "seq": 61,
       "tick": 47,
       "kind": "relatch",
       "setpoint_enu": [
@@ -6102,7 +6164,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 63,
+      "seq": 62,
       "tick": 47,
       "kind": "maneuver",
       "decision": "divert",
@@ -6125,8 +6187,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6134,12 +6197,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 6.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -6152,7 +6223,7 @@
       "latch_action": "relatch"
     },
     {
-      "seq": 64,
+      "seq": 63,
       "tick": 48,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6167,7 +6238,7 @@
       "decision": "divert"
     },
     {
-      "seq": 65,
+      "seq": 64,
       "tick": 48,
       "kind": "maneuver",
       "decision": "divert",
@@ -6190,8 +6261,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6199,12 +6271,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 8.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -6217,7 +6297,7 @@
       "latch_action": "recommand_latched"
     },
     {
-      "seq": 66,
+      "seq": 65,
       "tick": 49,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6232,7 +6312,7 @@
       "decision": "divert"
     },
     {
-      "seq": 67,
+      "seq": 66,
       "tick": 49,
       "kind": "relatch",
       "setpoint_enu": [
@@ -6251,7 +6331,7 @@
       "track_id": "intruder_0"
     },
     {
-      "seq": 68,
+      "seq": 67,
       "tick": 49,
       "kind": "maneuver",
       "decision": "divert",
@@ -6274,8 +6354,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6283,12 +6364,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 10.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -6301,7 +6390,7 @@
       "latch_action": "relatch"
     },
     {
-      "seq": 69,
+      "seq": 68,
       "tick": 50,
       "kind": "detection",
       "track_id": "intruder_0",
@@ -6316,7 +6405,7 @@
       "decision": "divert"
     },
     {
-      "seq": 70,
+      "seq": 69,
       "tick": 50,
       "kind": "maneuver",
       "decision": "divert",
@@ -6339,8 +6428,9 @@
           "threat_radius_m": 12.0,
           "vertical_threat_m": 6.0,
           "divert_distance_m": 10.0,
-          "lateral_tree_margin_m": 0.0,
+          "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
+          "degenerate_range_m": 1.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6348,12 +6438,20 @@
           ],
           "field_margin_m": 1.0,
           "min_confidence": 0.0,
-          "max_detection_age_s": null
+          "max_detection_age_s": 1.0
         },
         "trigger_range_m": 12.0,
+        "range_degenerate": false,
         "n_threats": 1,
         "threat_ids": [
           "intruder_0"
+        ],
+        "threat_positions_enu": [
+          [
+            30.0,
+            30.0,
+            15.0
+          ]
         ]
       },
       "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
@@ -6366,7 +6464,7 @@
       "latch_action": "recommand_latched"
     },
     {
-      "seq": 71,
+      "seq": 70,
       "tick": 51,
       "kind": "resume",
       "trigger": "threat_cleared",
@@ -6380,7 +6478,7 @@
       ]
     },
     {
-      "seq": 72,
+      "seq": 71,
       "tick": 51,
       "kind": "proceed",
       "position_enu": [
@@ -6391,7 +6489,7 @@
       "wp_index": 1
     },
     {
-      "seq": 73,
+      "seq": 72,
       "tick": 52,
       "kind": "proceed",
       "position_enu": [
@@ -6402,7 +6500,7 @@
       "wp_index": 1
     },
     {
-      "seq": 74,
+      "seq": 73,
       "tick": 53,
       "kind": "proceed",
       "position_enu": [
@@ -6413,7 +6511,7 @@
       "wp_index": 1
     },
     {
-      "seq": 75,
+      "seq": 74,
       "tick": 54,
       "kind": "proceed",
       "position_enu": [
@@ -6424,7 +6522,7 @@
       "wp_index": 1
     },
     {
-      "seq": 76,
+      "seq": 75,
       "tick": 55,
       "kind": "proceed",
       "position_enu": [
@@ -6435,7 +6533,7 @@
       "wp_index": 1
     },
     {
-      "seq": 77,
+      "seq": 76,
       "tick": 56,
       "kind": "proceed",
       "position_enu": [
@@ -6446,7 +6544,7 @@
       "wp_index": 1
     },
     {
-      "seq": 78,
+      "seq": 77,
       "tick": 57,
       "kind": "proceed",
       "position_enu": [
@@ -6457,7 +6555,7 @@
       "wp_index": 1
     },
     {
-      "seq": 79,
+      "seq": 78,
       "tick": 58,
       "kind": "proceed",
       "position_enu": [
@@ -6468,7 +6566,7 @@
       "wp_index": 1
     },
     {
-      "seq": 80,
+      "seq": 79,
       "tick": 59,
       "kind": "proceed",
       "position_enu": [
@@ -6479,7 +6577,7 @@
       "wp_index": 2
     },
     {
-      "seq": 81,
+      "seq": 80,
       "tick": 60,
       "kind": "proceed",
       "position_enu": [
@@ -6490,7 +6588,7 @@
       "wp_index": 2
     },
     {
-      "seq": 82,
+      "seq": 81,
       "tick": 61,
       "kind": "proceed",
       "position_enu": [
@@ -6501,7 +6599,7 @@
       "wp_index": 2
     },
     {
-      "seq": 83,
+      "seq": 82,
       "tick": 62,
       "kind": "proceed",
       "position_enu": [
@@ -6512,7 +6610,7 @@
       "wp_index": 2
     },
     {
-      "seq": 84,
+      "seq": 83,
       "tick": 63,
       "kind": "proceed",
       "position_enu": [
@@ -6523,7 +6621,7 @@
       "wp_index": 2
     },
     {
-      "seq": 85,
+      "seq": 84,
       "tick": 64,
       "kind": "proceed",
       "position_enu": [
@@ -6534,7 +6632,7 @@
       "wp_index": 2
     },
     {
-      "seq": 86,
+      "seq": 85,
       "tick": 65,
       "kind": "proceed",
       "position_enu": [
@@ -6545,7 +6643,7 @@
       "wp_index": 2
     },
     {
-      "seq": 87,
+      "seq": 86,
       "tick": 66,
       "kind": "proceed",
       "position_enu": [
@@ -6556,7 +6654,7 @@
       "wp_index": 2
     },
     {
-      "seq": 88,
+      "seq": 87,
       "tick": 67,
       "kind": "proceed",
       "position_enu": [
@@ -6567,7 +6665,7 @@
       "wp_index": 2
     },
     {
-      "seq": 89,
+      "seq": 88,
       "tick": 68,
       "kind": "proceed",
       "position_enu": [
@@ -6578,7 +6676,7 @@
       "wp_index": 2
     },
     {
-      "seq": 90,
+      "seq": 89,
       "tick": 69,
       "kind": "proceed",
       "position_enu": [
@@ -6589,7 +6687,7 @@
       "wp_index": 2
     },
     {
-      "seq": 91,
+      "seq": 90,
       "tick": 70,
       "kind": "proceed",
       "position_enu": [
@@ -6600,7 +6698,7 @@
       "wp_index": 2
     },
     {
-      "seq": 92,
+      "seq": 91,
       "tick": 71,
       "kind": "proceed",
       "position_enu": [
@@ -6611,7 +6709,7 @@
       "wp_index": 2
     },
     {
-      "seq": 93,
+      "seq": 92,
       "tick": 72,
       "kind": "proceed",
       "position_enu": [
@@ -6622,7 +6720,7 @@
       "wp_index": 2
     },
     {
-      "seq": 94,
+      "seq": 93,
       "tick": 73,
       "kind": "proceed",
       "position_enu": [
@@ -6633,7 +6731,7 @@
       "wp_index": 2
     },
     {
-      "seq": 95,
+      "seq": 94,
       "tick": 74,
       "kind": "proceed",
       "position_enu": [
@@ -6644,7 +6742,7 @@
       "wp_index": 2
     },
     {
-      "seq": 96,
+      "seq": 95,
       "tick": 75,
       "kind": "proceed",
       "position_enu": [
@@ -6655,7 +6753,7 @@
       "wp_index": 2
     },
     {
-      "seq": 97,
+      "seq": 96,
       "tick": 76,
       "kind": "proceed",
       "position_enu": [
@@ -6666,7 +6764,7 @@
       "wp_index": 2
     },
     {
-      "seq": 98,
+      "seq": 97,
       "tick": 77,
       "kind": "proceed",
       "position_enu": [
@@ -6677,7 +6775,7 @@
       "wp_index": 2
     },
     {
-      "seq": 99,
+      "seq": 98,
       "tick": 78,
       "kind": "proceed",
       "position_enu": [
@@ -6688,7 +6786,7 @@
       "wp_index": 2
     },
     {
-      "seq": 100,
+      "seq": 99,
       "tick": 79,
       "kind": "proceed",
       "position_enu": [
@@ -6699,7 +6797,7 @@
       "wp_index": 2
     },
     {
-      "seq": 101,
+      "seq": 100,
       "tick": 80,
       "kind": "proceed",
       "position_enu": [
@@ -6710,7 +6808,7 @@
       "wp_index": 2
     },
     {
-      "seq": 102,
+      "seq": 101,
       "tick": 81,
       "kind": "proceed",
       "position_enu": [
@@ -6721,7 +6819,7 @@
       "wp_index": 2
     },
     {
-      "seq": 103,
+      "seq": 102,
       "tick": 82,
       "kind": "proceed",
       "position_enu": [
@@ -6732,7 +6830,7 @@
       "wp_index": 2
     },
     {
-      "seq": 104,
+      "seq": 103,
       "tick": 83,
       "kind": "proceed",
       "position_enu": [
@@ -6743,7 +6841,7 @@
       "wp_index": 2
     },
     {
-      "seq": 105,
+      "seq": 104,
       "tick": 84,
       "kind": "proceed",
       "position_enu": [
@@ -6754,7 +6852,7 @@
       "wp_index": 2
     },
     {
-      "seq": 106,
+      "seq": 105,
       "tick": 85,
       "kind": "proceed",
       "position_enu": [
@@ -6765,7 +6863,7 @@
       "wp_index": 2
     },
     {
-      "seq": 107,
+      "seq": 106,
       "tick": 86,
       "kind": "proceed",
       "position_enu": [
@@ -6776,7 +6874,7 @@
       "wp_index": 2
     },
     {
-      "seq": 108,
+      "seq": 107,
       "tick": 87,
       "kind": "proceed",
       "position_enu": [
@@ -6787,7 +6885,7 @@
       "wp_index": 2
     },
     {
-      "seq": 109,
+      "seq": 108,
       "tick": 88,
       "kind": "proceed",
       "position_enu": [
@@ -6798,7 +6896,7 @@
       "wp_index": 3
     },
     {
-      "seq": 110,
+      "seq": 109,
       "tick": 89,
       "kind": "proceed",
       "position_enu": [
@@ -6809,7 +6907,7 @@
       "wp_index": 3
     },
     {
-      "seq": 111,
+      "seq": 110,
       "tick": 90,
       "kind": "proceed",
       "position_enu": [
@@ -6820,7 +6918,7 @@
       "wp_index": 3
     },
     {
-      "seq": 112,
+      "seq": 111,
       "tick": 91,
       "kind": "proceed",
       "position_enu": [
@@ -6831,7 +6929,7 @@
       "wp_index": 3
     },
     {
-      "seq": 113,
+      "seq": 112,
       "tick": 92,
       "kind": "proceed",
       "position_enu": [
@@ -6842,7 +6940,7 @@
       "wp_index": 3
     },
     {
-      "seq": 114,
+      "seq": 113,
       "tick": 93,
       "kind": "proceed",
       "position_enu": [
@@ -6853,7 +6951,7 @@
       "wp_index": 3
     },
     {
-      "seq": 115,
+      "seq": 114,
       "tick": 94,
       "kind": "proceed",
       "position_enu": [
@@ -6864,7 +6962,7 @@
       "wp_index": 3
     },
     {
-      "seq": 116,
+      "seq": 115,
       "tick": 95,
       "kind": "proceed",
       "position_enu": [
@@ -6875,7 +6973,7 @@
       "wp_index": 3
     },
     {
-      "seq": 117,
+      "seq": 116,
       "tick": 96,
       "kind": "proceed",
       "position_enu": [
@@ -6886,7 +6984,7 @@
       "wp_index": 3
     },
     {
-      "seq": 118,
+      "seq": 117,
       "tick": 97,
       "kind": "proceed",
       "position_enu": [
@@ -6897,7 +6995,7 @@
       "wp_index": 3
     },
     {
-      "seq": 119,
+      "seq": 118,
       "tick": 98,
       "kind": "proceed",
       "position_enu": [
@@ -6908,7 +7006,7 @@
       "wp_index": 3
     },
     {
-      "seq": 120,
+      "seq": 119,
       "tick": 99,
       "kind": "proceed",
       "position_enu": [
@@ -6919,7 +7017,7 @@
       "wp_index": 3
     },
     {
-      "seq": 121,
+      "seq": 120,
       "tick": 100,
       "kind": "proceed",
       "position_enu": [
@@ -6930,7 +7028,7 @@
       "wp_index": 3
     },
     {
-      "seq": 122,
+      "seq": 121,
       "tick": 101,
       "kind": "proceed",
       "position_enu": [
@@ -6941,7 +7039,7 @@
       "wp_index": 3
     },
     {
-      "seq": 123,
+      "seq": 122,
       "tick": 102,
       "kind": "proceed",
       "position_enu": [
@@ -6952,7 +7050,7 @@
       "wp_index": 3
     },
     {
-      "seq": 124,
+      "seq": 123,
       "tick": 103,
       "kind": "proceed",
       "position_enu": [
@@ -6963,7 +7061,7 @@
       "wp_index": 3
     },
     {
-      "seq": 125,
+      "seq": 124,
       "tick": 104,
       "kind": "proceed",
       "position_enu": [
@@ -6974,7 +7072,7 @@
       "wp_index": 3
     },
     {
-      "seq": 126,
+      "seq": 125,
       "tick": 105,
       "kind": "proceed",
       "position_enu": [
@@ -6985,7 +7083,7 @@
       "wp_index": 3
     },
     {
-      "seq": 127,
+      "seq": 126,
       "tick": 106,
       "kind": "proceed",
       "position_enu": [
@@ -6996,7 +7094,7 @@
       "wp_index": 3
     },
     {
-      "seq": 128,
+      "seq": 127,
       "tick": 107,
       "kind": "proceed",
       "position_enu": [
@@ -7007,7 +7105,7 @@
       "wp_index": 3
     },
     {
-      "seq": 129,
+      "seq": 128,
       "tick": 108,
       "kind": "proceed",
       "position_enu": [
@@ -7018,7 +7116,7 @@
       "wp_index": 3
     },
     {
-      "seq": 130,
+      "seq": 129,
       "tick": 109,
       "kind": "proceed",
       "position_enu": [
@@ -7029,7 +7127,7 @@
       "wp_index": 3
     },
     {
-      "seq": 131,
+      "seq": 130,
       "tick": 110,
       "kind": "proceed",
       "position_enu": [
@@ -7040,7 +7138,7 @@
       "wp_index": 3
     },
     {
-      "seq": 132,
+      "seq": 131,
       "tick": 111,
       "kind": "proceed",
       "position_enu": [
@@ -7051,7 +7149,7 @@
       "wp_index": 3
     },
     {
-      "seq": 133,
+      "seq": 132,
       "tick": 112,
       "kind": "proceed",
       "position_enu": [
@@ -7062,7 +7160,7 @@
       "wp_index": 3
     },
     {
-      "seq": 134,
+      "seq": 133,
       "tick": 113,
       "kind": "proceed",
       "position_enu": [
@@ -7073,7 +7171,7 @@
       "wp_index": 3
     },
     {
-      "seq": 135,
+      "seq": 134,
       "tick": 114,
       "kind": "proceed",
       "position_enu": [
@@ -7084,7 +7182,7 @@
       "wp_index": 3
     },
     {
-      "seq": 136,
+      "seq": 135,
       "tick": 115,
       "kind": "proceed",
       "position_enu": [
@@ -7095,7 +7193,7 @@
       "wp_index": 3
     },
     {
-      "seq": 137,
+      "seq": 136,
       "tick": 116,
       "kind": "proceed",
       "position_enu": [
@@ -7106,1015 +7204,1015 @@
       "wp_index": 3
     },
     {
-      "seq": 138,
+      "seq": 137,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 139,
+      "seq": 138,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 140,
+      "seq": 139,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 141,
+      "seq": 140,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 142,
+      "seq": 141,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 143,
+      "seq": 142,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 144,
+      "seq": 143,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 145,
+      "seq": 144,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 146,
+      "seq": 145,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 147,
+      "seq": 146,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 148,
+      "seq": 147,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 149,
+      "seq": 148,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 150,
+      "seq": 149,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 151,
+      "seq": 150,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 152,
+      "seq": 151,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 153,
+      "seq": 152,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 154,
+      "seq": 153,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 155,
+      "seq": 154,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 156,
+      "seq": 155,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 157,
+      "seq": 156,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 158,
+      "seq": 157,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 159,
+      "seq": 158,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 160,
+      "seq": 159,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 161,
+      "seq": 160,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 162,
+      "seq": 161,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 163,
+      "seq": 162,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 164,
+      "seq": 163,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 165,
+      "seq": 164,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 166,
+      "seq": 165,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 167,
+      "seq": 166,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 168,
+      "seq": 167,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 169,
+      "seq": 168,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 170,
+      "seq": 169,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 171,
+      "seq": 170,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 172,
+      "seq": 171,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 173,
+      "seq": 172,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 174,
+      "seq": 173,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 175,
+      "seq": 174,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 176,
+      "seq": 175,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 177,
+      "seq": 176,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 178,
+      "seq": 177,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 179,
+      "seq": 178,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 180,
+      "seq": 179,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 181,
+      "seq": 180,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 182,
+      "seq": 181,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 183,
+      "seq": 182,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 184,
+      "seq": 183,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 185,
+      "seq": 184,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 186,
+      "seq": 185,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 187,
+      "seq": 186,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 188,
+      "seq": 187,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 189,
+      "seq": 188,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 190,
+      "seq": 189,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 191,
+      "seq": 190,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 192,
+      "seq": 191,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 193,
+      "seq": 192,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 194,
+      "seq": 193,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 195,
+      "seq": 194,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 196,
+      "seq": 195,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 197,
+      "seq": 196,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 198,
+      "seq": 197,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 199,
+      "seq": 198,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 200,
+      "seq": 199,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 201,
+      "seq": 200,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 202,
+      "seq": 201,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 203,
+      "seq": 202,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 204,
+      "seq": 203,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 205,
+      "seq": 204,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 206,
+      "seq": 205,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 207,
+      "seq": 206,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 208,
+      "seq": 207,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 209,
+      "seq": 208,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 210,
+      "seq": 209,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 211,
+      "seq": 210,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 212,
+      "seq": 211,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 213,
+      "seq": 212,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 214,
+      "seq": 213,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 215,
+      "seq": 214,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 216,
+      "seq": 215,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 217,
+      "seq": 216,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 218,
+      "seq": 217,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 219,
+      "seq": 218,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 220,
+      "seq": 219,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 221,
+      "seq": 220,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 222,
+      "seq": 221,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 223,
+      "seq": 222,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 224,
+      "seq": 223,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 225,
+      "seq": 224,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 226,
+      "seq": 225,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 227,
+      "seq": 226,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 228,
+      "seq": 227,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 229,
+      "seq": 228,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 230,
+      "seq": 229,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 231,
+      "seq": 230,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 232,
+      "seq": 231,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 233,
+      "seq": 232,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 234,
+      "seq": 233,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 235,
+      "seq": 234,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 236,
+      "seq": 235,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 237,
+      "seq": 236,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 238,
+      "seq": 237,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 239,
+      "seq": 238,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 240,
+      "seq": 239,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 241,
+      "seq": 240,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 242,
+      "seq": 241,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 243,
+      "seq": 242,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 244,
+      "seq": 243,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 245,
+      "seq": 244,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 246,
+      "seq": 245,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 247,
+      "seq": 246,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 248,
+      "seq": 247,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 249,
+      "seq": 248,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 250,
+      "seq": 249,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 251,
+      "seq": 250,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 252,
+      "seq": 251,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 253,
+      "seq": 252,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 254,
+      "seq": 253,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 255,
+      "seq": 254,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 256,
+      "seq": 255,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 257,
+      "seq": 256,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 258,
+      "seq": 257,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 259,
+      "seq": 258,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 260,
+      "seq": 259,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 261,
+      "seq": 260,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 262,
+      "seq": 261,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 263,
+      "seq": 262,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 264,
+      "seq": 263,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 265,
+      "seq": 264,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 266,
+      "seq": 265,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 267,
+      "seq": 266,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 268,
+      "seq": 267,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 269,
+      "seq": 268,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 270,
+      "seq": 269,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 271,
+      "seq": 270,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 272,
+      "seq": 271,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 273,
+      "seq": 272,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 274,
+      "seq": 273,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 275,
+      "seq": 274,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 276,
+      "seq": 275,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 277,
+      "seq": 276,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 278,
+      "seq": 277,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 279,
+      "seq": 278,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 280,
+      "seq": 279,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 281,
+      "seq": 280,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 282,
+      "seq": 281,
       "tick": 116,
       "kind": "divert_audit_summary",
       "n_diverts": 13,

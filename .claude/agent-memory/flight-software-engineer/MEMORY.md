@@ -1,1 +1,4 @@
-- [Node/topic map + coverage-debt/control-param notes](node_topic_map.md) — AP_DDS /ap/* contract, avoidance/NDVI node state, test-flight evidence-yield floor params (2026-08-19)
+- [Node/topic map + coverage-debt/control-param notes](node_topic_map.md) — AP_DDS /ap/* contract, avoidance/NDVI node state, control params (R2/R3 2026-08-24), two-half breach acknowledgement, test-flight floors
+- [Live detection seam (ADR-009) + its offline numbers](detection_seam.md) — one gz clock, apparent-size ray, schema-2 run block + the pinned-pre-seam legacy ratchet, phantom-dodge 8/1256, gate preconditions (QA rounds 1-5)
+- [Throughput counters + what they measured](throughput_instrumentation.md) — the slop lever is DEAD, thermal is NOT render-limited, recorder logic drops nothing (2026-08-22)
+- [Host-quiet is a flight gate](host_quiet_confound.md) — other Docker containers halved both bands and voided a flight; how to tell host load from a code regression

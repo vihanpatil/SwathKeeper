@@ -1,5 +1,29 @@
 # Avoidance Demo — the Live Reactive-Avoidance Loop *(runbook; born Weeks 3-4)*
 
+> ## PARTLY SUPERSEDED (2026-08-24) — read this first
+> **What still stands:** the `--demo` scripted-bird procedure below. It is the deterministic
+> regression arm and the A/B against perception (ADR-013 am. 2), and `avoidance_node --demo` is
+> live code.
+>
+> **What is superseded — do not follow it:** everything here about *bringup and gates*. Use
+> **[AVOIDANCE_REAL_DETECTION.md](AVOIDANCE_REAL_DETECTION.md)** for the detect→avoid flight
+> (`--detect`, the ADOPTED ADR-003 am. 7 detector on the ADR-009 seam, with the full recording
+> pipeline in the same take), and **[FULL_PIPELINE_DEMO.md](FULL_PIPELINE_DEMO.md)** +
+> `scripts/fly_pipeline.sh up` for bringup. Three specific drifts, found live and reported rather
+> than adapted around (ADR-013 am. 11):
+> 1. the Prerequisites below delegate bringup to `docs/archive/WEEK3_VALIDATION.md`, whose SITL line
+>    **lacks `--enable-DDS`** — it produces zero `/ap/*` topics, and the loop then watches a frozen
+>    pose;
+> 2. that archived doc's tree check (`gz topic -l | grep model/tree_row0_0`) is **structurally
+>    stale**: trees and birds are `<static>` models (ADR-012) and advertise no pose topics, so it can
+>    only ever prove a name exists. The current tree gate is `scripts/check_tree_positions.py`, run
+>    post-flight on the stitched heatmap;
+> 3. Shells A-D predate the launcher — the current path is one `fly_pipeline.sh up` plus one
+>    `docker exec`.
+>
+> The Weeks-5-6 future tense in "Honest caveats" is also closed: the real detector landed and is
+> ADOPTED (ADR-003 am. 7).
+
 Run the tested reactive-avoidance loop **live** against ArduPilot SITL + Gazebo: a scripted bird
 forces the drone to leave its lane, dodge (3D-safe), and resume the survey — with coverage-debt
 logged. This is the differentiator moving on the real stack, not just in unit tests.

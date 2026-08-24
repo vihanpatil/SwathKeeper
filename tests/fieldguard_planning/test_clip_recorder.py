@@ -20,7 +20,8 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from fieldguard_planning.clip_recorder import (  # noqa: E402
-    ClipWriter, PoseBuffer, SCHEMA_VERSION, STALE_PAIR_BOUND_S, StreamingClockParser,
+    AIRBORNE_Z_M, ClipWriter, PoseBuffer, RecorderCounters, SCHEMA_VERSION, STALE_PAIR_BOUND_S,
+    StreamingClockParser, nearest_rank_p95,
 )
 from fieldguard_planning.ndvi_fusion import write_fuser_stats  # noqa: E402
 from fieldguard_planning.coverage import build_grid, load_field_polygon  # noqa: E402
@@ -263,6 +264,280 @@ class TestClipWriter(unittest.TestCase):
             self.assertEqual(fuser["fused_count"], 3)           # last known, labelled as frozen
             self.assertIn("STALE", summary["fuser"])
 
+class TestNearestRankP95(unittest.TestCase):
+    def test_no_samples_is_none_not_zero(self):
+        """'the callback never ran' and 'the callback always returned instantly' are opposite
+        diagnoses of a thin clip; 0.0 would merge them."""
+        self.assertIsNone(nearest_rank_p95([]))
+
+    def test_single_sample_is_that_sample(self):
+        self.assertEqual(nearest_rank_p95([7.5]), 7.5)
+
+    def test_nearest_rank_picks_a_value_a_callback_actually_took(self):
+        # 100 samples 1..100: ceil(0.95*100) = 95 -> the 95th smallest.
+        self.assertEqual(nearest_rank_p95([float(i) for i in range(1, 101)]), 95.0)
+
+    def test_order_of_arrival_does_not_matter(self):
+        self.assertEqual(nearest_rank_p95([9.0, 1.0, 5.0]), nearest_rank_p95([1.0, 5.0, 9.0]))
+
+    def test_twenty_samples_never_indexes_past_the_end(self):
+        for n in range(1, 25):
+            self.assertIsNotNone(nearest_rank_p95([float(i) for i in range(n)]))
+
+
+class TestRecorderCounters(unittest.TestCase):
+    """The stage that had NO counter until 2026-08-21: 180 of the demo take's 634 fused frames
+    vanished between publish and poses.jsonl with nothing in any artifact to attribute them."""
+
+    def test_a_fresh_counter_reports_real_zeros_and_absent_timings(self):
+        m = RecorderCounters().to_meta()
+        self.assertTrue(m["present"])
+        self.assertEqual(m["ndvi_msgs_received"], 0)      # a real measurement: nothing arrived
+        self.assertEqual(m["rgb_msgs_received"], 0)
+        self.assertEqual(m["dropped_no_writer"], 0)
+        self.assertEqual(m["dropped_no_pose"], 0)
+        self.assertIsNone(m["on_ndvi_wall_ms_p95"])       # absence: no callback was ever timed
+        self.assertIsNone(m["on_ndvi_wall_ms_max"])
+        self.assertEqual(m["on_ndvi_wall_ms_n"], 0)
+
+    def test_the_attribution_arithmetic_closes(self):
+        """The whole point: received - written - no_writer - no_pose is the loss that is NOT the
+        recorder's own logic, and (fused - received) is the transport hop."""
+        c = RecorderCounters()
+        for _ in range(100):
+            c.ndvi_msgs_received += 1
+        c.dropped_no_writer += 4
+        c.dropped_no_pose += 6
+        written = 90
+        m = c.to_meta()
+        self.assertEqual(m["ndvi_msgs_received"] - written - m["dropped_no_writer"]
+                         - m["dropped_no_pose"], 0)
+
+    def test_wall_ms_p95_and_max_track_the_distribution(self):
+        c = RecorderCounters()
+        for v in list(range(1, 100)) + [900.0]:
+            c.observe_on_ndvi_wall_ms(float(v))
+        m = c.to_meta()
+        self.assertEqual(m["on_ndvi_wall_ms_max"], 900.0)
+        self.assertEqual(m["on_ndvi_wall_ms_n"], 100)
+        self.assertLess(m["on_ndvi_wall_ms_p95"], 900.0)   # one outlier must not become the p95
+
+    def test_max_survives_a_truncated_percentile_window(self):
+        """p95 is over the most recent window; max is over the WHOLE flight. A blocking write early
+        in a long flight must still be visible."""
+        c = RecorderCounters(wall_ms_window=10)
+        c.observe_on_ndvi_wall_ms(500.0)
+        for _ in range(50):
+            c.observe_on_ndvi_wall_ms(1.0)
+        m = c.to_meta()
+        self.assertEqual(m["on_ndvi_wall_ms_max"], 500.0)
+        self.assertEqual(m["on_ndvi_wall_ms_p95"], 1.0)
+        self.assertEqual(m["on_ndvi_wall_ms_n"], 51)       # total observed, not window size
+        self.assertEqual(m["on_ndvi_wall_ms_window"], 10)
+
+    def test_every_value_is_a_plain_json_type_even_from_numpy_inputs(self):
+        """json.dumps(np.int64) raises TypeError. This dict is written inside the recorder's
+        finalize; a raise there loses the clip the flight was flown for."""
+        c = RecorderCounters()
+        c.ndvi_msgs_received = np.int64(634)
+        c.rgb_msgs_received = np.int32(217)
+        c.observe_on_ndvi_wall_ms(np.float32(12.5))
+        m = c.to_meta()
+        for k, v in m.items():
+            self.assertIn(type(v), (int, float, bool, str, type(None)), msg=f"{k} is {type(v)}")
+        self.assertEqual(json.loads(json.dumps(m))["ndvi_msgs_received"], 634)
+
+
+class TestAirborneSummary(unittest.TestCase):
+    """The round's target metric, made readable off the artifact instead of re-derived by hand from
+    poses.jsonl (which is how the demo take's 0.407 Hz was produced)."""
+
+    def _writer(self, td):
+        return ClipWriter(Path(td), CAM)
+
+    def _add(self, w, stamp, z):
+        w.add_frame(stamp, np.zeros((48, 64), np.float32), (0.0, 0.0, z), IDENTITY_XYZW, 0.0)
+
+    def test_reproduces_the_demo_takes_53_of_454_split_and_its_published_cadence(self):
+        """Fixture from eval/results/clips/real_flight_20260821T045848Z: 401 frames parked at
+        (0,0,-0.0) around a contiguous run of 53 airborne frames spanning sim 430.8 -> 558.6 s, and
+        the 0.407 Hz that ADR-003 amendment 2 and ADR-015 are both quoted against."""
+        with tempfile.TemporaryDirectory() as td:
+            w = self._writer(td)
+            for i in range(274):                                   # pre-arm, parked at home
+                self._add(w, 10.2 + i * 1.5, -0.0)
+            for i in range(53):                                    # airborne
+                self._add(w, 430.8 + i * (127.8 / 52.0), 2.87 + i * 0.2)
+            for i in range(127):                                   # post-land, parked again
+                self._add(w, 560.0 + i * 2.2, -0.0)
+            summary = w.finalize()
+            meta = json.loads((Path(td) / "meta.json").read_text())
+
+            air = meta["airborne"]
+            self.assertEqual(air["frames"], 53)
+            self.assertEqual(air["frames_total"], 454)
+            self.assertEqual(air["span_s"], 127.8)
+            self.assertAlmostEqual(air["cadence_hz"], 0.407, places=3)
+            self.assertEqual(air["z_threshold_m"], AIRBORNE_Z_M)
+            self.assertEqual(summary["n_airborne"], 53)
+            self.assertAlmostEqual(summary["airborne_cadence_hz"], 0.407, places=3)
+
+    def test_a_clip_flown_entirely_on_the_ground_reports_zero_frames_and_no_cadence(self):
+        """Zero airborne frames is a real measurement; a cadence over them is not. None, not 0.0 --
+        a rate with no denominator is EVIDENCE INSUFFICIENT."""
+        with tempfile.TemporaryDirectory() as td:
+            w = self._writer(td)
+            for i in range(5):
+                self._add(w, float(i), 0.0)
+            w.finalize()
+            air = json.loads((Path(td) / "meta.json").read_text())["airborne"]
+            self.assertEqual(air["frames"], 0)
+            self.assertIsNone(air["cadence_hz"])
+            self.assertIsNone(air["span_s"])
+            self.assertIsNone(air["first_stamp_sim_s"])
+
+    def test_one_airborne_frame_has_no_cadence(self):
+        with tempfile.TemporaryDirectory() as td:
+            w = self._writer(td)
+            self._add(w, 100.0, 15.0)
+            w.finalize()
+            air = json.loads((Path(td) / "meta.json").read_text())["airborne"]
+            self.assertEqual(air["frames"], 1)
+            self.assertEqual(air["span_s"], 0.0)
+            self.assertIsNone(air["cadence_hz"])
+
+    def test_the_threshold_is_on_magnitude_so_a_negative_down_axis_still_counts(self):
+        """Telemetry frame_ids lie (ADR-005) and a sign flip upstream would otherwise silently
+        report a whole flight as parked."""
+        with tempfile.TemporaryDirectory() as td:
+            w = self._writer(td)
+            self._add(w, 0.0, -15.0)
+            self._add(w, 1.0, 15.0)
+            w.finalize()
+            self.assertEqual(json.loads((Path(td) / "meta.json").read_text())["airborne"]["frames"],
+                             2)
+
+    def test_a_frame_exactly_at_the_threshold_is_not_airborne(self):
+        with tempfile.TemporaryDirectory() as td:
+            w = self._writer(td)
+            self._add(w, 0.0, AIRBORNE_Z_M)
+            w.finalize()
+            self.assertEqual(json.loads((Path(td) / "meta.json").read_text())["airborne"]["frames"],
+                             0)
+
+    def test_the_airborne_window_is_the_span_not_the_clip(self):
+        """Frames recorded after landing must not stretch the denominator -- that is exactly how a
+        whole-clip 0.547 Hz gets quoted where the comparable number is 0.407."""
+        with tempfile.TemporaryDirectory() as td:
+            w = self._writer(td)
+            self._add(w, 0.0, 0.0)
+            self._add(w, 10.0, 15.0)
+            self._add(w, 20.0, 15.0)
+            self._add(w, 900.0, 0.0)
+            w.finalize()
+            air = json.loads((Path(td) / "meta.json").read_text())["airborne"]
+            self.assertEqual(air["span_s"], 10.0)
+            self.assertEqual(air["cadence_hz"], 0.1)
+
+
+class TestMetaRecorderBlock(unittest.TestCase):
+    def test_meta_carries_the_recorder_counters(self):
+        with tempfile.TemporaryDirectory() as td:
+            c = RecorderCounters()
+            c.ndvi_msgs_received = 600
+            c.rgb_msgs_received = 900
+            c.dropped_no_writer = 3
+            c.dropped_no_pose = 1
+            c.observe_on_ndvi_wall_ms(42.0)
+            w = ClipWriter(Path(td), CAM)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize(recorder_counters=c.to_meta())
+
+            rec = json.loads((Path(td) / "meta.json").read_text())["recorder"]
+            self.assertTrue(rec["present"])
+            self.assertEqual(rec["ndvi_msgs_received"], 600)
+            self.assertEqual(rec["rgb_msgs_received"], 900)
+            self.assertEqual((rec["dropped_no_writer"], rec["dropped_no_pose"]), (3, 1))
+            self.assertEqual(rec["on_ndvi_wall_ms_max"], 42.0)
+
+    def test_a_clip_finalized_without_counters_says_absent_and_fabricates_nothing(self):
+        """Same rule as the fuser block: a fabricated ndvi_msgs_received: 0 is indistinguishable
+        from a recorder whose subscription never fired."""
+        with tempfile.TemporaryDirectory() as td:
+            w = ClipWriter(Path(td), CAM)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize()
+            rec = json.loads((Path(td) / "meta.json").read_text())["recorder"]
+            self.assertFalse(rec["present"])
+            self.assertNotIn("ndvi_msgs_received", rec)
+            self.assertIn("reason", rec)
+
+    def test_the_fuser_and_recorder_blocks_are_independent(self):
+        """A dead fuser must not take the recorder's numbers with it, and vice versa -- they are
+        the two halves of the attribution."""
+        with tempfile.TemporaryDirectory() as td:
+            c = RecorderCounters()
+            c.ndvi_msgs_received = 7
+            w = ClipWriter(Path(td) / "clip", CAM,
+                           fuser_stats_path=Path(td) / "never_written.json")
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize(recorder_counters=c.to_meta())
+            meta = json.loads((Path(td) / "clip" / "meta.json").read_text())
+            self.assertFalse(meta["fuser"]["present"])
+            self.assertTrue(meta["recorder"]["present"])
+            self.assertEqual(meta["recorder"]["ndvi_msgs_received"], 7)
+
+
+class TestMetaSchemaContract(unittest.TestCase):
+    """A DELIBERATE literal pin. Every block here was added because a stage of the pipeline was
+    unattributable without it, so a silent bump that drops one should fail a test rather than a
+    flight three days later."""
+
+    def test_schema_version_is_pinned_to_a_literal(self):
+        self.assertEqual(SCHEMA_VERSION, "1.4")
+
+    def test_meta_carries_all_four_attribution_blocks(self):
+        with tempfile.TemporaryDirectory() as td:
+            w = ClipWriter(Path(td), CAM)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize(recorder_counters=RecorderCounters().to_meta())
+            meta = json.loads((Path(td) / "meta.json").read_text())
+        for block in ("fuser", "recorder", "airborne", "dds"):
+            self.assertIn(block, meta, msg=f"meta.json lost the '{block}' block")
+
+    def test_meta_dds_block_records_the_transport_stack(self):
+        """1.4: which transport stack the clip was recorded on. The round-3 lever's failure mode is
+        silent (malformed XML falls back to defaults with only a log line), so without this a
+        lever flight reading 20 % delivery cannot be told apart from one where the lever never
+        loaded."""
+        with tempfile.TemporaryDirectory() as td:
+            w = ClipWriter(Path(td), CAM)
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize(recorder_counters=RecorderCounters().to_meta())
+            dds = json.loads((Path(td) / "meta.json").read_text())["dds"]
+        for key in ("rmw", "profiles_file", "profiles_file_present", "shm_segments",
+                    "shm_capacity_bytes", "unreadable"):
+            self.assertIn(key, dds)
+        # min AND max both ride along -- max proves a profile loaded, min proves none was missed.
+        self.assertIn("min_bytes", dds["shm_segments"])
+        self.assertIn("max_bytes", dds["shm_segments"])
+
+    def test_the_dds_snapshot_is_taken_at_construction_not_at_finalize(self):
+        """By finalize the other panes may already be torn down and their segments gone, so
+        min_bytes could no longer see a participant that missed the profile."""
+        with tempfile.TemporaryDirectory() as td:
+            w = ClipWriter(Path(td), CAM)
+            self.assertIsInstance(w.dds, dict)
+            sentinel = {"rmw": "sentinel", "shm_segments": {"count": 0, "min_bytes": None,
+                                                            "max_bytes": None}}
+            w.dds = sentinel
+            w.add_frame(0.0, np.zeros((48, 64), np.float32), (0, 0, 15.0), IDENTITY_XYZW, 0.0)
+            w.finalize()
+            self.assertEqual(
+                json.loads((Path(td) / "meta.json").read_text())["dds"]["rmw"], "sentinel")
+
+
+class TestMetaHonesty(unittest.TestCase):
     def test_meta_honesty_fields(self):
         with tempfile.TemporaryDirectory() as td:
             w = ClipWriter(Path(td), CAM)

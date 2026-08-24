@@ -70,19 +70,31 @@ def load_camera_config(path: Path = DEFAULT_NDVI_CAMERA_CONFIG) -> dict:
 # --------------------------------------------------------------------------------------------------
 # Band rescaling (config/ndvi_camera.json "camera" / "thermal" blocks)
 # --------------------------------------------------------------------------------------------------
+# The whole band-fusion path works in float32, not float64 (2026-08-21). The published output has
+# always been float32 (`compute_ndvi` returns `.astype(np.float32)`, `/fg/ndvi/image` is 32FC1, the
+# clip's .npy is float32), so float64 intermediates were ~8 MB of allocation per fused frame that
+# was thrown away at the last line -- on the single-threaded executor whose next job is draining a
+# 921,600 B image subscription. NOT bit-identical, and the bound is pinned by test rather than
+# asserted: worst case 3.5e-5 over a 640x480 adversarial-random frame (catastrophic cancellation in
+# (nir-red) when both bands are near-equal), 0 to 3e-8 on the four material calibration points this
+# world actually renders. Four orders of magnitude below every decision boundary downstream (the
+# bird/soil gap is 0.360, the provisional detector threshold -0.61, the canopy lift +0.869).
+NDVI_DTYPE = np.float32
+
+
 def rescale_red(red_u8: np.ndarray) -> np.ndarray:
-    """R8G8B8 channel-0 (0..255) -> reflectance proxy rho_red in [0,1]."""
-    return red_u8.astype(np.float64) / 255.0
+    """R8G8B8 channel-0 (0..255) -> reflectance proxy rho_red in [0,1] (float32, see NDVI_DTYPE)."""
+    return red_u8.astype(NDVI_DTYPE) / NDVI_DTYPE(255.0)
 
 
 def rescale_nir(nir_u16: np.ndarray, min_temp_k: float, max_temp_k: float,
                 resolution_k_per_count: float) -> np.ndarray:
-    """mono16 thermal raw counts -> reflectance proxy rho_nir in [0,1], per
-    config/ndvi_camera.json thermal.decode_formula: T_kelvin = raw * resolution_k_per_count;
+    """mono16 thermal raw counts -> reflectance proxy rho_nir in [0,1] (float32, see NDVI_DTYPE),
+    per config/ndvi_camera.json thermal.decode_formula: T_kelvin = raw * resolution_k_per_count;
     rho_nir = clip((T_kelvin - min_temp_k) / (max_temp_k - min_temp_k), 0, 1)."""
-    t_kelvin = nir_u16.astype(np.float64) * resolution_k_per_count
-    span = max_temp_k - min_temp_k
-    rho = (t_kelvin - min_temp_k) / span
+    t_kelvin = nir_u16.astype(NDVI_DTYPE) * NDVI_DTYPE(resolution_k_per_count)
+    span = NDVI_DTYPE(max_temp_k - min_temp_k)
+    rho = (t_kelvin - NDVI_DTYPE(min_temp_k)) / span
     return np.clip(rho, 0.0, 1.0)
 
 
@@ -97,7 +109,10 @@ def compute_ndvi(rho_red: np.ndarray, rho_nir: np.ndarray) -> Tuple[np.ndarray, 
     safe_denom = np.where(zero_mask, 1.0, denom)  # placeholder only; overwritten by the mask below
     ndvi = (rho_nir - rho_red) / safe_denom
     ndvi = np.where(zero_mask, NDVI_ZERO_DENOM_SENTINEL, ndvi)
-    return ndvi.astype(np.float32), zero_denom_count
+    # `.astype` is a no-op copy when the inputs are already NDVI_DTYPE (the live path) and a real
+    # cast when a caller hands in float64 (offline tooling, tests) -- either way the published
+    # contract is float32.
+    return ndvi.astype(NDVI_DTYPE), zero_denom_count
 
 
 # --------------------------------------------------------------------------------------------------
@@ -263,7 +278,13 @@ def pair_and_fuse_stream(rgb_frames: Sequence[StampedFrame], nir_frames: Sequenc
 # case ("died mid-flight") that must not read as silence. Same shape and home as ADR-012's
 # `bird_drive_*.json` sidecar: a gitignored JSON file under `eval/results/`, on the bind mount, so
 # it is readable from the host as well as from inside the container.
-FUSER_STATS_SCHEMA_VERSION = "1.0"
+# 1.1 (2026-08-21) adds, additively: `nir_camera_info_frames` (the NIR band's missing denominator --
+# camera_info is deliberately left RELIABLE at the bridge, so it measures the SENSOR TICK and not
+# image transport), `unpaired_red_count` (named at last, instead of left as a subtraction a reader
+# has to know to perform), and `unpaired_red_nearest_nir` (the one-off slop diagnostic). Every 1.0
+# key is unchanged; `read_fuser_stats` passes through whatever it finds, so an old sidecar still
+# reads.
+FUSER_STATS_SCHEMA_VERSION = "1.1"
 FUSER_STATS_PATH = REPO_ROOT / "eval" / "results" / "ndvi_fuser_stats.json"
 FUSER_STATS_PERIOD_S = 1.0   # one small write per second, off the image path
 FUSER_STATS_STALE_S = 5.0    # five missed writes: the fuser is gone, not merely quiet

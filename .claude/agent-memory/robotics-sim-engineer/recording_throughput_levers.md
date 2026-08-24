@@ -1,42 +1,45 @@
 ---
 name: recording-throughput-levers
-description: Fused-frame recording throughput on the software-rendered stack — the 5→2 Hz camera lever was measured live 2026-08-19 and DISPROVEN (16x worse); delivery is bursty, not rate-limited; and no artifact separates "never fused" from "recorder dropped it".
+description: Recording throughput is CLOSED (2026-08-22, Fast DDS SHM segment root cause, 5.0 Hz flat) — plus the levers tried on the way, including the 5→2 Hz camera rate that was measured and DISPROVEN (16x worse) and must never be retried.
 metadata:
   type: project
 ---
 
-**Do not re-run the `camera.update_rate_hz` 5 → 2 experiment without new evidence.** It was measured
-live on 2026-08-19 (one `scripts/fly_pipeline.sh test-flight` gate, same `test_2lane` mission, same
-launcher) and made recording throughput **16x worse**: 3 fused frames / 1 of 720 cells at 2 Hz vs
-48 / 291 at 5 Hz over a comparable sim-time window. Reverted the same session; `5.0` now stands on
-measured grounds and `config/ndvi_camera.json`'s `update_rate_note` carries the basis.
+**STATUS: CLOSED 2026-08-22 (ADR-013 am. 9).** Root cause was **not** render, pairing, or the
+recorder: Fast DDS 2.6.11 fragments samples at 65,384 B even over shared memory, and the default
+512 KiB SHM segment holds 8 fragment slots against the 10-19 a ~900 KB frame needs — overflow is
+discarded **silently**. Fix = `config/dds/fg_fastdds.xml` (SHM segment → 8 MiB) + `--shm-size=1g` on
+the container (`scripts/sim_docker_run.sh`), injected in-pane with runbook parity intact. Result:
+**100 % delivery on both bands, zero unpaired reds, end-to-end 96.5 %, painting cadence 0.41 → 5.0 Hz
+flat** (the full sensor tick), first 720/720 maps.
 
-**Why:** the hypothesis (halve render+transport load → the starved pipeline delivers a larger
-fraction) was reasonable and is wrong on this stack. The load relief was real and measurable — RTF
-went *up* slightly (0.585 vs 0.561) and the mission flew identically — but delivery still collapsed.
-Best available explanation: **delivery is bursty, not steadily rate-limited.** The pipeline
-intermittently runs at the configured ceiling and harvests whole bursts (9 of the 5 Hz baseline's 47
-inter-frame gaps ≤ 0.4 s, 4 exactly at the 0.2 s ceiling); a 2 Hz ceiling (0.5 s) cannot harvest a
-burst at all. That explains part of a 16x, not all of it — the mechanism is **unproven on n=1**.
+**How to apply now:**
+- **5.0 Hz is the honest cadence input** for anything that asks "how many frames will we get" —
+  notably `scripts/predict_bird_visibility.py --fps`. Before am. 9 the truthful number was 0.41 Hz.
+- Two preconditions travel with it and are easy to lose: the container must be created with
+  `--shm-size=1g` (recreate via `scripts/sim_docker_run.sh`), and every pane must export
+  `FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml`. A container or
+  pane missing either silently returns to the old regime; `meta["dds"]` in the clip makes it
+  checkable after the fact.
+- Not yet proven at boustrophedon length (5.0 Hz was measured on the 3-min `test_2lane` and on the
+  flagship take; run-age decay is still an open question, ADR-013 am. 7).
 
-**How to apply:**
-- Remaining levers for ROADMAP item 1 are **bridge QoS** and a leaner `ndvi_node` publish path.
-  Lowering the camera rate is spent.
-- **Instrument before the next attempt.** Nothing today persists the fuser's
-  `fused_count`/`dropped_pair_count` (they live only in the ndvi node's console, and
-  `pane_tails["ndvi"]` comes back empty in *every* gate record), so no artifact distinguishes "the
-  fusion node never fused" from "the recorder dropped what it fused". Persist those counters into
-  the gate record or clip `meta.json` first; otherwise the next lever is guessed, not diagnosed.
-- **The comparison method is reusable and cheap:** the `bird_drive_*.json` sidecar's `t0_sim_s` +
-  its `written_utc` is a hard sim↔wall anchor, so RTF and the recorder's sim-time exposure window
-  can be reconstructed from committed artifacts alone. Compare *delivered / expected over the
-  sim-time window*, never raw frame counts — and compare like-for-like missions (a 2-lane strip
-  cannot be judged against a full boustrophedon's tree-check bar).
-- Evidence: `eval/results/testflight_gate_20260819T021136Z.json` (2 Hz) vs
-  `eval/results/testflight_gate_20260818T222031Z.json` (5 Hz baseline) + their clips' meta/poses/
-  heatmap. Numbers table in `docs/BUILD_LOG.md`.
-- **Host-quiet is confirmed load-bearing but was NOT the confound here**: birds' `set_pose` failure
-  rate (10/522 vs 6/531) and RTF are usable independent load proxies when judging a suspect run.
+**Do not re-run the `camera.update_rate_hz` 5 → 2 experiment.** Measured live 2026-08-19 (one
+`fly_pipeline.sh test-flight`, same `test_2lane` mission): **16x worse** — 3 fused frames / 1 of 720
+cells at 2 Hz vs 48 / 291 at 5 Hz, with RTF slightly *up* (0.585 vs 0.561) and the mission flown
+identically. Reverted the same session; the basis lives in `config/ndvi_camera.json`'s
+`update_rate_note`. In hindsight the mechanism is the fragment-overflow one above: a lower ceiling
+cannot harvest the bursts that were getting through.
 
-Related: [[adr007-ndvi-sensor-mount]] (the sensor the rate belongs to), [[macos-arm64-bringup-gotchas]]
-(why the render is starved in the first place — no GPU passthrough, llvmpipe), [[bringup-file-layout]].
+**Kept levers from the earlier rounds (nothing reverted):** bridge QoS `best_effort` as a per-topic
+ROS parameter (NOT a bridge-yaml key at the pinned SHA) and gating the `/fg/ndvi/preview` publish on
+`get_subscription_count` — together 10.5 % → 31.1 % red/tick on 2026-08-21; L1 (the NDVI→recorder
+hop) closed 62.5 % → 0 %.
+
+**Two traps that outlived the fix:** judge a lever by `red_frames / camera_info_frames`, never by
+`cells_imaged` (judge a *map* by painting frames — the demo take recorded 454 frames of which only
+51 painted a cell); and compare like-for-like missions.
+
+Related: [[adr007-ndvi-sensor-mount]] (the sensor the rate belongs to),
+[[macos-arm64-bringup-gotchas]] (why the render is starved at all), [[bird-ground-truth-track]],
+[[avoidance-real-detection-take]].

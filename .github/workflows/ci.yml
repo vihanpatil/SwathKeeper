@@ -63,14 +63,17 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests/fieldguard_planning -v
 
-      - name: Launcher test suite (tests/test_fly_pipeline.py -- host-side, no sim)
+      - name: Host-side test suite (tests/test_*.py -- launcher + CI-gate config, no sim)
         run: |
           set -euo pipefail
-          # Lives in tests/, not tests/fieldguard_planning/, on purpose (see its own docstring):
-          # it tests scripts/fly_pipeline.sh, a host-side shell script, not the planning package.
-          # The discover -s above scopes to tests/fieldguard_planning and never walks this file --
-          # a second discover rooted one level up, filtered to just this file, is the fix.
-          python3 -m unittest discover -s tests -p 'test_fly_pipeline.py' -v
+          # These live in tests/, not tests/fieldguard_planning/, on purpose (see their docstrings):
+          # they test host-side artifacts -- scripts/fly_pipeline.sh and THIS workflow file -- not the
+          # planning package. The discover -s above scopes to tests/fieldguard_planning and never
+          # walks them; a second discover rooted one level up is the fix. The pattern is 'test_*.py'
+          # rather than one filename so a new host-side test file cannot be silently un-run: unittest
+          # discovery does NOT recurse into tests/fieldguard_planning (no __init__.py, and namespace-
+          # package discovery was removed in Python 3.11) -- verified on 3.12, no test runs twice.
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Scenario flight logs are current (regenerate + diff -- catches silent rot)
         run: |
@@ -78,16 +81,44 @@ jobs:
           python3 eval/scenarios/generate_flight_logs.py
           git diff --exit-code eval/scenarios/
 
-      - name: Validate committed flight-log evidence (idle-run clobber guard)
+      - name: Validate committed live flight-log evidence (CPA + idle-run clobber guard)
         run: |
           set -euo pipefail
-          # eval/results/ is gitignored, so this normally SKIPs (an unmatched glob passes through as
-          # a literal path and the checker exits 0 on absent files -- by design). It exists because
-          # the 2026-08-05 live demo's live_flight_log.json was silently clobbered by an idle run
-          # (empty flown_path_enu, 720/720 debt) and nothing noticed: if flight-log evidence IS ever
-          # committed, this gate proves it records a real flight (ledger partition invariant,
-          # nonzero flown path, not-all-cells-debt).
-          python3 scripts/check_live_flight_log.py eval/results/*flight_log*.json
+          # WHAT THIS SEES IN CI (measured, not assumed -- `git archive HEAD` + this exact command,
+          # 2026-08-24): .gitignore ignores eval/results/* but RE-INCLUDES
+          # `!eval/results/live_flight_log_*.json`, so a fresh checkout carries the two committed
+          # live logs (2026-08-18, 2026-08-23) and this glob matches BOTH. The gate really runs: it
+          # prints their CPA (0.0597 m / 0.0518 m), reports each as an ACKNOWLEDGED SAFETY FINDING
+          # against its sibling marker file, and exits 0. It also still catches the failure it was
+          # born for -- the 2026-08-05 demo log silently clobbered by an idle run (empty
+          # flown_path_enu, 720/720 debt).
+          #
+          # WHY THE COUNT IS ASSERTED: the checker treats an absent path as SKIP/exit 0 (right for a
+          # tool a human points at a path), so this step was one .gitignore edit, rename or deletion
+          # away from matching nothing, printing SKIP and going green having validated nothing. A
+          # gate with no denominator does not score green in this repo (ADR-013 am. 16). The
+          # denominator is printed on every run and zero is a hard FAIL -- ci.yml side, not a
+          # checker flag, because "this CI run must have evidence to chew on" is a property of the
+          # job, and a --fail-on-empty flag on a safety tool is also a --dont-fail-on-empty flag.
+          #
+          # NOT PASSED HERE, deliberately: eval/scenarios/*/flight_log.json. Those are OPEN-LOOP
+          # stimulus fixtures -- their flown_path_enu is byte-identical to the scripted lawnmower and
+          # the bird is parked ON the lane to force a dodge, so their "CPA" is a scenario parameter
+          # no control law can move (proven: regenerating under today's law moved commanded setpoints
+          # up to 17.2 m and left all four CPA numbers bit-identical -- 0.0000 / 7.0000 / 1.0000 /
+          # 1.0000 m). They are gated by the regenerate+diff step above and by
+          # test_safety_scenarios_pending.py; see ADR-013 amendment 16 and eval/scenarios/README.md.
+          shopt -s nullglob
+          logs=(eval/results/*flight_log*.json)
+          echo "[ci] committed live flight logs matched: ${#logs[@]}"
+          if [ "${#logs[@]}" -eq 0 ]; then
+            echo "[ci] FAIL: the live flight-log evidence gate matched 0 files. Either the committed" >&2
+            echo "     evidence was renamed/deleted or .gitignore stopped re-including" >&2
+            echo "     eval/results/live_flight_log_*.json. A gate that validates nothing is not a" >&2
+            echo "     gate -- restore the evidence or delete this step deliberately." >&2
+            exit 1
+          fi
+          python3 scripts/check_live_flight_log.py "${logs[@]}"
 
       - name: Smoke-run stdlib generator scripts (catch import/CLI breakage)
         run: |

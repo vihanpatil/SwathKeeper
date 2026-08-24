@@ -46,9 +46,24 @@ secrets/
 # NOTE the level-by-level pattern: a DIRECTORY exclude (dir/) cannot be pierced by child negations,
 # so each level excludes CONTENTS (dir/*) and re-includes the evidence children.
 !eval/results/live_flight_log_*.json
+# ...and the acknowledged-finding marker beside it (ADR-013 am. 12 R1). LOAD-BEARING FOR CI: the
+# logs above are committed, and check_live_flight_log.py fails HARD on a closest-approach breach
+# that has no marker. Without this line CI checks out the breaching logs without their
+# acknowledgements and goes red on recorded history it cannot re-fly.
+!eval/results/live_flight_log_*.SAFETY_FINDING.md
 !eval/results/gate2_summary.json
 !eval/results/testflight_gate_*.json
 !eval/results/bird_drive_*.json
+# ...and the applied-pose log beside it (ADR-003 am. 6): a committed clip's bird labels are DERIVED
+# from this file, so without it those labels can never be re-verified — the same lesson as the
+# clobbered demo log. Bounded by flight length (~3k lines / ~0.7 MB for a 14-minute mission), never
+# frame data. Prune stale runs' logs by hand rather than re-ignoring the class.
+!eval/results/bird_drive_*_applied.jsonl
+!eval/results/bench_transport_*.json
+# The ADR-003 verdict run's scores (am. 7: the ADOPT decision's own evidence — labels,
+# detections, spike_scores; overlays excluded below as regenerable imagery)
+!eval/results/adr003_*/
+eval/results/adr003_*/overlays/
 !eval/results/clips/
 eval/results/clips/*
 !eval/results/clips/real_flight_*/

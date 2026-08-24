@@ -358,14 +358,18 @@ class TestPaneTailDropsTheGridPadding(LauncherTestCase):
 
 
 class TestEvidenceYieldFloor(LauncherTestCase):
-    """The evidence-yield floor, judged against the only two test-flights that have ever run.
+    """The evidence-yield floor, judged against committed test-flight artifacts.
 
-    Both are committed. Frames come from the gate records, cells from the clips' own
-    `heatmap/heatmap.json` — the same two artifacts the live gate reads, so this cannot pass on
-    numbers the launcher would never see. n=2 is the whole dataset; the floor is derived from it.
+    Frames come from the gate records, cells from the clips' own `heatmap/heatmap.json` — the same
+    two artifacts the live gate reads, so this cannot pass on numbers the launcher would never see.
+    Provenance (2026-08-22, ADR-013 am. 10): the floor was raised 12/40 -> 300/200 off the F9
+    healthy run at the operative A+B+L1+L2 transport config. The pre-transport-fix "healthy" run
+    (48/291) now FAILS it BY DESIGN — a silently unloaded DDS profile reverts delivery to exactly
+    that regime, and catching it is the floor's job.
     """
 
-    BASELINE = "testflight_gate_20260818T222031Z.json"   # 2026-08-18, 5 Hz, healthy
+    HEALTHY = "testflight_gate_20260822T181022Z.json"    # 2026-08-22, F9, A+B+L1+L2, healthy
+    PRE_FIX = "testflight_gate_20260818T222031Z.json"    # 2026-08-18, healthy THEN, fails floor NOW
     COLLAPSE = "testflight_gate_20260819T021136Z.json"   # 2026-08-19, 2 Hz, PASSED on 3 frames
 
     def yield_of(self, record_name):
@@ -381,9 +385,17 @@ class TestEvidenceYieldFloor(LauncherTestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         return result.stdout.strip()
 
-    def test_the_baseline_flight_clears_the_floor(self):
-        self.assertEqual(self.yield_of(self.BASELINE), (48, 291))   # pin the fixture itself
-        self.assertEqual(self.floor(*self.yield_of(self.BASELINE)), "")
+    def test_the_healthy_flight_clears_the_floor(self):
+        self.assertEqual(self.yield_of(self.HEALTHY), (681, 417))   # pin the fixture itself
+        self.assertEqual(self.floor(*self.yield_of(self.HEALTHY)), "")
+
+    def test_the_pre_transport_fix_run_now_fails_the_floor_by_design(self):
+        # 48/291 was the healthy anchor before the DDS fix. If the profile silently stops loading,
+        # delivery reverts to that regime — and this is the gate that must catch it.
+        self.assertEqual(self.yield_of(self.PRE_FIX), (48, 291))
+        failure = self.floor(*self.yield_of(self.PRE_FIX))
+        self.assertIn("evidence-yield floor", failure)
+        self.assertIn("frames_recorded=48", failure)
 
     def test_the_2hz_collapse_fails_the_floor_and_names_it(self):
         self.assertEqual(self.yield_of(self.COLLAPSE), (3, 1))
@@ -392,16 +404,22 @@ class TestEvidenceYieldFloor(LauncherTestCase):
         self.assertIn("frames_recorded=3", failure)
         self.assertIn("cells_imaged=1", failure)
 
-    def test_the_floor_sits_between_the_two_runs_it_was_derived_from(self):
-        # The provenance claim, as an assertion: a floor above the healthy run would flake, one at
-        # or below the collapse would have let the 2 Hz run PASS again.
+    def test_the_floor_sits_between_the_regressions_and_the_healthy_run(self):
+        # The provenance claim, as an assertion: a floor above the healthy run would flake; one at
+        # or below the pre-fix regime would let a silent transport regression PASS again.
         min_frames, min_cells = floor_constants()
-        good_frames, good_cells = self.yield_of(self.BASELINE)
+        good_frames, good_cells = self.yield_of(self.HEALTHY)
+        pre_frames, pre_cells = self.yield_of(self.PRE_FIX)
         bad_frames, bad_cells = self.yield_of(self.COLLAPSE)
         self.assertLess(bad_frames, min_frames)
+        self.assertLess(pre_frames, min_frames)   # the frames half is what catches the pre-fix regime
         self.assertLess(min_frames, good_frames)
         self.assertLess(bad_cells, min_cells)
         self.assertLess(min_cells, good_cells)
+        # Deliberately NOT asserted: pre_cells < min_cells. The pre-fix run imaged 291 cells and
+        # the floor is an OR — it fails that run on frames alone. Pinning cells too would force
+        # the cell floor above 291 and start flaking ordinary healthy variance.
+        self.assertGreater(pre_cells, min_cells)  # documents the OR-logic dependency instead
 
     def test_either_half_short_is_a_failure_and_the_floor_itself_passes(self):
         min_frames, min_cells = floor_constants()
@@ -415,6 +433,198 @@ class TestEvidenceYieldFloor(LauncherTestCase):
         for frames, cells in (("", ""), (48, ""), ("", 291), ("none", 291)):
             with self.subTest(frames=frames, cells=cells):
                 self.assertIn("cannot read the yield", self.floor(frames, cells))
+
+
+class TestBenchTransportArm(unittest.TestCase):
+    """scripts/bench_transport.sh measures the SAME stack the flight flies, and it does that by
+    reading the launcher's payload strings rather than retyping them. If the launcher renames a
+    payload variable the bench would silently bench nothing -- so the coupling is pinned here.
+
+    Host-side and Docker-free, like the rest of this file."""
+
+    BENCH = REPO_ROOT / "scripts" / "bench_transport.sh"
+
+    def test_the_bench_script_exists_and_is_executable(self):
+        self.assertTrue(self.BENCH.exists())
+        self.assertTrue(os.access(self.BENCH, os.X_OK), msg="bench_transport.sh is not executable")
+
+    def test_it_parses_under_bash(self):
+        subprocess.run(["bash", "-n", str(self.BENCH)], check=True)
+
+    def test_it_sources_the_three_payloads_it_needs_from_the_launcher(self):
+        """The whole anti-drift property: the bench must not carry its own copy of a pane one-liner,
+        because a copy is exactly how a bench stops measuring the flight's transport stack."""
+        bench = self.BENCH.read_text()
+        launcher = SCRIPT.read_text()
+        for var in ("INNER_GAZEBO", "INNER_BRIDGE", "INNER_NDVI"):
+            with self.subTest(var=var):
+                self.assertIn(var, bench, msg=f"{var} is not referenced by the bench")
+                self.assertIn(f"{var}=", launcher, msg=f"{var} no longer exists in the launcher")
+        self.assertIn("fly_pipeline.sh", bench)
+        # And it must NOT inline a payload of its own.
+        for smell in ("gz sim -v4", "ros2 run ros_gz_bridge", "fieldguard_planning.ndvi_node"):
+            self.assertNotIn(smell, bench.split("# Usage")[-1].split("set -euo")[0] + "",
+                             msg=f"bench appears to inline the payload {smell!r}")
+
+    def test_the_profile_env_var_is_only_attached_when_a_profile_is_given(self):
+        """The baseline arm must run the exec line the untuned stack actually runs -- an empty
+        FASTRTPS_DEFAULT_PROFILES_FILE would be a third, undocumented condition."""
+        bench = self.BENCH.read_text()
+        self.assertIn("FASTRTPS_DEFAULT_PROFILES_FILE", bench)
+        # The injection is a function with an explicit no-profile branch, not an array: macOS ships
+        # bash 3.2, where expanding an EMPTY array under `set -u` aborts the script -- which is
+        # exactly the baseline arm.
+        self.assertIn("dex()", bench)
+        self.assertIn('if [ -n "$PROFILE" ]; then', bench)
+        self.assertIn("else\n    docker exec ", bench)
+        self.assertNotIn("ENVFLAG", bench)
+
+    def test_the_no_profile_injection_path_survives_strict_mode_bash(self):
+        """bash 3.2 regression guard, reproducing the real abort. `bash -n` does NOT catch it: an
+        EMPTY array expanded as "${a[@]}" under `set -u` is an 'unbound variable' error only at
+        RUNTIME, and the baseline arm is exactly the empty case -- so the first bench arm died
+        mid-bringup after paying for a full Gazebo start."""
+        src = self.BENCH.read_text()
+        body = src.split("dex() {", 1)[1].split("\n}", 1)[0]
+        harness = ('set -euo pipefail\n'
+                   'PROFILE=""\n'
+                   'docker() { printf "ok %s\\n" "$1"; }\n'
+                   'dex() {' + body + '\n}\n'
+                   'dex exec somecontainer bash -c true\n')
+        res = subprocess.run(["/bin/bash", "-c", harness], capture_output=True, text=True)
+        self.assertNotIn("unbound variable", res.stderr)
+        self.assertEqual(res.returncode, 0, msg=res.stderr)
+
+    def test_it_refuses_to_bench_on_top_of_a_live_bringup(self):
+        bench = self.BENCH.read_text()
+        self.assertIn("refusing to bench on top of it", bench)
+
+    def test_it_clears_stale_shm_segments_only_after_the_live_bringup_guard(self):
+        """Orphaned /dev/shm segments outlive a hard-killed participant and make min_bytes report a
+        DEAD default-sized segment as a live participant that missed the profile -- which voids the
+        admissibility check. Clearing is safe ONLY because the guard above has already proved
+        nothing is running, so the ORDER is the property under test, not just the presence."""
+        bench = self.BENCH.read_text()
+        guard = bench.index("refusing to bench on top of it")
+        clear = bench.index("rm -f /dev/shm/fastrtps_*")
+        self.assertLess(guard, clear, msg="stale-segment clear must come AFTER the liveness guard")
+
+
+class TestDdsProfileInjection(unittest.TestCase):
+    """THE partial-injection tripwire (round 3).
+
+    Every process that creates a Fast DDS participant must load the SAME transport profile. Miss one
+    and the gates go green while measuring a different transport stack than the flight — and because
+    the profile only DEGRADES an un-injected participant (UDPv4 is deliberately retained), the
+    symptom is a wrong number, not a crash. There is no other check that can catch this: CI has no
+    sim, `check_render_alive` passes on a single frame, and `verify_mount_geometry` never creates a
+    ROS node at all.
+
+    The invariant pinned here is SAMENESS across every site, not the literal path."""
+
+    VAR = "FASTRTPS_DEFAULT_PROFILES_FILE"
+    # Verified against the image, not guessed: these create Fast DDS participants. Gazebo is
+    # gz-transport, SITL speaks XRCE over plain UDP and never even sources ROS, the raw birds line
+    # shells out to the gz CLI, and the apt line is apt.
+    PARTICIPANTS = ("INNER_BRIDGE", "INNER_PROBE", "INNER_AGENT", "INNER_NDVI", "INNER_RECORD",
+                    "INNER_BIRDS_WATCH")
+    NON_PARTICIPANTS = ("INNER_GAZEBO", "INNER_SITL", "INNER_BIRDS", "INNER_APT")
+
+    def setUp(self):
+        self.src = SCRIPT.read_text()
+
+    def _values(self, text):
+        # Stop at shell separators: the gate-probe site ends the export with `;` and the pane
+        # payloads end it with ` &&`, so a bare \S+ would capture punctuation and report drift that
+        # is not there.
+        import re
+        return re.findall(re.escape(self.VAR) + r"=([^\s;&'\"]+)", text)
+
+    def _payload(self, var):
+        i = self.src.index(var + "=")
+        return self.src[i:self.src.index("\n", i)] if var != "INNER_BIRDS_WATCH" \
+            else self.src[i:self.src.index("\nexec ", i)]
+
+    def test_every_participant_pane_carries_the_profile(self):
+        for var in self.PARTICIPANTS:
+            with self.subTest(pane=var):
+                self.assertIn(self.VAR, self._payload(var),
+                              msg=f"{var} creates a DDS participant but has no {self.VAR}")
+
+    def test_non_participant_panes_do_not_carry_it(self):
+        """Not cosmetic: an export on the SITL or Gazebo pane would imply those processes are on the
+        tuned transport when they are not on DDS at all, and would mislead the next reader."""
+        for var in self.NON_PARTICIPANTS:
+            with self.subTest(pane=var):
+                self.assertNotIn(self.VAR, self._payload(var))
+
+    def test_the_gate_probe_path_is_injected_too(self):
+        """`ctr()` runs probe_ros_topics' `ros2 topic list`, which creates a participant of its own.
+        do_not #8: miss this and gate_bridge measures a different stack than the flight."""
+        self.assertIn(self.VAR, self.src[self.src.index("ros2 topic list") - 400:
+                                         self.src.index("ros2 topic list")])
+
+    def test_the_render_probe_exec_is_injected_too(self):
+        """gate_render_alive has its OWN docker exec that bypasses exec_line — it runs INNER_PROBE,
+        so injecting the payload covers it. Pinned because the coupling is invisible."""
+        self.assertIn('bash -c "$INNER_PROBE"', self.src)
+        self.assertIn(self.VAR, self._payload("INNER_PROBE"))
+
+    def test_all_sites_agree_on_one_value(self):
+        values = set(self._values(self.src))
+        self.assertEqual(len(values), 1,
+                         msg=f"{self.VAR} drifted across sites: {sorted(values)}")
+
+    def test_the_profile_path_points_at_the_committed_file(self):
+        (value,) = set(self._values(self.src))
+        self.assertTrue(value.startswith("/workspace/fieldguard/"), msg=value)
+        repo_rel = value.replace("/workspace/fieldguard/", "", 1)
+        self.assertTrue((REPO_ROOT / repo_rel).exists(),
+                        msg=f"profile path {value} does not exist in the repo as {repo_rel}")
+
+    def test_the_runbook_carries_the_same_value(self):
+        """Option (b): command-level parity is the property being protected, so a human doing the
+        manual bringup flies the SAME transport the launcher does."""
+        runbook_values = set(self._values(RUNBOOK.read_text()))
+        self.assertEqual(runbook_values, set(self._values(self.src)))
+
+
+class TestDdsProfile(unittest.TestCase):
+    """The L2 profile is a committed artifact whose failure mode is silent, so the invariants that
+    make it valid are pinned rather than trusted to review."""
+
+    PROFILE = REPO_ROOT / "config" / "dds" / "fg_fastdds.xml"
+
+    def setUp(self):
+        self.xml = self.PROFILE.read_text()
+
+    def test_profile_exists_and_is_well_formed_xml(self):
+        import xml.etree.ElementTree as ET
+        ET.fromstring(self.xml)   # malformed XML falls back to defaults with only a log line
+
+    def test_segment_size_is_above_max_message_size(self):
+        """SharedMemTransport::init logs an error and REJECTS the descriptor if segment_size <
+        max_message_size -- which would silently leave the stack on defaults."""
+        import xml.etree.ElementTree as ET
+        ns = {"d": "http://www.eprosima.com"}
+        root = ET.fromstring(self.xml)
+        seg = int(root.find(".//d:segment_size", ns).text)
+        mms = int(root.find(".//d:maxMessageSize", ns).text)
+        self.assertGreater(seg, mms)
+        self.assertEqual(seg, 8388608)
+        # 65500 on purpose: raising it is inert while UDPv4 is registered (min across transports).
+        self.assertEqual(mms, 65500)
+
+    def test_udpv4_is_retained_so_a_missed_injection_degrades_rather_than_blacks_out(self):
+        self.assertIn("UDPv4", self.xml)
+        self.assertIn("useBuiltinTransports>false", self.xml.replace(" ", ""))
+
+    def test_port_queue_capacity_is_left_alone_so_the_lever_stays_one_variable(self):
+        """Checked on the PARSED tree, not the raw text -- the prose explains why the knob is
+        absent, and a substring match would fail on its own explanation."""
+        import xml.etree.ElementTree as ET
+        ns = {"d": "http://www.eprosima.com"}
+        self.assertIsNone(ET.fromstring(self.xml).find(".//d:port_queue_capacity", ns))
 
 
 if __name__ == "__main__":

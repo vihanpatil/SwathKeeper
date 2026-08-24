@@ -20,17 +20,26 @@ SAFETY GUARANTEE (the load-bearing invariant this module upholds):
        outside every tree's 3D volume AND inside the altitude envelope. The executor re-checks this
        as a backstop and falls back to HOLD on rejection; we never hand it an unvetted setpoint.
     2. swept-path lateral tree clearance: the segment drone->setpoint stays clear of every tree's
-       XY exclusion column (`geofence.segment_clearance`). Rationale: a dodge that *sweeps through*
-       a tree column is safe today only by the altitude exemption (cruise 15 m >> 5.5 m canopy band);
-       keeping horizontal clearance means the reactive maneuver never *relies* on that exemption, so
-       an unexpected altitude loss mid-dodge is not a strike. This is what makes the `geo_avoid_into_tree`
-       scenario dodge away from row 2 instead of steering the naive away-from-bird path through it.
+       XY exclusion column by `lateral_tree_margin_m` (`geofence.segment_clearance`). Rationale: a
+       dodge that *sweeps through* a tree column is safe today only by the altitude exemption
+       (cruise 15 m >> 5.5 m canopy band); keeping horizontal clearance means the reactive maneuver
+       never *relies* on that exemption, so an unexpected altitude loss mid-dodge is not a strike.
+       This is what makes the `geo_avoid_into_tree` scenario dodge away from row 2 instead of
+       steering the naive away-from-bird path through it. The margin is 1.0 m, NOT 0.0 (R2,
+       ADR-013 am. 12) -- at 0.0 the accept boundary *was* the exclusion boundary.
     3. field-polygon containment (if a polygon is supplied) with an inward margin -- a dodge must not
        leave the surveyed field.
     4. it actually increases separation from the triggering bird and keeps a minimum clearance from
        every other in-cylinder bird.
   If NO candidate direction passes all four, the policy returns HOLD (hover in GUIDED) rather than
   emit a setpoint it cannot prove safe. HOLD is the correct answer to "boxed in", not a failure.
+
+ONE ADVISORY FLAG (R3, ADR-013 am. 12): every threat-branch maneuver carries
+`debug["range_degenerate"]` -- True when the trigger range is below `degenerate_range_m`, where the
+away-vector's DIRECTION is noise rather than geometry. `decide` still returns its best-effort dodge
+(refusing to decide would mean not dodging a bird we are on top of); it is the EXECUTOR that acts on
+the flag, by refusing to re-latch onto a noise-driven setpoint. Advisory, in the debug dict, so
+`decide` stays pure and the flag replays from a flight log.
 
 Dependency: stdlib only (math) + sibling contract modules. No numpy, no ROS 2.
 """
@@ -77,20 +86,46 @@ class PolicyParams:
     threat_radius_m: float = 12.0       # horizontal threat cylinder radius
     vertical_threat_m: float = 6.0      # threat cylinder half-height (|bird_z - drone_z|)
     divert_distance_m: float = 10.0     # lateral distance of the dodge setpoint from the drone
-    lateral_tree_margin_m: float = 0.0  # required swept-path clearance beyond each tree obstacle_radius_m
+    # R2 (ADR-013 am. 12), raised from 0.0: required swept-path clearance BEYOND each tree's
+    # obstacle_radius_m. At 0.0 the ACCEPT boundary was the EXCLUSION boundary -- a swept path
+    # exactly tangent to a tree column was accepted with 0.000 m to spare, and 4.7 % of accepted
+    # degenerate-range dodges cleared a tree by < 0.1 m. Priced on the flown 2026-08-23 encounter
+    # before landing: 19/19 ticks still DIVERT, the degenerate tick rotates from +0 to +45 deg and
+    # clears 7.563 m, HOLD-rate cost < 15 pp. 1.0 m is what the 18-tree geometry supports with 3x
+    # headroom (a within-row corridor caps ANY margin at 3.00 m). This is the ONE home of the
+    # number: the flight-log gate reads it from PolicyParams, so gate and control law cannot drift.
+    lateral_tree_margin_m: float = 1.0
     min_bird_clearance_m: float = 3.0   # setpoint must stay at least this far (XY) from every threat
+    # R3 (ADR-013 am. 12): a FLAG, not a floor. Below this trigger range the away-vector's direction
+    # is noise, not geometry -- a bird-position error >= the range flips the commanded bearing
+    # through 180 deg, and at the flown 0.052 m a 0.5 m estimate error spanned 337 deg of bearing.
+    # Every threat-branch maneuver reports `debug["range_degenerate"]`; the EXECUTOR uses it to
+    # refuse a RE-LATCH (keep the already-vetted point rather than chase a noise-driven one).
+    # `decide` deliberately still returns its best-effort dodge -- suppressing the decision would
+    # mean not dodging a bird we are on top of -- and hold-and-climb was NOT chosen (ADR-009: bird z
+    # is the estimate we cannot trust).
+    degenerate_range_m: float = 1.0
     vertical_margin_m: float = 1.0      # passed to is_safe_3d (canopy band buffer)
     alt_min_m: float = 2.0              # altitude envelope floor (is_safe_3d alt_bounds)
     alt_max_m: float = 30.0             # altitude envelope ceiling
     field_margin_m: float = 1.0         # inward margin from the field polygon boundary for a setpoint
     min_confidence: float = 0.0         # ignore detections below this confidence (0.0 = trust all)
-    # Staleness gate: a stamped detection older than this (vs the `now_s` passed to decide) is
-    # treated as ABSENT — a frame from the past is not evidence about the world now, and acting on
-    # it can trigger a phantom dodge or mask a live threat. None = gate OFF (v1 default: the --demo
-    # bird and scripted sources do not stamp yet). The gate only fires when it can actually compute
-    # an age (gate on AND now_s given AND detection stamped); otherwise it fails OPEN, because
-    # silently dropping unstamped detections would disable avoidance for every current source.
-    max_detection_age_s: Optional[float] = None
+    # Staleness gate (ADR-009 rule 1): a stamped detection older than this (vs the `now_s` passed to
+    # decide) is treated as ABSENT — a frame from the past is not evidence about the world now, and
+    # acting on it can trigger a phantom dodge or mask a live threat. The gate only fires when it
+    # can actually compute an age (bound set AND now_s given AND detection stamped); otherwise it
+    # fails OPEN, because silently dropping unstamped detections would disable avoidance for the
+    # --demo bird and every scripted scenario, which do not stamp.
+    # 1.0 s, and this is the ONE home of the number (2026-08-24): it was armed from
+    # `avoidance_node` while this default stayed None, which left the flight-log gate's upper bound
+    # (`gate_staleness`) dead code -- a flight could record a 3600 s tolerance and be certified as
+    # current behaviour. Evidence, not taste: the ADOPTED clip's own frame_age_sim_s (gz-now at
+    # arrival minus the frame's stamp) is min 0.061 / p50 0.143 / p95 0.149 / max 0.156 s over
+    # n=1256 (eval/results/clips/real_flight_20260823T073644Z/poses.jsonl); one 0.2 s control period
+    # on top of the worst observed age is 0.36 s, so 1.0 s is ~3x the worst realistic age and ~6x
+    # the measured max -- loose enough that a healthy flight never trips it, tight enough that a
+    # frozen render is caught within five ticks.
+    max_detection_age_s: Optional[float] = 1.0
 
     @property
     def alt_bounds(self) -> Tuple[float, float]:
@@ -154,37 +189,16 @@ class AvoidancePolicy:
     call `decide` per frame. `decide` is pure: same inputs -> same maneuver, so it is trivially
     unit-testable and its output is fully reproducible in a flight log."""
 
-    def __init__(
-        self,
-        *,
-        cruise_alt_m: float = 15.0,
-        threat_radius_m: float = 12.0,
-        vertical_threat_m: float = 6.0,
-        divert_distance_m: float = 10.0,
-        lateral_tree_margin_m: float = 0.0,
-        min_bird_clearance_m: float = 3.0,
-        vertical_margin_m: float = 1.0,
-        alt_min_m: float = 2.0,
-        alt_max_m: float = 30.0,
-        field_margin_m: float = 1.0,
-        min_confidence: float = 0.0,
-        max_detection_age_s: Optional[float] = None,
-        field_polygon: Optional[Sequence[XY]] = None,
-    ) -> None:
-        self.params = PolicyParams(
-            cruise_alt_m=cruise_alt_m,
-            threat_radius_m=threat_radius_m,
-            vertical_threat_m=vertical_threat_m,
-            divert_distance_m=divert_distance_m,
-            lateral_tree_margin_m=lateral_tree_margin_m,
-            min_bird_clearance_m=min_bird_clearance_m,
-            vertical_margin_m=vertical_margin_m,
-            alt_min_m=alt_min_m,
-            alt_max_m=alt_max_m,
-            field_margin_m=field_margin_m,
-            min_confidence=min_confidence,
-            max_detection_age_s=max_detection_age_s,
-        )
+    def __init__(self, *, field_polygon: Optional[Sequence[XY]] = None, **params) -> None:
+        """`params` are `PolicyParams` fields by keyword, forwarded verbatim. Deliberately NOT a
+        second copy of the signature: every tunable then has exactly ONE declaration (with its
+        rationale and its default), so a constructor default can never drift from the dataclass
+        default that the flight-log gate and `_params_dict` read -- which is precisely how a safety
+        knob could otherwise be raised in one place and flown from the other. An unknown knob is a
+        TypeError from `PolicyParams`, never a silently ignored kwarg. `field_polygon` stays
+        explicit: it is loaded from config, not a scalar tunable, and is not part of the params
+        that get logged with every maneuver."""
+        self.params = PolicyParams(**params)
         self.field_polygon: Optional[List[XY]] = (
             [(float(x), float(y)) for x, y in field_polygon] if field_polygon else None
         )
@@ -254,10 +268,27 @@ class AvoidancePolicy:
             maneuver = self._plan_divert(trigger, [t for t, _ in threats], drone, geofence, p)
             # Attach shared diagnostics for the event log (CLAUDE.md instrumentation rule).
             maneuver.triggering_detection = trigger
-            maneuver.debug.setdefault("trigger_range_m", round(trigger_range, 3))
+            # Both numbers, always, on every threat-branch maneuver: absence is a defect, not a
+            # "no". `range_degenerate` is computed from the ROUNDED range that actually goes into
+            # the log, so a flight-log consistency check (`range_degenerate ==
+            # trigger_range_m < degenerate_range_m`) holds by construction even at the boundary --
+            # a flag derived from a number nobody can see is a flag nobody can audit.
+            logged_range_m = round(trigger_range, 3)
+            maneuver.debug.setdefault("trigger_range_m", logged_range_m)
+            maneuver.debug.setdefault("range_degenerate", logged_range_m < p.degenerate_range_m)
             maneuver.debug.setdefault("n_threats", len(threats))
             maneuver.debug.setdefault(
                 "threat_ids", [t.track_id or f"det@{t.frame_id}" for t, _ in threats]
+            )
+            # WHERE each of those threats was, in the same order as the ids. Not decoration: the
+            # executor re-vets the point it is about to command against every one of them (a latch
+            # is bird-vetted only for the tick it was latched on), and the flight-log gate re-checks
+            # the same inequality offline. An id with no position is a threat neither of them can
+            # check, so the pair travels together -- the QA round 2 defect was exactly a re-commanded
+            # latch 1.000 m from a bird with nothing able to notice.
+            maneuver.debug.setdefault(
+                "threat_positions_enu",
+                [[round(c, 3) for c in t.position_enu] for t, _ in threats]
             )
         if stale:
             # Always log what the staleness gate dropped, whatever the decision -- a stale frame
@@ -416,6 +447,7 @@ def _params_dict(p: PolicyParams) -> dict:
         "divert_distance_m": p.divert_distance_m,
         "lateral_tree_margin_m": p.lateral_tree_margin_m,
         "min_bird_clearance_m": p.min_bird_clearance_m,
+        "degenerate_range_m": p.degenerate_range_m,
         "vertical_margin_m": p.vertical_margin_m,
         "alt_bounds": list(p.alt_bounds),
         "field_margin_m": p.field_margin_m,
