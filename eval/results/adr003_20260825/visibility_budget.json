@@ -1,0 +1,161 @@
+{
+ "artifact": "eval/results/adr003_20260825/visibility_budget.json",
+ "what": "Geometric visibility budget for the 2026-08-25 real-detection avoidance take. Answers the question the detection metrics cannot: of the frames where a bird was inside the policy's threat cylinder, how many could the nadir NDVI camera physically image? Computed with the SAME projection primitive as the GT labeller and the heatmap stitch (ndvi_georef.project_world_point) over the clip's own measured (applied-pose) labels.",
+ "clip": "eval/results/clips/real_flight_20260825T205705Z",
+ "labels": "applied (driver applied-pose log bird_drive_20260825T210030Z_applied.jsonl); 0 modeled",
+ "window": "airborne only (meta.airborne 174.6-308.6 sim s, 671 frames)",
+ "policy": {
+  "threat_radius_m": 12.0,
+  "vertical_threat_m": 6.0,
+  "note": "from run.policy_params of eval/results/live_flight_log_20260825T210402Z.json"
+ },
+ "camera": {
+  "mount": "rigid nadir",
+  "image_px": [
+   640,
+   480
+  ],
+  "fx": 520.0057601928711,
+  "fy": 520.0057983398438
+ },
+ "per_bird": {
+  "bird_0": {
+   "airborne_frames": 671,
+   "frames_bird_in_threat_cylinder": 7,
+   "frames_bird_in_image": 2,
+   "capture_fraction_of_in_cylinder": 0.2857142857142857,
+   "min_horizontal_distance_m": 0.105,
+   "in_cylinder_frames": [
+    {
+     "clip_frame": 962,
+     "stamp_sim_s": 202.2,
+     "horizontal_m": 8.414,
+     "dz_m": -4.03,
+     "depth_along_boresight_m": 4.072,
+     "in_image": false,
+     "miss_outside_image_edge_m": 5.848
+    },
+    {
+     "clip_frame": 963,
+     "stamp_sim_s": 202.4,
+     "horizontal_m": 6.511,
+     "dz_m": -4.03,
+     "depth_along_boresight_m": 4.156,
+     "in_image": false,
+     "miss_outside_image_edge_m": 3.821
+    },
+    {
+     "clip_frame": 964,
+     "stamp_sim_s": 202.6,
+     "horizontal_m": 1.754,
+     "dz_m": -4.03,
+     "depth_along_boresight_m": 4.041,
+     "in_image": true,
+     "miss_outside_image_edge_m": 0.0
+    },
+    {
+     "clip_frame": 965,
+     "stamp_sim_s": 202.8,
+     "horizontal_m": 0.105,
+     "dz_m": -4.03,
+     "depth_along_boresight_m": 3.929,
+     "in_image": true,
+     "miss_outside_image_edge_m": 0.0
+    },
+    {
+     "clip_frame": 966,
+     "stamp_sim_s": 203.0,
+     "horizontal_m": 4.444,
+     "dz_m": -4.03,
+     "depth_along_boresight_m": 3.442,
+     "in_image": false,
+     "miss_outside_image_edge_m": 2.738
+    },
+    {
+     "clip_frame": 967,
+     "stamp_sim_s": 203.2,
+     "horizontal_m": 6.258,
+     "dz_m": -4.01,
+     "depth_along_boresight_m": 2.697,
+     "in_image": false,
+     "miss_outside_image_edge_m": 5.235
+    },
+    {
+     "clip_frame": 968,
+     "stamp_sim_s": 203.4,
+     "horizontal_m": 7.962,
+     "dz_m": -3.97,
+     "depth_along_boresight_m": 1.594,
+     "in_image": false,
+     "miss_outside_image_edge_m": 7.756
+    }
+   ]
+  },
+  "bird_1": {
+   "airborne_frames": 671,
+   "frames_bird_in_threat_cylinder": 0,
+   "frames_bird_in_image": 0,
+   "capture_fraction_of_in_cylinder": null,
+   "min_horizontal_distance_m": 6.36,
+   "in_cylinder_frames": []
+  },
+  "bird_2": {
+   "airborne_frames": 671,
+   "frames_bird_in_threat_cylinder": 0,
+   "frames_bird_in_image": 0,
+   "capture_fraction_of_in_cylinder": null,
+   "min_horizontal_distance_m": 7.696,
+   "in_cylinder_frames": []
+  }
+ },
+ "totals": {
+  "frames_bird_in_threat_cylinder": 7,
+  "frames_bird_in_image": 2,
+  "birds_with_any_in_cylinder_frame": 1,
+  "birds_with_any_in_image_frame": 1
+ },
+ "footprint_by_depth_m": {
+  "1": {
+   "footprint_w_m": 1.231,
+   "footprint_h_m": 0.923,
+   "pct_of_threat_cylinder_cross_section": 0.251
+  },
+  "2": {
+   "footprint_w_m": 2.462,
+   "footprint_h_m": 1.846,
+   "pct_of_threat_cylinder_cross_section": 1.005
+  },
+  "3": {
+   "footprint_w_m": 3.692,
+   "footprint_h_m": 2.769,
+   "pct_of_threat_cylinder_cross_section": 2.26
+  },
+  "4": {
+   "footprint_w_m": 4.923,
+   "footprint_h_m": 3.692,
+   "pct_of_threat_cylinder_cross_section": 4.018
+  },
+  "5": {
+   "footprint_w_m": 6.154,
+   "footprint_h_m": 4.615,
+   "pct_of_threat_cylinder_cross_section": 6.278
+  },
+  "6": {
+   "footprint_w_m": 7.385,
+   "footprint_h_m": 5.538,
+   "pct_of_threat_cylinder_cross_section": 9.041
+  }
+ },
+ "structural_finding": "The nadir footprint scales with depth; the threat cylinder does not. The footprint half-width reaches the 12 m threat radius only at 19.5 m (along-track) / 26.0 m (cross-track) depth, both far outside the +/-6.0 m vertical threat band. Inside the band the camera images at most 9.04 % of the cylinder's cross-section (at 6 m below), and 4.02 % at this encounter's 4.03 m separation. Birds ABOVE the drone (dz > 0, half the band) are behind a nadir camera and are structurally unimageable. This is a sensor-horizon-vs-policy-horizon mismatch, not a detector sensitivity problem.",
+ "lead_time_s": {
+  "gt_cpa_t_sim_s": 202.775,
+  "first_frame_containing_bird_stamp_sim_s": 202.6,
+  "sensor_lead_s": 0.175,
+  "first_policy_action_tick": 991,
+  "first_policy_action_t_sim_s": 202.775,
+  "policy_lead_s": 0.0,
+  "camera_dwell_in_cylinder_s": 1.4,
+  "camera_dwell_in_image_s": 0.4,
+  "note": "sensor lead = CPA stamp minus the stamp of the first frame the bird appeared in. policy lead = CPA minus the first tick that acted on a detection; it is zero because the first detection was consumed on the CPA tick itself."
+ }
+}

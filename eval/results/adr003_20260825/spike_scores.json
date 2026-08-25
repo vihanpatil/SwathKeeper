@@ -1,0 +1,78 @@
+{
+ "ground_truth": "eval/results/adr003_20260825/ground_truth.json",
+ "iou_thresh": 0.3,
+ "synthetic": false,
+ "approaches": {
+  "a_ndvi_direct": {
+   "TP": 2,
+   "FP": 0,
+   "FN": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "fnr": 0.0,
+   "per_bird_track_fnr": 0.0,
+   "birds_with_visible_frames": 1,
+   "visible_bird_frames": 2,
+   "label_srcs": {
+    "applied": 2
+   },
+   "unscoreable_label_frames": 0,
+   "ambiguous_label_frames": 0,
+   "per_bird": [
+    {
+     "bird_id": "bird_0",
+     "visible_frames": 2,
+     "matched_frames": 2,
+     "closest_range_m": 3.95,
+     "t_closest_s": 193.0,
+     "detected_before_closest": true
+    }
+   ],
+   "params": {
+    "thresh": -0.61,
+    "thresh_source": "real-render default, PROVISIONAL (gate2 bird/soil midpoint)",
+    "thresh_provisional": true,
+    "min_area": 6,
+    "max_area": 5000
+   }
+  },
+  "b_synthetic_rgb": {
+   "TP": 0,
+   "FP": 3,
+   "FN": 2,
+   "precision": 0.0,
+   "recall": 0.0,
+   "fnr": 1.0,
+   "per_bird_track_fnr": 1.0,
+   "birds_with_visible_frames": 1,
+   "visible_bird_frames": 2,
+   "label_srcs": {
+    "applied": 2
+   },
+   "unscoreable_label_frames": 0,
+   "ambiguous_label_frames": 0,
+   "per_bird": [
+    {
+     "bird_id": "bird_0",
+     "visible_frames": 2,
+     "matched_frames": 0,
+     "closest_range_m": 3.95,
+     "t_closest_s": 193.0,
+     "detected_before_closest": false
+    }
+   ],
+   "params": {
+    "thresh": 110,
+    "min_area": 6,
+    "max_area": 5000
+   }
+  }
+ },
+ "birds_in_clip": 3,
+ "decision": {
+  "criteria": [
+   "evidence check FAILED: only 1 of 3 birds were ever visible -- per-bird-track FNR is undefined for the rest"
+  ],
+  "verdict": "EVIDENCE INSUFFICIENT -- no ADR-003 verdict from this clip. This is neither a confirmation nor a refutation: only 1 of 3 birds were ever visible -- per-bird-track FNR is undefined for the rest."
+ }
+}
