@@ -94,6 +94,13 @@ probe against this file's own code before it was closed):
     restart leaves two logs for one take and the newer covers only the tail. `resolve_truth` now
     counts the candidates even when `--truth` is explicit and fails on any OTHER overlapping log.
 
+WHICH LEFT THE OPPOSITE HOLE (QA finding G47, 2026-08-25): sim time restarts near 0 every run, so
+the committed 2026-08-23 track overlaps EVERY later take and that guard fired on every new flight --
+"AMBIGUOUS TAKE -> INVALID" with no CPA printed at all, and then a wrong complaint that the take's
+own SAFETY_FINDING marker was stale. Overlap cannot identify a take; a REVIEWED PIN can, so
+`TRUTH_BINDINGS` maps a flight-log stem to its applied log, is consulted first, and bypasses the
+scan. Unpinned flights keep the scan and its refusals exactly.
+
 WHY (5) EXISTS -- the 2026-08-23 encounter: every gate was green (19/19 maneuvers vetted, ledger
 720 covered / 0 debt, this checker PASS) while the vehicle passed **0.0518 m** from the bird. The
 policy already refuses to place a *setpoint* nearer than `min_bird_clearance_m`, so flying nearer
@@ -159,6 +166,11 @@ RESULTS_DIR = REPO_ROOT / "eval" / "results"
 # loud, on stderr, exit 0 -- never folded into VALID.
 SKIP, VALID, INVALID, ACKNOWLEDGED = "SKIP", "VALID", "INVALID", "ACKNOWLEDGED"
 MARKER_SUFFIX = ".SAFETY_FINDING.md"
+# The tag every schema-2 CPA-breach message leads with. Named rather than typed twice because the
+# real-evidence test (tests/fieldguard_planning/test_check_live_flight_log.py) decides whether a
+# committed log needs a written finding beside it from THIS GATE'S OWN VERDICT -- and a message
+# literal it string-matched would drift silently the first time the wording changed.
+CPA_BREACH_TAG = "CPA BREACH"
 # The log stems whose CPA breach has been REVIEWED and accepted as recorded history. Acknowledging a
 # breach takes BOTH halves, deliberately two different kinds of act:
 #   1. `<log-stem>.SAFETY_FINDING.md` beside the evidence -- the written finding, readable by
@@ -205,6 +217,34 @@ PRE_SEAM_LEGACY_STEMS = (
 )
 SCENARIO_FIXTURE_DIR = REPO_ROOT / "eval" / "scenarios"
 SCENARIO_FIXTURE_NAME = "flight_log.json"
+
+# WHICH TRUTH TRACK BELONGS TO WHICH TAKE -- the third reviewed pin, and the only one that JOINS
+# evidence rather than excusing it (QA finding G47, 2026-08-25).
+# `truth_candidates` matches applied-pose logs to a flight by SIM-TIME OVERLAP, and Gazebo sim time
+# restarts near 0 every run: the committed 2026-08-23 track (sim 110..264 s) therefore overlaps every
+# later take. From the second committed track onward EVERY new flight scored "AMBIGUOUS TAKE ->
+# INVALID" with no CPA printed at all -- including under an explicit `--truth`, because the
+# exactly-one-candidate guard deliberately runs there too (and it is right to: `ls -t | head -1`
+# after an aborted takeoff is how the wrong track gets passed). Measured on the 2026-08-25 take: the
+# gate could not print gt_cpa_m 0.0067 m, and then told the operator the take's own SAFETY_FINDING
+# marker was stale "beside a log that does not breach CPA". A gate that cannot join a flight to its
+# bird track cannot reproduce its own breach verdict in CI, and "we could not tell" was landing on
+# the same INVALID as "it breached" -- the one distinction this file exists to keep.
+# A binding says: THIS flight's bird ground truth is THAT applied log. It is consulted FIRST and it
+# BYPASSES the overlap scan entirely -- the pin IS the disambiguation, so re-running a scan that can
+# only report ambiguity would be theatre. An UNPINNED flight is unchanged: overlap scan, AMBIGUOUS on
+# more than one candidate. Same ratchet doctrine as the two lists above: a binding is a reviewed diff
+# on this gate, landed with the evidence commit it describes, one line per take.
+# The value is a FILENAME, not a path. The applied log is committed BESIDE the flight log (.gitignore
+# re-includes both) and is resolved the same way the marker file is, so a log copied into another
+# tree without its truth is UNSCOREABLE rather than silently joined to whatever happens to sit in
+# this repo's eval/results. An explicit `--truth` must AGREE with the binding by name: a pin the
+# command line can override is not a pin.
+TRUTH_BINDINGS = {
+    # 2026-08-25 real-detection take: gt_cpa_m 0.0067 m, BREACH. Marker beside it and deliberately
+    # NOT in ACKNOWLEDGED_BREACH_STEMS -- a NEW breach is a FAILED flight, not recorded history.
+    "live_flight_log_20260825T210402Z": "bird_drive_20260825T210030Z_applied.jsonl",
+}
 
 # --- schema-2 contract (written by avoidance_node.py's `run` block) -----------------------------
 GATED_SCHEMA_VERSION = 2            # `run.schema_version` >= this -> the per-decision gates below
@@ -728,9 +768,11 @@ def ground_truth_cpa(flown_path: Sequence, tick_stamps: Sequence, truth: TruthTr
 
     `cylinder_ticks` is the ticks on which a bird was TRULY inside the policy's threat cylinder.
     Crossed against the ticks that logged a detection it gives the missed-detection signal with a
-    denominator -- reported, never gated, because a bird BEHIND the drone is invisible to a
-    forward-facing camera and gating on it would measure geometry, not detection quality. It stays a
-    per-TICK count (pass 1 only): its denominator is ticks the loop could have engaged on."""
+    denominator -- reported, never gated, because the camera is NADIR (it looks straight down, ADR-007
+    am. 5): a bird inside the threat cylinder is routinely outside the downward footprint at its own
+    altitude, and one above the drone is never in frame at all, so gating on it would measure
+    geometry, not detection quality. It stays a per-TICK count (pass 1 only): its denominator is
+    ticks the loop could have engaged on."""
     best: Optional[dict] = None
     unscoped: Optional[float] = None
     ticks_total = 0
@@ -1383,49 +1425,86 @@ def tick_stamp_span(run) -> Optional[Tuple[float, float]]:
     return (min(stamps), max(stamps)) if stamps else None
 
 
-def resolve_truth(run, truth_arg: Optional[Path],
+def resolve_truth(log_path: Path, run, truth_arg: Optional[Path] = None,
                   results_dir: Path = RESULTS_DIR) -> Tuple[Optional[TruthTrack], List[str]]:
-    """(TruthTrack, problems). Every failure here is a HARD problem, never a skip: a flight flown
-    with the real detector and no bird ground truth has measured nothing about separation, and
-    "we could not tell" must not score green."""
+    """(TruthTrack, problems) for the flight log at `log_path`. Every failure here is a HARD problem,
+    never a skip: a flight flown with the real detector and no bird ground truth has measured nothing
+    about separation, and "we could not tell" must not score green.
+
+    TWO WAYS A FLIGHT REACHES ITS TRUTH TRACK, and the pinned one comes first.
+      * PINNED (`TRUTH_BINDINGS`, keyed by this log's stem): the binding names the applied log, and
+        the overlap scan is SKIPPED -- the reviewed pin IS the disambiguation. Sim time restarts near
+        0 every run, so the scan can only report ambiguity once two takes are committed.
+      * UNPINNED: unchanged -- discover by sim-span overlap and refuse on 0 or >1, and refuse on any
+        OTHER overlapping log even when `--truth` was explicit.
+    `log_path` is a required positional, not an option: a signature that let a caller omit the log
+    would let a PINNED flight silently fall back to the very scan the pin exists to replace."""
     span = tick_stamp_span(run)
-    cands = truth_candidates(span, results_dir)
+    bound = TRUTH_BINDINGS.get(Path(log_path).stem)
+    path: Optional[Path] = None
     if truth_arg is not None:
         path = Path(truth_arg)
         if not path.exists():
             return None, [f"no truth track: --truth {path} does not exist"]
-        # `--truth` says WHICH log to score against; it does not get to say that the others do not
-        # exist. The runbook's own invocation is `ls -t … | head -1`, and one aborted takeoff (the
-        # runbook warns about `Arm: Accels inconsistent` + retry) or one `fly_pipeline.sh birds`
-        # override leaves two applied logs for a single take. `head -1` then picks the one covering
-        # the TAIL, every earlier tick is answered from the birds' config SPAWN poses, and bird_0's
-        # spawn sits 4 m below cruise directly under mission lane x=15 -- so the wrong pick either
-        # fabricates a ~0 m breach or hides a real one. The only signal was a note nobody must read.
-        others = [p for p in cands if p.resolve() != path.resolve()]
-        if others:
-            names = ", ".join(p.name for p in others)
+        if bound is not None and path.name != bound:
             return None, [
-                f"AMBIGUOUS TAKE: --truth {path.name} was given, but {len(others)} OTHER applied "
-                f"log(s) also overlap this flight's sim-time window ({names}). One take has ONE "
-                f"bird ground truth; two mean an aborted takeoff, a `fly_pipeline.sh birds` "
-                f"restart, or a stale log from a previous run. Every tick outside the log you "
-                f"passed is answered from the birds' SPAWN poses -- confidently wrong, not "
-                f"unmeasured. Move the log(s) that do not belong to this take out of "
-                f"{results_dir.name}/ and re-run."]
+                f"--truth {path.name} CONTRADICTS the reviewed binding for this flight: "
+                f"{Path(log_path).stem!r} is pinned to {bound} in TRUTH_BINDINGS in "
+                f"scripts/{Path(__file__).name}. A pin the command line can override is not a pin, "
+                f"and the wrong take's track is exactly what `ls -t …_applied.jsonl | head -1` "
+                f"hands you after an aborted takeoff: every tick outside it is answered from the "
+                f"birds' SPAWN poses -- confidently wrong, not unmeasured. Pass the bound log, or "
+                f"change the binding in a reviewed diff."]
+    if bound is not None:
+        if path is None:
+            path = Path(log_path).with_name(bound)
+            if not path.exists():
+                return None, [
+                    f"no truth track: {Path(log_path).stem!r} is pinned to {bound} in "
+                    f"TRUTH_BINDINGS in scripts/{Path(__file__).name}, but that file is not beside "
+                    f"the log ({path}). A binding is not a hint to fall back from -- falling back "
+                    f"to the overlap scan would score this flight against whatever ELSE overlaps "
+                    f"it, which is the failure the pin exists to prevent. Restore the applied log "
+                    f"beside the flight log, or pass it with --truth (same filename)."]
     else:
-        if not cands:
-            return None, [
-                "no truth track: no eval/results/bird_drive_*_applied.jsonl overlaps this "
-                "flight's sim-time window. Pass --truth <applied log> explicitly (the driver "
-                "prints the exact command on Ctrl-C). Without it this flight measured nothing "
-                "about separation from a real bird."]
-        if len(cands) > 1:
-            names = ", ".join(p.name for p in cands)
-            return None, [
-                f"ambiguous truth track: {len(cands)} applied logs overlap this flight's sim-time "
-                f"window ({names}). Gazebo sim time restarts near 0 every run, so overlap alone "
-                f"cannot pick the take -- pass --truth explicitly."]
-        path = cands[0]
+        cands = truth_candidates(span, results_dir)
+        if truth_arg is not None:
+            # `--truth` says WHICH log to score against; it does not get to say that the others do
+            # not exist. The runbook's own invocation is `ls -t … | head -1`, and one aborted
+            # takeoff (the runbook warns about `Arm: Accels inconsistent` + retry) or one
+            # `fly_pipeline.sh birds` override leaves two applied logs for a single take. `head -1`
+            # then picks the one covering the TAIL, every earlier tick is answered from the birds'
+            # config SPAWN poses, and bird_0's spawn sits 4 m below cruise directly under mission
+            # lane x=15 -- so the wrong pick either fabricates a ~0 m breach or hides a real one.
+            # The only signal was a note nobody must read.
+            others = [p for p in cands if p.resolve() != path.resolve()]
+            if others:
+                names = ", ".join(p.name for p in others)
+                return None, [
+                    f"AMBIGUOUS TAKE: --truth {path.name} was given, but {len(others)} OTHER "
+                    f"applied log(s) also overlap this flight's sim-time window ({names}). One "
+                    f"take has ONE bird ground truth; two mean an aborted takeoff, a "
+                    f"`fly_pipeline.sh birds` restart, or a stale log from a previous run. Every "
+                    f"tick outside the log you passed is answered from the birds' SPAWN poses -- "
+                    f"confidently wrong, not unmeasured. Move the log(s) that do not belong to "
+                    f"this take out of {results_dir.name}/ and re-run, or bind this take in "
+                    f"TRUTH_BINDINGS (a reviewed diff) if the log is being committed as evidence."]
+        else:
+            if not cands:
+                return None, [
+                    "no truth track: no eval/results/bird_drive_*_applied.jsonl overlaps this "
+                    "flight's sim-time window. Pass --truth <applied log> explicitly (the driver "
+                    "prints the exact command on Ctrl-C). Without it this flight measured nothing "
+                    "about separation from a real bird."]
+            if len(cands) > 1:
+                names = ", ".join(p.name for p in cands)
+                return None, [
+                    f"ambiguous truth track: {len(cands)} applied logs overlap this flight's "
+                    f"sim-time window ({names}). Gazebo sim time restarts near 0 every run, so "
+                    f"overlap alone cannot pick the take -- pass --truth explicitly, or bind this "
+                    f"take in TRUTH_BINDINGS (a reviewed diff) if the log is being committed as "
+                    f"evidence."]
+            path = cands[0]
     try:
         truth = TruthTrack.load(path)
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as e:
@@ -1504,7 +1583,7 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
         det_problems, det_notes = gate_detector_ran(log, run)
         problems.extend(det_problems)
         notes.extend(det_notes)
-        truth, truth_problems = resolve_truth(run, truth_arg, results_dir)
+        truth, truth_problems = resolve_truth(path, run, truth_arg, results_dir)
         problems.extend(truth_problems)
         if truth is not None:
             pp = PolicyParams()
@@ -1598,8 +1677,10 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
             n_cyl = len(report["cylinder_ticks"])
             hit = len(set(report["cylinder_ticks"]) & set(seen))
             notes.append(f"bird truly inside the threat cylinder on {n_cyl} tick(s); the loop "
-                         f"engaged on {hit} of them (missed-detection signal, NOT gated -- a bird "
-                         f"behind the drone is invisible to a forward-facing camera)")
+                         f"engaged on {hit} of them (missed-detection signal, NOT gated -- the "
+                         f"camera is NADIR, so a bird inside the cylinder can sit outside the "
+                         f"downward footprint at its own altitude, and one above the drone is "
+                         f"never in frame at all)")
     notes.append(f"n_stale_dropped={stale_dropped_total(log)} over "
                  f"{n_detection_events(log)} detection event(s) -- reported for every flight, and "
                  f"FAILED by gate_detector_ran in exactly one combination: drops > 0 with 0 "
@@ -1609,7 +1690,7 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
     marker = marker_path_for(path)
     breach = cpa_m is not None and cpa_m < bar
     if breach:
-        problems.append(f"CPA BREACH: flew within {cpa_m:.4f} m of a bird, closer than the "
+        problems.append(f"{CPA_BREACH_TAG}: flew within {cpa_m:.4f} m of a bird, closer than the "
                         f"policy's own min_bird_clearance_m {bar:.2f} m -- the policy refuses to "
                         f"place a SETPOINT that near a threat (ADR-013 amendment 12, S1)."
                         + ("" if freeze_debit <= 0.0 or source != DET_NDVI_BLOB else
@@ -1748,8 +1829,9 @@ def main(argv=None) -> int:
     ap.add_argument("--truth", type=Path, default=None,
                     help="bird ground-truth track (eval/results/bird_drive_<stamp>_applied.jsonl) "
                          "for schema-2 logs flown with the real detector. Applies to EVERY log "
-                         "named on this command line -- pass one flight at a time. Omitted: the "
-                         "gate auto-discovers by sim-time overlap and refuses on 0 or >1 matches.")
+                         "named on this command line -- pass one flight at a time. Omitted: a "
+                         "flight pinned in TRUTH_BINDINGS uses its bound track; any other "
+                         "auto-discovers by sim-time overlap and refuses on 0 or >1 matches.")
     args = ap.parse_args(argv)
 
     paths = args.logs or sorted(RESULTS_DIR.glob("*flight_log*.json"))

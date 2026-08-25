@@ -113,14 +113,22 @@ class TestLiveFlightLogGateHasEvidence(unittest.TestCase):
                       msg="the step must PRINT its denominator, not just fail on it")
 
     def test_step_passes_on_the_committed_evidence(self):
-        """The same block, on a tree carrying exactly the committed logs + their markers, exits 0.
+        """The same block, on a tree carrying exactly the committed logs + their markers + the bird
+        tracks, exits 0.
 
         Hermetic on purpose (copies of the tracked files, not the working tree): an unrelated local
         flight log left in eval/results/ must not decide whether this test is red, or the next person
-        to see it go red for someone else's artifact will weaken it."""
+        to see it go red for someone else's artifact will weaken it.
+
+        The `bird_drive_*` files are part of that checkout and not decoration: since TRUTH_BINDINGS
+        (QA finding G47) a real-detector log is scored against the applied-pose log committed BESIDE
+        it, so a tree with the flight logs but not the tracks makes the gate report "no truth track"
+        -- which would send whoever sees this test go red hunting a binding bug instead of reading
+        the flight's actual verdict."""
         script = _step_run_block(EVIDENCE_STEP)
-        tracked = _tracked("eval/results/live_flight_log_*")
-        self.assertTrue(tracked, "no committed live flight-log evidence at all")
+        logs = _tracked("eval/results/live_flight_log_*")
+        self.assertTrue(logs, "no committed live flight-log evidence at all")
+        tracked = logs + _tracked("eval/results/bird_drive_*")
         with tempfile.TemporaryDirectory() as tmp:
             os.symlink(REPO_ROOT / "scripts", Path(tmp) / "scripts")
             (Path(tmp) / "eval" / "results").mkdir(parents=True)
@@ -131,7 +139,7 @@ class TestLiveFlightLogGateHasEvidence(unittest.TestCase):
         self.assertEqual(proc.returncode, 0,
                          msg=f"the committed evidence no longer passes its own gate.\n"
                              f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
-        n_logs = len([p for p in tracked if p.endswith(".json")])
+        n_logs = len([p for p in logs if p.endswith(".json")])
         self.assertIn(f"matched: {n_logs}", proc.stdout)
 
 

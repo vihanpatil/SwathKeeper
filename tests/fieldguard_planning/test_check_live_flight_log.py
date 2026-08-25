@@ -433,22 +433,75 @@ class TestMinBirdClearanceSourceOfTruth(unittest.TestCase):
 
 
 class TestAcknowledgementMarkersOnRealEvidence(unittest.TestCase):
-    """The committed evidence set must not fail CI, and must not be green either."""
+    """The committed evidence set must be honestly LABELLED. It is NOT required to be green.
 
-    def test_every_breaching_committed_log_has_BOTH_halves_of_an_acknowledgement(self):
+    That distinction was implicit until 2026-08-25 and this class asserted the stronger thing. A NEW
+    breach is a FAILED flight: the runbook's answer (AVOIDANCE_REAL_DETECTION.md 6a) is a written
+    finding beside the evidence and NO pin, which is HALF an acknowledgement -- INVALID, exit 1, and
+    correct. Requiring both halves of every breaching committed log would have made "pin it" the way
+    to get the suite green, i.e. exactly the self-service acknowledgement the two-half rule exists to
+    prevent, wearing a test's clothes."""
+
+    def _committed(self):
+        """(path, parsed log, verdict, messages) for every committed flight log, scored the way CI
+        scores it: no --truth, so the truth join is whatever TRUTH_BINDINGS + discovery resolve."""
         for p in sorted(checker.RESULTS_DIR.glob("*flight_log*.json")):
-            log = json.loads(p.read_text())
+            status, messages = checker.check_file(p)
+            yield p, json.loads(p.read_text()), status, messages
+
+    @staticmethod
+    def _breaches(log, messages) -> bool:
+        """Does this log breach the bar THE GATE THAT GOVERNS IT measures against?
+
+        A schema-2 log is asked its OWN verdict; only pre-seam legacy logs are scored on
+        `closest_approach()`, which is the gate they were flown under. Deciding this on the
+        detection-referenced number for a schema-2 log is wrong in BOTH directions and both are
+        live: on the 2026-08-25 take the demoted detection CPA reads 0.2096 m while the gated
+        ground-truth CPA is 0.0067 m (the estimator's metre-scale error is why ADR-013 am. 12
+        demoted it), and a MISS at closest approach produces no detection there at all -- so a real
+        breach can carry no detection CPA whatsoever and this loop would skip the log in silence."""
+        if checker.schema_version(log) is None:
             cpa = checker.closest_approach(log)
-            if cpa is None or cpa[0] >= checker.min_bird_clearance_m():
+            return cpa is not None and cpa[0] < checker.min_bird_clearance_m()
+        return any(checker.CPA_BREACH_TAG in m for m in messages)
+
+    def test_every_breaching_committed_log_carries_its_written_finding(self):
+        for p, log, status, messages in self._committed():
+            if not self._breaches(log, messages):
                 continue
             with self.subTest(log=p.name):
                 self.assertTrue(checker.marker_path_for(p).exists(),
-                                f"{p.name} breaches CPA at {cpa[0]:.4f} m with no "
-                                f"{checker.MARKER_SUFFIX} marker -- CI will fail hard")
-                self.assertIn(p.stem, checker.ACKNOWLEDGED_BREACH_STEMS,
-                              f"{p.name} breaches CPA at {cpa[0]:.4f} m and carries a marker, but "
-                              f"its stem is not pinned in ACKNOWLEDGED_BREACH_STEMS -- CI will "
-                              f"fail hard, and correctly: an unreviewed breach is not acknowledged")
+                                f"{p.name} breaches CPA with no {checker.MARKER_SUFFIX} marker -- "
+                                f"the finding is the one thing that must exist beside the evidence")
+                if p.stem in checker.ACKNOWLEDGED_BREACH_STEMS:
+                    self.assertEqual(status, checker.ACKNOWLEDGED, " ".join(messages))
+                else:
+                    # HALF an acknowledgement: the documented, correct state of a NEW breach.
+                    self.assertEqual(status, checker.INVALID, " ".join(messages))
+                    blob = " ".join(messages)
+                    self.assertIn("HALF an acknowledgement", blob)
+                    self.assertNotIn("stale acknowledgement marker", blob)
+
+    def test_every_committed_real_detector_log_can_be_JOINED_to_its_bird_track(self):
+        """QA finding G47, on the real evidence. Sim time restarts near 0 every run, so the first
+        committed applied log overlaps every later take: the 2026-08-25 take scored "AMBIGUOUS TAKE
+        -> INVALID" with NO CPA printed, and the gate then called the take's own marker stale.
+
+        This is also the guard on the test above, which decides marker-need from the verdict: a log
+        the gate cannot join reports no breach, needs no marker, and passes that test in silence.
+        A committed schema-2 real-detector log whose CPA cannot be measured is evidence of nothing
+        -- bind it in TRUTH_BINDINGS or do not commit it."""
+        for p, log, _status, messages in self._committed():
+            if (log.get("run") or {}).get("detector", {}).get("source") != checker.DET_NDVI_BLOB:
+                continue                       # demo/none/legacy logs have no ground-truth join
+            with self.subTest(log=p.name):
+                blob = " ".join(messages)
+                for cannot_tell in ("AMBIGUOUS TAKE", "ambiguous truth track", "no truth track"):
+                    self.assertNotIn(cannot_tell, blob)
+                # A measured answer, either shape: a number, or NONE-IN-BAND with its denominator.
+                # Bare "gt_cpa_m" would also match the freeze-debit line every flight prints.
+                self.assertRegex(blob, r"gt_cpa_m (NONE-IN-BAND|-?\d)")
+                self.assertIn(checker.TRUTH_BINDINGS.get(p.stem, "bird_drive_"), blob)
 
     def test_both_historical_breaches_are_still_ACKNOWLEDGED_end_to_end(self):
         """Byte-for-byte the verdict they were flown under: the two logs the allowlist pins keep
@@ -494,6 +547,13 @@ class TestAcknowledgementMarkersOnRealEvidence(unittest.TestCase):
         checks out breaching logs without their acknowledgements and goes red on history."""
         rules = (REPO_ROOT / ".gitignore").read_text()
         self.assertIn("!eval/results/live_flight_log_*.SAFETY_FINDING.md", rules)
+
+    def test_bound_truth_tracks_are_git_allowlisted_so_CI_can_join_them(self):
+        """The third file CI needs per real-detector take. A flight log checked out without the
+        applied log it is bound to scores "no truth track" -- the gate would report that it could
+        not tell, on evidence whose whole point is a measured separation."""
+        rules = (REPO_ROOT / ".gitignore").read_text()
+        self.assertIn("!eval/results/bird_drive_*_applied.jsonl", rules)
 
 
 if __name__ == "__main__":

@@ -252,16 +252,12 @@ hides a real one. The gate refuses to guess for you — with an explicit `--trut
 other candidates and fails **`AMBIGUOUS TAKE`**, naming them. If it does: identify the log whose sim
 window covers the whole flight, move the others out of `eval/results/`, re-run.
 
-**This WILL fire on the very first scoring run of any new take, and it is not your mistake.** The
-2026-08-23 truth track `bird_drive_20260823T073836Z_applied.jsonl` is **committed** (it anchors the
-ADR-003 am. 7 labels), and Gazebo sim time restarts near 0 every run, so a fresh take's sim window
-always overlaps it. Move it aside before scoring and restore it after — it is tracked, so git brings
-it back exactly:
-
-```bash
-mv eval/results/bird_drive_20260823T073836Z_applied.jsonl /tmp/   # score the new take...
-git checkout -- eval/results/bird_drive_20260823T073836Z_applied.jsonl   # ...then restore
-```
+**Committed truth tracks always overlap a fresh take's sim window** (Gazebo sim time restarts near
+0 every run), so the span scan alone cannot disambiguate — that is what `TRUTH_BINDINGS` in
+`scripts/check_live_flight_log.py` is for. To score a take whose evidence will be committed: add
+one line binding the flight-log stem to its `bird_drive_*_applied.jsonl` filename, **in the same
+diff as the evidence**, then score. The pin is the disambiguation; never move committed safety
+evidence out of the tree to get past the scan (one forgotten restore is a lost truth track).
 
 *(The `birds` pane also prints the exact `--truth` line on its own Ctrl-C, including the sim window
 the truth track covers — but `down` kills the session a few seconds later, so read it then or use

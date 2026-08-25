@@ -54,6 +54,14 @@ PARKED_Z = 1.0                            # |dz| = 14 m from cruise: outside ver
 # like a real future take, because that IS the case this guards -- the next --detect flight.
 PINNED_LOG = f"{checker.ACKNOWLEDGED_BREACH_STEMS[0]}.json"
 NEW_TAKE_LOG = "live_flight_log_20260901T120000Z.json"
+# The truth-track BINDING under test (`TRUTH_BINDINGS`), read from the checker for the same reason
+# PINNED_LOG is: a test may not assert a join the shipped gate would not make. The stamp is recovered
+# from the bound filename so the fixtures' `write_truth(stamp=...)` lays the file down under exactly
+# the name the binding asks for -- `test_the_binding_values_are_shaped_like_applied_logs` proves the
+# round trip rather than leaving it to luck.
+BOUND_STEM, BOUND_TRUTH_NAME = next(iter(checker.TRUTH_BINDINGS.items()))
+BOUND_LOG = f"{BOUND_STEM}.json"
+BOUND_STAMP = BOUND_TRUTH_NAME[len("bird_drive_"):-len("_applied.jsonl")]
 
 
 # ------------------------------------------------------------------------------------ fixtures
@@ -1220,6 +1228,130 @@ class TestTruthTrackRequired(Harness):
 
 
 # ================================================================================================
+# 8b. TRUTH_BINDINGS -- which truth track belongs to which take (QA finding G47, 2026-08-25)
+# ================================================================================================
+class TestTruthBindings(Harness):
+    """A flight reaches its bird track by a REVIEWED PIN, not by sim-time overlap.
+
+    THE FAILURE THIS CLASS EXISTS FOR. Gazebo sim time restarts near 0 every run, so the first
+    committed applied log overlaps EVERY later take. From the second committed track onward the
+    overlap scan could only say AMBIGUOUS: measured on the 2026-08-25 take, the gate printed no CPA
+    at all (the 0.0067 m breach was unreachable), and then told the operator the take's own
+    SAFETY_FINDING marker was stale "beside a log that does not breach CPA". CI could never have
+    reproduced the breach verdict. Overlap cannot identify a take; a pin can.
+
+    Every fixture here uses the SHIPPED binding rather than a hand-typed stem -- a test may not
+    assert a join the shipped gate would not make.
+    """
+
+    OTHER_XY = (50.0, 62.0)          # the rival track's bird: 12.0 m away, a DIFFERENT number
+    BOUND_XY = (50.0, 58.0)          # the bound track's bird: 8.0 m away
+
+    def _rival(self):
+        """The role the committed 2026-08-23 track plays in the real results dir: a perfectly
+        readable applied log, overlapping this flight's window, belonging to another take."""
+        return self.write_truth(truth_records(straight_line("bird_0", [self.OTHER_XY] * 4)),
+                                stamp="RIVALTAKE")
+
+    def _bound(self):
+        return self.write_truth(truth_records(straight_line("bird_0", [self.BOUND_XY] * 4)),
+                                stamp=BOUND_STAMP)
+
+    def test_a_bound_take_joins_its_OWN_track_with_a_rival_log_sitting_right_there(self):
+        """The headline: no --truth, two overlapping logs, and the flight is still scored."""
+        self._rival()
+        self._bound()
+        msg = self.assertValid(self.check(make_log(), name=BOUND_LOG))
+        self.assertIn("gt_cpa_m 8.0000", msg)                    # the BOUND bird, not the rival's
+        self.assertIn(BOUND_TRUTH_NAME, msg)                     # and it names what it joined
+        self.assertNotIn("AMBIGUOUS", msg)
+        self.assertNotIn("ambiguous truth track", msg)
+
+    def test_an_explicit_truth_that_AGREES_with_the_binding_is_the_runbook_invocation(self):
+        """`--truth <the driver's own log>` is what AVOIDANCE_REAL_DETECTION.md tells the operator
+        to type. With a rival log present that used to be a hard AMBIGUOUS TAKE."""
+        self._rival()
+        truth = self._bound()
+        msg = self.assertValid(self.check(make_log(), truth=truth, name=BOUND_LOG))
+        self.assertIn("gt_cpa_m 8.0000", msg)
+
+    def test_a_truth_the_command_line_SUBSTITUTES_for_the_binding_is_refused(self):
+        """A pin the command line can override is not a pin. The rival log is readable, overlapping
+        and wrong -- and it is exactly what `ls -t …_applied.jsonl | head -1` hands you after an
+        aborted takeoff."""
+        rival = self._rival()
+        self._bound()
+        result = self.check(make_log(), truth=rival, name=BOUND_LOG)
+        self.assertInvalid(result, "CONTRADICTS the reviewed binding")
+        self.assertInvalid(result, BOUND_TRUTH_NAME)             # names the log it wanted
+        blob = " ".join(result[1])
+        for either_track in ("gt_cpa_m 12.0000", "gt_cpa_m 8.0000"):
+            self.assertNotIn(either_track, blob)                 # neither track scored the flight
+
+    def test_THE_PROBE_a_bound_track_that_is_MISSING_is_never_replaced_by_the_rival(self):
+        """The dangerous shape of a fallback. With the bound log absent, the overlap scan finds
+        EXACTLY ONE candidate -- the rival -- so a binding that fell back would score this flight
+        against another take's bird and report a confident 12.0000 m PASS. The pin is not a hint."""
+        self._rival()
+        result = self.check(make_log(), name=BOUND_LOG)
+        self.assertInvalid(result, "no truth track")
+        self.assertInvalid(result, "TRUTH_BINDINGS")
+        blob = " ".join(result[1])
+        self.assertNotIn("gt_cpa_m 12.0000", blob)               # the rival's answer, never given
+        self.assertNotIn("bird_drive_RIVALTAKE_applied.jsonl", blob)
+
+    def test_an_explicit_truth_that_does_not_exist_is_still_the_first_thing_reported(self):
+        """A typo'd path on a bound flight must not be silently healed by the binding."""
+        self._bound()
+        self.assertInvalid(self.check(make_log(), truth=self.dir / "nope.jsonl", name=BOUND_LOG),
+                           "does not exist")
+
+    def test_the_bound_track_must_still_OVERLAP_the_flight_it_is_bound_to(self):
+        """The pin says which log; it does not say the flight and the log are the same take. A
+        binding pointing at a non-overlapping track is a bad pin, and stays a hard refusal."""
+        self.write_truth(truth_records([(t + 9000.0, {"bird_0": (0.0, 0.0, CRUISE_Z)})
+                                        for t in TRUTH_SIM]), stamp=BOUND_STAMP)
+        self.assertInvalid(self.check(make_log(), name=BOUND_LOG), "no overlap")
+
+    def test_an_UNPINNED_flight_is_left_exactly_as_it_was(self):
+        """The other half of the contract, and the reason the binding is a dict rather than a
+        loosened rule: a take nobody reviewed still has to prove which track is its own."""
+        self._rival()
+        rival2 = self.write_truth(truth_records(straight_line("bird_0", [self.BOUND_XY] * 4)),
+                                  stamp="SECOND")
+        self.assertInvalid(self.check(make_log(), name=NEW_TAKE_LOG), "ambiguous truth track")
+        self.assertInvalid(self.check(make_log(), truth=rival2, name=NEW_TAKE_LOG),
+                           "AMBIGUOUS TAKE")
+
+    def test_the_binding_values_are_shaped_like_applied_logs(self):
+        """Structural, and it proves this file's own BOUND_STAMP round trip: every value must be a
+        `bird_drive_<stamp>_applied.jsonl` filename (never a path) -- that is the name the driver
+        writes, the name `.gitignore` re-includes so CI checks it out, and the name resolved BESIDE
+        the flight log."""
+        for stem, name in checker.TRUTH_BINDINGS.items():
+            with self.subTest(stem=stem):
+                self.assertTrue(stem.startswith("live_flight_log_"), stem)
+                self.assertEqual(Path(name).name, name, "a binding value is a filename, not a path")
+                self.assertTrue(name.startswith("bird_drive_"), name)
+                self.assertTrue(name.endswith("_applied.jsonl"), name)
+        self.assertEqual(f"bird_drive_{BOUND_STAMP}_applied.jsonl", BOUND_TRUTH_NAME)
+
+    def test_a_bound_flight_that_is_COMMITTED_has_its_track_committed_beside_it(self):
+        """If the flight log is in eval/results, the log it is bound to must be there too -- else
+        the committed evidence is unscoreable and CI reports 'no truth track' instead of the
+        flight's real verdict. Skips per binding whose flight log is not present (eval/results is
+        gitignored in some checkouts)."""
+        for stem, name in checker.TRUTH_BINDINGS.items():
+            log = checker.RESULTS_DIR / f"{stem}.json"
+            if not log.exists():
+                continue
+            with self.subTest(stem=stem):
+                self.assertTrue(log.with_name(name).exists(),
+                                f"{stem} is bound to {name}, which is not beside it in "
+                                f"{checker.RESULTS_DIR.name}/ -- the gate cannot score the take")
+
+
+# ================================================================================================
 # 9. The ground-truth CPA itself
 # ================================================================================================
 class TestGroundTruthCpa(Harness):
@@ -1661,8 +1793,10 @@ class TestDetectionCpaIsEstimatorErrorOnly(Harness):
 class TestReportedDiagnostics(Harness):
     def test_the_missed_detection_signal_has_a_denominator(self):
         """A bird truly inside the threat cylinder on N ticks, the loop engaged on M of them.
-        Reported, never gated: a bird BEHIND the drone is invisible to a forward-facing camera, so
-        gating this would measure geometry, not detection quality."""
+        Reported, never gated: the camera is NADIR (ADR-007 am. 5 -- it looks straight down), so a
+        bird inside the cylinder is routinely outside the downward footprint at its own altitude and
+        one above the drone is never in frame at all. Gating this would measure geometry, not
+        detection quality."""
         recs = truth_records([(t, {"bird_0": (50.0, 55.0, CRUISE_Z)}) for t in TRUTH_SIM])
         truth = self.write_truth(recs)
         log = make_log(events=[detection_event(1, (50.0, 55.0, CRUISE_Z))])
