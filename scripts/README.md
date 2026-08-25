@@ -59,7 +59,7 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
 - `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses, or frame FNR / precision slip past their calibrated floors (ADR-003).
 - `check_ndvi_bands.py` — ADR-007 Gate 2: samples the raw `/fg/sensor/nir/image` band and asserts
   canopy/soil/bird read back materially different, well-separated values (see
-  `docs/runbooks/NDVI_VALIDATION.md`, needs a running Docker sim + `--out` for a JSON summary; `--print-calibration`
+  `docs/archive/NDVI_VALIDATION.md`, needs a running Docker sim + `--out` for a JSON summary; `--print-calibration`
   works standalone, no ROS 2 needed). **Passed live 2026-08-18** (canopy 0.854 > soil 0.212 > bird
   0.040 over 996 frames); it is a regression check now, not a pending experiment.
 - `check_render_alive.py` — the render-sanity probe `fly_pipeline.sh` runs before every flight
@@ -81,7 +81,7 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   run and nothing noticed.
 - `check_sim_smoke.py` / `ci_sim_smoke.py` / `ci_sim_smoke.sh` — the headless CI smoke flight and
   its regression gate (ADR-008). **Unverified live** — the job stays `workflow_dispatch` until one
-  green run (`docs/runbooks/SIM_CI.md`).
+  green run (`docs/archive/SIM_CI.md`).
 - `validate_agents.py` — validates the tiger-team config + repo structure (the `validate-config` CI job).
 
 **Flight-session helpers (run alongside a live sim):**
