@@ -6,6 +6,126 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-25 — the loop closes on a bird the drone found itself, and the gate written the day before fails the take
+
+**THE FLIGHT HAPPENED.** For the first time in this project, the avoidance loop ran on a bird that
+nothing injected: an NDVI frame off the real render, the ADR-003-adopted blob detector on the node's
+`detection_source`, a range from the apparent-size ray, a latched setpoint, GUIDED. Four maneuvers,
+one encounter, zero stale detections dropped, zero clock-domain violations, the coverage ledger
+closing **720 covered / 0 debt**.
+
+**And the take is INVALID.** `gt_cpa_m` **0.0067 m** horizontal to `bird_0` at tick 991
+(`t_sim` 202.775 s) against a 3.00 m bar — drone at z 15.03, bird at 11.00, 4.03 m of vertical
+separation, inside the ±6 m threat band. A 2-tick / 0.161 s clock stall prices a **1.1277 m** freeze
+debit on top, so the gated number reads **−1.1210 m**. Exit 1. That is the pre-registered outcome of
+the runbook's §7, written down before the flight precisely so it could not be reinterpreted after it,
+and the record follows §6a to the letter: the breach gets its marker file and deliberately **no** pin
+in `ACKNOWLEDGED_BREACH_STEMS`, so the take stands INVALID until it is re-flown behind R4 (escape
+geometry, still open).
+
+The thing worth saying out loud: **the gate that failed this flight did not exist the day before it.**
+It was built on 2026-08-24, torn apart adversarially five times in that same session, and the process
+that built it wrote the prediction that it would fail. A safety gate you only trust when it is green is not
+a safety gate. This one failed its own project's flagship flight on day one and cost the take — which
+is the entire point of having built it.
+
+### What the flight did prove
+
+- **The seam is real and it is exact.** Re-scoring the clip offline and pushing the boxes back through
+  `src/fieldguard_planning/ndvi_detect.box_to_detection` reproduces the flight log's own logged
+  `Detection.position_enu` to **1 micrometre**, agreeing on all 1301 in-window frames — across
+  jammy's scipy 1.8.0 in the air versus 1.13.1 on the host. That closes ADR-013's "transfer verified
+  on ONE scipy version" caveat with a third version measured in flight.
+- **Detector rate, first in-air measurement: 1301 / 1302 = 99.9232 %** against the 0.90 floor. The
+  single loss is `dropped_no_intrinsics=1`, the startup-ordering transient the constant's comment
+  predicted. Floor deliberately **not** narrowed at n=1.
+- **R2 flew and was not vacuous.** Four accepted maneuvers with swept tree clearances
+  1.393 / 1.756 / 1.340 / 1.857 m against the new 1.0 m margin, and 8 candidate rejections behind
+  them. Flown path: **0 `is_safe_3d` violations over 1858 points**. R3 missed activating by **15 mm** —
+  the 18.90 m reversal carried `trigger_range` 1.015 m against a `degenerate_range_m` of 1.0.
+- **The NDVI half is the best on record.** 3310 frames stitched, 649 painting at **5.0 Hz flat** →
+  **720 / 720 cells imaged**, 0 unimaged. `check_tree_positions.py`: **18/18 imaged, 11/18
+  canopy-grade, median lift +0.5562**, every one of the 11 positive cells within 2.0 m of a tree
+  centre, PASS. The ADR-003-adopted 2026-08-23 clip re-measured the same day for a like-for-like reads
+  18/18, **9/18**, **+0.5402** — this take beats it on both. The throughput fix held for a third
+  independent flight: 100 % delivery on both bands, the 8 MiB DDS profile reaching all four segments.
+- **The threshold's false-positive study is half done.** Across all 3310 frames — 1.02 gigapixels —
+  the darkest non-bird pixel is **−0.4406 on every single frame**, and **zero** pixels anywhere fall
+  below −0.50. The warmest bird pixel is −0.6697. So −0.61 sits in a 0.229-wide empty band and any
+  value inside it is bit-identical on this clip. The background half is characterised; the **range**
+  half is not (the threshold has only ever been exercised at ~4 m depth, on a 47 px bird), so −0.61
+  stays **PROVISIONAL**.
+
+### The breach is not the control law's alone, and that is the expensive finding
+
+Reconstructing the encounter tick by tick says the loop never had a chance to work. `bird_0` patrols
+lane x=15 at z=11; the drone flies the same lane southbound at 8.4 m/s, closing at **14.4 m/s**. The
+**first detection arrived on the CPA tick itself**: sensor lead time **0.175 s**, policy lead time
+**0.000 s**. Latch at 991, re-latch at 992 with the away-vector sign-flipped in 0.123 s as the drone
+passed over the bird, recommand at 993, re-latch at 994, resume at 995 on `threat_cleared` — because
+one empty frame replaced the latest detection, not because anything went stale. GUIDED authority
+window: **0.434 s**. Lateral displacement achieved against a 10 m command: **0.018 m**.
+**The avoidance loop moved the vehicle 1.8 cm.**
+
+The detector is not implicated. Ground truth says `bird_0` was truly inside the threat cylinder on 16
+ticks, 7 of which the camera captured a frame for — and **2** of those had the bird inside the image.
+The detector produced a box on exactly those 2: TP 2 / FP 0 / FN 0, precision 1.000, recall 1.000,
+per-bird-track FNR 0.000. It converted every opportunity it was given. `eval/score.py` still returned
+**EVIDENCE INSUFFICIENT** and it was right to: a denominator of 2 frames and 1 of 3 birds is not
+evidence, and the guard that refuses to score it is the same evidence floor that caught the
+zero-denominator ADOPT bug. ADR-003's ADOPT is therefore **neither challenged nor confirmed** by this
+flight.
+
+The cause is footprint geometry. The mount is **nadir**; at the encounter's 4.03 m depth the camera
+images about **4.0 %** of the threat cylinder's cross-section, and its half-width reaches the 12 m
+policy radius only at 19.5 m of depth — far outside the ±6 m band the policy cares about. The five
+missed in-cylinder frames were 1.4–7.8 m outside the image edge. A `--backtest` run of
+`scripts/predict_bird_visibility.py` reproduces the whole thing independently: 2 / 0 / 0 in view.
+**No escape geometry can buy back warning time the sensor never had** — so R4 is now ranked, exactly
+as the pre-registration said it would be, but it must be priced against 0.175 s of lead and 0.4 s of
+dwell rather than against a 12 m cylinder, and it cannot be the only fix.
+
+**And the abort gate would have caught it.** `predict_bird_visibility.py` PASSes at its
+`DEFAULT_SPEED_MPS = 3.0` default and **FAILs at `--speed 8` and `--speed 9.4`**; the encounter was
+flown at ~9.4 m/s. The constant's provenance string cites a runbook that contains no speed figure at
+all. A 3 m/s default booked a session that could only ever produce a 2-frame encounter. That default,
+not the detector and not the threshold, is the cheapest thing standing between here and a re-fly.
+
+### Again: a gate that measures values cannot see geometry
+
+A green **99.92 %** detect rate sat on top of a flight where the detector saw a bird on 2 of 1301
+frames. The camera was pointed correctly, the pixels were correct, every counter was in range, and
+the vehicle still flew through a bird. This is the same failure class as ADR-007 amendment 5's
+horizon-facing mount, which passed every value gate in the project while looking at the sky, and the
+lesson has not changed: **each geometry assumption needs its own geometry gate**, and value gates must
+never be read as covering one.
+
+### The evidence nearly ate itself
+
+Teardown step 2 was skipped, so `record_node` was **still writing frames 22 minutes after the flight
+ended** — caught only because two `ls` calls a minute apart returned different counts. It was
+recovered through the shipped teardown path rather than an offline rebuild (`ClipWriter` opens
+`poses.jsonl` with `"w"`, so rebuilding would have truncated the evidence), and finalize printed a
+genuine meta block: 3310 frames, 671 airborne, 5.0 Hz. Cost: **2639 post-landing parked frames**, 80 %
+of the clip by count. They are harmless — all below the ground plane, all zero-update — but
+`num_frames` 3310 is now 22 minutes of a parked drone. **Quote 671 airborne / 649 painting.** Nothing
+in `status`, in the launcher, or in the gate noticed; the safety verdict scored complete without ever
+needing the clip.
+
+`drive_birds.py` was still appending to the take's only bird ground truth as well, growing
+1348 → 2202 records during review. The breach itself is immutable (the log is append-only, tick 991
+re-measures identically), but denominators around it moved, so some of the gate's printed counts
+cannot be reproduced by re-running it. Freeze the driver before anything is re-scored.
+
+Two smaller true things. The schema-1.1 clock anchor flew for the first time and the runbook's
+"should sit near 0.039 s" was a **floor, not a constant** — measured median **0.0526 s** over 596
+ticks, p95 0.105. And the two-half acknowledgement contract cannot currently run on this take at all:
+CI invokes the gate without `--truth`, and committing this take's applied track makes two candidates
+overlap, so the log goes INVALID for "ambiguous truth track" and **the CPA breach is never printed**.
+The record shape is a decision owed before the marker is written.
+
+---
+
 ## 2026-08-25 — the docs get a front door, and this log stops lying by omission
 
 No code, no config, no flight state changed. A reader-first pass over the documentation: `README.md`
