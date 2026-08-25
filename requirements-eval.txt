@@ -1,9 +1,13 @@
 # Pinned Python dependencies for the eval spike harness (eval/, sim/spike/) -- devops-owned.
 #
-# The bulk of the planning test suite (tests/fieldguard_planning/ -- avoidance loop, coverage,
-# geofence, mission waypoints) is intentionally stdlib-only and does NOT need this file -- that's a
-# feature: it stays runnable on a bare Python interpreter with zero install step, in CI or on a demo
-# machine. Weeks 5-6 added ONE scoped exception: the NDVI fusion + georef-stitch tests
+# The avoidance/coverage/geofence core is intentionally stdlib-only, but ten test modules in
+# tests/fieldguard_planning/ import numpy, so a bare interpreter exits 1 there with 614 of 822 green
+# (unittest's loader turns a module-scope ImportError into an ERROR, not a skip) -- install this file
+# first. Only `python3 -m unittest discover -s tests -p 'test_*.py'` (57, OK) is genuinely
+# install-free; CI installs this file BEFORE running any test root, deliberately.
+# Python floor: these pins need **Python 3.11+** (CI pins 3.12). On the 3.9 macOS host, pip reports
+# "No matching distribution found" for numpy==2.5.1 -- use a 3.11+ interpreter or a venv.
+# Weeks 5-6 added ONE scoped exception to the stdlib-only rule: the NDVI fusion + georef-stitch tests
 # (test_ndvi_fusion.py, test_ndvi_georef.py, testing src/fieldguard_planning/ndvi_fusion.py /
 # ndvi_georef.py) need numpy for pixel-array math -- documented as a deliberate, scoped deviation in
 # ndvi_fusion.py's own module docstring, not a project-wide dependency change. They reuse THIS same

@@ -1,6 +1,19 @@
 # Avoidance Demo — the Live Reactive-Avoidance Loop *(runbook; born Weeks 3-4)*
 
 > ## PARTLY SUPERSEDED (2026-08-24) — read this first
+> **Safety, before you run anything here:** this repo's two ACKNOWLEDGED bird-clearance breaches —
+> closest approach **0.0518 m** and **0.0597 m** against a **3.00 m** bar — were flown on *this*
+> `--demo` scripted-bird arm: both logs are `scenario: live_run`, their CPA is measured to
+> `demo_bird_0`, and the `Ctrl-C` step below is what writes them. The escape geometry that caused
+> them is deliberately **still open** (ADR-013 am. 12; the 2026-08-24 fixes are
+> a 1 m tree margin and a no-re-latch rule, not that), so **a re-run is expected to breach again** —
+> that is a measurement, not a surprise. Score every run with `scripts/check_live_flight_log.py`. If
+> it breaches: write the `<log-stem>.SAFETY_FINDING.md` marker and **stop there**. Turning the gate
+> green also takes the second half — the stem pinned in `ACKNOWLEDGED_BREACH_STEMS` inside
+> `scripts/check_live_flight_log.py` — which is a reviewed diff on the gate itself, deliberately not
+> yours to add in the same pass. Full rule:
+> [AVOIDANCE_REAL_DETECTION.md](AVOIDANCE_REAL_DETECTION.md) §6a.
+>
 > **What still stands:** the `--demo` scripted-bird procedure below. It is the deterministic
 > regression arm and the A/B against perception (ADR-013 am. 2), and `avoidance_node --demo` is
 > live code.

@@ -6,6 +6,144 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-25 — the docs get a front door, and this log stops lying by omission
+
+No code, no config, no flight state changed. A reader-first pass over the documentation: `README.md`
+rewritten as the front door (one heatmap, the differentiator in a paragraph, a status table with the
+open items visible, and every headline number naming the file that proves it), `docs/README.md`
+rewritten as a routing map that says which of the three document *kinds* to trust, and two files that
+had **stopped being runbooks** — a frozen gate record and a plan that was never a procedure — moved
+into `docs/archive/` with banners. Stubs stay at their old paths, because `DECISIONS.md` is
+append-only and a path an ADR once linked has to stay reachable forever.
+
+Two things worth keeping from it. The open half of the archived sim-CI plan was **booked into the
+ROADMAP cut log before the file moved** — archiving open work without recording the deferral is
+exactly the failure that log exists to prevent. And this file had a quieter version of the same bug:
+it promised the full narrative and stopped at 2026-08-21, three sessions early, while `ROADMAP.md`
+and `DECISIONS.md` had moved on without it. The two entries below are that fix, written from the ADRs
+rather than from memory.
+
+---
+
+## 2026-08-24 — the whole offline half of real-detection avoidance lands, and the gate that will judge it is torn apart five times
+
+Four things shipped in one session, and not one of them is *done* by this project's own definition:
+"landed offline" is a claim about the host suite, not about the vehicle. Every piece below waits on
+the same single flight.
+
+**The seam.** The ADOPTED detector moved verbatim into one home —
+`src/fieldguard_planning/ndvi_detect.py`, with `eval/blob.py` deleted rather than shimmed — and was
+wired onto the avoidance node's `detection_source` under ADR-009: stamped detections with a staleness
+gate, bird range from the apparent-size ray, never the ground-plane projection that is fail-dangerous
+at altitude. One clock end to end: absolute Gazebo sim seconds, a >0.5 s-future tripwire, and a
+refuse-to-start if no `/clock` reading ever arrives. The claim that mattered most is that the move is
+**provably neutral** — re-scoring the adopted clip through its new home reproduces
+`detections_ndvi.json` bit-identically (1256 frames, 24 boxes) and the ADOPT verdict with identical
+numbers. A rewrite wearing amendment 7's verdict would have cost a flight to re-earn it.
+
+**R2 and R3, priced instead of guessed.** `lateral_tree_margin_m` 0.0 → 1.0 and a refusal to re-latch
+on a degenerate range reading, swept over **11,856 degenerate cases**: HOLD rate 5.64 % → 15.66 %,
+minimum accepted swept tree clearance 0.000 → **1.000 m**, sub-metre tail 28.1 % → **0 %** — and the
+flown encounter still dodges 19/19. The cost is stated in the same breath as the benefit, because a
+refusal is not a dodge: the executor now says **REFUSED — zero displacement, honours no clearance
+bar**, and the HOLD it falls through to logs its own bird clearance so the gate can report that as
+ungated context, never as a verdict. Escape geometry (R4) is deliberately not in this.
+
+**The safety bar moves onto ground truth.** Closest approach is now measured against the birds'
+applied-pose truth, read through the same functions ADR-003's labels use; the monocular
+detection-CPA is demoted to a labelled estimator check and can never gate again. Both historical
+breach logs still read ACKNOWLEDGED, byte-identically. And acknowledgement now costs **two halves** —
+the marker file beside the log *and* the log's stem pinned in the gate's source, a reviewed diff —
+precisely so the runbook's own remedy for a breach cannot double as a one-file way to turn a new bird
+strike green.
+
+**The runbook.** `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`: seven panes plus the detector shell,
+both preflights, evidence-first teardown, the exact scoring line, and a written pre-registration.
+
+**Then the gate was read adversarially five times, and mostly lost.** Six findings in the first pass,
+one of them critical: a 0.8 s frozen clock is 5.6 m of bird motion, and a true **0.0000 m** strike
+was reported as a **3.5000 m PASS**. Seven more in the third round, the sharpest being that the
+ground-truth number was a true lower bound on the *drone* axis and still a vertex **sample** on the
+bird's — a bird driven through a hovering drone between two ticks scored 3.8067 m VALID and now
+scores **0.0000 m BREACH**. Every finding was reproduced with a probe against the real code before it
+was believed, and every fix pinned by a test **run against the pre-fix file and seen to fail**. Suite
+**530 passed / 2 skipped / 2 xfailed → 877 / 2 / 0**: one xfail was promoted to a plain assertion
+when R2 landed, the other honestly retired, because it asserted that a *frozen artifact* would one
+day become safe and so could never activate.
+
+**The offline dry run, which is the flight's comparison set and not its result:** 8 of 1256 frames
+would have produced an in-cylinder threat — bookable, not a dodge storm — range error against truth
+median **1.65 m** / max **3.67 m**, materially worse than the single case the adoption quoted, and
+detector wall time p95 **4.8 ms** against a 200 ms tick, so perception will not block the executor.
+
+**Pre-registered in writing, before the take:** R2 and R3 do not fix the escape geometry, so the
+flight may honestly **FAIL its own gate**. If it breaches, the marker gets written and the pin does
+**not** — the take stands at INVALID, exit 1. That is the correct record for a flight that breached
+and can be re-flown, and it is the measurement that ranks escape geometry next.
+
+---
+
+## 2026-08-22/23 — three threads close in two days, and a gate written afterwards calls two green flights bird strikes
+
+### The transport was the bottleneck all along (ADR-013 amendments 7-9)
+
+Two rounds of counters before any lever: every lost frame got a name, and **three of four candidate
+levers died to instrumentation instead of to flights**. Round 3 found the mechanism and source-verified
+it in Fast DDS 2.6.11 — every large sample fragments at **65,384 B even over shared memory**, the
+default shared-memory segment holds **8 fragment slots** against the 10 / 15 / 19 fragments an
+NIR / RGB / NDVI sample needs, and on overflow the transport **silently discards and reports success**.
+One 8 MiB segment later (`config/dds/fg_fastdds.xml` plus `--shm-size=1g` at container re-create),
+delivery on both bands reads **100.0 %** and painting cadence goes **0.4767 Hz → 5.0 Hz**.
+
+The flagship take that followed painted 624 frames at exactly **5.00 Hz** — all 623 inter-frame gaps
+0.200 s — and imaged **720 of 720 cells: the first full-grid, correctly georeferenced map in the
+project's history**, 18/18 trees imaged, 14 canopy-grade. It also reversed two of round 2's own
+conclusions out loud: run-age decay never existed (it was segment exhaustion wearing a clock's
+clothes), and the long mission out-yields the short one at **1.4× cells/min** because it spreads
+frames over new ground.
+
+### ADR-003 criterion 3: CLOSED — ADOPT NDVI-direct, on the real render (amendment 7)
+
+The detection decision this project had deferred since the spec, closed with numbers on *measured*
+labels: **per-bird-track FNR 0.000** against a ≤ 0.1 bar, **every bird detected before its closest
+approach**, precision 0.708 / recall 0.850 (TP 17 / FP 7 / FN 3) over 20 visible bird-frames, 3/3
+birds. The competing arm scored 0.000 across the board and that is **not** RGB's ceiling — its
+birdness test is inverted on this world, documented and deliberately left untouched.
+
+What makes it defensible is the order the blockers fell in, each measured closed before the next was
+named: geometry (ADR-015), throughput (amendments 6-9), then ground truth — the render lagged the
+labels by 0.12-0.81 s, invisible at 0.41 Hz and only measurable at 5, so the annotator had to replay
+the driver's own step function instead of interpolating a continuous path, and the harness now
+refuses to score an estimate. A classical blob detector is the adopted answer, and the synthetic
+0.445 precision bar stands as the number any learned model must beat before it earns a place.
+
+### The ledger closes 720 / 0 — and then QA reads the same flight (amendments 11-12)
+
+The avoidance loop's first run on the current stack: 19 detections → 1 takeover (AUTO→GUIDED at
+waypoint 6, trigger range 9.27 m) → **19/19 maneuvers vetted `accepted`, 0 rejected** → resume on
+`threat_cleared`, ledger **covered 720 / debt 0**, the partition summing to exactly 720. The
+2026-08-18 run had closed 513/207; this was the first full closure.
+
+Then the adversarial pass measured the one number nobody had: **closest approach to the bird was
+0.0518 m against the policy's own 3.00 m bar, with every gate green.** From the first accepted divert
+the vehicle gained **45 mm** across-track in six ticks while closing 9.3 m along-track, still doing
+6.57 m/s at closest approach — because candidate 0°, straight away, is a full reversal, the one
+escape ownship momentum forbids in a head-on closure. Nothing in the pipeline computed closest
+approach at all: "19/19 vetted" was a claim about *setpoints* that had been quietly reading as a
+claim about *separation*.
+
+That number became a gate the same day, and its first pass over committed evidence found the
+2026-08-18 flight had breached too — **0.0597 m**, five days and one executor revision earlier,
+against the same static bird. The second log is what proves the cause is the escape geometry rather
+than the re-latch logic. Both are kept and marked ACKNOWLEDGED — recorded history, never a passing
+flight — and the control-law fixes were held back for their own live gate instead of shipping on the
+strength of a replay.
+
+**The lesson, and it is the best interview answer this project has:** a loop can pass every gate it
+owns and still be missing the gate that measures what it is for.
+
+---
+
 ## 2026-08-21 (third entry) — a flight-free session: two gates, one geometry fix, and the number that says whether to book the next Docker session
 
 Deliberately no container, no flight, no ROS. Everything below runs on the host in seconds, and the
@@ -445,7 +583,7 @@ which landed the same night (ADR-012): birds → static models (per-visual therm
 unlike actor skins) + `scripts/drive_birds.py` interpolating the unchanged trajectory JSON through
 `set_pose` at the camera rate. Verified in-container on a renamed-world copy: 3 birds in the
 render scene (was 0), driver placed bird_0 trajectory-exact. Gazebo must be relaunched to pick up
-the regenerated world. Full details: `docs/runbooks/NDVI_VALIDATION.md` session log.
+the regenerated world. Full details: `docs/archive/NDVI_VALIDATION.md` session log.
 
 ## 2026-08-18 — The audit, the rename, and Phase A1 hardening
 
@@ -486,7 +624,7 @@ the kill-switch gate ran FIRST in Docker before any temperature authoring: `gz-s
 loads, the world loads with the two-sensor mount, all four `/fg/sensor/*` topics present. One real
 failure en route: the mount joint's parent-link name was wrong twice before
 `iris_with_gimbal::base_link` resolved (the `<include merge="true">` flattening — full record in
-`docs/runbooks/NDVI_VALIDATION.md`). NDVI fusion + georef stitch math shipped sim-agnostic and
+`docs/archive/NDVI_VALIDATION.md`). NDVI fusion + georef stitch math shipped sim-agnostic and
 unit-tested. Scope guards recorded: no YOLOv8 keyword-chasing, no startup cosplay
 (`docs/ROADMAP.md` cut log). Remaining live-verification debt batched into ONE session: Gates 1-3 +
 ADR-003 real-render re-run.

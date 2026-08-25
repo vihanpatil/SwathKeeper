@@ -197,6 +197,12 @@ today's four — lives on `feat/throughput-instrumentation`. Full narrative: `do
 ## Cut / deferred log
 _(product-lead records cuts here with date + reason — interview material.)_
 
+- **2026-08-25 — headless-render sim CI stays manual-dispatch; not a v1 blocker (ADR-008).** Its
+  plan doc was a plan and a feasibility verdict, never a procedure, so it moved to
+  `docs/archive/SIM_CI.md` in the docs cleanup. The image-build half is green (`sim-image.yml`,
+  2026-08-18); the render-smoke half ("What needs the human", steps 1-4) has never run and is
+  **recorded open here** rather than swept away with the file — archiving open work without booking
+  the deferral is exactly what this log exists to prevent.
 - **2026-08-24 — safety scope bounded to R2/R3 for v1; R4 and R5 stay RECORDED-OPEN.** ADR-013
   am. 12 ranked five fixes. R1 shipped, R2 + R3 land and fly on the next avoidance flight. **R4**
   (reversal-preferring candidate order) needs closing geometry v1 does not have — 18 of 19 replayed

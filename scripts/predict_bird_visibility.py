@@ -16,8 +16,8 @@ not tell anyone (`limited_by` in the report). On the AS-FLOWN geometry it found 
     driver-start offset. No cadence, speed or luck can ever show that; only geometry can.
   * TIMING -- bird_1 and bird_2 DO cross the lanes, so they were in frame for a median 3 and 11 of
     901 opportunities at the 5 Hz sensor tick (0.3 % / 1.2 %). At the demo take's actual airborne
-    frame rate (0.41 Hz, 53 frames in 127.8 s -- ADR-013's throughput problem) that becomes a
-    median 0 and 1: the measured zero, reproduced from pure config.
+    frame rate (0.41 Hz, 53 frames in 127.8 s -- ADR-013's throughput problem, fixed since in
+    am. 9) that becomes a median 0 and 1: the measured zero, reproduced from pure config.
 That split is what ADR-015 acted on: the committed geometry now predicts PASS (medians 8 / 6 / 11,
 no bird structural) because bird_0's PATROL LINE moved onto the lane -- lowering it was measured to
 fix nothing (the miss is cross-track) and to cost the avoidance story. The as-flown numbers above are
@@ -32,8 +32,13 @@ than none):
     along the flight direction and the 480-px axis across it (ADR-007 mount extrinsic), so the
     cross-track half-footprint is the SHORTER one.
   * Frames are sampled at `--fps` (default 5.0 Hz = the sensor tick, config/ndvi_camera.json
-    update_rate_hz). That is opportunity, not yield: only ~12 % of sensor ticks currently reach a
-    recorded clip (ADR-013 am. 6a), so divide predicted frames by ~8 for expected RECORDED frames.
+    update_rate_hz). That is frame OPPORTUNITY, not recorded yield -- pass whatever cadence your LAST
+    clip measured. Since the transport fix (ADR-013 am. 9: Fast DDS SHM segment + `--shm-size=1g`)
+    every recorded clip has come in at 5.0 Hz with 100 % band delivery, full boustrophedon included
+    (am. 10 retired run-age decay), so opportunity == yield WHILE `config/dds/fg_fastdds.xml` is
+    actually loaded -- `meta["dds"]` in each clip is the proof. Before that fix ~12 % of ticks
+    reached a clip (am. 6a); a clip that recorded at 0.4-0.5 Hz is a transport regression, and
+    predicting at 5 Hz for it would overstate the yield ~10x.
   * Birds fly the committed `config/birds/farm_world_birds.json` waypoints via the same
     `drive_birds.pose_at` interpolation the live driver uses -- imported, never re-implemented.
   * PHASE SWEEP: `scripts/fly_pipeline.sh` starts the bird driver when the vehicle passes 10 m, so
@@ -526,9 +531,12 @@ def format_prediction(rep: dict) -> str:
             L.append(f"           {', '.join(timing)}: TIMING -- does cross the frame, just rarely. "
                      f"Cadence, ground speed and bird speed all move this number; geometry does "
                      f"not have to change.")
-    L.append("  NOTE: cadence is frame OPPORTUNITY, not recorded yield -- only ~12 % of the "
-             "sensor's ticks currently reach a clip (ADR-013 am. 6a). The demo take's airborne "
-             "frames arrived at 0.41 Hz, not 5 Hz.")
+    L.append("  NOTE: cadence is frame OPPORTUNITY, not recorded yield -- pass the cadence your "
+             "LAST clip measured (frames / airborne span).")
+    L.append("        Since the transport fix (ADR-013 am. 9: Fast DDS SHM segment + "
+             "--shm-size=1g) recorded cadence has measured 5.0 Hz flat at 100 % band delivery, full "
+             "boustrophedon included -- but only while config/dds/fg_fastdds.xml loads, which the "
+             "clip's meta[\"dds\"] proves. A 0.4-0.5 Hz clip is pre-fix or unloaded.")
     return "\n".join(L)
 
 
@@ -560,7 +568,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     help=f"ground speed m/s (default {DEFAULT_SPEED_MPS})")
     ap.add_argument("--fps", type=float, default=DEFAULT_CADENCE_HZ,
                     help=f"effective frame cadence Hz (default {DEFAULT_CADENCE_HZ} = the sensor "
-                         f"tick; recorded yield is ~12%% of it, ADR-013 am. 6a)")
+                         f"tick; recorded clips have matched it at 100 %% since ADR-013 am. 9 -- "
+                         f"pass your last clip's own measured rate if it did not)")
     ap.add_argument("--phase-step", type=float, default=DEFAULT_PHASE_STEP_S,
                     help=f"bird-phase sweep resolution, s (default {DEFAULT_PHASE_STEP_S})")
     ap.add_argument("--min-frames", type=int, default=DEFAULT_MIN_FRAMES,

@@ -35,13 +35,17 @@ GROUPS: list[tuple[str, str, list[str]]] = [
     ("Living", "Always current. If these disagree with anything else, these win.",
      ["docs/README.md", "docs/SPEC.md", "docs/ROADMAP.md", "docs/DECISIONS.md",
       "docs/BUILD_LOG.md"]),
-    ("Runbooks", "Operational, executed in Docker sessions; named by function.",
-     ["docs/runbooks/SIM_BRINGUP.md", "docs/runbooks/AVOIDANCE_DEMO.md",
-      "docs/runbooks/AVOIDANCE_REAL_DETECTION.md", "docs/runbooks/NDVI_VALIDATION.md",
-      "docs/runbooks/FULL_PIPELINE_DEMO.md", "docs/runbooks/SIM_CI.md"]),
+    ("Runbooks", "Operational, executed in Docker sessions. Four, and you run all four.",
+     ["docs/runbooks/SIM_BRINGUP.md", "docs/runbooks/FULL_PIPELINE_DEMO.md",
+      "docs/runbooks/AVOIDANCE_REAL_DETECTION.md", "docs/runbooks/AVOIDANCE_DEMO.md"]),
     ("History", "Records, deliberately frozen. Kept because live docs cite them.",
-     ["docs/SPIKE_ndvi_vs_rgb.md", "docs/archive/WEEK3_VALIDATION.md",
+     ["docs/SPIKE_ndvi_vs_rgb.md", "docs/archive/NDVI_VALIDATION.md",
+      "docs/archive/SIM_CI.md", "docs/archive/WEEK3_VALIDATION.md",
       "docs/archive/tiger_team_playbook.md"]),
+    # Stubs at paths that append-only committed text (docs/DECISIONS.md) and CI comments still
+    # link. Listed so the discovery check in main() keeps passing and the links stay live.
+    ("Moved", "One-line pointers, kept so older links keep resolving.",
+     ["docs/runbooks/NDVI_VALIDATION.md", "docs/runbooks/SIM_CI.md"]),
 ]
 
 # --- pattern vocabulary -------------------------------------------------------------

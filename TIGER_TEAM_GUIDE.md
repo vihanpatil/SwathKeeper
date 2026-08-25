@@ -1,5 +1,11 @@
 # SwathKeeper Tiger Team — Setup, Use & Maintenance Guide
 
+> **Just browsing?** This file is the *process* behind the repo, not the drone system: SwathKeeper
+> is built by one engineer directing eight specialised Claude Code subagents (product, architecture,
+> perception, sim, flight software, devops, QA/safety, narrative), and this is how that team is
+> configured and run. For the system itself go to [`README.md`](README.md); to run it,
+> [`SETUP.md`](SETUP.md). Nothing here is needed to build or fly the sim.
+
 This guide turns the generic solo-founder tiger-team playbook into a **working, version-controlled
 Claude Code team tailored to SwathKeeper**. It covers what was built, how to set it up, how to run
 the team day to day, how to maintain it as the project grows, and the improvements made over the
@@ -75,10 +81,10 @@ allowlist, a living roadmap, a decision log, a README skeleton, and a project di
 CLAUDE.md                always-loaded project context (every agent reads this)
 docs/SPEC.md             living system spec — what the system IS, as built (not a schedule)
 docs/BUILD_LOG.md        chronological narrative — what shipped, what broke, what it taught
-docs/runbooks/           operational Docker-session procedures (bringup, demos, the ADR-007 gates)
+docs/runbooks/           the four Docker-session procedures you actually run (bringup, demos, the take)
 docs/ROADMAP.md          living phased plan — product-lead updates each standup
 docs/DECISIONS.md        ADR-lite tradeoff log — interview material
-docs/archive/tiger_team_playbook.md   the original playbook, for reference
+docs/archive/            frozen records: closed gate sessions, the sim-CI verdict, the original playbook
 README.md                public-facing readme (gtm-narrative-lead owns it)
 src/ sim/ config/ scripts/ eval/ tests/   project scaffold with per-dir READMEs
 ```
@@ -108,9 +114,9 @@ Per the docs, these escalate from suggestion to guarantee:
 
 ### 2.3 The phases, mapped to roles
 _(Phase labels keep the original week numbers; the calendar deadline was dropped 2026-08-18 — the
-ordering still holds. As of 2026-08-21: Weeks 1-5 are substantially complete; current work is
-recording-throughput round 2, then one re-fly that clears four blockers, then the Week 6 detector and
-the Week 7 endgame — see `docs/ROADMAP.md` for the live version.)_
+ordering still holds. This list is the role map, not a status report: **`docs/ROADMAP.md` is the
+only file that says where the project actually stands**, and it is deliberately not duplicated
+here.)_
 - **Weeks 1-2 (stand up the sim + spike):** `robotics-sim-engineer` pins versions and gets a mission
   flying; `perception-ml-engineer` runs the NDVI-vs-RGB spike and records the decision;
   `flight-software-engineer` builds the boustrophedon planner. `tech-lead` locks the interface contracts.

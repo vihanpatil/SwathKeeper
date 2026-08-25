@@ -48,7 +48,7 @@ and the ROS 2 bridge each fail in different, easily-confused ways, and conflatin
 `sim/docker/Dockerfile` is the interactive dev image: single-stage, root, unpinned branches — but it
 now bakes in every hard-won runtime dep (`libdebuginfod1`, `microxrceddsgen`, MAVProxy, the three
 `ros_gz_bridge` message packages) and the ROS/Gazebo env in `.bashrc`. The pinned-SHA, CI-oriented
-sibling is `sim/docker/Dockerfile.ci` (`docs/runbooks/SIM_CI.md`).
+sibling is `sim/docker/Dockerfile.ci` (`docs/archive/SIM_CI.md`).
 
 Build it (run locally on the Mac host):
 
@@ -93,7 +93,7 @@ scripts/sim_docker_run.sh            # creates, or re-attaches to, the 'fieldgua
 Note the deliberate absence of `--rm`: the container is kept, so `docker start -ai` (or
 `docker exec -it fieldguard-sim bash` for extra shells) preserves anything apt-installed live inside
 it. A `--rm` container throws that away on every exit — including the three `ros_gz_bridge` runtime
-deps the later runbooks assume are present (`NDVI_VALIDATION.md` session log, `FULL_PIPELINE_DEMO.md`
+deps the later runbooks assume are present (`docs/archive/NDVI_VALIDATION.md` session log, `FULL_PIPELINE_DEMO.md`
 Shell 0).
 
 **Verify:** the shell prompt comes up inside the container, and `ls /opt/ros/humble/setup.bash` and
@@ -300,7 +300,7 @@ Docker port mapping needed (AP_DDS's default UDP peer is `127.0.0.1` for non-Chi
 
 ```bash
 # Shell C — the micro-ROS agent (start it BEFORE SITL; see the warning below).
-# Note: AVOIDANCE_DEMO.md / NDVI_VALIDATION.md label shells in start order (A=Gazebo, B=agent,
+# Note: AVOIDANCE_DEMO.md / docs/archive/NDVI_VALIDATION.md label shells in start order (A=Gazebo, B=agent,
 # C=SITL), so their "Shell B" is this shell.
 source /root/ardu_ws/install/setup.bash
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019
@@ -426,6 +426,6 @@ Proof capture (no ROS 2 bridge/DDS needed for v1): MAVProxy already writes a tel
 ## Next (out of scope for this doc)
 
 The farm world (`sim/worlds/farmguard_field.sdf`) and the avoidance loop both shipped. Once this
-doc's steps are green, go to: `AVOIDANCE_DEMO.md` (the reactive loop), `NDVI_VALIDATION.md` (the
-ADR-007 gate record), `FULL_PIPELINE_DEMO.md` (the full survey + NDVI + heatmap flight, and the
+doc's steps are green, go to: `AVOIDANCE_DEMO.md` (the reactive loop), `docs/archive/NDVI_VALIDATION.md`
+(the ADR-007 gate record), `FULL_PIPELINE_DEMO.md` (the full survey + NDVI + heatmap flight, and the
 `scripts/fly_pipeline.sh` launcher that wraps it).

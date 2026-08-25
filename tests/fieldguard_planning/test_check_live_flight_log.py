@@ -465,17 +465,29 @@ class TestAcknowledgementMarkersOnRealEvidence(unittest.TestCase):
                 with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
                     self.assertEqual(checker.main([str(p)]), 0)
 
+    # Every committed doc that can put an operator at the prompt of a live flight. AVOIDANCE_DEMO.md
+    # earns its place by history: BOTH acknowledged breaches were flown on its --demo arm, and it
+    # carried no CPA bar at all until 2026-08-25. ROADMAP.md is where the next take is booked.
+    DOCS_THAT_SEND_SOMEONE_FLYING = (
+        ("docs", "runbooks", "AVOIDANCE_REAL_DETECTION.md"),
+        ("docs", "runbooks", "AVOIDANCE_DEMO.md"),
+        ("docs", "ROADMAP.md"),
+    )
+
     def test_the_runbook_tells_the_operator_about_BOTH_halves(self):
         """The bug was as much documentation as code: the runbook's remedy for a breach was "add
         `<log-stem>.SAFETY_FINDING.md`", which was also the one-file way to make the next strike
-        green. A runbook that names only the marker half sends the operator back down that path, so
-        it must name the reviewed half too -- by the constant's own name, in the same file."""
-        runbook = REPO_ROOT / "docs" / "runbooks" / "AVOIDANCE_REAL_DETECTION.md"
-        if not runbook.exists():
-            self.skipTest(f"{runbook.name} absent")
-        text = runbook.read_text()
-        self.assertIn(checker.MARKER_SUFFIX, text)                 # the context half
-        self.assertIn("ACKNOWLEDGED_BREACH_STEMS", text)           # the reviewed half
+        green. A doc that names only the marker half sends the operator back down that path, so it
+        must name the reviewed half too -- by the constant's own name, in the same file. Checked
+        across every such doc, not just one, so the asterisk stops being hand-maintained."""
+        for rel in self.DOCS_THAT_SEND_SOMEONE_FLYING:
+            doc = REPO_ROOT.joinpath(*rel)
+            with self.subTest(doc=doc.name):
+                self.assertTrue(doc.exists(),                       # committed docs; absence is news
+                                f"{doc.name} is gone -- if it moved, move it in this list too")
+                text = doc.read_text()
+                self.assertIn(checker.MARKER_SUFFIX, text)          # the context half
+                self.assertIn("ACKNOWLEDGED_BREACH_STEMS", text)    # the reviewed half
 
     def test_markers_are_git_allowlisted_so_ci_sees_them(self):
         """eval/results/* is gitignored; the LOGS are re-included. If the markers are not, CI
