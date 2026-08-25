@@ -21,6 +21,12 @@ flat** (the full sensor tick), first 720/720 maps.
   `FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml`. A container or
   pane missing either silently returns to the old regime; `meta["dds"]` in the clip makes it
   checkable after the fact.
+- **Held on the 2026-08-25 real-detection take, the third independent confirmation:** airborne
+  cadence **5.0 Hz flat** over a 134.0 s window (671 airborne frames), painting cadence **5.0 Hz**
+  (649 painting frames), 720/720 cells. `meta["dds"]` read `min_bytes == max_bytes == 8,413,728`
+  across 4 segments — the profile reached every participant. Transport that flight: `red_frames`
+  3400 / `camera_info_frames` 3400 = **100 %**; fuser 3399 → recorder 3327 = **97.9 %** on the
+  NDVI→recorder hop (72 lost, the only non-zero leak), `on_ndvi_wall_ms` p95 12.1 / max 88.2 ms.
 - Not yet proven at boustrophedon length (5.0 Hz was measured on the 3-min `test_2lane` and on the
   flagship take; run-age decay is still an open question, ADR-013 am. 7).
 

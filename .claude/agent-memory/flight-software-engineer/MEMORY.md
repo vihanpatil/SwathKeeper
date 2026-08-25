@@ -1,4 +1,6 @@
 - [Node/topic map + coverage-debt/control-param notes](node_topic_map.md) — AP_DDS /ap/* contract, avoidance/NDVI node state, control params (R2/R3 2026-08-24), two-half breach acknowledgement, test-flight floors
-- [Live detection seam (ADR-009) + its offline numbers](detection_seam.md) — one gz clock, apparent-size ray, schema-2 run block + the pinned-pre-seam legacy ratchet, phantom-dodge 8/1256, gate preconditions (QA rounds 1-5)
+- [Live detection seam (ADR-009) + its offline numbers](detection_seam.md) — one gz clock, apparent-size ray, schema-2 run block, the 3 reviewed pins incl. TRUTH_BINDINGS (G47), why a breaching take reds CI
 - [Throughput counters + what they measured](throughput_instrumentation.md) — the slop lever is DEAD, thermal is NOT render-limited, recorder logic drops nothing (2026-08-22)
 - [Host-quiet is a flight gate](host_quiet_confound.md) — other Docker containers halved both bands and voided a flight; how to tell host load from a code regression
+- [2026-08-25 flight: lead time, not ordering](flight_20260825_lead_time.md) — 0.0067 m CPA measured; nadir FOV gives ~0.4 s of warning and the executor has no maneuver-completion — reshapes R4
+- [Extractability audit](extractability_audit.md) — what leaves the sim intact, no-packaging/REPO_ROOT costs, the two rival "covered" definitions + the 6.92 vs 7.5 m swath error, ecosystem form facts

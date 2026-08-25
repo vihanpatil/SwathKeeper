@@ -17,6 +17,14 @@ and the tests contradicted each other inside the same repo, which is the same fa
 green gate that measured nothing: a future session would have re-implemented the removed assumption
 because the log told it to.
 
+**Third instance, 2026-08-25 — same family, opposite direction: the TEST contradicted the RUNBOOK.**
+`test_every_breaching_committed_log_has_BOTH_halves_of_an_acknowledgement` demands the
+`ACKNOWLEDGED_BREACH_STEMS` pin whenever a `SAFETY_FINDING.md` marker exists — which is exactly the
+state runbook §6a *requires* after a new breach (marker, no pin, INVALID). Executing the contract
+correctly turned the suite red on the first real breach. **So the rule generalises: whenever a
+contract is written in prose AND enforced in a test, run the suite in the state the prose prescribes
+before calling the contract done.** Nobody had ever executed the marker-without-pin state.
+
 **How to apply:**
 - Amendments written **today and still uncommitted** are corrected **IN PLACE**. Once committed,
   `docs/DECISIONS.md` is APPEND-ONLY and the identical correction becomes a new dated amendment.

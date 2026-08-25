@@ -1,6 +1,6 @@
 ---
 name: adr005-apdds-contract
-description: ADR-005 decided — AP_DDS enabled via explicit param file; /ap/* contract locked to pinned SHA, live-bridge confirmation still owed
+description: ADR-005 — AP_DDS enabled via explicit param file; /ap/* contract locked to pinned SHA and CONFIRMED live 2026-08-05 (all 18 topics appeared as locked); nothing owed
 metadata:
   type: project
 ---

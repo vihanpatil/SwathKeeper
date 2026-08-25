@@ -1,6 +1,6 @@
 ---
 name: adr007-ndvi-render
-description: ADR-007 decided — dual-band NDVI = RGB camera (Red) + Gazebo thermal sensor repurposed as synthetic NIR; NDVI computed in a ROS 2 node; contract locked, render unproven live
+description: ADR-007 — dual-band NDVI = RGB camera (Red) + thermal sensor as synthetic NIR; all four gates CONFIRMED live 2026-08-18, mount geometry corrected and gated; the NIR band is authored, so this NDVI does not transfer to real hardware
 metadata:
   type: project
 ---

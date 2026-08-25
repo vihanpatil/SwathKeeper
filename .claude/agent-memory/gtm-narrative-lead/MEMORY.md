@@ -1,3 +1,4 @@
-- [Headline metrics + sources](headline-metrics.md) — every quotable number as of 2026-08-25, the file that proves it, and the two numbers that may never be quoted
-- [Safety asterisk + story bank](safety-asterisk-and-story-bank.md) — the strongest interview stories (self-catching gates) and which audience each one lands with
+- [Headline metrics + sources](headline-metrics.md) — every quotable number as of the 2026-08-25 first real-detection flight, the file that proves it, and what may never be quoted
+- [Safety asterisk + story bank](safety-asterisk-and-story-bank.md) — the strongest interview stories (pre-registered failure, self-catching gates) and which audience each one lands with
+- [Resume bullet bank](resume-bullet-bank.md) — drafted `impact by approach` bullets with sources, plus the claims explicitly NOT earned yet
 - [Narrative guardrails](narrative-guardrails.md) — honesty + lean-writing rules for outward-facing docs, and the doc parts pinned by tests/link gate

@@ -1,6 +1,6 @@
 ---
 name: adr006-avoidance-executor
-description: ADR-006 decided — reactive avoidance = AUTO->GUIDED->AUTO, our code owns the maneuver; verified @ pinned SHA, live-run confirmation owed
+description: ADR-006 — reactive avoidance = AUTO->GUIDED->AUTO, our code owns the maneuver; CONFIRMED live 2026-08-05. STILL OPEN: MIS_RESTART=0 is typed at flight time, not pinned in any param file
 metadata:
   type: project
 ---

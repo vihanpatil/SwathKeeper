@@ -1,14 +1,21 @@
 ---
 name: phase
-description: Current SwathKeeper phase (Week 6 — the offline half landed 2026-08-24, everything now waits on ONE avoidance flight) and the booking bar for that flight
+description: Current SwathKeeper phase (Week 6 — the 2026-08-25 take FLEW and breached as pre-registered; R4 is now #1) and the booking bar for flights
 metadata:
   type: project
 ---
 
-**As of 2026-08-24: Week 6 — the offline half is DONE; the whole phase now waits on ONE flight.**
-*(2026-08-25: a flight-free docs-cleanup session ran — README/SETUP rewrite, two runbooks archived,
-stale counts fixed. It changed no engineering state; item 1 below is still the only flight on the
-board. Scope ruling recorded in [[scope-guards]].)*
+**As of 2026-08-25: Week 6 — THE TAKE FLEW, and it breached exactly as pre-registered.**
+Seam + R2 + detector (99.92 % in air) + ledger (720/0) all live-gated green; `gt_cpa_m` **0.0067 m**
+to bird_0 at 4.03 m vertical, gated −1.1210 m vs the 3.00 m bar → **INVALID stands** (marker written,
+pin deliberately withheld). Diagnosis is geometry, not the detector: 7 in-cylinder frames → 2
+in-image, sensor lead 0.175 s, policy lead 0.000 s. **R4 escape geometry is now #1 by measurement**,
+paid for by deferring the doc fix-list and item 2's short arm (cut logged in ROADMAP 2026-08-25).
+Three things I owe a call on: the record shape for committing breach evidence (CI can't pass
+`--truth`; committing the track makes the take *ambiguous* and the CPA never prints), whether the
+camera stays **nadir** (lead time vs the whole NDVI half — ask the user, don't guess), and fixing
+`predict_bird_visibility.py`'s `DEFAULT_SPEED_MPS` 3.0 before any re-fly is booked.
+*(An earlier 2026-08-25 docs-cleanup session changed no engineering state. Scope ruling: [[scope-guards]].)*
 (The ~7-8-week hard deadline was **dropped 2026-08-18** — quality over calendar. The scope guard
 survives it: [[scope-guards]].)
 
@@ -28,16 +35,14 @@ survives it: [[scope-guards]].)
   None of it is *done*: every piece awaits the same live gate.
 
 **Open, in order (`docs/ROADMAP.md` "Next up" is the live truth; this is orientation):**
-1. **The next avoidance flight.** ONE take live-gates all four landed pieces AND exercises the last
-   un-exercised half of the proof standard (avoidance has only ever fired on a scripted `--demo`
-   bird). Two preconditions: the image must be rebuilt with `python3-scipy` (multi-hour), and QA's
-   2026-08-24 findings 1/3/4/5 must close first — see the booking bar below.
-2. Full boustrophedon + short-vs-long evidence study on the FINAL config — the long arm rides item
-   1's take for free (that runbook flies the full boustrophedon), so only the short arm is extra.
-3. Criterion 2's offline RGB pixel study (deferred 2026-08-24 by my call) + lifting −0.61's
-   PROVISIONAL flag.
-4. Doc long-tail — the **owed ADR amendments** for 2026-08-24 first: DECISIONS.md stops at
-   2026-08-23, so ROADMAP.md is currently the only record of what landed, which is backwards.
+1. **R4 escape geometry**, re-scoped against 0.175 s of lead (not the 12 m cylinder), gated on lead
+   time as well as CPA — then the re-fly. Fix the predictor's speed default first.
+2. Item 2's long arm now EXISTS (the take was a full boustrophedon, best-ever tree gate 11/18
+   canopy-grade); only the short `test_2lane` arm remains, and it is deferred behind R4.
+3. Criterion 2's offline RGB pixel study (its input — 3310 RGB PNGs — rode this take for free).
+   −0.61's **background** FP half is now closed; the **range** half needs birds at 3+ distinct ranges.
+4. Doc long-tail — deferred behind R4, except the two load-bearing wrong facts (published 8/6/11
+   medians are the 3 m/s figure; the gate's note says "forward-facing camera" but the mount is nadir).
 5. Week 7 — dashboard, demo video, GTM. The exit being guarded.
 
 **The booking bar, learned 2026-08-24 — this is the durable part:** a Docker session is priced on
@@ -50,5 +55,8 @@ not new scope — it is the no-band-aids rule applied to the certifier.
 **How to apply:** flights need the user at the controls, so a session goal is agent-doable offline
 work unless it is explicitly prepping/booking a flight. Book a user-flown Docker session only when
 ONE take clears several blockers at once (that pattern has now paid off twice), run the host
-predictor first (refuse on medians 0/0/1), and pre-register the expected outcome — this flight may
-honestly FAIL its own GT-CPA gate, which ranks R4 next rather than wasting the take.
+predictor first **at the speed the mission will fly** (2026-08-25: PASS at the 3 m/s default, FAIL at
+the flown 9.4 — that default booked a 2-frame encounter), and pre-register the expected outcome. The
+2026-08-25 pre-registration paid off exactly as intended: the take failed its own gate and that is
+reported as the system working, never spun as a pass. Also: **run teardown and freeze the bird driver
+before scoring** — skipping both cost this take reproducible denominators and nearly its clip.

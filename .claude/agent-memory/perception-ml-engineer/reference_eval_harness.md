@@ -17,6 +17,15 @@ Pipeline: `annotate_real_clip.py` (real clips: bird labels from the driver's app
 `baseline_ndvi.py` / `baseline_rgb.py` → `score.py`. One-shot: `eval/run_spike.sh` with `CLIP=` /
 `RESULTS=` env overrides.
 
+**Scoring a real clip without mutating it.** Everything downstream of `annotate_real_clip.py` reads
+`<clip>/poses.jsonl` and nothing else, so the documented path is `--in-place`. When that is not
+allowed (or the clip is uncommitted flight evidence), front it with a **view directory**: `frames`
+and `poses.jsonl` symlinked (the latter at `poses_annotated.jsonl`), `meta.json` copied, and point
+`--clip` at the view. `ndvi_path` in the pose lines is clip-relative, so this is transparent, costs
+nothing, and leaves the raw recording byte-identical. Worked example:
+`eval/results/adr003_20260825/clipview/`. Full 3310-frame NDVI arm runs in ~19 s on the host; the
+RGB arm (stdlib PNG decode) ~30 s — neither needs a Docker session.
+
 **The detector itself is NOT in `eval/` (moved 2026-08-24, `eval/blob.py` deleted).** It lives in
 `src/fieldguard_planning/ndvi_detect.py` — thresholds, `detect_blobs`, `detect_ndvi` — because the
 live avoidance node must run the code ADR-003 amendment 7 measured, not a second copy of it. Both

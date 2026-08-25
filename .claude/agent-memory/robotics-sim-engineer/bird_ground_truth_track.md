@@ -25,7 +25,15 @@ Measured numbers worth keeping (2026-08-23 take, 860 records / 839 ok / 3 birds,
   much × RTF — up to ~0.8 m of bird motion asserted with false precision. Schema **1.1** records
   `clock_wall_s` (post-poll) and widens the bracket over that interval. 1.0 logs reconstruct
   bit-identically (verified against the committed am. 7 log).
-- `set_pose` round-trip: 237 ms median, 2.04 s max. Achieved tick rate ~1.3 Hz at `--rate 2`.
+  Re-measured on the 2026-08-25 real-detection take (first flight with the `--detect` shell also
+  running): the poll cost **rose ~35 %** — `clock_wall_s - tick_wall_s` median **0.0526 s**, min
+  0.0413, p95 0.1048, max 0.3124 over 596 ticks. Treat 0.039 s as a floor, not a constant; it
+  tracks host load.
+- `set_pose` round-trip: 237 ms median, 2.04 s max. Achieved tick rate ~1.3 Hz at `--rate 2`
+  (2026-08-25: 251 ms median / 2.05 s p95 / 2.24 s max, **1.05 Hz** achieved).
+- **The log keeps growing until `drive_birds` is killed.** On 2026-08-25 it ran ~25 min past landing
+  and the record grew *after* the safety gate had been scored, making that gate's denominators
+  irreproducible. Freeze the driver before scoring — see [[teardown-unfinalized-clip]].
 - RTF over one flight: 0.34 → 0.93 (median 0.58) — never assume a constant.
 
 The offline rehearsal lives in `tests/fieldguard_planning/test_bird_truth_log.py`: a `FakeGazebo`

@@ -1,6 +1,6 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-25 (docs-revamp audit; through fix round 5)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-25 (first real-detection take BREACHED; G43-G55 open; G53 RETRACTED; G54 = no avoidance command has ever moved the vehicle >0.42 m against 10 m commanded; G55 = the gate tells the operator to DELETE the marker on a breaching log whose truth join failed)
 metadata:
   type: project
 ---
@@ -8,6 +8,123 @@ metadata:
 Standing safety-hunt list. Recheck before any sign-off; close/append as they resolve. Scenario and
 regression locations: [[reference-safety-scenario-catalog]]. Which artifact proves which published
 number: [[reference-docs-evidence-chain]].
+
+**OPENED 2026-08-25 — FIRST REAL-DETECTION AVOIDANCE TAKE FLEW AND BREACHED
+(`live_flight_log_20260825T210402Z`, gt_cpa_m 0.0067 m to bird_0 at tick 991 / t_sim 202.775,
+vertical sep 4.03 m, gated −1.1210 m vs the 3.00 m bar). Exactly the runbook §7 pre-registration.
+These are the gaps the flight MEASURED. Ranked by consequence.**
+- **G55 — THE GATE PRINTS AN INSTRUCTION TO DELETE THE SAFETY EVIDENCE ON A BREACHING LOG.** Found
+  2026-08-25 while writing this take's marker; nobody else caught it because it only appears once a
+  marker EXISTS beside a log whose truth resolution failed. `check_schema2` computes
+  `breach = cpa_m is not None and cpa_m < bar` (`scripts/check_live_flight_log.py:1610`). When
+  `resolve_truth` fails — ambiguity (G47), no track, unreadable track — `cpa_m` is None, `breach` is
+  **False**, and the `elif marker.exists()` branch (:1631-1634) fires:
+  *"a stale acknowledgement marker ... is present beside a log **that does not breach CPA**. An
+  acknowledgement beside a passing log pre-authorises the next regression on this file; **delete the
+  marker**."* REPRODUCED verbatim on the real 2026-08-25 take, which flew **0.0067 m** from a bird.
+  The verdict stays INVALID/exit 1 so it is not a false green — the defect is the **remediation
+  text**: an operator who follows it destroys the written finding beside a 6.7 mm bird strike, after
+  which the log reads "no acknowledgement" and looks like ordinary paperwork. This is the pinned
+  "a rate needs a denominator" lesson in its most dangerous form yet: **absence of a COMPUTED breach
+  is being reported as absence of a breach.** "We could not tell" is being printed as "it did not
+  breach". **How to apply:** the stale-marker branch must be reachable only when CPA was actually
+  MEASURED and passed. Guard it on `cpa_m is not None` (and say "CPA NOT MEASURED — the marker is
+  neither confirmed nor stale" otherwise). Compounds G47: on the committed tree, truth resolution
+  fails for EVERY schema-2 take, so this is the branch the next operator meets by default. Prove any
+  fix red-first against the real take + its marker.
+- **G43 — THE SENSOR HORIZON IS 2.48 m AND THE POLICY'S THREAT HORIZON IS 12 m; warning time at the
+  flown speed was ZERO.** Nadir camera (`ndvi_georef` extrinsic quat_wxyz=(0,1,0,0)), bird_0 4.03 m
+  below cruise → footprint at the bird's depth is 4.96 × 3.72 m. Closing speed 14.4 m/s (drone
+  8.4 m/s south, bird ~6 m/s north, both on lane x=15). MEASURED: 7 NDVI frames captured while
+  bird_0 was truly in the threat cylinder, **2** with the bird inside the image, **2** detections —
+  first detection reached the policy AT the CPA tick. R4 escape geometry cannot use warning that does
+  not exist. **How to apply:** any R4 proposal must be priced against the 0.34 s dwell, not against
+  the 12 m cylinder; the real levers are slower flight, a wider/forward FOV, or threat persistence.
+- **G44 — NO THREAT HYSTERESIS: one empty frame ends an encounter.** `NdviDetectionSource.on_frame`
+  REPLACES `_latest`, so a frame with no boxes clears the threat; the staleness gate never gets to
+  fire. MEASURED: takeover tick 991 → resume tick 995 = **0.434 s of GUIDED**, lateral displacement
+  **0.018 m** (0.054 m over the next 2 s). Four accepted maneuvers moved the vehicle 1.8 cm.
+- **G45 — R3 missed by 15 mm.** `relatch_refused_degenerate=0` is NOT a clean sheet: tick 991 was
+  degenerate (trigger_range 0.21 m) but was a FIRST latch (permitted by design); the 18.90 m setpoint
+  reversal at tick 992 had trigger_range **1.015 m** against `degenerate_range_m` **1.0 m**. The knob
+  is 1.5 % away from having caught the exact event it exists for. Probe the knob's denominator.
+- **G46 — ADR-015's camera gate is green only at a speed the vehicle has never flown.**
+  `predict_bird_visibility.DEFAULT_SPEED_MPS = 3.0` cites "WPNAV_SPEED as flown
+  (docs/runbooks/SIM_BRINGUP.md)" — that file contains no speed at all. MEASURED cruise (z>13 m) p50
+  3.84 / p90 **9.19** / max **12.52** m/s. `--speed 8` → **FAIL, exit 1, 3 of 3 birds below the
+  5-frame floor**; medians 2/0/4 at 8 m/s and 2/2/3 at 9.2 m/s against the published 8/6/11. The
+  flight measured **2/0/0**. The abort gate (runbook §0b) has been passing on the wrong mission.
+- **G47 — a schema-2 breach CANNOT be acknowledged, because CI cannot pass `--truth`.** ci.yml runs
+  `check_live_flight_log.py "${logs[@]}"` with no truth argument. `bird_drive_*_applied.jsonl` is a
+  gitignore exception and the 2026-08-23 track is committed, so ANY newly committed applied log makes
+  ≥2 candidates overlap → `ambiguous truth track` → a HARD problem that no marker+pin can clear, and
+  the CPA is never even printed. REPRODUCED both ways (scratch `results_dir`, `truth=None`). The
+  marker/pin contract was built for the legacy path and has never been exercised on a schema-2 log.
+- **G48 — the truth track kept growing after the gate ran.** `bird_drive_20260825T210030Z_applied.jsonl`
+  went 1348 → 2202 records (310 KB → 548 KB) DURING this review; the driver kept teleporting birds to
+  sim ~992 s while the flight ended at 303.7 s. Headline numbers re-verified stable (0.0067 /
+  −1.1210 / 610-610 / 16 / 4), but `truth landed set_pose calls per bird` moved 489/478/485 →
+  655/625/644: a printed count whose denominator is the whole track, not the flight. Also **278 of
+  2202 set_pose calls failed (12.6 %)**, 0 of them within ±7.5 s of the CPA.
+- **G49 — the gate explains the missed-detection signal with the WRONG mechanism.** Its note says "a
+  bird behind the drone is invisible to a forward-facing camera". The mount is NADIR. The correct
+  reason is footprint-at-depth, which points at a different fix; the wrong reason retires the
+  question. Same family as a vacuous green: an explanation nobody checked.
+- **G50 — `n_at_risk_cells_recovered: 116` describes a maneuver the vehicle did not perform.** Ledger
+  itself is honest (720 covered / 0 debt, all flown), but the divert-audit headline is computed off a
+  COMMANDED divert that produced 1.8 cm of displacement. Safe direction, still a commanded-vs-flown
+  number in a headline.
+- **G51 — the suite is RED on the working tree and the acknowledgement test gates on the DEMOTED
+  metric.** MEASURED 2026-08-25: `pytest tests -q` = **1 failed / 876 passed / 2 skipped**, not the
+  published 877/2/0. `TestAcknowledgementMarkersOnRealEvidence::test_every_breaching_committed_log_
+  has_BOTH_halves_of_an_acknowledgement` (tests/fieldguard_planning/test_check_live_flight_log.py:437)
+  globs the REAL `eval/results/` and fires on the untracked take. Three defects in one test: (a) it
+  scores with `closest_approach` = detection-CPA, which ADR-013 am. 14 demoted to "ESTIMATOR CHECK,
+  NOT A SAFETY GATE" — it reports 0.2096 m where GT-CPA says 0.0067 m; (b) `cpa is None → continue`,
+  so a flight whose detector saw NOTHING while the bird passed at 5 cm is silently exempt — the
+  missed-detection family, un-gated in the test layer; (c) its failure message demands BOTH halves,
+  i.e. it prescribes the pin that am. 17 and runbook §6a say never to add for a re-flyable take
+  (G37's family, in the loudest voice — the one an operator reads at a red suite).
+- **G52 — the two DETECTION scenarios have been PENDING since Week 3-4 and the generator cannot
+  produce them.** `eval/scenarios/det_bird_crosses_path.yaml` and `det_bird_over_low_ndvi.yaml` exist;
+  `generate_flight_logs.py`'s `SCENARIOS` dict (line 45) has no entry for either, so the two
+  self-activating skips in `test_safety_scenarios_pending.py` (:123, :128) have never once activated.
+  The scenario family with ZERO executable coverage is exactly the family the 2026-08-25 take proved
+  binding. `test_ci_evidence_gate.py`'s "every scenario has a committed fixture" uses *generator*
+  scenarios as its denominator, so the two authored-but-unbuilt ones are outside its reach.
+- **G53 — RETRACTED 2026-08-25 (red-team pass). I was WRONG; do not repeat this claim.** I had
+  written that R4-as-candidate-ordering was "falsified" because on all four maneuvers of the
+  2026-08-25 take candidate 0° was rejected by R2 and the vehicle still made 0.0067 m. That
+  generalises one 4-tick encounter in which 0° happened to be tree-blocked. Re-measured across the
+  two EARLIER logs, which I had not opened: on `live_flight_log_20260818T144711Z` (61 maneuvers) and
+  `live_flight_log_20260823T004031Z` (19 maneuvers) candidate **0° was chosen**, and 0° in a head-on
+  closure yields a setpoint whose CROSS-TRACK component is **0.02–0.36 m out of 10.00 m** — half of
+  them command the vehicle FORWARD along its own track (tick 3588 dy **+9.99 m**; tick 341 dy
+  **+9.99 m**) and are logged `verdict: accepted`. `test_R4_is_still_open`'s docstring already names
+  the true mechanism ("in a head-on closure is a full reversal — the escape ownship momentum
+  forbids"). **How to apply:** R4 is NOT superseded by warning time. Warning time and escape
+  direction are CONFOUNDED across the three flights (long warning + degenerate direction on 08-18 /
+  08-23; short warning + non-degenerate direction on 08-25) and no causal claim about the breach
+  mechanism is currently supported by any flight. Resolve it offline before spending a session.
+- **G54 — NOTHING IN THE REPO GATES WHETHER AN AVOIDANCE COMMAND MOVED THE VEHICLE, and measured
+  compliance is 0.5–4 %.** Commanded vs achieved, all three live flights (`flown_path_enu` indexed
+  by tick, GUIDED window from the takeover/resume events):
+  08-18, 61 maneuvers, ~61 ticks in GUIDED, |setpoint−pos| 10.00 m → lateral excursion **0.182 m**;
+  08-23, 19 maneuvers → **0.418 m**; 08-25, 4 maneuvers → **0.054 m**. Every one is
+  `verdict: accepted`, ledger 720/0, "19/19 vetted". Compliance does not improve with more warning
+  time (61 ticks bought less than 19). No `dwell`/`converg`/`setpoint_reached`/`maneuver_complete`
+  concept exists anywhere in `src/`. **This is the highest-order vacuous green in the project: the
+  entire gate suite certifies DECISIONS while the actuator does approximately nothing.**
+  **How to apply:** the missing verification layer is at the ACTUATION boundary, not the perception
+  one — log and gate `maneuver_executed` + achieved displacement, exactly as a COMMANDED setpoint is
+  already refused as FLOWN coverage. Also: no param file sets `WPNAV_*`/`GUID_*` (only `DDS_ENABLE`,
+  `DDS_UDP_PORT` in `config/sitl_params/dds_udp.parm`), so it is still UNKNOWN whether the breach is
+  an autonomy result or an ArduCopter SITL default-tuning / GUIDED-acceptance artifact. Answer that
+  before ranking any control-law work.
+- **UNMEASURED, not clean, on this take:** phantom dodges (bird_1 — the dry run's phantom source,
+  lifted into the ±6 m band by the 0.15/0.18 radius prior — was in frame on **0** of 1301 frames);
+  the executor's bird backstop (`gate_rejects=0`); HOLD clearance (`0 of 0 holds`); R3's refusal
+  branch; swept-path re-vet as ownship moves (S2).
 
 **OPENED 2026-08-25 — DOCS-REVAMP AUDIT (the front door got honest; the shelf behind it did not).
 No verdict-flipping defect. Ranked by which reader gets hurt.**

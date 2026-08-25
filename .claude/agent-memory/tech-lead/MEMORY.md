@@ -1,9 +1,10 @@
 - [ADR-003 NDVI detection CLOSED](project_adr003-ndvi-detection.md) — ADOPT NDVI-direct on the real render (2026-08-23); −0.61 threshold still PROVISIONAL, no model justified
 - [Week-6 seam: ANSWERED](project_week6-detection-seam-open-questions.md) — binding calls 2026-08-24: gz clock end-to-end, GT-CPA vs applied-pose log, detector single-sourced to src/ + scipy in the image
-- [Avoidance take: gate-clear](project_avoidance-take-blockers.md) — 3 QA rounds all FIXED 2026-08-24 (ADR-013 am. 13-17); scipy rebuild is the last gate; marker set FROZEN at 2 logs; 6 open items
+- [Avoidance take: FLOWN + SCORED + BREACHED](project_avoidance-take-blockers.md) — gt_cpa 0.0067 m, pre-registered (ADR-013 am. 18); R2 passed live, R3 vacuous by 15 mm, R4 re-scoped by 0.175 s of LEAD TIME
+- [Swath over-claims the camera](project_swath-vs-camera-footprint.md) — ledger swath 7.5 m vs measured 6.886 m cross-track half-footprint: 8.2 % of every lane pitch is scored covered but never imaged
 - [ADR log must track the gate](project_adr-log-must-track-the-gate.md) — DECISIONS.md went stale on the same gate twice; correct today's uncommitted text in place, append once committed
 - [Moving a doc costs a stub](project_moving-a-doc-costs-a-stub.md) — append-only DECISIONS forces stubs; build_docs_site.py is the only doc gate (run it); a doc test that SKIPs is not a pin
 - [Scenario fixtures are OPEN-LOOP](project_scenario-fixtures-are-open-loop.md) — their CPA is a scenario parameter, not a flown outcome; CPA gate stays scoped to committed live logs (ADR-013 am. 16)
-- [ADR-005 AP_DDS contract locked](project_adr005-apdds-contract.md) — /ap/* map locked to pinned SHA; live-bridge ros2 topic confirmation still owed (batch with ADR-003 in Docker run)
-- [ADR-006 avoidance executor](project_adr006-avoidance-executor.md) — core loop = AUTO->GUIDED->AUTO, our code owns maneuver; cmd in map/ENU, MIS_RESTART=0; live resume confirmation owed
-- [ADR-007 NDVI render](project_adr007-ndvi-render.md) — Red=RGB cam, NIR=thermal sensor repurposed (per-model temp); NDVI in ROS node; /fg/* contract locked; render unproven live (batch w/ ADR-003)
+- [ADR-005 AP_DDS contract locked](project_adr005-apdds-contract.md) — /ap/* map locked to pinned SHA, CONFIRMED live 2026-08-05; the most extractable artifact in the repo
+- [ADR-006 avoidance executor](project_adr006-avoidance-executor.md) — AUTO->GUIDED->AUTO, our code owns the maneuver; CONFIRMED live; MIS_RESTART=0 still typed at flight time, not pinned
+- [ADR-007 NDVI render](project_adr007-ndvi-render.md) — Red=RGB cam, NIR=thermal sensor repurposed; gates green live 2026-08-18; the NIR band is authored, so this NDVI does not transfer to hardware

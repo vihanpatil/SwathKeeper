@@ -1,6 +1,6 @@
 ---
 name: detection-seam-live
-description: The live ADR-009 detection seam in avoidance_node (one gz clock, apparent-size ray, run-block schema 2 + the pinned-pre-seam legacy ratchet) and every number the offline dry run measured before the first --detect flight
+description: The live ADR-009 detection seam in avoidance_node (one gz clock, apparent-size ray, run-block schema 2, the pinned-pre-seam legacy ratchet, the TRUTH_BINDINGS truth-join pin) plus the offline dry-run numbers and why committing a breaching take turns CI red
 metadata:
   type: project
 ---
@@ -156,6 +156,43 @@ bringup precondition, not just a checker rule:
   SPAWN poses. `resolve_truth` now counts candidates even with an explicit `--truth` and fails
   `AMBIGUOUS TAKE`, naming the other logs. (Sim time restarts near 0 each run, so overlap alone can
   never pick the take — that is why this is a refusal, not a heuristic.)
+- **…and the THIRD reviewed pin, `TRUTH_BINDINGS`, is what makes that refusal survivable (G47,
+  fixed 2026-08-25).** Because sim time restarts near 0, the first COMMITTED applied log overlaps
+  every later take, so from the second committed take onward the refusal above fired on every new
+  flight: `AMBIGUOUS TAKE → INVALID`, **no CPA printed at all**, and then a wrong "stale marker"
+  complaint (the breach was unreachable, so the marker looked like it sat beside a passing log).
+  CI could never have reproduced a breach verdict. `TRUTH_BINDINGS` maps flight-log stem →
+  applied-log FILENAME, is consulted FIRST, bypasses the overlap scan, and is resolved BESIDE the
+  log (same as the `.SAFETY_FINDING.md` marker) so a log copied without its truth is unscoreable
+  rather than silently joined to whatever sits in this repo. An explicit `--truth` must AGREE by
+  name. Unpinned flights are byte-identical to before. **The pin is per take, landed in the same
+  reviewed diff as the evidence commit** — the runbook's old workaround (`mv` the 2026-08-23 track
+  to /tmp and `git checkout --` it back) is no longer the answer for a committed take.
+- **The driver sidecar cannot do this job, checked and rejected.** A `run_id` field in
+  `bird_drive_<stamp>.json` would be a NO-OP: the driver's own stem is already the filename, the
+  `applied_log` field and `written_utc` (2026-08-25T21:00:30Z). And a stem-timestamp-proximity
+  auto-join needs a free constant N minutes with no derivation, on the one join a safety verdict
+  rests on. The only non-heuristic future alternative is WALL-CLOCK CONTAINMENT (wall time does not
+  restart) — but the flight log carries **no wall stamps at all** (`run` = clock/detector/
+  policy_params/schema_version/tick_stamp_sim_s), so it would need a new node-written field and
+  would only help future takes. Not built; the pin is one reviewed line per take.
+
+## COMMITTING A BREACHING TAKE TURNS CI RED — measured 2026-08-25, and it is the gate working
+A NEW breach is a FAILED flight: the marker beside the evidence, **no** `ACKNOWLEDGED_BREACH_STEMS`
+pin (that list is for recorded history that cannot be re-flown), verdict INVALID, exit 1. So the
+moment the 2026-08-25 evidence is committed, **two** things go red and both are correct:
+1. `ci.yml` step "Validate committed live flight-log evidence" — the glob matches all three logs
+   (`.gitignore` re-includes `live_flight_log_*.json`, `*.SAFETY_FINDING.md` AND
+   `bird_drive_*_applied.jsonl`), the two historical logs stay ACKNOWLEDGED, the new take is
+   INVALID → step exits 1. Simulated on a fresh-checkout tree: it reproduces `gt_cpa_m 0.0067 m`.
+2. `tests/test_ci_evidence_gate.py::test_step_passes_on_the_committed_evidence`, which asserts
+   exit 0 on a hermetic copy of the committed evidence — that premise ends with this take. (Its tmp
+   tree now also copies the `bird_drive_*` tracks, so when it does go red it says BREACH and not
+   "no truth track".)
+The choices are: accept red CI until R4 lands and the take is re-flown clean; or acknowledge the
+breach with both halves (a reviewed pin — the doctrine says that is for history, not a new
+failure); or hold the evidence out of the tree. **Not a code decision — escalate it.** Whatever is
+chosen, do NOT weaken the gate or the count assertion to get green.
 
 ## Deliberate non-features (do not "fix" without evidence)
 No tracker (`track_id=None`). No second expiry inside the source — `__call__` returns the latest

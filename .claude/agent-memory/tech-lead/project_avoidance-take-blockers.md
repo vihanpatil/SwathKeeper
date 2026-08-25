@@ -1,8 +1,52 @@
 ---
 name: avoidance-take-blockers
-description: The avoidance-with-real-detection take is GATE-CLEAR as of 2026-08-24 after THREE adversarial rounds (13 findings fixed); only the scipy image rebuild gates it — plus the frozen SAFETY_FINDING marker set and 6 ranked non-blocking open items, ADR-013 am. 13-17
+description: The avoidance take FLEW and was SCORED 2026-08-25 — BREACH at gt_cpa 0.0067 m, pre-registered; R2 passed live, R3 was vacuous, R4 is re-scoped by LEAD TIME (0.175 s) not by cylinder geometry. Recorded in ADR-013 am. 18 + companions. History of the three adversarial rounds below.
 metadata:
   type: project
+---
+
+**FLOWN AND SCORED 2026-08-25 (`eval/results/live_flight_log_20260825T210402Z.json`, schema 2,
+uncommitted). Recorded in `docs/DECISIONS.md` as ADR-013 am. 18 + ADR-009 am. 2, ADR-003 am. 9,
+ADR-015 am. 1, ADR-012 am. 3.** Verdict INVALID — CPA breach, exactly as am. 13 pre-registered.
+Gate headline: `gt_cpa_m` **0.0067 m** horizontal to bird_0 at tick 991 (|dz| 4.03 m, inside the ±6 m
+band), `gt_cpa_gated_m` −1.1210 m after a **1.1277 m** freeze debit (a real 2-tick / 0.161 s stall,
+priced ~10 s and 40 m away from the encounter). Ledger 720/0, 116 requeues, 0 clock violations.
+
+**The three architectural facts that outlive the take:**
+1. **R2's live gate PASSED and R3's did not happen.** 4 accepted dodges, swept tree clearances
+   1.393/1.756/1.340/1.857 ≥ the flown 1.0 m margin, 8 candidate headings refused with reasons. But
+   the vehicle displaced **0.018 m** in a **0.434 s** GUIDED window, so no tree clearance was tested
+   in the air — R2 confirms the policy's arithmetic, not the flown outcome. R3 was vacuous: the
+   sign-flipping 18.896 m re-latch carried `trigger_range_m` 1.015 against `degenerate_range_m`
+   1.0 — **it missed by 15 mm**. Interrogate that knob's denominator before widening it.
+2. **R4 is re-scoped by LEAD TIME, not by the cylinder.** Sensor lead **0.175 s**, policy lead
+   **0.000 s** (first detection consumed on the CPA tick), in-image dwell 0.4 s. Bird in-cylinder on
+   16 ticks, loop engaged on 4 — the gap is 100 % nadir-footprint geometry (2.48 m along-track
+   half-reach at 4.03 m depth vs a 12 m threat radius; ~4 % of the cylinder cross-section imaged).
+   **No escape geometry buys warning time the sensor never had.** Price R4 against 0.175 s and gate
+   it on LEAD TIME beside CPA, or a green CPA is luck. The 0° reversal it prefers is structurally
+   unavailable on lane x=15 (orchard row 0). A CLIMB makes the gate print `NONE-IN-BAND` — a pass
+   that needs the horizontal context or it is vacuous.
+3. **Second instance of "value gates cannot catch geometry."** The detector floor read **99.92 %**
+   (1301/1302, floor 0.90) green on a take where the detector saw a bird on 2 of 1301 frames. First
+   instance was ADR-007's four green gates with the camera facing the horizon. Do not narrow the
+   floor on n=1.
+
+**Blocked on a RECORD-SHAPE decision (product-lead), not on engineering.** Two things fire at once:
+(a) the gate returns `AMBIGUOUS TAKE` → INVALID and never prints the CPA, because two applied truth
+logs overlap the flight's sim window (the stale 2026-08-23 one and this take's own) — `--truth`
+selects but does not silence, by design; (b) the marker IS written with no pin (the correct §6a
+state) and `test_every_breaching_committed_log_has_BOTH_halves_of_an_acknowledgement` **globs the
+working tree and demands the pin whenever a marker exists** — so the correct contract state holds the
+suite at 876/1/2. Read charitably that test says "an unreviewed breach must never be committed",
+which makes this evidence uncommittable until re-flown. **Never resolve either by adding a third stem
+to `ACKNOWLEDGED_BREACH_STEMS`** — am. 17 froze it at two.
+
+**Cheapest thing owed before booking the re-fly, and it is not R4:**
+`predict_bird_visibility.py`'s `DEFAULT_SPEED_MPS = 3.0` (provenance cites a runbook containing no
+speed). It PASSES at 3.0 and FAILS at the flown ~9 m/s, so runbook §0b was green at a speed the
+vehicle has never flown. Booking under it buys another 2-frame encounter.
+
 ---
 
 The whole offline half of the avoidance-with-real-detection take landed 2026-08-24 (ADR-003 am. 8,

@@ -172,6 +172,27 @@ files here, don't reset. Open gaps: [[project-open-safety-gaps]].
   mutation per fix reproduces the whole no-band-aids proof in ~10 s and does not touch the working
   tree. Round 3: F1 5 red, F5 3 red, F7 3 red, F3 1 red, baseline OK. `scratchpad/qa_mutation.py`.
 
+- **DISSECT A BREACH WITHOUT THE CLIP: rebuild the camera geometry from three artifacts.** The
+  flight log has positions + `run.detector.intrinsics` (LIVE camera_info) but no orientation; the
+  clip's `poses.jsonl` has `quat_wxyz` + `stamp_sim_s` and needs no `meta.json`; the applied log has
+  the bird. Join by stamp, then `predict_bird_visibility.look_at_bird` / `frame_geometry` +
+  `ndvi_georef.project_world_point` give in-frame / px-outside-edge / miss-in-metres per frame.
+  Cross-check that the count of clip frames inside `min..max(tick_stamp_sim_s)` equals the
+  detector's `frames_detected_on` — on 2026-08-25 both read **1301**, which also fixes the frame-id
+  offset between the two subscribers (clip 964/965 ↔ detector 795/796). Then reconstruct the logged
+  detection end-to-end: project the TRUE bird, build the box at the true radius, push it through
+  `ndvi_detect.box_to_detection` — it reproduced the flown detections to 0.6-15 cm, and the residual
+  is exactly the 0.15/0.18 radius-prior under-ranging (|dz| 4.030 → 3.372 m).
+- **RE-RUN THE GATE YOURSELF; the orchestrator's headline may come from an environment you do not
+  have.** `check_file(path, truth=..., results_dir=<scratchdir>)` is the only way to point the
+  resolver somewhere else — `main()` hard-codes `RESULTS_DIR`, so the CLI cannot. On 2026-08-25 the
+  shipped CLI on the real tree printed NO CPA at all (ambiguous truth track short-circuits
+  `resolve_truth` → `None`); the quoted numbers only exist with the other applied log out of the way.
+- **BEFORE BLAMING THE DETECTOR, COUNT THE FRAMES THE BIRD WAS ACTUALLY IN.** `--backtest` on an
+  annotated clip is the same arithmetic and reproduces history: the 2026-08-23 clip scores
+  2/5/13 frames-in-view (bird_0/1/2) = 20 total against the detector's 20 detected frames. Recall on
+  available frames has been 100 % on both takes; the missed-bird signal is footprint, not sensitivity.
+
 **Run everything (stdlib only, no venv/ROS 2)**
 ```
 python3 -m unittest discover -s tests/fieldguard_planning        # canonical CI job; WANT tests bite here
@@ -189,6 +210,18 @@ verified, no stale figure left in either. Round-4 baseline was 870/2 + 815 + 57.
 (neither / marker only / pin only / both / both + a second gate failure); the fifth must print
 "NOT acknowledgeable". Reconstruct pre-fix by rebinding the one function; the hole reproduces as
 ACKNOWLEDGED/exit 0 on identical evidence.
+**SIXTH state, added 2026-08-25 — probe it every time from now on: marker present + CPA NOT
+COMPUTED.** That is the G55 branch, and it is the one an operator meets by default on the committed
+tree (truth ambiguity, G47). Expected today: the gate says the log *"does not breach CPA"* and tells
+you to **delete the marker** — on a take that flew 0.0067 m from a bird. Reproduce by running the
+shipped CLI on `live_flight_log_20260825T210402Z.json` with its marker in place; the correct verdict
+is only visible via `check_file(..., results_dir=<scratchdir holding only that take's track>)`.
+**MARKER CENSUS (keep current):** three `eval/results/*.SAFETY_FINDING.md` files now. Two are
+ACKNOWLEDGED history and pinned (2026-08-18 0.0597 m, 2026-08-23 0.0518 m). The third —
+`live_flight_log_20260825T210402Z.SAFETY_FINDING.md`, written 2026-08-25 — is **marker-only by
+design** (runbook §6a: after a NEW breach write the marker, do NOT add the pin, the take stands
+INVALID/exit 1 until re-flown after R4). `ACKNOWLEDGED_BREACH_STEMS` stays two long. Anyone who
+finds it three long without a reviewed ADR amendment has found a defect.
 Previous baselines: 860/2/0 after round 3 (805 + 57); 833/2/0 after round 2 (783 + 52). The 2 skips are the self-activating
 `test_safety_scenarios_pending.py` ones (`det_bird_crosses_path`, `det_bird_over_low_ndvi`) — still
 pending, they go live the moment those scenarios drop a `flight_log.json`.
