@@ -37,6 +37,16 @@ cut/deferred log — add new ones there with date + reason):
   staleness expiry: the policy's threat test is per-frame, the executor latches on geometry, and
   ageing detections out is `max_detection_age_s`'s job alone. A tracker that exists to look
   sophisticated is untested state.
+- **Docs-cleanup session bounded to staleness + the newcomer path (2026-08-25).** The living/
+  runbooks/archive taxonomy is good and stays; the problem was staleness and a missing front door.
+  Refused in the same breath: renaming `fieldguard`/`fg` identifiers (ADR-011), a docs restructure,
+  and any code change beyond `scripts/build_docs_site.py`'s doc list. **Ruled against archiving
+  `docs/runbooks/SIM_BRINGUP.md`** despite its superseded manual-flight half: it is the only home of
+  the image + colcon-workspace build detail, `SETUP.md` delegates to it, and `DECISIONS.md` states it
+  "must stay the single audited source". Archived instead (stub left at the old path, because
+  `DECISIONS.md` is append-only and links both): `NDVI_VALIDATION.md` (closed gate record) and
+  `SIM_CI.md` (plan + feasibility verdict, smoke half never run — its open items owed one ROADMAP
+  deferral line).
 - **Closing a gate's own defects is NOT scope creep (2026-08-24).** When QA's adversarial pass shows
   the certifier can print a false PASS, fixing it is the price of the flight, not an addition to it —
   a take scored by a lying gate is the "clean flight yielding nothing scoreable" failure.

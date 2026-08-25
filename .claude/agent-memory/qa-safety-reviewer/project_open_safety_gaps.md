@@ -1,12 +1,47 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-24 (through fix round 5)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-25 (docs-revamp audit; through fix round 5)
 metadata:
   type: project
 ---
 
 Standing safety-hunt list. Recheck before any sign-off; close/append as they resolve. Scenario and
-regression locations: [[reference-safety-scenario-catalog]].
+regression locations: [[reference-safety-scenario-catalog]]. Which artifact proves which published
+number: [[reference-docs-evidence-chain]].
+
+**OPENED 2026-08-25 — DOCS-REVAMP AUDIT (the front door got honest; the shelf behind it did not).
+No verdict-flipping defect. Ranked by which reader gets hurt.**
+- **G39 — the asterisk stops at the front door: `docs/runbooks/AVOIDANCE_DEMO.md` is the arm that
+  PRODUCED both acknowledged bird strikes and it never says so.** Both breach logs are
+  `eval/results/live_flight_log_<UTC>.json` (scenario `live_run`) and §"On Ctrl-C" of that runbook is
+  what writes them. MEASURED: `grep -in "CPA|breach|0.0518|0.0597|SAFETY_FINDING|clearance"` on
+  AVOIDANCE_DEMO.md returns **zero hits**. The 2026-08-25 revamp promoted it onto docs/README.md's
+  four-runbook shelf described as "the deterministic regression arm ... for checking the loop still
+  behaves" — reassuring language routing a reader to the one runbook they can run today, with no
+  pre-registration that a breach is expected (R4 open) and no pointer to the two-half
+  acknowledgement rule, which lives only in AVOIDANCE_REAL_DETECTION.md §6a. README.md and SETUP.md
+  both carry the asterisk loudly, so this is a routing gap, not a lie. **How to apply:** one
+  blockquote in AVOIDANCE_DEMO.md's existing PARTLY-SUPERSEDED banner + one clause in
+  docs/README.md's description. Same shape as G35 — a doc-drift tripwire that is one file deep.
+- **G40 — README.md cites `tests/README.md` as the proof of "877 passed, 2 skipped, 0 xfail" and
+  that file says 279.** MEASURED today: `pytest tests -q` = 877/2 (0 xfail); `discover -s
+  tests/fieldguard_planning` = 822 OK (skipped=2); `discover -s tests -p 'test_*.py'` = 57 OK.
+  tests/README.md still says 248 / 33 / 279, and its second command (`-p 'test_fly_pipeline.py'`)
+  now collects **52**, not 33 — `tests/test_ci_evidence_gate.py` is invisible to it. The revamped
+  front door therefore links a number to a source that contradicts it. Nothing gates any of the
+  three numbers.
+- **G41 — `requirements-eval.txt:4-5` still claims the planning suite "stays runnable on a bare
+  Python interpreter with zero install step, in CI or on a demo machine".** INDEPENDENTLY
+  FALSIFIED 2026-08-25 on a fresh `python3.12 -m venv` (pip only): `discover -s
+  tests/fieldguard_planning` -> **Ran 614, FAILED (errors=10, skipped=17), exit 1**, all ten
+  `ModuleNotFoundError: No module named 'numpy'`. Only `discover -s tests -p 'test_*.py'` (57, OK)
+  is genuinely install-free. SETUP.md §0/§3 were corrected this session; the requirements header was
+  not, and the "in CI" half is doubly wrong — ci.yml installs the pins BEFORE the suite on purpose.
+- **G38 — CLOSED 2026-08-25, VERIFIED.** The stale README is rewritten: the two ~5 cm breaches are a
+  ⚠️ status row plus a "safety story, told straight" section with the reproducing command; escape
+  geometry is stated as deliberately open in three places; the synthetic-stand-in caveat is gone and
+  the real-render ADOPT numbers are sourced to `eval/results/adr003_20260823/spike_scores.json`
+  (verified field-by-field). Residual is G40 only.
 
 **OPENED 2026-08-24 ROUND-5 VERIFICATION (the run-block ratchet round; G34 and G35 VERIFIED FIXED
 and moved down. Nothing found that flips a verdict UNSAFE; the three below are ranked by what they

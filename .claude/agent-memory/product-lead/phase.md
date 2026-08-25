@@ -6,6 +6,9 @@ metadata:
 ---
 
 **As of 2026-08-24: Week 6 — the offline half is DONE; the whole phase now waits on ONE flight.**
+*(2026-08-25: a flight-free docs-cleanup session ran — README/SETUP rewrite, two runbooks archived,
+stale counts fixed. It changed no engineering state; item 1 below is still the only flight on the
+board. Scope ruling recorded in [[scope-guards]].)*
 (The ~7-8-week hard deadline was **dropped 2026-08-18** — quality over calendar. The scope guard
 survives it: [[scope-guards]].)
 

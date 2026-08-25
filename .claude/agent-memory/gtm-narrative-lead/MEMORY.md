@@ -1,0 +1,3 @@
+- [Headline metrics + sources](headline-metrics.md) — every quotable number as of 2026-08-25, the file that proves it, and the two numbers that may never be quoted
+- [Safety asterisk + story bank](safety-asterisk-and-story-bank.md) — the strongest interview stories (self-catching gates) and which audience each one lands with
+- [Narrative guardrails](narrative-guardrails.md) — honesty + lean-writing rules for outward-facing docs, and the doc parts pinned by tests/link gate
