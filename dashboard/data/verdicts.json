@@ -1,0 +1,189 @@
+{
+ "flights": {
+  "live_flight_log_20260818T144711Z": {
+   "acknowledged_pin": true,
+   "airborne": {
+    "airborne_ticks": 2082,
+    "bare_first_crossing_tick": 2247,
+    "bare_last_crossing_tick": 4328,
+    "first_motion_tick": 2247,
+    "found": true,
+    "last_motion_tick": 4328,
+    "post_flight_ticks": 0,
+    "pre_flight_ticks": 2246,
+    "rule": "first tick whose next 5 telemetry samples all read z > 1.0 m (the clip recorder's own airborne threshold), and the last tick whose preceding 5 do. Derived from flown_path_enu; the data is never trimmed, only the default view.",
+    "sustain_ticks": 5,
+    "z_threshold_m": 1.0
+   },
+   "cpa": {
+    "bar_m": 3.0,
+    "basis": "detection-referenced: the drone's OWN logged detections, segment geometry (schema-1 legacy path). NOT the bird ground truth.",
+    "bird_xy_m": [
+     30.0,
+     30.0
+    ],
+    "cpa_m": 0.03929119396148754,
+    "segment_index": 3562,
+    "track_id": "demo_bird_0"
+   },
+   "gate": "scripts/check_live_flight_log.py",
+   "gate_messages": [
+    "covered=513 debt=207 path_points=4328 | CPA 0.0393 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND. The policy refuses to place a setpoint within 3.00 m of a threat; this path came within 0.0393 m of one (ADR-013 amendment 12, S1).",
+    "acknowledged by live_flight_log_20260818T144711Z.SAFETY_FINDING.md -- recorded history, kept as evidence, NOT a passing flight"
+   ],
+   "log": "flights/live_flight_log_20260818T144711Z.json",
+   "marker": "flights/live_flight_log_20260818T144711Z.SAFETY_FINDING.md",
+   "schema_version": null,
+   "stem": "live_flight_log_20260818T144711Z",
+   "time_axis": "tick_index",
+   "verdict": "ACKNOWLEDGED"
+  },
+  "live_flight_log_20260823T004031Z": {
+   "acknowledged_pin": true,
+   "airborne": {
+    "airborne_ticks": 710,
+    "bare_first_crossing_tick": 110,
+    "bare_last_crossing_tick": 819,
+    "first_motion_tick": 110,
+    "found": true,
+    "last_motion_tick": 819,
+    "post_flight_ticks": 165,
+    "pre_flight_ticks": 109,
+    "rule": "first tick whose next 5 telemetry samples all read z > 1.0 m (the clip recorder's own airborne threshold), and the last tick whose preceding 5 do. Derived from flown_path_enu; the data is never trimmed, only the default view.",
+    "sustain_ticks": 5,
+    "z_threshold_m": 1.0
+   },
+   "cpa": {
+    "bar_m": 3.0,
+    "basis": "detection-referenced: the drone's OWN logged detections, segment geometry (schema-1 legacy path). NOT the bird ground truth.",
+    "bird_xy_m": [
+     30.0,
+     30.0
+    ],
+    "cpa_m": 0.039056561444838274,
+    "segment_index": 327,
+    "track_id": "demo_bird_0"
+   },
+   "gate": "scripts/check_live_flight_log.py",
+   "gate_messages": [
+    "covered=720 debt=0 path_points=984 | CPA 0.0391 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND. The policy refuses to place a setpoint within 3.00 m of a threat; this path came within 0.0391 m of one (ADR-013 amendment 12, S1).",
+    "acknowledged by live_flight_log_20260823T004031Z.SAFETY_FINDING.md -- recorded history, kept as evidence, NOT a passing flight"
+   ],
+   "log": "flights/live_flight_log_20260823T004031Z.json",
+   "marker": "flights/live_flight_log_20260823T004031Z.SAFETY_FINDING.md",
+   "schema_version": null,
+   "stem": "live_flight_log_20260823T004031Z",
+   "time_axis": "tick_index",
+   "verdict": "ACKNOWLEDGED"
+  },
+  "live_flight_log_20260825T210402Z": {
+   "acknowledged_pin": false,
+   "airborne": {
+    "airborne_ticks": 1106,
+    "bare_first_crossing_tick": 753,
+    "bare_last_crossing_tick": 1858,
+    "first_motion_tick": 753,
+    "found": true,
+    "last_motion_tick": 1858,
+    "post_flight_ticks": 0,
+    "pre_flight_ticks": 752,
+    "rule": "first tick whose next 5 telemetry samples all read z > 1.0 m (the clip recorder's own airborne threshold), and the last tick whose preceding 5 do. Derived from flown_path_enu; the data is never trimmed, only the default view.",
+    "sustain_ticks": 5,
+    "z_threshold_m": 1.0
+   },
+   "cpa": {
+    "bar_m": 3.0,
+    "basis": "ground truth: the birds' applied set_pose poses, read through the same functions the ADR-003 labels use. Horizontal (XY), scoped to the policy's own vertical_threat_m band, measured against the flown POLYLINE.",
+    "bird_id": "bird_0",
+    "bird_z_m": 11.0,
+    "cpa_from": "tick_sample",
+    "cylinder_ticks": [
+     984,
+     985,
+     986,
+     987,
+     988,
+     989,
+     990,
+     991,
+     992,
+     993,
+     994,
+     995,
+     996,
+     997,
+     998,
+     999
+    ],
+    "dist_3d_m": 4.030005367244537,
+    "drone_z_m": 15.029999732971191,
+    "freeze_debit_m": 1.1276939655172509,
+    "gt_cpa_gated_m": -1.120955102712108,
+    "gt_cpa_m": 0.006738862805142883,
+    "min_horizontal_any_band_m": 0.006738862805142883,
+    "pairs_in_band": 4335,
+    "stamp_advance": {
+     "advanced": 1855,
+     "backwards": null,
+     "frozen_at": [
+      890,
+      2,
+      192.9
+     ],
+     "frozen_window_s": 0.16100000000000136,
+     "longest_frozen_run": 2,
+     "mean_step_s": 0.14025067385444742,
+     "pairs": 1857,
+     "span_s": 260.16499999999996,
+     "usable": 1858
+    },
+    "t_sim_s": 202.775,
+    "threat_radius_m": 12.0,
+    "tick": 991,
+    "ticks_from_spawn": 804,
+    "ticks_total": 1858,
+    "ticks_with_truth": 1858,
+    "ticks_without_truth": [],
+    "truth_poses_scored": 610,
+    "truth_poses_total": 610,
+    "truth_span_sim_s": [
+     183.05700420949034,
+     996.7999890681916
+    ],
+    "truth_track": "bird_drive_20260825T210030Z_applied.jsonl",
+    "vertical_sep_m": 4.029999732971191,
+    "vertical_threat_m": 6.0
+   },
+   "gate": "scripts/check_live_flight_log.py",
+   "gate_messages": [
+    "covered=720 debt=0 path_points=1858 | clock gz_clock_stream, 0 domain violations",
+    "stamps_advanced 1855/1857 (span 260.165 s, mean sim step 0.140 s/tick, longest frozen run 2 tick(s), worst hidden window 0.161 s -> gt_cpa_m freeze debit 1.1277 m)",
+    "maneuvers=4 relatch_refused_degenerate=0",
+    "gate_rejects=0 (bird-bar rejects=0) -- a reject inside the bar is the executor backstop WORKING; R3.7 above is the exhaustion half (no accepted maneuver may command inside the bar)",
+    "holds with a threat=0 of 0 hold(s) [CONTEXT, NEVER GATED]. No hold event named a threat, so this take measured nothing about how close a zero-displacement hold got to a bird -- unmeasured, not clean; R4 (escape geometry) is open on exactly that number.",
+    "detector counters: ndvi_msgs_received=1302 frames_detected_on=1301 frames_with_detection=2 boxes_total=2 | dropped no_intrinsics=1 no_pose_pair=0 stale_pose_pair=0 | detect rate 99.92% (floor 90.00%)",
+    "truth bird_drive_20260825T210030Z_applied.jsonl sim 183.057..996.800 s | truth coverage 1858/1858 ticks | answered_from_spawn 804/1858 ticks",
+    "truth poses scored 610/610 landed set_pose call(s) in flight window -- the BIRD axis of the join, scored over each pose's own in-effect window rather than at tick instants; unscored means no stamped drone segment covered that window",
+    "truth landed set_pose calls per bird: bird_0=655 bird_1=625 bird_2=644",
+    "gt_cpa_m 0.0067 m to bird_0 at tick 991 (t_sim 202.775 s, drone z 15.0300 m, bird z 11.0000 m, vertical sep 4.0300 m, 3D 4.0300 m) [bar 3.00 m, joined via tick_sample]",
+    "gt_cpa_gated_m -1.1210 m = gt_cpa_m minus a 1.1277 m freeze debit (2 identically-stamped ticks from tick 890 hiding 0.161 s of sim time x the fastest scripted bird at 7.00 m/s). THIS is the number gated: a frozen truth join can only over-report separation, never under-report it.",
+    "detection_cpa_m 0.0035 m to 795 -- monocular apparent-size estimate; ESTIMATOR CHECK, NOT A SAFETY GATE | range_estimate_error_at_cpa_m +0.0033 (gt_cpa_m minus detection_cpa_m: the two MINIMA, not one instant)",
+    "bird truly inside the threat cylinder on 16 tick(s); the loop engaged on 4 of them (missed-detection signal, NOT gated -- the camera is NADIR, so a bird inside the cylinder can sit outside the downward footprint at its own altitude, and one above the drone is never in frame at all)",
+    "n_stale_dropped=0 over 4 detection event(s) -- reported for every flight, and FAILED by gate_detector_ran in exactly one combination: drops > 0 with 0 engagements, which is avoidance dead for the whole take",
+    "CPA BREACH: flew within -1.1210 m of a bird, closer than the policy's own min_bird_clearance_m 3.00 m -- the policy refuses to place a SETPOINT that near a threat (ADR-013 amendment 12, S1). (worst case: the measured join reads 0.0067 m and is debited 1.1277 m for the 0.161 s clock freeze above)",
+    "live_flight_log_20260825T210402Z.SAFETY_FINDING.md is present but the log stem 'live_flight_log_20260825T210402Z' is NOT pinned in ACKNOWLEDGED_BREACH_STEMS in scripts/check_live_flight_log.py: that is HALF an acknowledgement, and half acknowledges nothing. A marker file alone is a drive-by file in a gitignored directory -- it would turn a NEW breach green with nobody reviewing it. Both halves or neither: the marker (the written finding, beside the evidence) AND the pinned stem (a reviewed diff on this safety gate). If this is a new flight, THE FLIGHT FAILED -- the pre-registered answer while R4 is open."
+   ],
+   "log": "flights/live_flight_log_20260825T210402Z.json",
+   "marker": "flights/live_flight_log_20260825T210402Z.SAFETY_FINDING.md",
+   "schema_version": 2,
+   "stem": "live_flight_log_20260825T210402Z",
+   "time_axis": "sim_seconds",
+   "verdict": "INVALID"
+  }
+ },
+ "verdict_legend": {
+  "ACKNOWLEDGED": "a REVIEWED, recorded closest-approach breach: marker file beside the log AND the stem pinned in ACKNOWLEDGED_BREACH_STEMS. Kept as history, deliberately never the word VALID.",
+  "INVALID": "the gate refuses this log as evidence of a safe flight",
+  "VALID": "every gate green -- evidence of a flight that met its bars"
+ }
+}

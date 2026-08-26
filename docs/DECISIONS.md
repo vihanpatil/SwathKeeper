@@ -3211,6 +3211,23 @@ on the README and document shaping — the GTM narrative is collaborative, not d
 Owner / roles: user (owns the sequencing decision); exec-council (Ruling 002 on request);
 product-lead (recommendation recorded); tech-lead (recorded).
 
+## ADR-018: The v1 dashboard is a STATIC, self-contained client-side HTML page consuming the committed artifacts — no server   (2026-08-26, status: ACCEPTED — user decision)
+
+Week 7's dashboard (flight replay + avoidance event log + NDVI overlay on the shared 2.5 m cell
+grid) ships as pure client-side HTML/JS reading the committed evidence JSONs, publishable on
+GitHub Pages so the README's audience — robotics/autonomy hiring managers — is ONE CLICK from the
+interactive replay with nothing to install. Rationale: every view renders static committed
+artifacts (flight logs, the ADR-010 offline stitch, the coverage ledger), so a backend would exist
+only to serve files GitHub already serves; interactivity is identical either way because it is all
+client-side JS regardless. A served app buys only v-next concerns (many-flight browsing, live
+telemetry after the forward sensor) and costs a clone-install-run step most README visitors will
+never take. The frontend lifts unchanged onto any future backend, so starting static forfeits
+nothing. No CDN dependencies (the page must work offline); data loaded by relative fetch with an
+honest error pointing at `python3 -m http.server` for file:// viewing. Charter fit: "last and
+light — it is the proof, not the point."
+Owner / roles: user (decision); gtm-narrative-lead (README/demo integration);
+flight-software-engineer (build); tech-lead (recorded).
+
 ### ADR-003 amendment 10 (2026-08-26, criterion 2 CLOSED — RETIRE-ARM): the RGB comparison arm measurably never was a second sensor, the old 1.000 FNR was the wrong feature not the wrong sign, and ADOPT now rests on a WORKING arm at gap +0.000
 
 The forced-binary study (`eval/rgb_pixel_study.py`, ratified in ADR-016 item 2) ran over **both**
@@ -3270,3 +3287,65 @@ adversarially; every load-bearing claim re-derived by QA, then a five-item fix r
 Owner / roles: perception-ml-engineer (study + fixes); qa-safety-reviewer (adversarial review,
 every headline re-derived); product-lead (RETIRE-ARM call under the ratified forced binary);
 tech-lead (recorded).
+
+## ADR-019: Council Ruling 002 RATIFIED WITH AMENDMENTS — the ag-avoidance product push: birds-first working dodge on a forward DEPTH camera, wires as freshly-surveyed mapped infrastructure, and a booking gate that ends failure theater   (2026-08-26, status: ACCEPTED — user ratification, three amendments earned by pre-ratification market research)
+
+**Context.** The user set product direction in their own words: working object avoidance, wire
+avoidance included, solid repeatable experiments, "ag-avoidance software that I own, that a
+company can see demos and tests run, and be convinced this is essential software they need to pay
+for." Before ratifying they commissioned a five-track sourced research sweep (radar prevalence,
+radar-in-sim, wire-map accuracy, map-first architecture, NDVI market) — the amendments come from
+it, and it confirmed the ruling's architecture on every axis.
+
+**Decision (Ruling 002 as ratified; full text + amendments in
+`.claude/agent-memory/exec-council/ruling-002-ag-avoidance-push.md`):**
+1. **Charter → product-intent dual-track.** After Week 7's user-gated remainder, the ag-avoidance
+   module leads and the portfolio is its demo surface. **Claims ceiling: "sim-demonstrated,
+   evidence-gated"** — "essential / field-ready / pay-for" is vetoed until an external
+   conversation or hardware data exists (TG-1..5 unmeasured; plant model unvalidated; zero
+   integrator contacts). Extraction still starts only after the clean pass; a deliberate LICENSE
+   decision is booked for extraction time (the public repo currently has no LICENSE file).
+2. **Centerpiece: the working dodge, BIRDS FIRST, on a forward DEPTH camera with its own
+   aperture** — separate optics because ADR-003 am. 10 measured that a same-lens band buys
+   nothing; depth because it also serves unmapped-obstacle sensing later. Spec comes from the
+   replay, not appetite: ≥1.25 s physically-resolving lead, 17.8–38.8 m forward horizon at flown
+   speeds. Integration through the existing ADR-009 `detection_source` seam.
+3. **Wires: mapped infrastructure in v1, no camera wire detection promised — and (A1) "mapped"
+   means a FRESH PER-FIELD SURVEY, never an external GIS layer.** Research: no public dataset
+   covers rural distribution wires (HIFLD ≥69 kV; FAA DOF ≥200 ft; farm poles 30–45 ft); the
+   shipping-product model is operator marking per field (DJI Agras requires it); catenary sag
+   moves 0.15–1.4 m across NESC's own 60–120 °F design swing, so the avoidance buffer is measured
+   in METERS (exact value set at scenario build from the sourced sag figures); residual risk on
+   the record — 43 % of fatal crewed-ag wire strikes involved a KNOWN wire (ATSB 2012–2022).
+   Demo: corridor-crossing over a mapped catenary, 3D swept-path vet, GT-CPA extended to wire
+   segments, reproducible eval/ scenario.
+4. **(A2) The wire-mapping reconnaissance pass is a GATED STRETCH GOAL:** same depth camera, one
+   slow corridor pass, returns fitted OFFLINE (the ADR-010 pattern; real-time wire recovery is
+   ~79 % even for dedicated LiDAR), promoted into `static_obstacles.json` only after a standalone
+   completeness/accuracy measurement, and only after the birds dodge works.
+5. **(A3) Positioning, for the record and the GTM surface:** phased-array radar is standard on
+   every shipping mid-to-flagship ag platform — and the leaders' own manuals disclaim wire bypass
+   (DJI T50 FAQ: "Obstacle Bypassing is not recommended around electric or guy wires"; the manual
+   gives the specular-reflection physics). Every real-time thin-wire detector that ships is
+   laser-based. No commercial mapping platform does live reactive avoidance mid-flight — that gap
+   is this product's position. Radar-in-sim was researched and REJECTED for wires (no gz-sim
+   radar sensor; ray-cast proxies cannot reproduce the >35 dB specular RCS cliff; simulating a
+   capability with no deployed precedent would be the overclaim this repo exists to refuse).
+   NDVI verdict from the same research: **keep-as-is, invest nothing more, retire nothing** —
+   the one-flight survey+health bundle matches the commercial category; plain NDVI is
+   commoditized; the freeze during this push stands.
+6. **The no-failure-theater booking gate (tripwire):** no flight is booked until the offline
+   predictor — forward horizon from the new sensor's own `camera_info` — clears the 3.00 m bar
+   with **≥1.3× lead margin on `guided_default`** (the conservative plant). The next take is
+   designed to PASS; a failure after a predicted pass is a plant-model finding that convenes
+   Ruling 003, not another instructive breach.
+7. **The cut (scope guard):** the short `test_2lane` comparison arm is retired outright; ALL NDVI
+   work is frozen for the push; the doc long-tail and R5 move behind the wire demo; Week 7
+   shrinks to its user-gated remainder (voiceover, README application, Pages — zero engineering
+   sessions).
+8. **Timeline in sessions, user-holdable:** sensor-in-sim 1–2 → booking-gate PASS 1 →
+   bar-clearing bird dodge 1 → wire scenario 2 → wire demo take 1. Total 6–7, honest range 5–10.
+
+Owner / roles: user (direction + ratification); exec-council (ruling); five research agents
+(sourced findings, recorded in the ruling's amendment block); product-lead (scope guard);
+tech-lead (recorded); robotics-sim-engineer + perception-ml-engineer (sensor-in-sim phase, next).

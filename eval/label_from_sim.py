@@ -15,13 +15,17 @@ static obstacles -- ADR-001), so the gate is frustum-only, matching the clip.
 Outputs ground_truth.json: {clip, frames:[{frame_id, t_s, birds:[{bird_id, bbox, visible,
 range_m}]}]}. --verify cross-checks our projection against generator_bbox_px and prints the
 disagreement (a wrong projection silently corrupts every downstream metric -- this is Day-1 work).
---overlay writes a few NDVI/RGB frames with GT boxes drawn, for human eyeballing.
+--overlay writes a few NDVI/RGB frames with GT boxes drawn, for human eyeballing: the closest-
+approach frame per bird by default, or exactly the frames named by --overlay-frames (the right
+option when the whole encounter is 2 frames long and both are the figure). --overlay-detections
+adds a `gtdet_<approach>_*` pair carrying the detector's boxes beside the label's.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -141,22 +145,84 @@ def ndvi_to_gray(ndvi):
     return np.stack([g, g, g], axis=-1)
 
 
-def write_overlays(clip_dir: Path, gt, out_dir: Path, frame_ids):
+GT_COLOR = [255, 40, 40]     # red  -- where the LABEL says the bird was
+# Cyan, not green: this world's RGB frames are a green field (a green box on one is nearly
+# invisible), and red/green is the one pair a colour-blind reviewer cannot separate.
+DET_COLOR = [40, 220, 255]   # cyan -- where the DETECTOR put a box
+
+
+def load_detections(path: Path, gt):
+    """(approach, {frame_id: [box]}) out of a baseline_*.py detections file, refusing another clip's.
+
+    The refusal is the whole point of reading it here: a detection overlay is a claim that THESE
+    boxes were produced from THESE pixels, and nothing in the two JSON files' contents would look
+    wrong if you paired a clip with another run's detections -- you would just get a picture of a
+    box near a bird, which is exactly the picture a fabricated one makes.
+
+    The approach id comes back with the boxes and goes into the filename for the same reason: both
+    arms detect into the SAME image space, so arm (b)'s box on an NDVI frame is a picture nothing
+    else distinguishes from arm (a)'s."""
+    det = json.loads(Path(path).read_text())
+    det_clip, gt_clip = str(det.get("clip", "")), str(gt.get("clip", ""))
+    if os.path.normpath(det_clip) != os.path.normpath(gt_clip):
+        raise SystemExit(
+            f"[label_from_sim] {path} was produced from clip {det_clip!r} but these labels are for "
+            f"{gt_clip!r} -- refusing to draw one run's detections on another run's frames.")
+    approach = det.get("approach") or Path(path).stem
+    return approach, {f["frame_id"]: f.get("boxes") or [] for f in det["frames"]}
+
+
+def write_overlays(clip_dir: Path, gt, out_dir: Path, frame_ids, detections=None, approach=""):
+    """Draw each frame's VISIBLE GT boxes onto its NDVI and RGB frame. Returns {frame_id: n_boxes}.
+
+    The box count is reported per frame, and frames that got none are named on stderr: an overlay
+    PNG with no box drawn on it is indistinguishable, as a picture, from one where the labeller
+    found nothing -- and a still with no box is exactly what the 2026-08-21 "0 bird-boxes in 454
+    frames" run would have produced. A figure has to say which of the two it is.
+
+    `detections` (frame_id -> boxes, from `load_detections`) additionally writes a
+    `gtdet_<approach>_*` pair per frame carrying BOTH the red label box and the cyan detector box.
+    Kept as a separate file rather than a second colour on the `gt_*` pair so each still answers
+    exactly one question: `gt_*` is "where was the bird", `gtdet_*` is "did the detector agree" --
+    and named for its arm, because the box itself is silent about which detector drew it."""
     out_dir.mkdir(parents=True, exist_ok=True)
     poses = {d["frame_id"]: d for d in sc.load_poses(clip_dir)}
     gt_by_fid = {f["frame_id"]: f for f in gt["frames"]}
+    drawn, drawn_det = {}, {}
     for fid in frame_ids:
         d = poses[fid]
         ndvi = np.load(Path(clip_dir) / d["ndvi_path"])
         rgb = sc.read_png(Path(clip_dir) / d["rgb_path"])
         ndvi_img = ndvi_to_gray(ndvi)
+        n = 0
         for b in gt_by_fid[fid]["birds"]:
             if b["visible"]:
-                draw_box(ndvi_img, b["bbox"], [255, 40, 40])
-                draw_box(rgb, b["bbox"], [255, 40, 40])
+                draw_box(ndvi_img, b["bbox"], GT_COLOR)
+                draw_box(rgb, b["bbox"], GT_COLOR)
+                n += 1
         sc.write_png(out_dir / f"gt_ndvi_frame_{fid:06d}.png", ndvi_img)
         sc.write_png(out_dir / f"gt_rgb_frame_{fid:06d}.png", rgb)
-    print(f"[label_from_sim] wrote {len(frame_ids)} GT overlay pairs -> {out_dir}")
+        drawn[fid] = n
+        if detections is not None:
+            boxes = detections.get(fid, [])
+            for box in boxes:
+                draw_box(ndvi_img, box, DET_COLOR)
+                draw_box(rgb, box, DET_COLOR)
+            sc.write_png(out_dir / f"gtdet_{approach}_ndvi_frame_{fid:06d}.png", ndvi_img)
+            sc.write_png(out_dir / f"gtdet_{approach}_rgb_frame_{fid:06d}.png", rgb)
+            drawn_det[fid] = len(boxes)
+    print(f"[label_from_sim] wrote {len(frame_ids)} GT overlay pairs "
+          f"({sum(drawn.values())} boxes: {', '.join(f'{f}:{n}' for f, n in sorted(drawn.items()))})"
+          f" -> {out_dir}")
+    if detections is not None:
+        print(f"[label_from_sim] + {len(drawn_det)} gtdet_{approach} pairs with "
+              f"{sum(drawn_det.values())} detector boxes: "
+              f"{', '.join(f'{f}:{n}' for f, n in sorted(drawn_det.items()))}")
+    empty = sorted(f for f, n in drawn.items() if n == 0)
+    if empty:
+        print(f"[label_from_sim] WARNING: frames {empty} have NO visible GT box -- those overlays "
+              f"are bare frames, not evidence of a bird.", file=sys.stderr)
+    return drawn
 
 
 def main():
@@ -168,6 +234,15 @@ def main():
                     help="cross-check projection vs generator_bbox_px and print disagreement")
     ap.add_argument("--overlay", type=Path, default=None,
                     help="dir to write GT-box overlay PNGs (closest-approach frame per bird)")
+    ap.add_argument("--overlay-frames", type=int, nargs="+", metavar="FRAME_ID", default=None,
+                    help="overlay these frame ids instead of the closest-approach pick. The "
+                         "default shows ONE frame per bird, which is the wrong set when the whole "
+                         "encounter is 2 frames long: ask for them by id. Unknown ids are an "
+                         "error, never a silently shorter set.")
+    ap.add_argument("--overlay-detections", type=Path, default=None, metavar="DETECTIONS_JSON",
+                    help="also write gtdet_* stills carrying the detector's boxes (cyan) beside "
+                         "the label's (red), read from a baseline_*.py detections file. Must have "
+                         "been produced from THIS clip; a mismatch is refused, not drawn.")
     args = ap.parse_args()
 
     gt, disagreements = build_ground_truth(args.clip)
@@ -202,16 +277,29 @@ def main():
             print("[verify] no in-frustum boxes to cross-check (unexpected).")
 
     if args.overlay is not None:
-        # closest-approach frame per bird (min range while visible), for human inspection
-        closest = {}
-        for f in gt["frames"]:
-            for b in f["birds"]:
-                if b["visible"] and b["range_m"] is not None:
-                    cur = closest.get(b["bird_id"])
-                    if cur is None or b["range_m"] < cur[1]:
-                        closest[b["bird_id"]] = (f["frame_id"], b["range_m"])
-        write_overlays(args.clip, gt, args.overlay,
-                       sorted({fid for fid, _ in closest.values()}))
+        if args.overlay_frames:
+            known = {f["frame_id"] for f in gt["frames"]}
+            missing = sorted(set(args.overlay_frames) - known)
+            if missing:
+                raise SystemExit(
+                    f"[label_from_sim] --overlay-frames {missing} are not in this clip "
+                    f"({len(known)} frames, {min(known)}..{max(known)}) -- refusing to write a "
+                    f"quietly shorter set of figures than you asked for.")
+            frame_ids = sorted(set(args.overlay_frames))
+        else:
+            # closest-approach frame per bird (min range while visible), for human inspection
+            closest = {}
+            for f in gt["frames"]:
+                for b in f["birds"]:
+                    if b["visible"] and b["range_m"] is not None:
+                        cur = closest.get(b["bird_id"])
+                        if cur is None or b["range_m"] < cur[1]:
+                            closest[b["bird_id"]] = (f["frame_id"], b["range_m"])
+            frame_ids = sorted({fid for fid, _ in closest.values()})
+        approach, dets = ("", None)
+        if args.overlay_detections is not None:
+            approach, dets = load_detections(args.overlay_detections, gt)
+        write_overlays(args.clip, gt, args.overlay, frame_ids, dets, approach)
 
 
 if __name__ == "__main__":

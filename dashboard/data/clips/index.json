@@ -1,0 +1,15 @@
+{
+ "clips": {
+  "real_flight_20260823T073644Z": {
+   "heatmap": "clips/real_flight_20260823T073644Z/heatmap.json",
+   "meta": "clips/real_flight_20260823T073644Z/meta.json",
+   "tree_check": "clips/real_flight_20260823T073644Z/tree_check.json"
+  },
+  "real_flight_20260825T205705Z": {
+   "heatmap": "clips/real_flight_20260825T205705Z/heatmap.json",
+   "meta": "clips/real_flight_20260825T205705Z/meta.json",
+   "tree_check": "clips/real_flight_20260825T205705Z/tree_check.json"
+  }
+ },
+ "note": "The page recomputes cells imaged, trees imaged, canopy-grade and median lift from heatmap.json + the surveyed tree positions, then cross-checks itself against tree_check.json (this gate's own output) and says so loudly if they disagree."
+}

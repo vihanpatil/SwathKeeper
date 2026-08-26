@@ -142,8 +142,20 @@ am. 1), the legacy CPA gate's vertex-only geometry was found and fixed red-first
 and criterion 2 closed (ADR-003; RETIRE-ARM — the comparison arm measurably shares its band,
 aperture, mount and clock with the primary sensor).
 
-1. **DECIDED 2026-08-26 (user): (A) then (B) — Week 7 is the ACTIVE item (see item 6), then the
-   forward sensor + re-fly.** The user is looped in directly on README/doc shaping. Background —
+0. **RULING 002 RATIFIED WITH AMENDMENTS 2026-08-26 (user; ADR-019) — the ag-avoidance product
+   push is the program.** Charter is product-intent dual-track (claims capped at
+   "sim-demonstrated, evidence-gated"). The engineering track, in order, priced in sessions
+   (6–7, honest range 5–10): **forward DEPTH camera in sim (1–2) → booking-gate PASS (1) →
+   bar-clearing BIRD dodge (1) → mapped-wire scenario (2) → wire demo take (1)** — wires as
+   fresh-per-field-survey mapped infrastructure with a meters-scale sag buffer (A1), the
+   wire-mapping pass as a gated stretch goal (A2), no camera wire detection promised and
+   radar-in-sim researched-and-rejected (A3). **The no-failure-theater gate:** no flight is
+   booked until the predictor clears 3.00 m with ≥1.3× lead margin on `guided_default` — the
+   next take is designed to pass. Week 7 runs in parallel as its user-gated remainder only
+   (voiceover, README application, Pages). Sensor-in-sim work STARTED 2026-08-26.
+
+1. **DECIDED 2026-08-26 (user): (A) then (B) — superseded the same day by Ruling 002's ratified
+   program above, which absorbs (B) and shrinks (A) to its user-gated remainder.** Background —
    the replay voided Ruling 001's "ONE re-fly, then Week 7" order by measurement:
    **no speed makes nadir safe on the flown encounter** (`speed_at_which_nadir_becomes_safe = None`
    across 81 cells × 3 plants; bird_0's own 6.0 m/s closing speed caps lead at 0.41 s from a hover;
@@ -250,7 +262,11 @@ aperture, mount and clock with the primary sensor).
 
 </details>
 
-3. **Full boustrophedon + the short-vs-long evidence study, on the FINAL config.** ADR-013 am. 10
+3. **RETIRED OUTRIGHT 2026-08-26 (ADR-019 cut — was: full boustrophedon + the short-vs-long
+   evidence study).** The long arm's numbers are banked (720/720, 18/18, 11/18, +0.5562); the
+   short `test_2lane` arm dies with the NDVI freeze and is not coming back as v1 work.
+   Superseded text kept below for the record.
+   **Was:** Full boustrophedon + the short-vs-long evidence study, on the FINAL config. ADR-013 am. 10
    answered both questions as byproducts of one flight (n=1 per arm): run-age decay was segment
    exhaustion wearing a clock's clothes and is retired, and the long mission is the better evidence
    artifact too — same per-minute frame yield, **1.4× better on cells/min**, because it spreads frames
@@ -300,10 +316,21 @@ aperture, mount and clock with the primary sensor).
   documented growth path for detection lead time (ADR-017): a forward-facing detection sensor
   beside the nadir survey camera, chosen over any tilt of the single mount.**
 - Live in-node NDVI stitching (offline is the v1 decision, ADR-010).
+- **The wire-mapping reconnaissance pass (ADR-019 A2, gated):** one slow corridor pass with the
+  forward depth camera, returns fitted offline into a catenary curve, promoted into
+  `static_obstacles.json` only after a standalone completeness/accuracy measurement — sequenced
+  strictly after the birds-first dodge works.
 
 ## Cut / deferred log
 _(product-lead records cuts here with date + reason — interview material.)_
 
+- **2026-08-26 — Ruling 002 ratified with amendments (ADR-019): the short `test_2lane` arm is
+  RETIRED OUTRIGHT, ALL NDVI work is FROZEN for the avoidance push, and the doc long-tail + R5
+  move behind the wire demo.** Paid for: the forward depth sensor + birds-first working dodge +
+  mapped-wire scenario enter scope. Claims ceiling recorded: "sim-demonstrated, evidence-gated" —
+  nothing stronger until external validation exists. NDVI research verdict banked with the freeze:
+  keep-as-is, invest nothing more (plain NDVI is commoditized; the live reactive loop is the
+  market gap).
 - **2026-08-26 — criterion 2's NDVI+RGB comparison arm RETIRED as open work (ADR-003 closure;
   product-lead call under the ratified "forced binary").** Not because RGB lost — it matched the
   safety numbers exactly — but because the study *measured* that the arm was never a second

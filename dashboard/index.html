@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwathKeeper — flight evidence dashboard</title>
+<meta name="description" content="Replay, avoidance event log and NDVI health map for the SwathKeeper autonomous crop-survey drone, rendered from committed flight artifacts.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>Swath<span>Keeper</span></h1>
+    <p class="tagline">Autonomous crop survey with live reactive obstacle avoidance, in simulation.
+      Every number on this page is computed in your browser from the committed flight artifacts.</p>
+  </div>
+  <nav id="tabs" role="tablist">
+    <button class="tab" data-view="replay" role="tab" aria-selected="true">Flight replay</button>
+    <button class="tab" data-view="events" role="tab" aria-selected="false">Avoidance log</button>
+    <button class="tab" data-view="ndvi"   role="tab" aria-selected="false">NDVI health map</button>
+  </nav>
+</header>
+
+<div id="boot" class="boot">Loading evidence…</div>
+
+<main id="app" hidden>
+
+  <section class="flightbar">
+    <span class="barlabel">Flight</span>
+    <div id="flight-picker" class="picker"></div>
+    <div class="spacer"></div>
+    <button id="tour-start" class="ghost">Take the 5-step tour</button>
+  </section>
+
+  <div id="verdict" class="verdict"></div>
+
+  <!-- ============================ 1. FLIGHT REPLAY ============================ -->
+  <section id="view-replay" class="view" role="tabpanel">
+    <div class="split">
+      <div class="mapcol">
+        <div class="mapwrap">
+          <canvas id="map" aria-label="Top-down field map with the flown path"></canvas>
+          <div id="tip" class="tip" hidden></div>
+          <div id="encounter" class="encounter" hidden></div>
+        </div>
+        <div id="map-legend" class="legend"></div>
+
+        <div class="transport">
+          <button id="play" class="play" aria-label="Play or pause" title="Space">▶</button>
+          <button id="jump" class="ghost" title="E cycles events">Jump to encounter</button>
+          <div class="scrubwrap">
+            <div id="scrubmarks" class="scrubmarks"></div>
+            <input id="scrub" type="range" min="0" max="100" step="0.001" value="0" aria-label="Time scrubber">
+          </div>
+          <span id="clock" class="clock mono">—</span>
+          <label class="speed">speed
+            <select id="speed">
+              <option value="0.25">0.25×</option>
+              <option value="1" selected>1×</option>
+              <option value="4">4×</option>
+              <option value="16">16×</option>
+            </select>
+          </label>
+        </div>
+        <div id="timeline" class="timeline" aria-label="Event timeline — click to seek"></div>
+
+        <h2 class="tight">Altitude — the axis a top-down map cannot show</h2>
+        <canvas id="elev" aria-label="Altitude of the drone and the birds over the flight"></canvas>
+        <div id="elev-legend" class="legend"></div>
+      </div>
+
+      <aside class="side">
+        <h2>What this flight measured</h2>
+        <div id="flight-facts" class="facts"></div>
+        <h2>Layers</h2>
+        <div id="layers" class="layers"></div>
+        <p id="timebasis" class="note"></p>
+        <p class="note keys"><b>Keys</b> · <kbd>space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> step a tick
+          (<kbd>shift</kbd> ×25) · <kbd>E</kbd> next event · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> switch view</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================ 2. AVOIDANCE LOG ============================ -->
+  <section id="view-events" class="view" role="tabpanel" hidden>
+    <div id="runblock" class="cards"></div>
+    <h2>Avoidance events <span id="ev-count" class="dim"></span></h2>
+    <p class="note">Click any row to seek the replay to that tick.</p>
+    <div class="tablewrap"><table id="events"><thead></thead><tbody></tbody></table></div>
+    <div id="ev-extra"></div>
+  </section>
+
+  <!-- ============================ 3. NDVI HEALTH MAP ============================ -->
+  <section id="view-ndvi" class="view" role="tabpanel" hidden>
+    <section class="flightbar">
+      <span class="barlabel">Clip</span>
+      <div id="clip-picker" class="picker"></div>
+    </section>
+    <div id="ndvi-stats" class="stats"></div>
+    <div id="ndvi-crosscheck"></div>
+    <div class="split">
+      <div class="mapcol">
+        <div class="mapwrap">
+          <canvas id="ndvimap" aria-label="NDVI heatmap on the 2.5 m cell grid"></canvas>
+        </div>
+        <div id="ndvi-legend" class="legend"></div>
+      </div>
+      <aside class="side">
+        <h2>Cell layer</h2>
+        <div id="ndvi-mode" class="layers"></div>
+        <h2>Cell inspector</h2>
+        <div id="cellinfo" class="facts"><p class="dim">Hover or tap a cell.</p></div>
+      </aside>
+    </div>
+    <h2>Trees, as the map places them</h2>
+    <p class="note" id="tree-method"></p>
+    <div class="tablewrap"><table id="trees"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <footer id="about" class="about"></footer>
+</main>
+
+<div id="tour" class="tour" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

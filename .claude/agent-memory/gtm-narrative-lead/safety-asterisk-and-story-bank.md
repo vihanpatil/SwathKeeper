@@ -1,6 +1,6 @@
 ---
 name: safety-asterisk-and-story-bank
-description: The strongest SwathKeeper interview/pitch stories (safety asterisk, mount forensics, ledger honesty fix, self-catching gates) and which audience each one lands with
+description: The strongest SwathKeeper interview/pitch stories (pre-registered failure, the no-safe-speed tripwire, retired comparison arm, safety asterisk, mount forensics, self-catching gates) and which audience each lands with
 metadata:
   type: project
 ---
@@ -32,6 +32,60 @@ visible. So-what: **no escape geometry can buy warning time the sensor never had
 sensing/speed decision, and diagnosing that before building R4 saved building the wrong thing.
 It also surfaced a real product tension (nadir mount = best-ever NDVI tree gate vs forward tilt =
 lead time) that was **escalated as a decision, not guessed** — good "knows what isn't theirs" story.
+
+**0c. THE TRIPWIRE FIRED — the measurement that cancelled a flight and rewrote the roadmap (new
+2026-08-26; this is now the *ending* the story needed).** The pre-registered failure (story 0) ranked
+"escape geometry" as the next fix. Instead of building it, the next session replayed all three
+committed flights through a jerk/accel-limited point-mass model of the autopilot and asked the
+question directly — is there any mission speed at which this sensor geometry clears the 3 m bar?
+**81 cells, answer: none.** The intruder brings its own 6.0 m/s of closing speed, capping warning at
+**0.41 s even from a hover**, against a **1.25 s** cheapest physical escape; nadir sees 2.48 m ahead
+and would need 17.8-38.7 m. A tripwire written *before* the sweep then fired on its own terms: the
+second forward-facing sensor was promoted from growth path to scope, the tilt stayed rejected, and
+the pre-flight abort gate now refuses every speed the vehicle actually flies.
+So-what: (a) **the roadmap changed on a number, not an opinion** — and the number came from ~50
+lines of offline replay instead of a booked sim session; (b) it **retired R4 before a line of it was
+built** (the 0° reversal never resolves at any lead × plant — candidate ordering was never the
+binding constraint); (c) the one-liner that closes any interview answer: *"the system found its own
+sensor's limit and refused to fly what it can't pass."*
+Careful: the replay is **not a gate** and cannot be wired into CI, and its plant fit (1.05 m/s²) is
+ESTIMATED from one admissible axis of one flight. Say so.
+
+**0d. I killed my own comparison arm by measuring that it couldn't answer the question (criterion 2,
+CLOSED 2026-08-26).** The NDVI-vs-RGB arm had been open for weeks. The forced-binary study
+(4,566 frames / 1.40 Gpx / 16,686 measured bird pixels) found the decisive fact: **the RGB R channel
+IS the NDVI Red band, bit-for-bit** — same band, aperture, mount, FOV, clock. It never was a second
+sensor, so it cannot answer what a second sensor buys. RETIRE-ARM; the budget moved to the forward
+sensor. Two things travel with it: the old "RGB scores 1.000 FNR" caveat was **wrong about itself**
+(the feature was wrong, not the sign — the real RGB signal is chromatic), and at its honest ceiling
+RGB **matches the adopted detector's safety numbers exactly**, losing only on precision (3.1× on the
+adopted clip, 27× in the air) to a trunk-vs-intruder material collision that only the thermal band
+separates. **ADOPT is now re-confirmed against a *working* rival at gap +0.000** — a stronger verdict
+than the one it replaced.
+So-what: killing an experiment on evidence is a senior move; "we ran the study and retired the arm"
+beats both "we ran the study" and "it's on the backlog". Best applied-ML story after 0b.
+
+**0e. The estimator I demoted was better than I said (3.3 mm), and I published the correction.**
+The monocular apparent-size range estimator was demoted from gate to labelled check partly on a
+"20 cm disagreement with ground truth." The 2026-08-26 segment-geometry fix showed that
+disagreement was **the gate's geometry, not the estimator**: it actually agrees with ground truth at
+closest approach to **3.3 mm** (`detection_cpa_m` 0.2096 → 0.0035; error −0.2028 → +0.0033).
+So-what: **right call, wrong reason — both recorded.** The demotion still stands on its load-bearing
+leg (a miss at CPA produces no detection at all, so detection-CPA can never be a gate), and the
+citation that flattered the decision was corrected in the log rather than quietly left. Interviewers
+probe for exactly this: can you tell which of your reasons was actually doing the work?
+
+**0f. A fix that was never back-ported let a direct hit read as 7 m of clearance.** The segment-vs-
+vertex CPA fix landed in the new schema-2 path and was **never applied to the legacy
+`closest_approach()`** that scores pre-seam logs and the scenario fixtures. Found by QA comparing the
+two geometries **on the same bytes**. `cov_bird_at_turnaround` — the one fixture that "passed" the
+bar — was a fly-through reading **7.0000 m**; fixed red-first to **0.0000 m**. Both historical
+breaches deepened (0.0597 → 0.0393, 0.0518 → 0.0391) with verdict lines byte-identical, and a
+property test now pins the two implementations to agree on a deliberate fly-through so they cannot
+diverge again.
+So-what: **two implementations of one safety concept is the bug**; the durable fix is the property
+test that forbids them from disagreeing, not the six lines of geometry. And every number the fix
+produced was *worse* — published anyway.
 
 **1. The safety asterisk (still the strongest *historical* paragraph).** The avoidance loop vetted
 19/19 dodge *setpoints* against a 3.00 m bird bar and every gate was green — then a gate added
@@ -65,20 +119,26 @@ six ways the safety gate could print a false PASS (a 0.8 s frozen clock = 5.6 m 
 reported a 0.0000 m strike as a 3.5000 m PASS), all six closed before any flight was booked.
 
 **Audience mapping (hypothesis, not yet validated against real interviews):**
-- **Autonomy/robotics** — lead with story 0 (pre-registered failure, gate-vs-control-law separation,
-  a gate that costs the flagship take), then the reactive loop, then story 1. Safety-critical teams
-  buy the willingness to publish a failed flight faster than they buy a green number.
+- **Autonomy/robotics** (the chosen primary audience, 2026-08-26) — lead with **0 → 0b → 0c as one
+  three-beat arc**: pre-registered failure, diagnosed as geometry not control law, then the offline
+  measurement that cancelled the next flight and rewrote the roadmap. That arc has a *conclusion*,
+  which the failure alone did not. Then the reactive loop + coverage debt, then story 1.
+  Safety-critical teams buy the willingness to publish a failed flight faster than a green number.
 - **Applied ML / perception** — lead with story 0b: the detector scored 1.000/1.000 and the harness
-  **refused to call it evidence** (1 of 3 birds visible). Then ADR-003 criterion 3 — a decision
-  reopened, re-measured on the real render, closed with numbers; classical blob detector ADOPTED
-  because no learned model beat it on the same harness. Then story 4 (eval rigor). The
-  1-micrometre live↔offline equivalence across two scipy versions is the "I don't trust a port
-  until I've diffed it" proof point.
+  **refused to call it evidence** (1 of 3 birds visible). Then **0d** (criterion 2 retired on the
+  band-identity measurement; ADOPT re-confirmed at gap +0.000 against a working rival) and ADR-003
+  criterion 3 — a decision reopened, re-measured on the real render, closed with numbers; classical
+  blob detector ADOPTED because no learned model beat it on the same harness. Then story 4 (eval
+  rigor) and **0e** (the estimator I demoted was better than I said). The 1-micrometre live↔offline
+  equivalence across two scipy versions is the "I don't trust a port until I've diffed it" proof.
 - **Ag-tech** — lead with the operator assumption (trees are a *known* pre-surveyed geofence, so the
-  hard problem is the obstacle nobody surveyed) and coverage debt as an operator-facing guarantee;
-  then the sensing-ROI framing story 0b hands you for free: one nadir NDVI camera sees ~4 % of the
-  threat volume, which is the concrete business case for a second sensor. Numbers for the
-  NDVI-vs-RGB delta itself still **do not exist** — say so.
+  hard problem is the obstacle nobody surveyed) and coverage debt as an operator-facing guarantee
+  (720 covered / 0 debt; 116 at-risk cells recovered across 4 diverts). Then the sensing-ROI case,
+  now **quantified** by 0c: one nadir camera sees ~4 % of the threat volume and gives 0.41 s of
+  warning at best, against 17.8-38.7 m of forward horizon required — that is the second-sensor
+  business case in one sentence. Also honest here: the swath over-claim (7.5 m prose vs 6.886 m from
+  `camera_info`, **8.19 %** of area) was caught before any dashboard quoted coverage. Still **no
+  sensor-diversity delta exists** — the arm shared the primary's band bit-for-bit; say so.
 
 Numbers live in [[headline-metrics]]; bullets in [[resume-bullet-bank]]; framing rules in
 [[narrative-guardrails]].
