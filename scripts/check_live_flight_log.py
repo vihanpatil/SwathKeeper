@@ -102,7 +102,8 @@ own SAFETY_FINDING marker was stale. Overlap cannot identify a take; a REVIEWED 
 scan. Unpinned flights keep the scan and its refusals exactly.
 
 WHY (5) EXISTS -- the 2026-08-23 encounter: every gate was green (19/19 maneuvers vetted, ledger
-720 covered / 0 debt, this checker PASS) while the vehicle passed **0.0518 m** from the bird. The
+720 covered / 0 debt, this checker PASS) while the vehicle passed **0.0518 m** from the bird (the
+number this gate reported then; segment geometry made it **0.0391 m** on 2026-08-25). The
 policy already refuses to place a *setpoint* nearer than `min_bird_clearance_m`, so flying nearer
 than it is inconsistent on its face -- but nothing in the pipeline computed the distance actually
 FLOWN. "19/19 vetted" is a claim about setpoints, not about separation. The CPA is now printed for
@@ -189,8 +190,10 @@ CPA_BREACH_TAG = "CPA BREACH"
 # A STALE PIN NEEDS NO RULE OF ITS OWN: a pin alone silences nothing (both halves are required),
 # and the other half -- a marker beside a log that does NOT breach -- is already a hard failure.
 ACKNOWLEDGED_BREACH_STEMS = (
-    "live_flight_log_20260818T144711Z",   # 0.0597 m, found retroactively by this gate (R1)
-    "live_flight_log_20260823T004031Z",   # 0.0518 m, degenerate-range encounter (ADR-013 am. 12)
+    # Depths as this gate reports them TODAY, with the value ADR-013 am. 12 cites in brackets: the
+    # vertex-only minimum was replaced by segment geometry on 2026-08-25 and both breaches deepened.
+    "live_flight_log_20260818T144711Z",   # 0.0393 m [was 0.0597], found retroactively by R1
+    "live_flight_log_20260823T004031Z",   # 0.0391 m [was 0.0518], degenerate-range encounter
 )
 
 # The logs allowed to take the LEGACY (detection-referenced) path at all -- the artifacts that
@@ -406,8 +409,22 @@ def detection_positions(log) -> List[Tuple[str, float, float]]:
 
 
 def closest_approach(log) -> Optional[Tuple[float, str]]:
-    """(cpa_m, track_id) -- the smallest HORIZONTAL distance between any flown path point and any
-    logged detection -- or None when the log carries no CPA evidence.
+    """(cpa_m, track_id) -- the smallest HORIZONTAL distance between the flown PATH and any logged
+    detection -- or None when the log carries no CPA evidence.
+
+    THE PATH, NOT ITS VERTICES (fixed 2026-08-25). This minimised over sampled points until then,
+    so a bird overflown BETWEEN two samples scored the distance to the nearer sample. Measured
+    consequence on committed artifacts: `eval/scenarios/cov_bird_at_turnaround` reported **7.0000 m**
+    -- the one scenario fixture that cleared the 3 m bar -- for a detection at (22, 58) sitting dead
+    centre of the 15 m leg (15, 58) -> (30, 58), i.e. a fly-through with a true CPA of 0. The two
+    historical live breaches deepened too (0.0597 -> 0.0393, 0.0518 -> 0.0391): still breaches,
+    still acknowledged, just closer than the artifact used to admit. `_point_segment_xy_m` has been
+    in this file since G22 (`ground_truth_cpa` uses it) and was simply never back-ported here --
+    which is why the ESTIMATE-referenced number was the optimistic one while the truth-referenced
+    number was not.
+
+    Segments between SURVIVING vertices: a malformed sample is skipped, joining its neighbours, so
+    a corrupt row can only make the measured swept path longer, never shorter.
 
     Horizontal (XY) on purpose: it is the separation the policy's own `min_bird_clearance_m` is
     expressed in, and ADR-009 is explicit that a bird's z is the estimate we cannot trust, so
@@ -419,16 +436,22 @@ def closest_approach(log) -> Optional[Tuple[float, str]]:
     path = log.get("flown_path_enu") if isinstance(log, dict) else None
     if not dets or not isinstance(path, list) or not path:
         return None
-    best: Optional[Tuple[float, str]] = None
+    pts: List[Tuple[float, float]] = []
     for point in path:
         if not isinstance(point, (list, tuple)) or len(point) < 2:
             continue
         try:
-            px, py = float(point[0]), float(point[1])
+            pts.append((float(point[0]), float(point[1])))
         except (TypeError, ValueError):
             continue
+    if not pts:
+        return None
+    # A one-sample path is no segment but is still evidence: measure it as a degenerate one.
+    segments = list(zip(pts, pts[1:])) or [(pts[0], pts[0])]
+    best: Optional[Tuple[float, str]] = None
+    for (ax, ay), (bx, by) in segments:
         for track_id, dx, dy in dets:
-            d = math.hypot(px - dx, py - dy)
+            d = _point_segment_xy_m(dx, dy, ax, ay, bx, by)
             if best is None or d < best[0]:
                 best = (d, track_id)
     return best
@@ -1046,6 +1069,76 @@ def gate_knob_floors(run) -> List[str]:
     return problems
 
 
+def gate_encounter_closure(log, run, adv: dict) -> Tuple[List[str], List[str]]:
+    """Assertion: every encounter this flight opened, it also CLOSED -- and it closed for a reason
+    the log names.
+
+    Three things no other gate can see (QA C1, 2026-08-25):
+
+    (1) AN UNMATCHED TAKEOVER IS A FAILURE. The executor's threat-clear hysteresis resets on every
+        threat tick, so a detection duty cycle denser than 1-in-`resume_clear_ticks` never reaches
+        the count: measured on the real executor, 90 ticks of `DIVERT, PROCEED, PROCEED` gave 1
+        takeover and 0 resumes -- the mission never came back and every remaining cell booked as
+        coverage debt, while the log looked ordinary. A log that ends in GUIDED is not a completed
+        survey, so its coverage claim after that takeover means nothing.
+    (2) A `guided_ceiling` RESUME IS REPORTED, LOUDLY. It is the executor's backstop firing, not a
+        cleared threat; the flight is still scoreable, but something upstream (a duty-cycled
+        detector, an all-stale stream) needs fixing and must not pass unread.
+    (3) THE HYSTERESIS BUDGET, PRICED ON THIS FLIGHT'S OWN CLOCK. `resume_clear_ticks` x the flown
+        mean tick period must stay inside `max_detection_age_s`: waiting longer than the policy
+        keeps a detection alive means holding GUIDED on evidence it has already declared ABSENT.
+        The static test in tests/ pins the same bound at the NOMINAL tick rate (0.6 s at 5 Hz) as a
+        floor; this prices it at what the flight measured (0.160 s median on the 2026-08-25 take,
+        i.e. 0.48 s -- the nominal arithmetic overstated the budget by 25 %).
+
+    Silent when there is nothing to say, so a log with matched pairs and no recorded executor params
+    reads exactly as it did before this gate existed.
+
+    SCHEMA-2 ONLY, by design: `check_schema2` is the only caller. Legacy (pre-`run`) logs keep the
+    verdict they were flown under -- the same rule `PRE_SEAM_LEGACY_STEMS` exists for -- and
+    `eval/scenarios/*/flight_log.json` are open-loop CONSTRUCTED fixtures that no automated path
+    points this file at (CI's glob is eval/results/ only; run by hand it will score them)."""
+    problems: List[str] = []
+    notes: List[str] = []
+    events = log.get("events") or []
+    takeovers = [e for e in events if isinstance(e, dict) and e.get("kind") == "takeover"]
+    resumes = [e for e in events if isinstance(e, dict) and e.get("kind") == "resume"]
+    if len(takeovers) > len(resumes):
+        last = takeovers[-1].get("tick")
+        problems.append(
+            f"UNCLOSED ENCOUNTER: {len(takeovers)} takeover(s) but {len(resumes)} resume(s) -- the "
+            f"flight ended in GUIDED (last takeover tick {last}). The mission never resumed, so "
+            f"every cell after that tick is unflown coverage the ledger cannot speak for. TWO known "
+            f"causes, and they look identical here: (a) a detection duty cycle denser than "
+            f"1-in-resume_clear_ticks resets the threat-clear hysteresis every time (QA C1) -- check "
+            f"`resume_pending.ticks_in_guided` climbing and whether a `guided_ceiling` resume ever "
+            f"fired; (b) the OPERATOR ended the take mid-dodge (evidence-first teardown: Ctrl-C "
+            f"during a hold produces exactly this signature) -- check the last tick's stamp against "
+            f"when you stopped the run before hunting a detector fault.")
+    for r in resumes:
+        if r.get("trigger") == "guided_ceiling":
+            notes.append(f"GUIDED-CEILING BACKSTOP FIRED at tick {r.get('tick')} after "
+                         f"{r.get('ticks_in_guided')} ticks in GUIDED (ceiling "
+                         f"{r.get('ceiling_ticks')}): the encounter was ended by the bound, NOT by a "
+                         f"cleared threat. The flight is scoreable; the detection stream is not "
+                         f"healthy.")
+
+    ep = log.get("executor_params")
+    ticks = _num((ep or {}).get("resume_clear_ticks")) if isinstance(ep, dict) else None
+    step_s = _num(adv.get("mean_step_s"))
+    age_bound = _num((run.get("policy_params") or {}).get("max_detection_age_s"))
+    if ticks is not None and step_s is not None and age_bound is not None:
+        budget = ticks * step_s
+        verdict = "within" if budget <= age_bound else "EXCEEDS"
+        line = (f"hysteresis budget {budget:.3f} s ({ticks:g} clear ticks x {step_s:.3f} s measured "
+                f"mean tick) {verdict} max_detection_age_s {age_bound:g}")
+        (notes if budget <= age_bound else problems).append(
+            line if budget <= age_bound else
+            line + " -- the executor can hold GUIDED waiting for clear ticks longer than the policy "
+                   "keeps a detection alive, i.e. on evidence already declared ABSENT")
+    return problems, notes
+
+
 def gate_staleness(run) -> List[str]:
     """The staleness gate must have been ARMED for a real-detector flight. ADR-009 makes
     `stamp_s` a contract term and `max_detection_age_s` the policy that enforces it; flown as
@@ -1546,6 +1639,9 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
     problems.extend(clock_problems)
     notes.extend(clock_notes)
     problems.extend(gate_knob_floors(run))
+    e_problems, e_notes = gate_encounter_closure(log, run, adv)
+    problems.extend(e_problems)
+    notes.extend(e_notes)
     r_problems, r_notes = gate_r2_r3(log, run)
     problems.extend(r_problems)
     notes.extend(r_notes)

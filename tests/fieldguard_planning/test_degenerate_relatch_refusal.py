@@ -44,7 +44,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from fieldguard_planning.avoidance_executor import (  # noqa: E402
-    AvoidanceExecutor, RELATCH_THRESHOLD_M, SimulatedVehicleSink,
+    AvoidanceExecutor, RELATCH_THRESHOLD_M, RESUME_CLEAR_TICKS, SimulatedVehicleSink,
 )
 from fieldguard_planning.avoidance_policy import (  # noqa: E402
     _CANDIDATE_ANGLES_DEG, AvoidancePolicy, PolicyParams,
@@ -421,8 +421,9 @@ class TestExecutorRefusesTheRelatch(unittest.TestCase):
         second = (30.5, 30.0, 15.0)     # within the threshold of `first`: only a CLEARED latch flies it
         ex.step(_drone((30.0, 20.0, 15.0)), _maneuver(self.first, range_degenerate=False))
         ex.step(_drone((30.0, 22.0, 15.0)), _maneuver(self.jumped, range_degenerate=True))
-        ex.step(_drone((30.0, 24.0, 15.0)), AvoidanceManeuver(decision=Decision.PROCEED))
-        ex.step(_drone((30.0, 26.0, 15.0)), _maneuver(second, range_degenerate=True, fid=9))
+        for i in range(RESUME_CLEAR_TICKS):   # the encounter ends on persistence, not one frame
+            ex.step(_drone((30.0, 24.0 + i, 15.0)), AvoidanceManeuver(decision=Decision.PROCEED))
+        ex.step(_drone((30.0, 28.0, 15.0)), _maneuver(second, range_degenerate=True, fid=9))
         self.assertEqual(sink.setpoints_sent, [self.first, self.first, second])
         self.assertEqual(_latch_actions(ex), ["latch", REFUSED, "latch"])
         self.assertEqual(len(_kinds(ex, "takeover")), 2)

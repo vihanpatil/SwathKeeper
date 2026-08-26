@@ -23,7 +23,8 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from fieldguard_planning.coverage import (  # noqa: E402
     CELL_COVERED, CELL_DEBT, DEFAULT_SWATH_HALF_WIDTH_M,
-    build_grid, check_ledger, coverage_from_path, ledger_from_covered_map, load_field_polygon,
+    build_grid, check_ledger, coverage_from_path, derive_swath_half_width_m,
+    ledger_from_covered_map, load_field_polygon,
 )
 from fieldguard_planning.mission_waypoints import mission_xy_path, parse_qgc_wpl  # noqa: E402
 
@@ -69,16 +70,87 @@ class TestNominalCoverage(unittest.TestCase):
                              f"swath +/-{DEFAULT_SWATH_HALF_WIDTH_M} m: {uncovered[:8]}")
 
     def test_negative_control_narrow_swath_opens_gaps(self):
-        # If the real camera swath is narrower than lane spacing, strips between lanes go uncovered.
-        # Proves the coverage check can FAIL -- a passing coverage test is therefore meaningful.
-        # 5.0 m (< 7.5 = half the 15 m spacing) opens a mid-field gap wider than the 2.5 m cell grid
-        # can miss (a 7.0 m swath leaves only a ~1 m strip, too thin for a cell center to fall in).
+        # If the camera swath is narrower still, strips between lanes go uncovered. Proves the
+        # coverage check can FAIL -- a passing coverage test is therefore meaningful. 5.0 m is
+        # narrow enough that a 2.5 m cell CENTRE lands in the gap (the true 6.886 m swath leaves a
+        # 1.23 m strip, which no cell centre falls in -- see TestSwathComesFromTheCamera).
         narrow = 5.0
         covered = coverage_from_path(self.cells, self.path, narrow)
         uncovered = [cid for cid, hit in covered.items() if not hit]
         self.assertGreater(len(uncovered), 0,
                            msg="coverage checker failed to detect gaps with a sub-spacing swath -- "
                                "the checker would be vacuous")
+
+
+class TestSwathComesFromTheCamera(unittest.TestCase):
+    """The swath half-width is DERIVED from the sensor, never from lane-spacing/2 prose (ADR-016).
+
+    Until 2026-08-25 it was 7.5 m = half the 15 m lane pitch -- an assumption the module docstring
+    itself flagged as unmeasured, and it over-claimed: the camera images 13.772 m across track, so
+    every 15 m lane pair leaves a 1.228 m strip no frame ever saw. `coverage_from_path` was booking
+    that strip as COVERED."""
+
+    def _config(self):
+        import json
+        cam = json.loads((REPO_ROOT / "config" / "ndvi_camera.json").read_text())
+        alt = json.loads(FIELD_POLYGON.read_text())["mission_altitude_m"]
+        return cam, alt
+
+    def test_default_is_the_camera_derived_cross_track_half_swath(self):
+        """Recomputed here from the raw config, deliberately WITHOUT calling the derivation -- a
+        test that reuses the code under test could only prove it is self-consistent."""
+        import math
+        cam, alt = self._config()
+        c = cam["camera"]
+        fx = (c["image_width_px"] / 2.0) / math.tan(c["horizontal_fov_rad"] / 2.0)
+        depth = alt + cam["mount"]["mount_pose_xyz_rpy"][2]      # camera hangs 0.08 m under the body
+        self.assertAlmostEqual(DEFAULT_SWATH_HALF_WIDTH_M, depth * (c["image_height_px"] / 2.0) / fx,
+                               places=9)
+        self.assertAlmostEqual(DEFAULT_SWATH_HALF_WIDTH_M, 6.886077, places=5)  # today's number
+
+    def test_it_agrees_with_the_projects_one_intrinsics_primitive(self):
+        """`ndvi_georef.CameraIntrinsics.from_config` owns the fx/fy formula for the whole project;
+        coverage.py restates it (stdlib, and ndvi_georef imports coverage). Pinned equal so the
+        restatement cannot drift into a second camera model."""
+        from fieldguard_planning.ndvi_georef import CameraIntrinsics
+        cam, alt = self._config()
+        c = cam["camera"]
+        intr = CameraIntrinsics.from_config(c["image_width_px"], c["image_height_px"],
+                                            c["horizontal_fov_rad"])
+        depth = alt + cam["mount"]["mount_pose_xyz_rpy"][2]
+        self.assertAlmostEqual(derive_swath_half_width_m(alt), depth * intr.cy / intr.fy, places=9)
+
+    def test_cross_track_is_the_short_image_axis(self):
+        """The ADR-007 mount extrinsic puts image u+ along body +X (the flight direction), so lanes
+        are separated across the 480 px axis. Taking the swath off the 640 px axis would over-claim
+        by a third and re-open exactly the strip this fix closes."""
+        cam, alt = self._config()
+        c = cam["camera"]
+        along = derive_swath_half_width_m(alt) * c["image_width_px"] / c["image_height_px"]
+        self.assertLess(derive_swath_half_width_m(alt), along)
+        self.assertAlmostEqual(along, 9.181436, places=5)
+
+    def test_it_scales_with_altitude_through_the_mount_offset(self):
+        # Twice the DEPTH is twice the swath -- and the mount offset lives in the depth, so doubling
+        # the ALTITUDE gives slightly MORE than double (the fixed 0.08 m is a smaller share of 30 m).
+        mount_z = self._config()[0]["mount"]["mount_pose_xyz_rpy"][2]      # -0.08 m
+        self.assertAlmostEqual(derive_swath_half_width_m(2 * (15.0 + mount_z) - mount_z),
+                               2 * derive_swath_half_width_m(15.0), places=9)
+        self.assertGreater(derive_swath_half_width_m(30.0), 2 * derive_swath_half_width_m(15.0))
+
+    def test_the_720_cell_guarantee_survives_the_true_swath_but_only_just(self):
+        """The honest state of the coverage guarantee: at 15 m lane pitch the true swath does NOT
+        meet between lanes, and 720/720 holds only because 2.5 m cell CENTRES sit at most 6.25 m
+        from a lane -- 0.636 m of quantization margin. Narrow the swath (lower cruise, tighter FOV)
+        or refine the grid and this test is the one that says so before a flight does."""
+        cells = build_grid(load_field_polygon(FIELD_POLYGON))
+        covered = coverage_from_path(cells, _nominal_path(), DEFAULT_SWATH_HALF_WIDTH_M)
+        self.assertEqual([cid for cid, hit in covered.items() if not hit], [])
+        worst = max(min(abs(cell.cx_m - lane) for lane in (0, 15, 30, 45, 60, 75)) for cell in cells)
+        self.assertAlmostEqual(worst, 6.25, places=9)
+        self.assertLess(worst, DEFAULT_SWATH_HALF_WIDTH_M)
+        self.assertLess(DEFAULT_SWATH_HALF_WIDTH_M, 7.5,      # the strip that used to be over-claimed
+                        msg="the derivation drifted back onto the lane-spacing/2 assumption")
 
 
 class TestCoverageDebtLedger(unittest.TestCase):

@@ -18,16 +18,35 @@ not tell anyone (`limited_by` in the report). On the AS-FLOWN geometry it found 
     901 opportunities at the 5 Hz sensor tick (0.3 % / 1.2 %). At the demo take's actual airborne
     frame rate (0.41 Hz, 53 frames in 127.8 s -- ADR-013's throughput problem, fixed since in
     am. 9) that becomes a median 0 and 1: the measured zero, reproduced from pure config.
-That split is what ADR-015 acted on: the committed geometry now predicts PASS (medians 8 / 6 / 11,
-no bird structural) because bird_0's PATROL LINE moved onto the lane -- lowering it was measured to
-fix nothing (the miss is cross-track) and to cost the avoidance story. The as-flown numbers above are
-still reproduced on every test run, from a frozen copy of that config
+That split is what ADR-015 acted on: the committed geometry predicts PASS (medians 8 / 6 / 11, no
+bird structural) **at 3 m/s** because bird_0's PATROL LINE moved onto the lane -- lowering it was
+measured to fix nothing (the miss is cross-track) and to cost the avoidance story. The as-flown
+numbers above are still reproduced on every test run, from a frozen copy of that config
 (tests/fieldguard_planning/fixtures/farm_world_birds_asflown_20260821.json).
+
+WHY `--speed` IS REQUIRED AND HAS NO DEFAULT (ADR-015 am. 1 / ADR-016, 2026-08-25): it used to
+default to 3.0 m/s, sourced from a doc that contains no speed figure. Nothing the vehicle does is
+3 m/s -- the 2026-08-25 take's own poses give a median 8.5 m/s (peak 10.9) through the encounter
+window -- and the verdict turns on it: PASS at 3.0, FAIL from 3.5 up (2 of 3 birds), FAIL 3 of 3
+from 5.5. **That default is what booked a 2-bird-visible-frame encounter.** There is no honest
+number to fall back to: the mission file carries no speed and no `WPNAV_*` parameter is pinned
+anywhere in this repo, so the tool refuses rather than guesses. Measure it -- last clip's
+`poses.jsonl`, or a flight log's `flown_path_enu` against `run.tick_stamp_sim_s`.
+
+**THE SPEED RESPONSE IS NOT MONOTONE -- sweep it, do not assume a direction.** Measured on the
+committed config at 0.5 m/s steps, per-bird medians RISE with speed in several places (bird_1:
+6 at 3.0, 4 at 3.5, 5 at 4.0; bird_0: 2 at 4.0, 3 at 4.5) and the failing-bird count drops 2 -> 1
+between 3.5 and 4.0. The cause is lane-arrival PHASE aliasing: the phase sweep walks the bird's
+driver-start offset, so it averages over the bird's phase but not over when the vehicle arrives at
+a lane, and speed moves that arrival. The PASS/FAIL verdict itself does not invert between 1.0 and
+6.0 m/s on THIS config, so "run it at the speed you will fly" is still the operating rule -- but
+"fast is the conservative end" was a wrong reason for a right rule, and a safety gate does not get
+to carry a wrong reason (QA M5). If the mission's real speed is uncertain, run the RANGE.
 
 MODEL (deliberately small; every assumption is listed because a predictor nobody trusts is worse
 than none):
-  * The mission is flown as straight legs at a constant `--speed` (default 3 m/s), instantaneous
-    turns, climb and descent at that same speed. Yaw faces the leg (ArduPilot's default
+  * The mission is flown as straight legs at a constant `--speed` (REQUIRED, see above),
+    instantaneous turns, climb and descent at that same speed. Yaw faces the leg (ArduPilot's default
     WP_YAW_BEHAVIOR faces the next waypoint) -- and yaw MATTERS here: the 640-px image axis lies
     along the flight direction and the 480-px axis across it (ADR-007 mount extrinsic), so the
     cross-track half-footprint is the SHORTER one.
@@ -56,11 +75,12 @@ than none):
     a STRUCTURAL miss, which is the verdict this tool exists to deliver.
 
 USE
-    python3 scripts/predict_bird_visibility.py                       # the committed mission
-    python3 scripts/predict_bird_visibility.py --mission config/missions/test_2lane.waypoints
-    python3 scripts/predict_bird_visibility.py --json out.json       # for tooling / CI
+    python3 scripts/predict_bird_visibility.py --speed 9.4           # the committed mission
+    python3 scripts/predict_bird_visibility.py --speed 9.4 --mission config/missions/test_2lane.waypoints
+    python3 scripts/predict_bird_visibility.py --speed 9.4 --json out.json   # for tooling / CI
     python3 scripts/predict_bird_visibility.py --backtest eval/results/clips/real_flight_...Z
                                                                      # score a FLOWN clip instead
+                                                                     # (no --speed: it replays poses)
 
 `--backtest` is the honesty check: it replays a recorded clip's own poses.jsonl + birds[] through
 the identical geometry and must reproduce what the flight measured. If the predictor cannot
@@ -98,7 +118,10 @@ DEFAULT_MISSION = REPO_ROOT / "config" / "missions" / "boustrophedon.waypoints"
 DEFAULT_FIELD_POLYGON = REPO_ROOT / "config" / "field_polygon.json"
 DEFAULT_CAMERA_CONFIG = REPO_ROOT / "config" / "ndvi_camera.json"
 
-DEFAULT_SPEED_MPS = 3.0        # WPNAV_SPEED as flown (docs/runbooks/SIM_BRINGUP.md)
+# NOT a default -- `--speed` deliberately has none (see the docstring). This is the speed the
+# PUBLISHED ADR-015 medians 8 / 6 / 11 were computed at, kept only so those numbers stay
+# reproducible in the tests that pin them. Never wire it back into a CLI default.
+REFERENCE_SPEED_MPS = 3.0
 DEFAULT_CADENCE_HZ = 5.0       # config/ndvi_camera.json update_rate_hz (sensor tick, not yield)
 DEFAULT_PHASE_STEP_S = 0.5
 DEFAULT_MIN_FRAMES = 5
@@ -509,13 +532,15 @@ def format_prediction(rep: dict) -> str:
                      f"on {w['leg']}  {w['n_frames']} frame{'' if w['n_frames'] == 1 else 's'}, "
                      f"closest {w['min_slant_range_m']:.1f} m")
     v = rep["verdict"]
+    # Every verdict names the speed it was taken at. The medians move with it (PASS at 3.0 m/s,
+    # FAIL at 5.0 and above on the committed geometry), so a verdict quoted without its speed is
+    # the ADR-015 am. 1 defect in prose form.
+    at = f"{v['statistic']} at {m['speed_mps']:.1f} m/s, {m['cadence_hz']:.1f} Hz"
     if v["pass"]:
-        L.append(f"  VERDICT: PASS -- every bird clears the {v['min_frames']}-frame floor "
-                 f"({v['statistic']}).")
+        L.append(f"  VERDICT: PASS -- every bird clears the {v['min_frames']}-frame floor ({at}).")
     else:
         L.append(f"  VERDICT: FAIL -- {len(v['failing_birds'])} of {len(rep['birds'])} birds below "
-                 f"the {v['min_frames']}-frame floor ({v['statistic']}): "
-                 f"{', '.join(v['failing_birds'])}.")
+                 f"the {v['min_frames']}-frame floor ({at}): {', '.join(v['failing_birds'])}.")
         structural = [b["bird_id"] for b in rep["birds"]
                       if b["limited_by"] == "structural" and b["bird_id"] in v["failing_birds"]]
         timing = [bid for bid in v["failing_birds"] if bid not in structural]
@@ -564,8 +589,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mission", type=Path, default=DEFAULT_MISSION)
     ap.add_argument("--birds", type=Path, default=DEFAULT_BIRDS_CONFIG)
-    ap.add_argument("--speed", type=float, default=DEFAULT_SPEED_MPS,
-                    help=f"ground speed m/s (default {DEFAULT_SPEED_MPS})")
+    ap.add_argument("--speed", type=float, default=None,
+                    help="ground speed m/s. REQUIRED for a prediction and deliberately has NO "
+                         "default: the verdict turns on it, and the 3.0 m/s default it used to "
+                         "carry PASSed a geometry the vehicle then flew at ~9 m/s for 2 "
+                         "bird-visible frames. Measure it off your last flight; the response is "
+                         "NOT monotone, so if the speed is uncertain run the range, do not assume "
+                         "one end is safe.")
     ap.add_argument("--fps", type=float, default=DEFAULT_CADENCE_HZ,
                     help=f"effective frame cadence Hz (default {DEFAULT_CADENCE_HZ} = the sensor "
                          f"tick; recorded clips have matched it at 100 %% since ADR-013 am. 9 -- "
@@ -590,6 +620,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 2
         print(format_backtest(rep))
     else:
+        if args.speed is None:
+            # A refusal, not a guess: exit 2 is neither the PASS (0) nor the FAIL (1) this gate
+            # otherwise returns, so a caller can never read "I had no speed" as "the birds are
+            # visible". This is the ADR-015 am. 1 defect closed at the one place it can be.
+            ap.error("--speed is REQUIRED (no default). The mission file carries no speed and no "
+                     "WPNAV_* param is pinned in this repo, so guessing is what produced the "
+                     "2026-08-25 booking: PASS at the old 3.0 m/s default, FAIL at the ~9 m/s the "
+                     "take actually flew. Measure it (last clip's poses.jsonl, or a flight log's "
+                     "flown_path_enu vs run.tick_stamp_sim_s); the response is NOT monotone in "
+                     "speed, so if it is uncertain run the range rather than one 'safe' end.")
         cfg = json.loads(DEFAULT_CAMERA_CONFIG.read_text())["camera"]
         intr = CameraIntrinsics.from_config(cfg["image_width_px"], cfg["image_height_px"],
                                             cfg["horizontal_fov_rad"])

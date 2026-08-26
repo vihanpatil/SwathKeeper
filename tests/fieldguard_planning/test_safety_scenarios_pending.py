@@ -12,7 +12,9 @@ Flight-log contract (also in eval/scenarios/README.md -- keep the two in sync):
     "scenario": "<name>",
     "seed": <int>,
     "cell_size_m": 2.5,               # must match coverage.DEFAULT_CELL_SIZE_M or override consciously
-    "swath_half_width_m": 7.5,        # must match the validated camera swath (see coverage.py caveat)
+    "swath_half_width_m": 7.5,        # these open-loop FIXTURES were cut at 7.5; the camera-derived
+                                      # swath is 6.886 m (coverage.derive_swath_half_width_m,
+                                      # ADR-016) -- a log states the swath it was computed with
     "flown_path_enu": [[e,n,u], ...], # ACTUAL flown path incl. every avoidance deviation
     "coverage_ledger": [{"cell_id": str, "status": "covered"|"debt"}, ...],  # terminal, one per cell
     "requeue_events": [{"cell_id": str, "t_s": float}, ...],                 # audit trail (optional)

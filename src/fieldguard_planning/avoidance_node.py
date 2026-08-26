@@ -51,7 +51,7 @@ from .avoidance_types import AvoidanceManeuver, Detection, DroneState
 from .avoidance_policy import AvoidancePolicy, _params_dict
 from .avoidance_executor import AvoidanceExecutor
 from .geofence import GeofenceMap
-from .coverage import build_grid, load_field_polygon
+from .coverage import build_grid, derive_swath_half_width_m, load_field_polygon
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 # (t_seconds, drone_state_or_None) -> current detections in world-ENU. The real NDVI detector ignores
@@ -59,9 +59,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DetectionSource = Callable[[float, Optional[DroneState]], List[Detection]]
 ENU = Tuple[float, float, float]
 
+# The altitude this node flies and derives its coverage swath at. It MUST equal
+# `config/field_polygon.json`'s `mission_altitude_m` (15.0), which is what the mission generator
+# planned the lanes at and what `coverage.DEFAULT_SWATH_HALF_WIDTH_M` is derived from -- two
+# altitudes would mean the ledger claimed a swath the camera never had at the height actually flown.
+# Kept as a literal rather than read from the config (this node's other constants are literals too),
+# and cross-pinned by `test_avoidance_node_seam.TestTheNodeFliesTheCameraDerivedSwath`.
 CRUISE_ALT_M = 15.0
-SWATH_HALF_M = 7.5
 CONTROL_HZ = 5.0
+
+# NOTE: the swath half-width is NOT declared here either. It is derived from the camera at the
+# altitude this node actually cruises at (`coverage.derive_swath_half_width_m(CRUISE_ALT_M)`,
+# 6.886 m) -- a literal 7.5 here was the lane-spacing/2 assumption wearing a second home, and it
+# over-claimed the ledger by a 1.228 m strip between every lane pair (ADR-016).
 
 # NOTE: the ADR-009 staleness bound is NOT declared here. It is `PolicyParams.max_detection_age_s`
 # (1.0 s) and nowhere else -- this node armed it with a local constant while the policy default
@@ -424,8 +434,9 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             self.policy = AvoidancePolicy(field_polygon=load_field_polygon(),
                                           cruise_alt_m=CRUISE_ALT_M)
             self.sink = Ros2VehicleSink(self)
+            swath_half_m = derive_swath_half_width_m(CRUISE_ALT_M)
             self.avoidance_executor = AvoidanceExecutor(self.geofence, self.cells, self.sink,
-                                              swath_half_width_m=SWATH_HALF_M, alt_bounds=(2.0, 30.0))
+                                              swath_half_width_m=swath_half_m, alt_bounds=(2.0, 30.0))
             self.detection_source = detection_source
             self.detector_cfg = detector_cfg
             self.loop = AvoidanceLoop(self.policy, self.geofence, self.avoidance_executor,
@@ -463,8 +474,9 @@ def build_node(detection_source: Optional[DetectionSource] = None,
                                          qos_profile_sensor_data)
             self.create_timer(1.0 / CONTROL_HZ, self._on_tick)
             self.get_logger().info(
-                f"fieldguard_avoidance up: /ap/pose/filtered @ {CONTROL_HZ} Hz, detection source "
-                f"'{detection_source_name(detection_source)}'"
+                f"fieldguard_avoidance up: /ap/pose/filtered @ {CONTROL_HZ} Hz, coverage swath "
+                f"+/-{swath_half_m:.3f} m (derived from config/ndvi_camera.json at {CRUISE_ALT_M:.0f} m "
+                f"cruise), detection source '{detection_source_name(detection_source)}'"
                 + (f", subscribing {NDVI_IMAGE_TOPIC} + {NDVI_INFO_TOPIC}"
                    if self._frame_detector is not None else ""))
 

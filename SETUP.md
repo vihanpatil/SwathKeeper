@@ -133,12 +133,21 @@ above, which fails if the detector's numbers move. 17.2 s for all four commands.
 **(f) Planning a real flight starts here.**
 
 ```bash
-python3 scripts/predict_bird_visibility.py --fps 5.0
+# --speed is REQUIRED and has no default: it must be the speed the mission will ACTUALLY fly.
+# 9.4 m/s is what the 2026-08-25 take measured; 3.0 is what the committed geometry was tuned at.
+python3 scripts/predict_bird_visibility.py --fps 5.0 --speed 9.4
+python3 scripts/predict_bird_visibility.py --fps 5.0 --speed 3.0
 ```
 
 ```
-  VERDICT: PASS -- every bird clears the 5-frame floor (median frames in view over the phase sweep).
+  VERDICT: FAIL -- 3 of 3 birds below the 5-frame floor (median frames in view over the phase sweep
+                   at 9.4 m/s, 5.0 Hz): bird_0, bird_1, bird_2.
+  VERDICT: PASS -- every bird clears the 5-frame floor (median frames in view over the phase sweep
+                   at 3.0 m/s, 5.0 Hz).
 ```
+
+*(Both are real. The geometry clears the floor at 3 m/s and not at the speed the vehicle flies —
+that gap is ADR-016's open item, and it is why the verdict line always names its speed.)*
 
 *(abridged: the full report is a per-bird table — footprint at each bird's altitude, frames in view
 over a 55-phase sweep, and whether a miss is TIMING or STRUCTURAL.)* ~1 s, and it exists because a

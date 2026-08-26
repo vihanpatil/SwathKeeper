@@ -105,8 +105,11 @@ jobs:
           # stimulus fixtures -- their flown_path_enu is byte-identical to the scripted lawnmower and
           # the bird is parked ON the lane to force a dodge, so their "CPA" is a scenario parameter
           # no control law can move (proven: regenerating under today's law moved commanded setpoints
-          # up to 17.2 m and left all four CPA numbers bit-identical -- 0.0000 / 7.0000 / 1.0000 /
-          # 1.0000 m). They are gated by the regenerate+diff step above and by
+          # up to 17.2 m and left all four CPA numbers bit-identical -- 0.0000 / 0.0000 / 0.0000 /
+          # 1.0000 m under the 2026-08-26 segment geometry; the old vertex-only closest_approach
+          # read the turnaround fixture at 7.0000 m, a fly-through it could not see -- the property
+          # proven was bit-identity across the control-law change, and that still holds).
+          # They are gated by the regenerate+diff step above and by
           # test_safety_scenarios_pending.py; see ADR-013 amendment 16 and eval/scenarios/README.md.
           shopt -s nullglob
           logs=(eval/results/*flight_log*.json)

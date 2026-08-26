@@ -589,6 +589,64 @@ class TestDdsProfileInjection(unittest.TestCase):
         self.assertEqual(runbook_values, set(self._values(self.src)))
 
 
+class TestSitlParamFile(unittest.TestCase):
+    """`config/sitl_params/dds_udp.parm` — the ONE param file every DDS SITL start loads.
+
+    A flight parameter the mission logic DEPENDS ON must live here, not in a line a human types at
+    the MAVProxy prompt: the prompt line is per-session and silently skippable, and the failure it
+    would cause (a dodge restarting the mission at item 1) reads as a plausible flight, not as an
+    error. Pinned after the 2026-08-25 red team named `MIS_RESTART` as pinned nowhere (ADR-016
+    doctrine: physical/flight parameters come from a file, never from prose)."""
+
+    PARM = REPO_ROOT / "config" / "sitl_params" / "dds_udp.parm"
+    # Every file that spells out a DDS-enabled SITL start. ci_sim_smoke.sh is deliberately absent:
+    # it starts SITL WITHOUT --enable-DDS (its own header says why) and flies no mission.
+    SITL_START_SITES = ("scripts/fly_pipeline.sh", "scripts/run_farm_mission.sh",
+                        "docs/runbooks/FULL_PIPELINE_DEMO.md", "docs/runbooks/SIM_BRINGUP.md",
+                        "sim/README.md")
+
+    def params(self):
+        """{name: value} from the .parm file — comments and blank lines stripped."""
+        out = {}
+        for line in self.PARM.read_text().splitlines():
+            body = line.split("#", 1)[0].split()
+            if body:
+                out[body[0]] = float(body[1])
+        return out
+
+    def test_mission_restart_is_pinned_to_resume(self):
+        params = self.params()
+        self.assertIn("MIS_RESTART", params,
+                      msg="MIS_RESTART is not pinned in any param file, so every flight runs "
+                          "whatever the SITL eeprom.bin happens to hold — see this class's docstring")
+        self.assertEqual(params["MIS_RESTART"], 0.0,
+                         msg="ADR-006: the executor takes AUTO -> GUIDED -> one setpoint -> AUTO and "
+                             "claims the mission RESUMES at the waypoint it was flying to. That is "
+                             "ArduPilot's `mission.start_or_resume()`, which resumes only while "
+                             "MIS_RESTART == 0. At 1 every dodge re-flies the field from lane 1.")
+
+    def test_the_dds_pins_are_still_there(self):
+        # The file's original job. Losing either is silent: zero /ap/* topics, no error.
+        self.assertEqual(self.params()["DDS_ENABLE"], 1.0)
+        self.assertEqual(self.params()["DDS_UDP_PORT"], 2019.0)
+
+    def test_every_dds_enabled_sitl_start_loads_this_file(self):
+        """A pin in a file nobody loads is not a pin. Line continuations are joined and `VAR=`
+        shell assignments expanded first: three of the five sites put `--add-param-file` on the
+        line after `--enable-DDS`, and one reaches it through a variable."""
+        import re
+        for site in self.SITL_START_SITES:
+            text = (REPO_ROOT / site).read_text().replace("\\\n", " ")
+            for name, value in re.findall(r'^(\w+)="([^"]+)"', text, re.M):
+                text = text.replace(f"${name}", value)
+            starts = [ln for ln in text.splitlines()          # `-v` = a real invocation, not prose
+                      if "sim_vehicle.py -v" in ln and "--enable-DDS" in ln]
+            with self.subTest(site=site):
+                self.assertTrue(starts, msg=f"{site} no longer starts a DDS SITL — update this list")
+                for line in starts:
+                    self.assertIn("sitl_params/dds_udp.parm", line, msg=line)
+
+
 class TestDdsProfile(unittest.TestCase):
     """The L2 profile is a committed artifact whose failure mode is silent, so the invariants that
     make it valid are pinned rather than trusted to review."""

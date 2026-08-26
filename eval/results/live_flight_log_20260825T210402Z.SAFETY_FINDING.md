@@ -21,7 +21,7 @@ re-flown, and that list is meant to stay two long.
 | policy bar (`PolicyParams.min_bird_clearance_m`) | **3.00 m** |
 | geometry at CPA | drone z 15.0300 m, bird z 11.0000 m, vertical sep **4.0300 m** — inside the ±6 m threat band |
 | freeze debit | 1.1277 m = 2 identically-stamped ticks from tick 890 hiding 0.161 s × the fastest scripted bird at 7.00 m/s |
-| detection-CPA (estimator check, **not** the gate) | 0.2096 m; `range_estimate_error_at_cpa_m` −0.2028 m |
+| detection-CPA (estimator check, **not** the gate) | 0.0035 m; `range_estimate_error_at_cpa_m` +0.0033 m *(corrected 2026-08-26: the vertex-only CPA geometry read 0.2096 / −0.2028; the segment back-port shows the monocular estimator agrees with ground truth to 3.3 mm here)* |
 | sensor lead / policy lead | **0.175 s / 0.000 s** — the first detection of the encounter arrived *on the CPA tick* |
 
 The gated number is the debited one on purpose: a frozen truth join can only ever over-report
@@ -105,7 +105,8 @@ Recorded so the failure is not read as a broken flight, and *not* offered as a c
 * **Clock**: 0 domain violations, `gz_clock_stream`.
 * **The GT-CPA gate machinery itself, first live use**: truth coverage 1858/1858 ticks, 610/610
   landed `set_pose` calls scored, the freeze debit priced from the flight's own stamps, and the
-  estimator split (−0.2028 m) reported separately from the safety number. The gate did the one job
+  estimator split (+0.0033 m under the 2026-08-26 segment geometry; the original vertex-only run
+  printed −0.2028 m) reported separately from the safety number. The gate did the one job
   it was built for — it produced a number that the flight could fail.
 
 **Read the detector rate adversarially.** 99.92 % is green on top of a take where the camera had a

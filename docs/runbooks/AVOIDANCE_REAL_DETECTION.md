@@ -62,27 +62,46 @@ must be re-run after ANY edit to that file, `config/missions/boustrophedon.waypo
 `config/field_polygon.json` or `config/ndvi_camera.json`):
 
 ```bash
-# gate 1 — CAMERA: will the birds be IN FRAME? Run it at the cadence you actually expect.
-python3 scripts/predict_bird_visibility.py --fps 5.0
+# gate 1 — CAMERA: will the birds be IN FRAME? Run it at the cadence AND SPEED you actually expect.
+python3 scripts/predict_bird_visibility.py --fps 5.0 --speed 9.4
 
 # gate 2 — AVOIDANCE: does a bird still sit inside the policy's threat cylinder?
 python3 -m pytest tests/fieldguard_planning/test_bird_geometry_contract.py -q
 ```
 
-Measured 2026-08-24 on the committed config: gate 1 **PASS, exit 0**, medians **8 / 6 / 11** frames
-in view (bird_0 / bird_1 / bird_2) over the 55-offset driver-start phase sweep; gate 2 **17 passed**.
+Measured 2026-08-25 on the committed config: gate 1 **FAIL, exit 1** at `--speed 9.4` — medians
+**2 / 2 / 3** frames in view (bird_0 / bird_1 / bird_2) over the 55-offset driver-start phase sweep,
+all three below the 5-frame floor; gate 2 **17 passed**. **That FAIL is correct and it is the
+current state of the world:** the geometry only clears the floor at 3 m/s (medians 8 / 6 / 11, the
+number ADR-015 published and every doc quoted), and the vehicle does not fly 3 m/s.
 
-**`--fps` is the honest input, and it is the whole gate.** The predictor counts frame *opportunity*
-at the cadence you give it. Use the NDVI frame rate the avoidance node will actually consume —
-since ADR-013 am. 9 (Fast DDS SHM segment fix) that is the full **5.0 Hz** sensor tick, measured
-flat on F9 and on the flagship take. If your last clip's cadence was lower, pass **that** number.
+**`--fps` and `--speed` are the honest inputs, and together they are the whole gate.**
+- `--speed` is **REQUIRED and has no default** (ADR-016). It used to default to 3.0 m/s from a doc
+  containing no speed figure, and that default is what booked the 2026-08-25 take: PASS on paper,
+  2 bird-visible frames in the air. Measure it — the 2026-08-25 take's own poses give a median
+  **8.5 m/s** (peak 10.9) through the encounter window.
+  **The response is NOT monotone in speed** — measured at 0.5 m/s steps, per-bird medians rise with
+  speed in several places and the failing-bird count drops 2 → 1 between 3.5 and 4.0 m/s (lane-
+  arrival phase aliasing: the sweep phases the BIRD, not the vehicle's arrival at a lane). The
+  PASS/FAIL verdict does not invert between 1.0 and 6.0 m/s on this config, so "run it at the speed
+  you will fly" still holds — but **do not** reason "fast is the conservative end". If the speed is
+  uncertain, run the range.
+- `--fps` is frame *opportunity*: the NDVI rate the avoidance node will actually consume. Since
+  ADR-013 am. 9 (Fast DDS SHM segment fix) that is the full **5.0 Hz** sensor tick, measured flat on
+  F9 and on the flagship take. If your last clip's cadence was lower, pass **that** number.
 
 **ABORT RULE — no argument, no exceptions:** if `predict_bird_visibility.py` exits nonzero (any bird
 below the 5-frame median floor), **do not book the session.** At the old 0.407 Hz throughput the same
 committed geometry returns medians **1 / 0 / 1 and exit 1** *(re-measured 2026-08-24 at `--fps 0.41`)*
 — that is the state that produced four unscoreable clips in a row. Fix throughput or geometry first,
 re-run the predictor, then book. Reading `limited_by` tells you which: `STRUCTURAL` means no cadence
-can ever help (move the patrol line, ADR-015), `TIMING` means throughput.
+can ever help (move the patrol line, ADR-015), `TIMING` means throughput **or speed** — all three
+birds read TIMING at 9.4 m/s, and slowing the survey is as legitimate a fix as moving a bird.
+**Exit 2 is a refusal, not a pass:** no `--speed`, or an unannotated clip under `--backtest`. It is
+deliberately neither 0 nor 1 so a caller can never read "I had no speed" as "the birds are visible".
+**As of 2026-08-25 this gate FAILs on the committed geometry at any speed the vehicle actually
+flies**, so booking the next detection take needs a geometry or speed change first — which is the
+re-fly's business (ADR-016 sequencing: the offline point-mass replay comes before it).
 
 ### 0c. Detector transfer check — does the ADOPTED detector behave the same in the image?
 jammy ships scipy **1.8.0**, `requirements-eval.txt` pins **1.18.0**, dev hosts run **1.13.1**. The

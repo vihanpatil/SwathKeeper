@@ -47,7 +47,10 @@ from fieldguard_planning.avoidance_node import (  # noqa: E402
 )
 from fieldguard_planning.avoidance_policy import AvoidancePolicy, PolicyParams, _params_dict  # noqa: E402
 from fieldguard_planning.avoidance_types import Decision, Detection, DroneState  # noqa: E402
-from fieldguard_planning.coverage import build_grid, load_field_polygon  # noqa: E402
+from fieldguard_planning import avoidance_node  # noqa: E402
+from fieldguard_planning.coverage import (  # noqa: E402
+    build_grid, derive_swath_half_width_m, load_field_polygon,
+)
 from fieldguard_planning.geofence import GeofenceMap  # noqa: E402
 
 NODE_SRC = (REPO_ROOT / "src" / "fieldguard_planning" / "avoidance_node.py").read_text()
@@ -425,6 +428,73 @@ class TestDemoSourcesAreHonestAboutBeingVirtual(unittest.TestCase):
     def test_scripted_source(self):
         dets = scripted_bird_source([("b0", BIRD_ENU, 0.0, 5.0)])(1.0, None)
         self.assertEqual([d.source for d in dets], [DEMO_SOURCE_TAG])
+
+
+class TestTheNodeFliesTheCameraDerivedSwath(unittest.TestCase):
+    """What `build_node` actually hands the executor -- not what `coverage` computes for itself.
+
+    QA M1 (2026-08-25): mutating `derive_swath_half_width_m(CRUISE_ALT_M)` in the node back to the
+    old `7.5` literal broke ZERO tests, because the swath tests pin
+    `coverage.DEFAULT_SWATH_HALF_WIDTH_M`, which the node never reads. `build_node` cannot be called
+    here (rclpy, numpy, ros messages), so the expression the node flies is located in its AST and
+    EVALUATED -- a grep would pass on `derive_swath_half_width_m(20.0)`."""
+
+    def _executor_call(self):
+        import ast
+        for node in ast.walk(ast.parse(NODE_SRC)):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                    and node.func.id == "AvoidanceExecutor"):
+                return node
+        self.fail("build_node no longer constructs an AvoidanceExecutor")
+
+    def _flown_swath_expr(self):
+        """The expression the node passes as `swath_half_width_m`, resolved through one level of
+        local variable, exactly as the source reads."""
+        import ast
+        kw = {k.arg: k.value for k in self._executor_call().keywords}
+        self.assertIn("swath_half_width_m", kw, "the executor is built without an explicit swath")
+        expr = kw["swath_half_width_m"]
+        if isinstance(expr, ast.Name):                       # `swath_half_width_m=swath_half_m`
+            assigns = [n for n in ast.walk(ast.parse(NODE_SRC))
+                       if isinstance(n, ast.Assign)
+                       and any(isinstance(t, ast.Name) and t.id == expr.id for t in n.targets)]
+            self.assertEqual(len(assigns), 1, f"{expr.id} is assigned in more than one place")
+            expr = assigns[0].value
+        return expr
+
+    def test_the_value_handed_to_the_executor_is_the_camera_derived_one(self):
+        import ast
+        flown = eval(compile(ast.Expression(self._flown_swath_expr()), "<avoidance_node>", "eval"),
+                     {"derive_swath_half_width_m": derive_swath_half_width_m,
+                      "CRUISE_ALT_M": avoidance_node.CRUISE_ALT_M})
+        self.assertAlmostEqual(flown, derive_swath_half_width_m(avoidance_node.CRUISE_ALT_M),
+                               places=9)
+        self.assertAlmostEqual(flown, 6.886077, places=5)    # and it is the real camera's number
+        self.assertNotEqual(flown, 7.5, "the node is back on the lane-spacing/2 assumption")
+
+    def test_the_nodes_cruise_altitude_matches_the_altitude_the_mission_was_planned_at(self):
+        """`CRUISE_ALT_M` and `config/field_polygon.json`'s `mission_altitude_m` are two homes for
+        one number (pre-existing; cross-pinned rather than refactored). If they ever diverge, the
+        node derives its swath at one altitude while the lanes were planned at another, and the
+        ledger claims coverage the camera never had at the height flown."""
+        import json
+        planned = json.loads(
+            (REPO_ROOT / "config" / "field_polygon.json").read_text())["mission_altitude_m"]
+        self.assertEqual(avoidance_node.CRUISE_ALT_M, planned)
+        self.assertEqual(PolicyParams().cruise_alt_m, planned)   # and the policy's dodge altitude
+
+    def test_the_node_declares_no_swath_constant_of_its_own(self):
+        """One home. A node-side literal is what the 7.5 defect was, in both of its lives."""
+        self.assertNotIn("SWATH_HALF_M", NODE_SRC)
+
+    def test_it_is_derived_at_the_altitude_the_node_actually_cruises(self):
+        """A swath derived at some other altitude would be a third number: the ledger would claim
+        coverage the camera never had at the height this node flies."""
+        import ast
+        expr = self._flown_swath_expr()
+        self.assertIsInstance(expr, ast.Call)
+        self.assertEqual(expr.func.id, "derive_swath_half_width_m")
+        self.assertEqual([a.id for a in expr.args if isinstance(a, ast.Name)], ["CRUISE_ALT_M"])
 
 
 if __name__ == "__main__":

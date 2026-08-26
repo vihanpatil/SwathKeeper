@@ -31,9 +31,11 @@ see docs/runbooks/NDVI_VALIDATION.md):
        patrols x=15, y=[5,55]m -- straight down the mission's own x=15 lane
        (config/birds/farm_world_birds.json, ADR-015) -- so its cross-track offset on that lane is
        zero and the only question is along-track timing. Measured, not assumed:
-       `python3 scripts/predict_bird_visibility.py` predicts bird_0 in frame for a median 8 frames
-       and at ALL 55 driver-start offsets. Run that first; it costs 1 s on the host and tells you
-       whether this gate can see a bird at all. (The corresponding claim BEFORE ADR-015 was wrong
+       `python3 scripts/predict_bird_visibility.py --speed 3` predicts bird_0 in frame for a median
+       8 frames and at ALL 55 driver-start offsets -- and that median is a 3 m/s number: at the ~9
+       m/s the 2026-08-25 take flew it is 2 (ADR-016; `--speed` is required, no default). Run it
+       first at the speed you will fly; it costs 1 s on the host and tells you whether this gate can
+       see a bird at all. (The corresponding claim BEFORE ADR-015 was wrong
        and cost a whole session: it compared bird_0's 5.0 m off-lane distance against the ~+/-9.2 m
        GROUND footprint, but a bird is imaged at BIRD altitude, where the cross-track half-footprint
        was 3.23 m -- so bird_0 was outside frame on every pass ever flown. See ADR-003 amendment 2.)

@@ -1,4 +1,7 @@
-# Enable AP_DDS (ROS 2 /ap/* bridge) over UDP, for use with `sim_vehicle.py --add-param-file`.
+# The SITL params every SwathKeeper flight needs, for use with `sim_vehicle.py --add-param-file`:
+# AP_DDS (the ROS 2 /ap/* bridge) over UDP, plus the ADR-006 mission-resume assumption.
+#
+# --- AP_DDS ---------------------------------------------------------------------------------------
 #
 # Mirrors ArduPilot's own default DDS-enablement param file
 # Tools/ros2/ardupilot_sitl/config/default_params/dds_udp.parm at the pinned SHA
@@ -14,3 +17,15 @@
 # docs/runbooks/SIM_BRINGUP.md and docs/DECISIONS.md's AP_DDS interface-lock entry.
 DDS_ENABLE 1
 DDS_UDP_PORT 2019
+
+# --- Mission resume (ADR-006) ----------------------------------------------------------------------
+# 0 = RESUME the mission at the item it was on when AUTO was left; 1 = RESTART from item 1.
+# The avoidance executor takes AUTO -> GUIDED -> one setpoint -> AUTO on every encounter, and its
+# resume claim ("continues the lawnmower from the waypoint it was flying to") is ArduPilot's, not
+# ours: ModeAuto::init calls AP_Mission::start_or_resume(), which resumes unless MIS_RESTART == 1.
+# At 1 every dodge would re-fly the field from lane 1 and the coverage ledger would book that as
+# flown coverage. Confirmed live 2026-08-05 (Week-3 Gate 3, docs/archive/WEEK3_VALIDATION.md).
+# Pinned here 2026-08-25 (ADR-016): it had only ever been TYPED at the MAVProxy prompt, so a
+# skipped line silently changed what a flight meant. The recipe still types it -- belt and braces
+# for a hand-started SITL that forgot --add-param-file; this file is the pin.
+MIS_RESTART 0

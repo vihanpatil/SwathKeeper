@@ -33,7 +33,8 @@ Live numbers stay in `docs/ROADMAP.md` and `eval/results/`; never quote them fro
    two-stage (transport, then pairing), and `update_rate_hz` 5 → 2 is disproven, don't retry it.
 2. **ONE re-fly clears four blockers** (ADR-003 criterion 3, the comparison arm, the demo
    take's un-exercised birds half, both thresholds) — but only after (1): re-run
-   `scripts/predict_bird_visibility.py` first, and refuse the session on medians 0/0/1.
+   `scripts/predict_bird_visibility.py --speed <the mission's actual speed>` first (required, no
+   default -- ADR-016), and refuse the session on medians 0/0/1.
 3. **Week 6 detector** on the `detection_source` seam + comparison arm, alongside the doc
    long-tail — `docs/ROADMAP.md` "Next up" holds the live ordering; you own keeping it current.
 4. **Week 7** dashboard, demo video, GTM — the exit you are guarding.

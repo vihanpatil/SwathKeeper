@@ -68,6 +68,8 @@ cat <<EOF
   wp list                   # confirm 15 items loaded
   param set DISARM_DELAY 0
   param set AUTO_OPTIONS 3  # bit0=allow arm in AUTO, bit1=auto-takeoff
+  param set MIS_RESTART 0   # ADR-016 pins this in $DDS_PARAM_FILE; --add-param-file only sets
+                            # DEFAULTS, so a stale persisted eeprom.bin can still outrank it
   mode auto
   arm throttle              # arms AND auto-starts: NAV_TAKEOFF, the 6 lanes, then RTL
 

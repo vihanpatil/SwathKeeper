@@ -450,6 +450,9 @@ $(printf '%s\n' "$live" | cut -c1-110 | sed 's/^/      /')
 # --- the fly recipe ------------------------------------------------------------------------------
 # ONE source for the MAVProxy sequence: the recipe pane displays it (mission $1 = boustrophedon),
 # `test-flight` types it (mission $1 = test_2lane). Nothing else may spell these lines out.
+# `param set MIS_RESTART 0` is belt and braces since 2026-08-25 (ADR-016): the pin now lives in
+# config/sitl_params/dds_udp.parm, which INNER_SITL loads, so a skipped prompt line can no longer
+# change what a flight means. Kept typed because a hand-started SITL may not load the file.
 fly_lines() {
   cat <<EOF
 wp load $CTR_REPO/config/missions/$1.waypoints

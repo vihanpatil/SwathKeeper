@@ -66,7 +66,7 @@ def _home():
 
 
 def predict(birds_path, cadence_hz=pbv.DEFAULT_CADENCE_HZ, phase_step_s=1.0):
-    return pbv.predict(MISSION, birds_path, _intrinsics(), pbv.DEFAULT_SPEED_MPS, cadence_hz,
+    return pbv.predict(MISSION, birds_path, _intrinsics(), pbv.REFERENCE_SPEED_MPS, cadence_hz,
                        phase_step_s, MIN_FRAMES, _home())
 
 
@@ -77,7 +77,7 @@ def approach_scan(birds_path, params=PolicyParams(), cadence_hz=2.0, phase_step_
     Plain geometry on purpose -- it is a complete sweep, and the REAL policy is then invoked at the
     extremum it finds (`TestAvoidanceGate`), which is the frame the verdict actually turns on."""
     birds = json.loads(Path(birds_path).read_text())["birds"]
-    samples = pbv.sample_path(pbv.build_legs(MISSION, *_home(), pbv.DEFAULT_SPEED_MPS), cadence_hz)
+    samples = pbv.sample_path(pbv.build_legs(MISSION, *_home(), pbv.REFERENCE_SPEED_MPS), cadence_hz)
     t_gate = pbv.bird_start_time_s(samples)
     span = max(b["waypoints"][-1]["t_s"] for b in birds)
     phases = [k * phase_step_s for k in range(max(1, int(math.ceil(span / phase_step_s))))]
@@ -109,7 +109,7 @@ def _drone_state(sample):
     """pbv.Sample -> the policy's DroneState. Yaw back out of the yaw-only quaternion."""
     _, _, qz, qw = sample.quat
     return DroneState(position_enu=sample.pos, heading_rad=2.0 * math.atan2(qz, qw),
-                      current_wp_index=0, ground_speed_mps=pbv.DEFAULT_SPEED_MPS)
+                      current_wp_index=0, ground_speed_mps=pbv.REFERENCE_SPEED_MPS)
 
 
 class TestCameraGate(unittest.TestCase):

@@ -27,6 +27,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import check_live_flight_log as checker  # noqa: E402
+from fieldguard_planning.avoidance_executor import RESUME_CLEAR_TICKS  # noqa: E402
 from fieldguard_planning.avoidance_policy import PolicyParams, _params_dict  # noqa: E402
 from fieldguard_planning.coverage import CELL_COVERED, build_grid, load_field_polygon  # noqa: E402
 
@@ -2020,20 +2021,26 @@ class TestNodeContract(Harness):
         state = {"i": 0}
 
         def source(t, drone):
+            # The bird is present for `n_ticks`, then GONE -- so this fixture flies a COMPLETE
+            # encounter (takeover ... resume) rather than ending mid-dodge. A log that stops while
+            # still in GUIDED is a truncated survey and `gate_encounter_closure` now says so
+            # (QA C1); it was passing here only because nothing paired takeovers with resumes.
             i = state["i"]
             state["i"] += 1
+            if i >= n_ticks:
+                return []
             return [Detection(bird_enu, frame_id=i, track_id="b0", source="ndvi_blob",
                               stamp_s=t0 + i * 0.2)]
 
         loop = AvoidanceLoop(policy, geofence, executor, source)
         drone = DroneState(position_enu=drone_enu, heading_rad=0.0, current_wp_index=3)
-        for i in range(n_ticks):
+        for i in range(n_ticks + RESUME_CLEAR_TICKS):     # + the clear ticks that end the encounter
             loop.tick(drone, now_s=t0 + i * 0.2, source_t=t0 + i * 0.2)
         executor.finalize()
         log = executor.flight_log("integration", 0, 2.5)
         log["run"] = build_run_block(
             policy_params=_params_dict(policy.params),
-            clock=loop.clock_block(readings=n_ticks),
+            clock=loop.clock_block(readings=n_ticks + RESUME_CLEAR_TICKS),
             tick_stamp_sim_s=loop.tick_stamp_sim_s,
             detector=(detector_log_block(source, None) if detector_source is None
                       else detector_source))
@@ -2154,6 +2161,76 @@ class patched_params:
     def __exit__(self, *exc):
         checker.PolicyParams = self.real
         return False
+
+
+class TestEncounterClosureGate(Harness):
+    """`gate_encounter_closure` -- the live half of QA C1 (2026-08-25).
+
+    The executor's threat-clear hysteresis resets on every threat tick, so a detection duty cycle
+    denser than 1-in-`resume_clear_ticks` never reaches the count: 90 ticks of
+    `DIVERT, PROCEED, PROCEED` on the real executor gave 1 takeover and **0 resumes**, the mission
+    never came back, and no gate could see it -- `ENCOUNTER_KINDS` does not even contain `resume`,
+    and nothing paired takeovers with resumes."""
+
+    def _log(self, *events, executor_params=None, **over):
+        # demo_virtual: the one source whose logged bird IS truth, so a fixture can carry
+        # takeover/resume events without also needing a bird track beside it.
+        log = make_log(events=[dict(e) for e in events],
+                       run=make_run(detector_source=checker.DET_DEMO_VIRTUAL), **over)
+        if executor_params is not None:
+            log["executor_params"] = executor_params
+        return log
+
+    TAKEOVER = {"seq": 0, "tick": 1, "kind": "takeover", "reason": "divert"}
+    RESUME = {"seq": 1, "tick": 2, "kind": "resume", "trigger": "threat_cleared"}
+    CEILING = {"seq": 1, "tick": 306, "kind": "resume", "trigger": "guided_ceiling",
+               "ticks_in_guided": 305, "ceiling_ticks": 305}
+
+    def test_a_flight_that_never_came_back_out_of_guided_is_invalid(self):
+        self.assertInvalid(self.check(self._log(self.TAKEOVER)), "UNCLOSED ENCOUNTER")
+
+    def test_the_failure_names_the_tick_and_the_known_cause(self):
+        _status, messages = self.check(self._log(self.TAKEOVER))
+        blob = " ".join(messages)
+        self.assertIn("1 takeover(s) but 0 resume(s)", blob)
+        self.assertIn("last takeover tick 1", blob)
+        self.assertIn("duty cycle", blob)
+
+    def test_a_matched_pair_says_nothing_at_all(self):
+        """Silence is the property: every committed log has matched pairs, and this gate must not
+        change one byte of what they print."""
+        messages = self.assertValid(self.check(self._log(self.TAKEOVER, self.RESUME)))
+        self.assertNotIn("UNCLOSED", messages)
+        self.assertNotIn("hysteresis budget", messages)
+
+    def test_two_encounters_one_resume_is_still_unclosed(self):
+        second = dict(self.TAKEOVER, seq=2, tick=3)
+        self.assertInvalid(self.check(self._log(self.TAKEOVER, self.RESUME, second)),
+                           "2 takeover(s) but 1 resume(s)")
+
+    def test_a_ceiling_resume_is_reported_loudly_but_the_flight_still_scores(self):
+        messages = self.assertValid(self.check(self._log(self.TAKEOVER, self.CEILING)))
+        self.assertIn("GUIDED-CEILING BACKSTOP FIRED at tick 306", messages)
+        self.assertIn("305 ticks in GUIDED", messages)
+        self.assertIn("NOT by a cleared threat", messages)
+
+    def test_the_hysteresis_budget_is_priced_on_the_flights_own_measured_tick(self):
+        """M3: 3 ticks is 0.48 s at the FLOWN 0.160 s median, not the 0.6 s a nominal 5 Hz implies.
+        The fixture's stamps step 1.0 s, so 3 ticks reads 3.0 s -- well past the 1.0 s bound."""
+        log = self._log(executor_params={"resume_clear_ticks": 3, "guided_ceiling_ticks": 305})
+        self.assertInvalid(self.check(log), "hysteresis budget 3.000 s")
+        _s, messages = self.check(log)
+        self.assertIn("already declared ABSENT", " ".join(messages))
+
+    def test_a_budget_inside_the_staleness_bound_is_reported_as_context(self):
+        log = self._log(executor_params={"resume_clear_ticks": 1, "guided_ceiling_ticks": 305})
+        # 1 tick x the fixture's 1.0 s mean step = 1.0 s, exactly the max_detection_age_s bound.
+        self.assertIn("hysteresis budget 1.000 s", self.assertValid(self.check(log)))
+
+    def test_a_log_that_records_no_executor_params_is_not_scored_on_them(self):
+        """Pre-2026-08-25 logs (every committed one) carry no `executor_params`. Absence must be
+        silent here, not an invented pass and not a failure."""
+        self.assertNotIn("hysteresis budget", self.assertValid(self.check(self._log())))
 
 
 if __name__ == "__main__":

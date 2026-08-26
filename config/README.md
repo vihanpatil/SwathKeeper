@@ -13,8 +13,11 @@ Data-driven scenario + mission configuration so scenarios can be added without c
   `scripts/drive_birds.py` replays these waypoints at runtime via Gazebo `set_pose`. Currently
   `birds/farm_world_birds.json` (the farm world's birds); `sim/spike/scenario_default.json` has a
   separate bird scripting for the NDVI-vs-RGB spike clip (different field size/purpose, same style).
-- `sitl_params/dds_udp.parm` — `DDS_ENABLE=1` + `DDS_UDP_PORT=2019` for the ROS 2 `/ap/*` bridge.
-  **The param file alone does nothing:** SITL compiles AP_DDS out by default, so build with
+- `sitl_params/dds_udp.parm` — the params every SITL flight needs: `DDS_ENABLE=1` +
+  `DDS_UDP_PORT=2019` for the ROS 2 `/ap/*` bridge, and `MIS_RESTART=0` so re-entering AUTO after an
+  avoidance dodge RESUMES the mission instead of restarting it at item 1 (ADR-006; pinned here
+  2026-08-25 because it had only ever been typed at the MAVProxy prompt).
+  **The param file alone does nothing for DDS:** SITL compiles AP_DDS out by default, so build with
   `sim_vehicle.py --enable-DDS --add-param-file=...` — without `--enable-DDS` the `DDS_ENABLE` param
   does not even exist and zero `/ap/*` topics appear, silently (ADR-005 correction). See
   `docs/runbooks/SIM_BRINGUP.md` §6b and `docs/DECISIONS.md` for the locked topic/frame-id contract

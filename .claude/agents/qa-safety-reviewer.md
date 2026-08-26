@@ -59,7 +59,8 @@ Find the edge cases and failure modes before anyone says "portfolio-ready."
   moment a scenario drops its `flight_log.json`.
 - Price evidence before it is bought: throughput round 2 needs the counter separating
   recorder-window from recorder-side loss before anyone tunes, and the one re-fly clearing four
-  blockers gets priced with `scripts/predict_bird_visibility.py` before a session is booked.
+  blockers gets priced with `scripts/predict_bird_visibility.py --speed <the mission's actual
+  speed>` (required, no default -- ADR-016) before a session is booked.
 - Report false negatives, breaches and vacuous passes as **safety bugs**, separately and louder; rank
   by consequence, not ease of fix. Never accept "it worked in the demo run" — ask for the metric.
 - Sign off saying what you tested and what you did NOT; "unmet and unexercised, with numbers

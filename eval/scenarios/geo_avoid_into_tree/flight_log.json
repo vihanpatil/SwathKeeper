@@ -3,6 +3,12 @@
   "seed": 301,
   "cell_size_m": 2.5,
   "swath_half_width_m": 7.5,
+  "executor_params": {
+    "resume_clear_ticks": 3,
+    "guided_ceiling_ticks": 310,
+    "relatch_threshold_m": 3.0,
+    "vertical_margin_m": 1.0
+  },
   "flown_path_enu": [
     [
       15.0,
@@ -6814,6 +6820,40 @@
     {
       "seq": 128,
       "tick": 108,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        18.0,
+        15.0
+      ],
+      "wp_index": 3,
+      "resume_pending": {
+        "clear_ticks": 1,
+        "required": 3,
+        "ticks_in_guided": 12,
+        "ceiling_ticks": 310
+      }
+    },
+    {
+      "seq": 129,
+      "tick": 109,
+      "kind": "proceed",
+      "position_enu": [
+        60.0,
+        16.0,
+        15.0
+      ],
+      "wp_index": 3,
+      "resume_pending": {
+        "clear_ticks": 2,
+        "required": 3,
+        "ticks_in_guided": 13,
+        "ceiling_ticks": 310
+      }
+    },
+    {
+      "seq": 130,
+      "tick": 110,
       "kind": "resume",
       "trigger": "threat_cleared",
       "resumed_wp_index": 3,
@@ -6823,29 +6863,9 @@
         60.99503719,
         10.049628098,
         15.0
-      ]
-    },
-    {
-      "seq": 129,
-      "tick": 108,
-      "kind": "proceed",
-      "position_enu": [
-        60.0,
-        18.0,
-        15.0
       ],
-      "wp_index": 3
-    },
-    {
-      "seq": 130,
-      "tick": 109,
-      "kind": "proceed",
-      "position_enu": [
-        60.0,
-        16.0,
-        15.0
-      ],
-      "wp_index": 3
+      "clear_ticks_required": 3,
+      "ticks_in_guided": 14
     },
     {
       "seq": 131,

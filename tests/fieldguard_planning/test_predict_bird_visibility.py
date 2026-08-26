@@ -184,7 +184,7 @@ class TestSyntheticReproduction(unittest.TestCase):
 
     def _predict(self, cadence_hz):
         return pbv.predict(self.mission, self.birds, default_intrinsics(),
-                           speed_mps=pbv.DEFAULT_SPEED_MPS, cadence_hz=cadence_hz,
+                           speed_mps=pbv.REFERENCE_SPEED_MPS, cadence_hz=cadence_hz,
                            phase_step_s=pbv.DEFAULT_PHASE_STEP_S, min_frames=pbv.DEFAULT_MIN_FRAMES,
                            home=home_latlon())
 
@@ -379,13 +379,90 @@ class TestWindows(unittest.TestCase):
         self.assertAlmostEqual(w[0]["min_slant_range_m"], 10.0)
 
 
+class TestSpeedMustComeFromTheFlight(unittest.TestCase):
+    """`--speed` is REQUIRED and has no default (ADR-015 am. 1 / ADR-016, 2026-08-25).
+
+    It used to default to 3.0 m/s, cited to a runbook containing no speed figure. The gate is
+    monotonic in speed and the 2026-08-25 take flew ~9 m/s: the default PASSed the geometry that
+    then produced 2 bird-visible frames. There is nothing honest to fall back to (the mission file
+    carries no speed, no `WPNAV_*` is pinned in the repo), so the tool refuses."""
+
+    def test_a_prediction_without_a_speed_refuses_instead_of_guessing(self):
+        with self.assertRaises(SystemExit) as cm:
+            pbv.main(["--fps", "5.0"])
+        # argparse's usage exit: 2, distinct from BOTH the PASS (0) and the FAIL (1) this tool
+        # returns, so no caller can read "no speed" as "the birds are visible".
+        self.assertEqual(cm.exception.code, 2)
+
+    def test_the_refusal_says_where_to_get_the_number(self):
+        import contextlib
+        import io
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), self.assertRaises(SystemExit):
+            pbv.main(["--fps", "5.0"])
+        self.assertIn("--speed is REQUIRED", err.getvalue())
+        self.assertIn("poses.jsonl", err.getvalue())
+
+    def test_a_backtest_needs_no_speed_because_it_replays_real_poses(self):
+        if not (DEMO_CLIP / "poses.jsonl").exists():  # pragma: no cover
+            raise unittest.SkipTest("demo clip not present")
+        self.assertEqual(pbv.main(["--backtest", str(DEMO_CLIP)]), 0)
+
+    def test_no_cli_default_can_creep_back_in(self):
+        """The defect was a DEFAULT, not a missing flag -- so the property pinned is `default is
+        None`, not the presence of the argument."""
+        parser_defaults = {}
+        import argparse
+        real_add = argparse.ArgumentParser.add_argument
+
+        def spy(self, *a, **kw):                       # noqa: ANN001 - test shim
+            if a and a[0] == "--speed":
+                parser_defaults["speed"] = kw.get("default", "MISSING")
+            return real_add(self, *a, **kw)
+
+        argparse.ArgumentParser.add_argument = spy
+        try:
+            with self.assertRaises(SystemExit):
+                pbv.main(["--help"])
+        finally:
+            argparse.ArgumentParser.add_argument = real_add
+        self.assertIsNone(parser_defaults["speed"])
+
+    def test_the_verdict_carries_the_speed_it_was_taken_at(self):
+        """A median quoted without its speed is the same defect in prose. Both verdict branches
+        must name the number, because both get pasted into docs."""
+        # min_frames chosen to exercise each BRANCH on a coarse (fast) sweep -- the string under
+        # test is the verdict line, not the floor.
+        for speed, floor, expect in ((pbv.REFERENCE_SPEED_MPS, 0, "PASS"), (9.4, 5, "FAIL")):
+            rep = pbv.predict(REPO_ROOT / "config" / "missions" / "boustrophedon.waypoints",
+                              REPO_ROOT / "config" / "birds" / "farm_world_birds.json",
+                              default_intrinsics(), speed_mps=speed, cadence_hz=5.0,
+                              phase_step_s=4.0, min_frames=floor, home=home_latlon())
+            line = [ln for ln in pbv.format_prediction(rep).splitlines() if "VERDICT" in ln][0]
+            self.assertIn(expect, line)
+            self.assertIn(f"{speed:.1f} m/s", line)
+            self.assertEqual(rep["model"]["speed_mps"], speed)   # and the JSON says it too
+
+    def test_the_reference_speed_still_reproduces_the_published_medians(self):
+        """3.0 m/s is kept as a REFERENCE, not a default: it is the speed ADR-015's published
+        8 / 6 / 11 were computed at, and those numbers must stay reproducible or the docs quoting
+        them become unverifiable."""
+        rep = pbv.predict(REPO_ROOT / "config" / "missions" / "boustrophedon.waypoints",
+                          REPO_ROOT / "config" / "birds" / "farm_world_birds.json",
+                          default_intrinsics(), speed_mps=pbv.REFERENCE_SPEED_MPS, cadence_hz=5.0,
+                          phase_step_s=0.5, min_frames=5, home=home_latlon())
+        self.assertEqual([b["frames_in_view"]["median"] for b in rep["birds"]], [8, 6, 11])
+        self.assertTrue(rep["verdict"]["pass"])
+
+
 class TestCli(unittest.TestCase):
     def test_json_report_and_failing_exit_code(self):
         """--json is the tooling contract; a FAIL must exit non-zero so a pre-flight check can gate
         a run instead of being read by eye."""
         with tempfile.TemporaryDirectory() as td:
             out = Path(td) / "pred.json"
-            rc = pbv.main(["--fps", "0.4", "--phase-step", "4.0", "--json", str(out)])
+            rc = pbv.main(["--fps", "0.4", "--phase-step", "4.0", "--speed",
+                           str(pbv.REFERENCE_SPEED_MPS), "--json", str(out)])
             self.assertEqual(rc, 1)
             rep = json.loads(out.read_text())
         self.assertEqual(rep["schema_version"], "1.0")

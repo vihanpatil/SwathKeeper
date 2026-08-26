@@ -83,6 +83,40 @@ Design notes on the guarantees this file exists to make impossible-by-constructi
    the next tick may latch the same noise-driven setpoint fresh. On that one path R3 buys a tick,
    not a refusal. Widening it means deciding what to fly INSTEAD, which is escape geometry: R4,
    open.
+4. **One empty frame does not end an encounter -- and no encounter runs forever.** The hand-back to
+   AUTO needs `RESUME_CLEAR_TICKS` CONSECUTIVE clear ticks, not one. Until 2026-08-25 the threat
+   test was per-frame instantaneous, and the first real-detection take's GUIDED window closed on
+   `threat_cleared` 0.434 s after it opened -- the tick after the detector's last box. A detector
+   that misses one frame (3 FN in n=20 visible bird-frames, ADR-003 am. 7) would hand the mission
+   back toward a bird still in the cylinder, ~0.2 s into a dodge the vehicle has barely begun. While
+   the counter is armed the executor stays in GUIDED and commands NOTHING, so the vehicle keeps
+   flying the already-vetted latched point; every waiting tick logs `resume_pending`, so the delay
+   is readable in the artifact instead of inferred from a late resume.
+
+   A "clear" tick is PROCEED **with readable evidence**: a tick whose detections were all thrown
+   away by the ADR-009 staleness gate (`debug["n_stale_dropped"]`) resets the counter like a threat
+   tick does. Unreadable evidence is not evidence of absence, and this note claims ABSENCE
+   persistence -- the 2026-08-24 QA probe (every detection 60 s stale -> 20 PROCEEDs with the bird
+   squarely in the cylinder) is exactly the stream that would otherwise certify a clear sky.
+
+   **THE COUNTER MUST HAVE A CEILING, and that is the load-bearing half.** Resetting on every threat
+   tick means a detection duty cycle of one-in-`RESUME_CLEAR_TICKS` ticks or denser NEVER reaches
+   the count: measured on the real executor, a `DIVERT, PROCEED, PROCEED` stream repeated 30 times
+   gives 90 ticks, 1 takeover, **0 resumes**, locked in GUIDED with the rest of the field booking as
+   coverage debt -- and `resume_pending` cycling 1,2,1,2 forever, so the artifact of a locked flight
+   reads healthy (QA C1, 2026-08-25). `GUIDED_CEILING_TICKS` bounds it: the executor hands back with
+   `trigger="guided_ceiling"`, never `threat_cleared`, and the event carries `ticks_in_guided` +
+   `ceiling_ticks` so no reader can mistake a backstop for a cleared threat. This does NOT decline
+   to avoid: the policy is untouched and threat ENTRY is instantaneous, so a threat that is still
+   there re-takes-over on the very next DIVERT tick and latches a freshly vetted point. What the
+   ceiling breaks is a stuck STATE, not the dodge -- and it is a legibility fix, not a cure: under a
+   SUSTAINED duty cycle the survey is still starved (measured, 1-in-3 flicker: 6 of 1200 ticks in
+   AUTO), the difference being that the log now says so instead of looking like an ordinary flight.
+   Fixing the starvation is a detector problem, not an executor one.
+
+   This note owns ABSENCE persistence and nothing else: entry stays instantaneous, detection AGEING
+   stays with `PolicyParams.max_detection_age_s`, and candidate selection stays with the policy --
+   one concept, one owner.
 
 Vehicle interaction is behind the `VehicleCommandSink` seam so this stays sim-agnostic and
 unit-testable on a bare interpreter; the real ROS 2 binding (`/ap/mode_switch`,
@@ -120,6 +154,37 @@ DEFAULT_VERTICAL_MARGIN_M = 1.0  # matches geofence.is_safe_3d default
 # It is the tuning knob if demo footage is still twitchy -- raising it also swallows the ~3-4 m
 # turnaround swings, at the cost of flying a staler dodge through the turn.
 RELATCH_THRESHOLD_M = 3.0
+
+# THREAT-PERSISTENCE HYSTERESIS (design note 4): how many CONSECUTIVE clear ticks end an encounter
+# and hand the mission back. 1 would be the pre-2026-08-25 behaviour: one empty frame resumed.
+# Sized, not chosen: the ADOPT evidence for the real detector is 3 FN in n=20 visible bird-frames
+# (ADR-003 am. 7), so a single-frame hole inside an encounter is ordinary and two in a row is not.
+#
+# WHAT 3 TICKS IS IN SECONDS -- measured, and NOT the nominal arithmetic. The flown tick period is a
+# median 0.160 s (n=1855 stamped ticks, 2026-08-25 `run.tick_stamp_sim_s`; p95 0.186, max 0.253), so
+# 3 ticks is **0.48 s**, not the 0.6 s a nominal 5 Hz CONTROL_HZ implies. The loop also runs FASTER
+# than the 5 Hz camera (~6.25 Hz measured), so ticks and frames are not 1:1: 0.48 s spans ~2.4 frame
+# periods, i.e. this covers ONE missed frame plus jitter, not two. Quote the measured number.
+# The ceiling on it is `PolicyParams.max_detection_age_s` (1.0 s): waiting longer than the policy
+# keeps a detection alive would mean holding GUIDED on evidence it has already declared ABSENT. Both
+# the nominal (0.6 s, the conservative floor, static test) and the flown (0.48 s, the flight-log
+# gate's own measured check) sit inside it.
+RESUME_CLEAR_TICKS = 3
+
+# THE BACKSTOP ON THE HYSTERESIS (design note 4, QA C1). Max ticks one encounter may hold GUIDED
+# before the executor hands the mission back regardless, with `trigger="guided_ceiling"`.
+# Sized off the encounter EVIDENCE, not taste, and counted the way `_ticks_in_guided()` counts --
+# INCLUSIVE of both the takeover tick and the resume tick (QA N3: `resume_tick - takeover_tick` is
+# one short of what this constant is compared against). Longest GUIDED window ever flown: **62**
+# ticks (2026-08-18, takeover 3528 -> resume 3589); the other two are 20 (2026-08-23) and 5
+# (2026-08-25). 5x the longest ever flown is ~50 s at the measured 0.160 s tick -- far beyond any
+# genuine encounter this world can produce (the demo bird lingers 12 s; scripted birds transit in
+# seconds), so it cannot fire on a real dodge, and it still bounds the stuck state at under a
+# minute. `test_the_longest_encounter_ever_flown_is_nowhere_near_the_ceiling` re-derives the 62 from
+# the committed logs rather than trusting this comment. It is a BACKSTOP, not a control parameter:
+# if it ever fires, the flight log says so and something upstream (a duty-cycled detector, an
+# all-stale detection stream) needs fixing.
+GUIDED_CEILING_TICKS = 5 * 62
 
 
 def _dist_3d(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> float:
@@ -277,6 +342,8 @@ class AvoidanceExecutor:
         swath_half_width_m: float,
         alt_bounds: Optional[Tuple[float, float]] = None,
         vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M,
+        resume_clear_ticks: int = RESUME_CLEAR_TICKS,
+        guided_ceiling_ticks: int = GUIDED_CEILING_TICKS,
     ):
         self.geofence = geofence
         self.cells: List[CoverageCell] = list(cells)
@@ -284,6 +351,19 @@ class AvoidanceExecutor:
         self.swath_half_width_m = swath_half_width_m
         self.alt_bounds = alt_bounds
         self.vertical_margin_m = vertical_margin_m
+        self.resume_clear_ticks = int(resume_clear_ticks)
+        self.guided_ceiling_ticks = int(guided_ceiling_ticks)
+        # Rejected loudly at construction, not silently absorbed: `resume_clear_ticks` 0 or negative
+        # restores the pre-2026-08-25 instantaneous resume while the log still advertises hysteresis,
+        # and a ceiling below the hysteresis makes every encounter end on the backstop.
+        if self.resume_clear_ticks < 1:
+            raise ValueError(f"resume_clear_ticks must be >= 1 (got {resume_clear_ticks}); 1 is the "
+                             f"instantaneous pre-hysteresis behaviour and below 1 is meaningless")
+        if self.guided_ceiling_ticks < self.resume_clear_ticks:
+            raise ValueError(f"guided_ceiling_ticks {self.guided_ceiling_ticks} is below "
+                             f"resume_clear_ticks {self.resume_clear_ticks}: the backstop would fire "
+                             f"before the hysteresis could ever complete, so no encounter could end "
+                             f"on `threat_cleared`")
 
         self.mode: str = MODE_AUTO
         self.flown_path: List[Tuple[float, float, float]] = []
@@ -301,6 +381,11 @@ class AvoidanceExecutor:
         # has been accepted yet. Same lifecycle as `_wp_at_takeover`: set on the first accepted
         # divert, cleared on the single resume, so the NEXT encounter latches fresh.
         self._latched_setpoint: Optional[Tuple[float, float, float]] = None
+        # Consecutive clear ticks so far -- the hysteresis counter (design note 4).
+        self._clear_ticks: int = 0
+        # Tick this encounter took control on, or None in AUTO. Same lifecycle as the latch; it is
+        # what the GUIDED ceiling measures against.
+        self._guided_since_tick: Optional[int] = None
 
     # -- logging -------------------------------------------------------------------------------
     def _log(self, kind: str, **detail) -> None:
@@ -341,6 +426,9 @@ class AvoidanceExecutor:
             raise RuntimeError("step() called after finalize(); this executor instance is done")
         self._tick += 1
         self._log_detection(maneuver)
+        # Hysteresis counter: a clear tick counts toward ending the encounter; any threat tick
+        # (DIVERT or HOLD) and any tick whose evidence was thrown away as stale puts it back to zero.
+        self._clear_ticks = self._clear_ticks + 1 if self._is_clear_tick(maneuver) else 0
         if maneuver.decision is Decision.PROCEED:
             self._handle_proceed(drone_state, maneuver)
         elif maneuver.decision is Decision.HOLD:
@@ -349,6 +437,16 @@ class AvoidanceExecutor:
             self._handle_divert(drone_state, maneuver)
         else:  # pragma: no cover -- Decision is a closed enum; defensive only
             raise ValueError(f"unhandled Decision: {maneuver.decision!r}")
+        # BACKSTOP LAST, and the ordering is load-bearing (QA N1, 2026-08-25). Run at the TOP of the
+        # tick it fired BEFORE the decision handler, so a ceiling expiry landing on a DIVERT tick
+        # emitted set_mode(AUTO) -> set_mode(GUIDED) -> send_setpoint inside ONE control callback:
+        # `Ros2VehicleSink.set_mode` is a non-blocking `call_async`, and its own comment states the
+        # invariant that breaks -- "AvoidanceExecutor asserts the mode exactly ONCE per takeover and
+        # once per hand-back and nothing re-sends a rejected switch". Two racing ModeSwitch calls in
+        # one callback is exactly the shape that let a failed GUIDED takeover pass silently. At the
+        # BOTTOM the tick's decision is executed first and the hand-back is the tick's only mode
+        # switch; the still-present threat re-takes-over on the NEXT tick with a fresh vetted latch.
+        self._enforce_guided_ceiling()
 
     @staticmethod
     def _stale_detail(maneuver: AvoidanceManeuver) -> dict:
@@ -367,30 +465,82 @@ class AvoidanceExecutor:
         return {"debug": {"n_stale_dropped": n, "stale_ids": maneuver.debug.get("stale_ids"),
                           "max_detection_age_s": maneuver.debug.get("max_detection_age_s")}}
 
+    @staticmethod
+    def _is_clear_tick(maneuver: AvoidanceManeuver) -> bool:
+        """A tick that counts toward ending the encounter: PROCEED **on readable evidence**.
+
+        A PROCEED whose detections were all aged out by the ADR-009 staleness gate is the policy
+        saying "I cannot see", not "nothing is there" (design note 4). Counting it would let a frozen
+        render or a clock offset certify a clear sky -- the exact stream the 2026-08-24 QA probe
+        produced with a bird squarely inside the cylinder. The stale count is the policy's own,
+        already on the maneuver; nothing is recomputed here."""
+        return (maneuver.decision is Decision.PROCEED
+                and not maneuver.debug.get("n_stale_dropped"))
+
+    def _resume(self, trigger: str, **detail) -> None:
+        """The ONE hand-back to AUTO, whichever rule fired (ADR-006: MIS_RESTART=0 resumes the same
+        next waypoint). `trigger` is load-bearing: a ceiling-forced hand-back logged as
+        `threat_cleared` would be the artifact lying about why the mission resumed."""
+        self.sink.set_mode(MODE_AUTO)
+        self.mode = MODE_AUTO
+        resumed_wp = self.sink.current_waypoint()
+        self._log("resume", trigger=trigger, resumed_wp_index=resumed_wp,
+                  wp_index_at_takeover=self._wp_at_takeover,
+                  resumed_same_waypoint=(resumed_wp == self._wp_at_takeover),
+                  latched_setpoint_enu=self._latched_setpoint,
+                  clear_ticks_required=self.resume_clear_ticks,
+                  ticks_in_guided=self._ticks_in_guided(), **detail)
+        self._wp_at_takeover = None
+        self._latched_setpoint = None       # encounter over -- the next one latches fresh
+        self._guided_since_tick = None
+        self._clear_ticks = 0
+
+    def _ticks_in_guided(self) -> Optional[int]:
+        """How long this encounter has held GUIDED, counting the current tick. None in AUTO."""
+        if self._guided_since_tick is None:
+            return None
+        return self._tick - self._guided_since_tick + 1
+
+    def _enforce_guided_ceiling(self) -> None:
+        """Design note 4's backstop: no encounter holds GUIDED forever. ~10 lines, unconditional,
+        and it runs BEFORE this tick's decision so a threat tick cannot keep deferring it."""
+        held = self._ticks_in_guided()
+        if held is None or held < self.guided_ceiling_ticks:
+            return
+        self._resume(
+            "guided_ceiling", ceiling_ticks=self.guided_ceiling_ticks,
+            reason=(f"held GUIDED for {held} ticks without {self.resume_clear_ticks} consecutive "
+                    f"clear ticks -- handing the mission back on the BACKSTOP, not on a cleared "
+                    f"threat. A detection duty cycle denser than 1-in-{self.resume_clear_ticks} "
+                    f"ticks, or an all-stale detection stream, resets the hysteresis counter every "
+                    f"time and would otherwise hold GUIDED for the rest of the flight (QA C1). "
+                    f"Avoidance is NOT disabled: entry is instantaneous, so a threat still present "
+                    f"takes over again on the next DIVERT tick with a freshly vetted point."))
+
     # -- decision handlers -----------------------------------------------------------------------
     def _handle_proceed(self, drone_state: DroneState, maneuver: AvoidanceManeuver) -> None:
-        if self.mode == MODE_GUIDED:
-            # Threat cleared -> the SINGLE hand-back after a maneuver (ADR-006: MIS_RESTART=0 resumes
-            # the same next waypoint). Not a per-tick toggle -- we only get here once the policy stops
-            # returning DIVERT/HOLD.
-            self.sink.set_mode(MODE_AUTO)
-            self.mode = MODE_AUTO
-            resumed_wp = self.sink.current_waypoint()
-            self._log("resume", trigger="threat_cleared", resumed_wp_index=resumed_wp,
-                      wp_index_at_takeover=self._wp_at_takeover,
-                      resumed_same_waypoint=(resumed_wp == self._wp_at_takeover),
-                      latched_setpoint_enu=self._latched_setpoint)
-            self._wp_at_takeover = None
-            self._latched_setpoint = None   # encounter over -- the next one latches fresh
+        pending: Optional[dict] = None
+        if self.mode == MODE_GUIDED and self._clear_ticks < self.resume_clear_ticks:
+            # Not yet: absence has not persisted long enough to be a cleared threat (design note 4).
+            # We stay in GUIDED and command nothing, so the vehicle keeps flying the already-vetted
+            # dodge it was last given. `_enforce_guided_ceiling` bounds how long this can last.
+            pending = {"clear_ticks": self._clear_ticks, "required": self.resume_clear_ticks,
+                       "ticks_in_guided": self._ticks_in_guided(),
+                       "ceiling_ticks": self.guided_ceiling_ticks}
+        elif self.mode == MODE_GUIDED:
+            self._resume("threat_cleared")
         self._record_position(drone_state.position_enu)
         self._log("proceed", position_enu=drone_state.position_enu,
-                  wp_index=drone_state.current_wp_index, **self._stale_detail(maneuver))
+                  wp_index=drone_state.current_wp_index,
+                  **({"resume_pending": pending} if pending else {}),
+                  **self._stale_detail(maneuver))
 
     def _handle_hold(self, drone_state: DroneState, maneuver: AvoidanceManeuver, *,
                      reason: Optional[str] = None) -> None:
         if self.mode != MODE_GUIDED:
             wp_at_takeover = drone_state.current_wp_index
             self._wp_at_takeover = wp_at_takeover
+            self._guided_since_tick = self._tick        # starts the GUIDED ceiling's clock
             self.sink.set_mode(MODE_GUIDED)
             self.mode = MODE_GUIDED
             self._log("takeover", reason="hold", from_mode=MODE_AUTO, to_mode=MODE_GUIDED,
@@ -510,6 +660,7 @@ class AvoidanceExecutor:
         if self.mode != MODE_GUIDED:
             wp_at_takeover = drone_state.current_wp_index
             self._wp_at_takeover = wp_at_takeover      # one takeover per threat encounter
+            self._guided_since_tick = self._tick       # starts the GUIDED ceiling's clock
             self.sink.set_mode(MODE_GUIDED)
             self.mode = MODE_GUIDED
             self._log("takeover", reason="divert", from_mode=MODE_AUTO, to_mode=MODE_GUIDED,
@@ -605,6 +756,22 @@ class AvoidanceExecutor:
         return ledger
 
     # -- convenience -------------------------------------------------------------------------------
+    def executor_params(self) -> dict:
+        """The knobs the EXECUTOR flew, read off the instance rather than off the module constants.
+
+        The counterpart to `run.policy_params`: those are the bars the policy vetted against, these
+        are the rules that decided when to take control back. They must be in the artifact even on a
+        flight with no encounter at all -- otherwise "this flight used 3-tick hysteresis" is only
+        provable from a resume event that an encounter-free flight never writes (QA F-condition,
+        2026-08-25). `swath_half_width_m` is deliberately NOT duplicated here: it has been a
+        top-level key of this log since Week 2 and moving it would break every reader."""
+        return {
+            "resume_clear_ticks": self.resume_clear_ticks,
+            "guided_ceiling_ticks": self.guided_ceiling_ticks,
+            "relatch_threshold_m": RELATCH_THRESHOLD_M,
+            "vertical_margin_m": self.vertical_margin_m,
+        }
+
     def flight_log(self, scenario: str, seed: int, cell_size_m: float,
                    detection: Optional[dict] = None) -> dict:
         """Assemble the `eval/scenarios/<name>/flight_log.json` contract (see
@@ -617,6 +784,7 @@ class AvoidanceExecutor:
             "seed": seed,
             "cell_size_m": cell_size_m,
             "swath_half_width_m": self.swath_half_width_m,
+            "executor_params": self.executor_params(),
             "flown_path_enu": [list(p) for p in self.flown_path],
             "coverage_ledger": self.coverage_ledger,
             "requeue_events": self.requeue_events,

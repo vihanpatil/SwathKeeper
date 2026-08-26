@@ -175,8 +175,12 @@ class TestScenarioFixturesAreGated(unittest.TestCase):
                 self.assertEqual(flown, nominal,
                                  msg=f"[{name}] flown_path_enu is no longer the scripted lawnmower")
                 # ... and the birds really are placed on/near that scripted path, i.e. the fixture's
-                # CPA is authored, not flown. (3.0 m = min_bird_clearance_m; three of the four sit
-                # inside it BY CONSTRUCTION and that is the scenario working, not a safety finding.)
+                # CPA is authored, not flown. (3.0 m = min_bird_clearance_m; measured as SEGMENTS --
+                # which `check_live_flight_log.closest_approach` does since 2026-08-25 -- ALL FOUR
+                # are fly-throughs, cov_bird_at_turnaround included: it read 7.0000 m only because
+                # the old vertex-only minimum missed a bird passed between two samples. That is the
+                # scenario working BY CONSTRUCTION, not a safety finding, and it is precisely why
+                # amendment 16 points the CPA gate at live logs only.)
                 cpa = min(math.hypot(px - bx, py - by)
                           for px, py, _u in nominal for _bid, (bx, by, _bz) in cfg["birds"])
                 self.assertLess(cpa, GEN.SWATH_HALF_M,

@@ -55,7 +55,8 @@ say out loud in a live interview.
 - Pressure points in the order they bind: throughput is a **two-stage** loss — RGB transport, then
   pairing — with the fused→recorded gap deliberately unattributed, so the next lever need not be
   another transport one (2026-08-21 demo take: 10.7 % of sensor ticks reached the clip); then one
-  re-fly with a bird in frame clears four blockers, priced in ~1 s by `predict_bird_visibility.py`;
+  re-fly with a bird in frame clears four blockers, priced in ~1 s by
+  `predict_bird_visibility.py --speed <the mission's actual speed>` (required, no default);
   then the Week 6 detector, then the Week 7 endgame.
 - Coordinate three lanes — `robotics-sim-engineer` (world + SITL bringup), `perception-ml-engineer`
   (detection + policy + eval), `flight-software-engineer` (planner, replanning, mapping, dashboard)

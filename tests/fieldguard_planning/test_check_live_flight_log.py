@@ -197,10 +197,44 @@ class TestClosestApproach(unittest.TestCase):
         self.assertAlmostEqual(cpa, 0.0, places=6)      # the path passes through (10, 39)
         self.assertEqual(track, "bird_close")
 
+    def test_a_bird_flown_over_BETWEEN_two_samples_is_not_missed(self):
+        """SEGMENTS, not vertices (2026-08-25). `closest_approach` used to minimise over path
+        VERTICES only, so a bird passed dead centre between two samples scored the VERTEX distance:
+        the path below flies straight through (15, 0) and reported 15.0 m of clearance.
+
+        Not hypothetical -- `eval/scenarios/cov_bird_at_turnaround` was the ONE scenario fixture
+        that cleared the 3 m bar, at a reported 7.0000 m, and it is a direct hit. The segment helper
+        `_point_segment_xy_m` had existed in this file since G22 and was never back-ported here."""
+        log = make_cpa_log(4.0)
+        log["flown_path_enu"] = [[BIRD[0] - 15.0, BIRD[1], 15.0], [BIRD[0] + 15.0, BIRD[1], 15.0]]
+        cpa, track = checker.closest_approach(log)
+        self.assertAlmostEqual(cpa, 0.0, places=6)
+        self.assertEqual(track, "demo_bird_0")
+
+    def test_a_single_sample_path_still_measures_that_sample(self):
+        """One vertex is no segment; it must still be measured, not silently skipped."""
+        log = make_cpa_log(4.0)
+        log["flown_path_enu"] = [[BIRD[0], BIRD[1] + 6.0, 15.0]]
+        cpa, _ = checker.closest_approach(log)
+        self.assertAlmostEqual(cpa, 6.0, places=6)
+
+    def test_the_turnaround_fixture_is_a_fly_through_and_now_reads_as_one(self):
+        """The flip, pinned on the artifact that hid it. The detection sits at (22, 58), dead centre
+        of the 15 m leg (15, 58) -> (30, 58). This fixture is SYNTHETIC scenario construction, so it
+        gets no breach marker and no pin -- but nothing may read 7.0 m off it again."""
+        p = REPO_ROOT / "eval" / "scenarios" / "cov_bird_at_turnaround" / "flight_log.json"
+        if not p.exists():                               # pragma: no cover -- fixture is committed
+            self.skipTest("scenario fixture not present")
+        cpa, _ = checker.closest_approach(json.loads(p.read_text()))
+        self.assertAlmostEqual(cpa, 0.0, places=6)
+
     def test_reproduces_the_flown_encounters_cpa(self):
-        """Both real logs, from the committed evidence set -- the numbers ADR-013 am. 12 cites."""
-        for name, want in (("live_flight_log_20260823T004031Z.json", 0.0518),
-                           ("live_flight_log_20260818T144711Z.json", 0.0597)):
+        """Both real logs, from the committed evidence set. The numbers DEEPENED on 2026-08-25 when
+        the vertex-only minimum was replaced by segment geometry (ADR-013 am. 12 cites the older,
+        optimistic 0.0518 / 0.0597); both remain ACKNOWLEDGED breaches, the strike is just closer
+        than the artifact used to admit."""
+        for name, want in (("live_flight_log_20260823T004031Z.json", 0.0391),
+                           ("live_flight_log_20260818T144711Z.json", 0.0393)):
             p = checker.RESULTS_DIR / name
             if not p.exists():
                 continue                                 # evidence is gitignored in some checkouts
@@ -456,10 +490,12 @@ class TestAcknowledgementMarkersOnRealEvidence(unittest.TestCase):
         A schema-2 log is asked its OWN verdict; only pre-seam legacy logs are scored on
         `closest_approach()`, which is the gate they were flown under. Deciding this on the
         detection-referenced number for a schema-2 log is wrong in BOTH directions and both are
-        live: on the 2026-08-25 take the demoted detection CPA reads 0.2096 m while the gated
-        ground-truth CPA is 0.0067 m (the estimator's metre-scale error is why ADR-013 am. 12
-        demoted it), and a MISS at closest approach produces no detection there at all -- so a real
-        breach can carry no detection CPA whatsoever and this loop would skip the log in silence."""
+        live: on the 2026-08-25 take the demoted detection CPA reads 0.0035 m against the gated
+        ground-truth 0.0067 m (under segment geometry the estimator actually AGREES to 3.3 mm --
+        the old 0.2096 m figure was vertex-only geometry error, not estimator error; the demotion
+        stands on the other leg), and a MISS at closest approach produces no detection there at
+        all -- so a real breach can carry no detection CPA whatsoever and this loop would skip the
+        log in silence."""
         if checker.schema_version(log) is None:
             cpa = checker.closest_approach(log)
             return cpa is not None and cpa[0] < checker.min_bird_clearance_m()

@@ -32,7 +32,11 @@ from fieldguard_planning.geofence import GeofenceMap  # noqa: E402
 from fieldguard_planning.coverage import build_grid, load_field_polygon  # noqa: E402
 
 CRUISE_M = 15.0        # cruise altitude (world-ENU U); the loop never descends, so it never
-SWATH_HALF_M = 7.5     # turns the benign at-altitude tree overlap into a strike
+SWATH_HALF_M = 7.5     # turns the benign at-altitude tree overlap into a strike.
+                       # A SCENARIO-CONSTRUCTION knob, deliberately NOT the camera swath:
+                       # that is coverage.derive_swath_half_width_m (6.886 m, ADR-016).
+                       # Changing this re-cuts every committed fixture; changing the camera
+                       # swath does not touch it.
 CELL_M = 2.5
 LANES_X = [15.0, 30.0, 45.0, 60.0]   # boustrophedon lanes over the field (covers each scenario bird)
 Y_LO, Y_HI = 2.0, 58.0

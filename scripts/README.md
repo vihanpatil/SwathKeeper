@@ -47,9 +47,12 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   calibrated `<temperature>` on every visual, from `config/ndvi_camera.json`.
 
 **Checks / regression:**
-- `predict_bird_visibility.py` — **run this before spending a Docker session on a detection flight.**
-  Mission file × bird config × the same `ndvi_georef` projection → "will any bird be in frame, and
-  for how many frames", host-only in 0.8 s, exit 1 when a bird is below the frame floor. Sweeps the
+- `predict_bird_visibility.py` — **run this before spending a Docker session on a detection flight,
+  at the speed the mission will actually fly** (`--speed` is REQUIRED and has no default: the 3 m/s
+  it used to assume PASSed a geometry the 2026-08-25 take then flew at ~9 m/s for 2 bird-visible
+  frames — ADR-016). Mission file × bird config × the same `ndvi_georef` projection → "will any bird
+  be in frame, and for how many frames", host-only in 0.8 s, exit 1 when a bird is below the frame
+  floor, exit 2 when it refuses (no speed, or an unannotated clip). Sweeps the
   bird driver's start offset and reports each bird as `STRUCTURAL` (never in frame at any offset —
   only geometry can fix it) or `TIMING` (does cross, just rarely). `--backtest <clip>` replays a
   flown clip's own poses through the identical geometry, and reproducing the demo take's measured

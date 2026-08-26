@@ -11,6 +11,12 @@ Example:
 """
 import argparse
 import math
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from fieldguard_planning.coverage import derive_swath_half_width_m  # noqa: E402
 
 # iris_runway world origin (== SITL home): see sim world spherical_coordinates.
 DEFAULT_HOME_LAT = -35.363262
@@ -80,6 +86,18 @@ def main():
     n_items = write_qgc_wpl(args.out, args.home_lat, args.home_lon, wps, args.alt)
     print(f"Wrote {n_items} mission items ({len(wps)} coverage waypoints across {n_lanes} lanes, "
           f"{args.width:.0f}x{args.height:.0f} m field @ {args.alt:.0f} m) -> {args.out}")
+
+    # Say what this spacing actually images. The lane pitch is an operator choice; the swath is the
+    # camera's, derived from config/ndvi_camera.json (ADR-016 -- it was assumed to be spacing/2 for
+    # three weeks and it is narrower than that). A plan that leaves strips should say so at plan
+    # time, not months later in a heatmap nobody cross-checked against the ledger.
+    half = derive_swath_half_width_m(args.alt)
+    gap = args.spacing - 2 * half
+    print(f"  camera cross-track swath at {args.alt:.0f} m: {2 * half:.3f} m (half {half:.3f} m, "
+          f"derived from config/ndvi_camera.json) vs {args.spacing:.1f} m lane spacing -> "
+          + (f"UNIMAGED STRIP of {gap:.3f} m between adjacent lanes (cells whose centres fall in it "
+             f"book as coverage debt; narrow the spacing or raise the altitude to close it)"
+             if gap > 0 else f"{-gap:.3f} m of overlap, no strip"))
 
 
 if __name__ == "__main__":

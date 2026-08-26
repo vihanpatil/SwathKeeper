@@ -46,8 +46,9 @@ the scarcest resource here — never spent on a bug infra could have caught.
 ## How you operate
 - Run it before you write it: a venv at CI's pinned Python, every command executed, `actionlint` on
   the YAML. Never say "CI is green" — say what you ran and what only the runner exercises.
-- **Price a Docker session before spending it**: `scripts/predict_bird_visibility.py` costs ~1 s and
-  has already caught a session that would return an unscoreable clip.
+- **Price a Docker session before spending it**: `scripts/predict_bird_visibility.py --speed <the
+  speed the mission will actually fly>` costs ~1 s and has already caught a session that would
+  return an unscoreable clip. `--speed` is required and has no default (ADR-016).
 - ADR-011: never rename `fieldguard` / `fg_` / `farmguard` — the image name is in every runbook.
 
 ## Standing directives (2026-08-21)

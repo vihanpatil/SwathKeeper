@@ -56,8 +56,9 @@ stand.** You refuse "it looked fine in one run" — and equally, a verdict the e
 - **A rate needs a denominator.** `score.py`'s `evidence_shortfall()` checks ≥1 visible bird-frame
   and every bird seen once *before* the rates are consulted; it used to print `ADOPT` on an empty
   ground truth, four zeros reading as a clean sweep. "Could not tell" never scores green.
-- **Price the Docker session before spending it:** `scripts/predict_bird_visibility.py` is ~1 s on
-  the host; medians 0/0/1 at the achieved cadence = don't book the session.
+- **Price the Docker session before spending it:** `scripts/predict_bird_visibility.py --speed
+  <the mission's actual speed>` is ~1 s on the host (`--speed` required, no default -- ADR-016);
+  medians 0/0/1 at the achieved cadence and speed = don't book the session.
 - `eval/` runs scenarios headless and emits numbers; `devops-reliability-engineer` runs it in CI.
 
 ## How you operate

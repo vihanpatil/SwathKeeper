@@ -18,18 +18,29 @@ as pure geometry + bookkeeping:
      safety property in CLAUDE.md: "avoidance never silently drops a coverage cell." See
      `eval/scenarios/README.md` for the prose contract; this is the executable version.
 
-THE SWATH ASSUMPTION (read this -- it is where the coverage guarantee can silently rot):
-`DEFAULT_SWATH_HALF_WIDTH_M` = mission lane spacing / 2 = 15 / 2 = 7.5 m. Full coverage HOLDS only
-if the real downward NDVI camera's ground swath at `mission_altitude_m` (15 m) is at least the lane
-spacing (15 m). That FOV->swath number has NOT been measured against the real Gazebo camera yet.
-If the true swath is narrower, uncovered strips open up *between* lanes and no amount of avoidance
-logic will fix it -- it is a coverage bug baked into the mission plan. `test_coverage.py` includes
-a negative-control test proving this checker actually detects such strips (it is not vacuously
-green). Flag for perception-ml-engineer / robotics-sim-engineer: measure the real swath and replace
-this assumption with a derived number.
+THE SWATH (read this -- it is where the coverage guarantee can silently rot):
+`DEFAULT_SWATH_HALF_WIDTH_M` is DERIVED from the camera (`derive_swath_half_width_m`), not from the
+mission plan. It used to be lane spacing / 2 = 7.5 m, an assumption this docstring flagged as
+unmeasured -- and it over-claimed: the nadir NDVI camera images **13.772 m across track** at the
+15 m cruise, so every 15 m lane pair leaves a **1.228 m strip** no frame ever saw, which the old
+number booked as COVERED (ADR-016, 2026-08-25).
+The 720/720 coverage claim survives the correction, but only by QUANTIZATION: 2.5 m cell CENTRES sit
+at most 6.25 m from a lane, 0.636 m inside the true 6.886 m half-swath. Narrow the swath (lower
+cruise, tighter FOV) or refine the grid and real strips open up -- which is a coverage bug baked
+into the mission plan that no amount of avoidance logic can fix. `test_coverage.py` pins both the
+derivation and that margin, plus a negative-control test proving this checker actually detects
+strips (it is not vacuously green).
+NOT closed by this: `coverage_from_path` still claims a cell from PATH PROXIMITY (an isotropic
+radius around the flown line), while `ndvi_georef.NdviHeatmapGrid` claims one only from a frame that
+actually projected onto it. Two definitions of "covered" still live side by side; deriving the
+ledger from painted cells is the open follow-up.
 
 Dependency: stdlib only (math, dataclasses) -- deliberate, so these run without a venv or the
-Docker/Gazebo/ROS 2 stack (same reason as geofence.py / mission_waypoints.py).
+Docker/Gazebo/ROS 2 stack (same reason as geofence.py / mission_waypoints.py). Stdlib-only is not
+import-free, though: `DEFAULT_SWATH_HALF_WIDTH_M` is derived at IMPORT time from two committed
+config files (`config/field_polygon.json` for the cruise altitude, `config/ndvi_camera.json` for the
+intrinsics). Either one missing raises at import, naming the file and why -- deliberately loud,
+because the alternative is a module that imports fine and then claims coverage on a made-up swath.
 """
 from __future__ import annotations
 
@@ -41,10 +52,55 @@ from typing import Dict, List, Sequence, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_FIELD_POLYGON = REPO_ROOT / "config" / "field_polygon.json"
+DEFAULT_CAMERA_CONFIG = REPO_ROOT / "config" / "ndvi_camera.json"
 
-# Lane spacing is 15 m (config/field_polygon.json polygon_note); swath half-width = spacing/2 so
-# adjacent lanes' swaths meet exactly. SEE MODULE DOCSTRING -- this is an unvalidated assumption.
-DEFAULT_SWATH_HALF_WIDTH_M = 7.5
+
+def _require_json(path: Path, why: str) -> dict:
+    """Read a committed config, or fail naming the file AND what could not be computed without it.
+    A bare `FileNotFoundError: 'ndvi_camera.json'` out of an import line is a puzzle; this is an
+    instruction."""
+    try:
+        return json.loads(Path(path).read_text())
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(
+            f"{path} is missing, so {why}. This module reads it at IMPORT time (see the module "
+            f"docstring): the coverage swath is derived from the camera, never assumed, so there is "
+            f"no default to fall back to -- restore the file or pass an explicit path.") from exc
+
+
+def derive_swath_half_width_m(altitude_agl_m: float,
+                              camera_config_path: Path = DEFAULT_CAMERA_CONFIG) -> float:
+    """CROSS-TRACK half-swath (metres) the nadir NDVI camera actually images from `altitude_agl_m`.
+
+    Pinhole, flat ground, nadir mount -- every input from `config/ndvi_camera.json`, none from prose:
+
+        fx = fy = (image_width_px / 2) / tan(horizontal_fov_rad / 2)   # 520.006 px
+        depth   = altitude_agl_m + mount_pose_xyz_rpy[2]               # camera hangs 0.08 m under body
+        half    = depth * (image_height_px / 2) / fy                   # 6.886 m at the 15 m cruise
+
+    CROSS-track is the 480 px axis, NOT the 640 px one: the ADR-007 mount extrinsic puts image u+
+    along body +X (the flight direction), so lanes are separated across the SHORT axis. Using the
+    long axis would claim 9.181 m and re-open the inter-lane strip this derivation exists to expose.
+
+    The fx formula is restated here rather than imported: `ndvi_georef.CameraIntrinsics.from_config`
+    owns it for the project, but `ndvi_georef` imports THIS module, and coverage.py stays stdlib-only
+    (same reason `_point_segment_distance` is local rather than taken from geofence.py). The two are
+    pinned equal by `test_coverage.TestSwathComesFromTheCamera`, so the restatement cannot drift.
+    """
+    cfg = _require_json(camera_config_path, "the NDVI camera's intrinsics are unknown and the "
+                                            "coverage swath cannot be derived")
+    cam = cfg["camera"]
+    fy = (cam["image_width_px"] / 2.0) / math.tan(cam["horizontal_fov_rad"] / 2.0)
+    depth_m = altitude_agl_m + cfg["mount"]["mount_pose_xyz_rpy"][2]
+    return depth_m * (cam["image_height_px"] / 2.0) / fy
+
+
+# Derived at the mission altitude the field config is planned for -- 6.886 m, NOT the 7.5 m
+# lane-spacing/2 assumption this module carried until 2026-08-25 (ADR-016: physical parameters come
+# from the sensor, never from prose). SEE MODULE DOCSTRING for what the correction does and does not
+# close.
+DEFAULT_SWATH_HALF_WIDTH_M = derive_swath_half_width_m(
+    _require_json(DEFAULT_FIELD_POLYGON, "the mission altitude is unknown")["mission_altitude_m"])
 # 2.5 m cells -> 30 x 24 = 720 cells over the 75x60 field. Fine enough to catch a dropped strip,
 # coarse enough that the pure-python checks stay instant.
 DEFAULT_CELL_SIZE_M = 2.5

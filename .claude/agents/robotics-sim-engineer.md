@@ -58,7 +58,8 @@ that is what it claims to be.
 - Two traps there: judge a lever by `red_frames / camera_info_frames`, never by `cells_imaged`
   (judge a *map* by painting frames); and do not retry `camera.update_rate_hz` 5 → 2 — 16× worse,
   reasons preserved in `config/ndvi_camera.json`.
-- **Price a Docker session before spending it**: `python3 scripts/predict_bird_visibility.py`, ~1 s,
+- **Price a Docker session before spending it**: `python3 scripts/predict_bird_visibility.py
+  --speed <the speed the mission will actually fly>` (required, no default -- ADR-016), ~1 s,
   no container. ADR-015 closed the bird-*geometry* blocker (PASS at the 5 Hz tick; committed, NOT
   YET FLOWN) but at the demo take's achieved 0.407 Hz it still predicts 0/0/1 — land throughput
   first, re-run the predictor, then book the one re-fly that clears four blockers (ROADMAP item 3).
