@@ -152,6 +152,48 @@
         <parent>iris_with_gimbal::base_link</parent>
         <child>fg_sensor_mount</child>
       </joint>
+
+      <!-- ADR-019 (Council Ruling 002) forward depth camera: the SECOND aperture. Nadir cannot
+           buy detection lead time at any speed (ADR-017 am. 1: its 2.480 m forward horizon would
+           have to be 17.8 to 38.8 m), so detection moves to its own forward-looking sensor while
+           the NDVI survey pair above stays exactly where four green gates left it. Sensors only,
+           no visual and no collision, so this link can never occlude either camera.
+           rpy (0,0,0) IS forward: Gazebo cameras look along sensor +X, so identity gives optical
+           z = body +X. No camera_info_topic element: DepthCameraSensor ignores it and DERIVES
+           /fg/depth/camera_info from this topic by dropping the last segment.
+           Source values and the full derivation: config/depth_camera.json. -->
+      <link name="fg_depth_mount">
+        <pose>0.15 0.0 0.0 0.0 0.0 0.0</pose>
+        <inertial>
+          <mass>0.05</mass>
+          <inertia>
+            <ixx>1e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>1e-05</iyy><iyz>0</iyz>
+            <izz>1e-05</izz>
+          </inertia>
+        </inertial>
+
+        <sensor name="fg_depth_camera" type="depth_camera">
+          <pose>0 0 0 0 0 0</pose>
+          <camera>
+            <horizontal_fov>1.1033</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R_FLOAT32</format>
+            </image>
+            <clip><near>0.1</near><far>60.0</far></clip>
+          </camera>
+          <always_on>1</always_on>
+          <update_rate>5.0</update_rate>
+          <topic>fg/depth/image</topic>
+        </sensor>
+      </link>
+
+      <joint name="fg_depth_mount_joint" type="fixed">
+        <parent>iris_with_gimbal::base_link</parent>
+        <child>fg_depth_mount</child>
+      </joint>
     </model>
 
     <!-- Static obstacles (ADR-001): known tree positions from a pre-flight boundary survey, geofenced; see config/static_obstacles.json for the machine-readable export flight-software consumes. Kept in sync with this world by scripts/gen_farm_world.py generating both from the same layout. -->

@@ -19,14 +19,19 @@ Three kinds of document live here, and the kind tells you how much to trust it.
 - [`BUILD_LOG.md`](BUILD_LOG.md) — **the narrative**: what shipped, what broke, and what the break
   taught. Read it when you want the story rather than the state.
 
-**Runbooks** (`runbooks/` — operational, run inside the Docker sim session; four, and you run all
-four):
+**Runbooks** (`runbooks/` — operational, run inside the Docker sim session; five, and you run all
+five):
 - [`runbooks/SIM_BRINGUP.md`](runbooks/SIM_BRINGUP.md) — **how to rebuild the environment from
   scratch**: image, ROS 2 workspace, ArduPilot with `--enable-DDS`, and the four macOS gotchas.
   You need this once, or when a layer breaks. To *fly*, use `scripts/fly_pipeline.sh` instead.
 - [`runbooks/FULL_PIPELINE_DEMO.md`](runbooks/FULL_PIPELINE_DEMO.md) — **the showpiece flight**:
   survey + birds + live NDVI + recording + heatmap, shell by shell, wrapped by one launcher command.
   This is the flight that produces the artifacts everything else is measured on.
+- [`runbooks/FORWARD_DEPTH_SENSOR.md`](runbooks/FORWARD_DEPTH_SENSOR.md) — **commissioning the
+  ADR-019 forward depth camera**, the second aperture that buys the detection lead time nadir
+  geometrically cannot. Not a flight: it renders the mount, proves it aims forward, MEASURES how far
+  it actually sees, and turns that measurement into the booking gate that must pass before any dodge
+  take is scheduled.
 - [`runbooks/AVOIDANCE_REAL_DETECTION.md`](runbooks/AVOIDANCE_REAL_DETECTION.md) — **the take where
   the drone dodges a bird it detected itself**: both preflights, the human-flown rule, evidence-first
   teardown, and the post-flight safety gate. It carries a pre-registered expectation, written before

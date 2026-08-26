@@ -27,6 +27,11 @@ flat** (the full sensor tick), first 720/720 maps.
   across 4 segments — the profile reached every participant. Transport that flight: `red_frames`
   3400 / `camera_info_frames` 3400 = **100 %**; fuser 3399 → recorder 3327 = **97.9 %** on the
   NDVI→recorder hop (72 lost, the only non-zero leak), `on_ndvi_wall_ms` p95 12.1 / max 88.2 ms.
+- **A THIRD image stream joined this bus on 2026-08-26** (ADR-019 `/fg/depth/image`, 640x480x4 =
+  19 fragments/tick). The 8 MiB segment was sized for ~27 fragments/tick and now carries ~46 (still
+  128 slots), so it should hold — but it is UNMEASURED, and re-measuring depth+RGB+NIR delivery
+  together is gate D5 in `docs/runbooks/FORWARD_DEPTH_SENSOR.md`. Raising `segment_size` is a
+  pinned-config change: DECISIONS.md entry + an ADR-007 delivery re-run, not a quiet edit.
 - Not yet proven at boustrophedon length (5.0 Hz was measured on the 3-min `test_2lane` and on the
   flagship take; run-age decay is still an open question, ADR-013 am. 7).
 
@@ -48,4 +53,5 @@ hop) closed 62.5 % → 0 %.
 
 Related: [[adr007-ndvi-sensor-mount]] (the sensor the rate belongs to),
 [[macos-arm64-bringup-gotchas]] (why the render is starved at all), [[bird-ground-truth-track]],
-[[avoidance-real-detection-take]].
+[[avoidance-real-detection-take]],
+[[forward-depth-sensor]].

@@ -16,6 +16,12 @@
 # skipping DDS. See docs/runbooks/SIM_CI.md's "Update, discovered mid-session" callout and cut-list
 # item 6 (a camera-free CI-only world) if that turns out to make this job unreliable/too slow.
 #
+# NOTE (2026-08-26, ADR-019): the same model now also carries a FORWARD DEPTH camera. It costs this
+# job nothing, and that is a source-verified claim rather than a hope: gz-sensors8's
+# DepthCameraSensor::Update returns early when nothing is subscribed to either its image or its
+# point cloud, so with no bridge running the depth pass is never rendered. Only the RGB+thermal pair
+# above is unconditional. If cut-list item 6 is ever built, it still only needs to strip those two.
+#
 # NOT run from sim/docker/Dockerfile (the Week 1 interactive image) -- this needs the BAKED workspace
 # from sim/docker/Dockerfile.ci (colcon build + ArduPilot SITL binary already built, no --enable-DDS,
 # see that file's header for the scope cut). Run this INSIDE that image / the ghcr.io published tag.

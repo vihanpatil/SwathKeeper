@@ -129,13 +129,34 @@ ADOPTED verdict did not transfer, and the flight does not fly until that is unde
 docker exec -it fieldguard-sim bash /workspace/fieldguard/scripts/verify_mount_geometry.sh
 ```
 Asserts the camera's actual view agrees with the georef transform (last measured **2.2 px** against a
-15 px bar). The mount flew five flights aimed at the horizon while every values-only gate stayed
+15 px bar). The ADR-019 forward depth mount has its own, separate pair —
+`python3 scripts/check_depth_mount.py` on the host and
+`scripts/verify_depth_mount_geometry.sh` in the container — deliberately not folded into this one,
+because this script is live-verified NDVI state (see [`FORWARD_DEPTH_SENSOR.md`](FORWARD_DEPTH_SENSOR.md)). The mount flew five flights aimed at the horizon while every values-only gate stayed
 green (ADR-007 am. 5). `scripts/fly_pipeline.sh --gate-geometry up` runs it inline; standalone is
 better, because it launches a second rendering Gazebo on the machine you are about to keep quiet.
 
 ### 0e. Keep the host quiet
 Software rendering in Docker is CPU-starved by construction. Builds, test suites and parallel agents
 have cost this project >90 % of a flight's frames, twice. Close them before `up`, not after.
+
+### 0f. Forward-sensor booking gate — **no dodge take is booked without exit 0** *(ADR-019)*
+Ruling 002 ended the "an honest FAIL ranks the next fix" era for this flight: the next avoidance
+take is **designed to pass**, and if it books under this gate and still fails, that is a plant-model
+finding that convenes Ruling 003 — not another instructive breach. So:
+
+```bash
+python3 scripts/predict_forward_lead.py --speed <the speed the mission will actually fly> \
+        --fx <K[0]> --cy <K[5]> --acq-range-m <measured, gate D3>   # all three, or exit 3
+```
+
+**Exit 0 = PASS and bookable. Exit 3 = PASS but NOT bookable** (the horizon came from config prose,
+which ADR-019 item 6 forbids) — that means the commissioning session has not been run. Exit 1 = do
+not book at this speed. The whole procedure, including how to measure the horizon, is
+[`FORWARD_DEPTH_SENSOR.md`](FORWARD_DEPTH_SENSOR.md).
+
+This does **not** retire §0b: with detection on the forward sensor, the nadir bird-visibility gate
+now governs the NDVI *map* rather than the dodge, and it is still a real gate for the survey half.
 
 ---
 

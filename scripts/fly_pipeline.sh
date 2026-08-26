@@ -12,7 +12,7 @@
 #     here is a liveness gate, so a stale Gazebo/bridge/agent makes all of them pass instantly
 #     while the second micro-ROS agent silently loses the bind on 2019 and SITL talks to the old
 #     one. Green lights, two worlds, nothing reproducible (QA review 2026-08-18).
-#   * bridge only once Gazebo advertises the 4 /fg/sensor topics (a missing-library bridge crash
+#   * bridge only once Gazebo advertises the 4 /fg/sensor + 2 /fg/depth topics (a missing-library crash
 #     means the Shell-0 apt step was skipped — preflight now installs those deps).
 #   * the render-alive probe is MANDATORY: a long-lived Gazebo silently degrades to sky-flat while
 #     its topics stay alive, and the flight records plausible-looking nothing (2026-08-18). On
@@ -65,7 +65,7 @@ POLL_S=3
 # which mark "not expanding here is the requirement", not an oversight.
 # shellcheck disable=SC2016
 INNER_GAZEBO='source /root/ardu_ws/install/setup.bash && export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH:-}:/root/ardu_ws/install/ardupilot_gazebo/share" && gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard_field.sdf'
-INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
+INNER_BRIDGE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort -p qos_overrides./fg/depth/image.publisher.reliability:=best_effort'
 # shellcheck disable=SC2016
 INNER_PROBE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && PYTHONPATH=/workspace/fieldguard/src:$PYTHONPATH python3 /workspace/fieldguard/scripts/check_render_alive.py'
 INNER_AGENT='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run micro_ros_agent micro_ros_agent udp4 --port 2019'
@@ -216,18 +216,22 @@ send_ctrl_c() {
 }
 
 # --- gate probes --------------------------------------------------------------------------------
+# 4 nadir /fg/sensor/* (ADR-007) + 2 forward /fg/depth/* (ADR-019). Counted SEPARATELY so a world
+# that lost one mount cannot be covered by the other: a bare total of 6 would pass on 6 NDVI topics
+# and no depth camera. `/fg/depth/image/points` also exists on the gz side (gz-sensors advertises it
+# unconditionally, then only fills it when subscribed) which is why the depth count is >= and not ==.
 probe_gz_topics() {
-  local n
-  n=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; timeout 10 gz topic -l" 2>/dev/null |
-      grep -c '^/fg/sensor/' || true)
-  [ "$n" -ge 4 ]
+  local all
+  all=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; timeout 10 gz topic -l" 2>/dev/null) || true
+  [ "$(printf '%s\n' "$all" | grep -c '^/fg/sensor/' || true)" -ge 4 ] &&
+  [ "$(printf '%s\n' "$all" | grep -c '^/fg/depth/' || true)" -ge 2 ]
 }
 
 probe_ros_topics() {
-  local n
-  n=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml; timeout 15 ros2 topic list" 2>/dev/null |
-      grep -c '^/fg/sensor/' || true)
-  [ "$n" -ge 4 ]
+  local all
+  all=$(ctr "source /root/ardu_ws/install/setup.bash >/dev/null 2>&1; export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml; timeout 15 ros2 topic list" 2>/dev/null) || true
+  [ "$(printf '%s\n' "$all" | grep -c '^/fg/sensor/' || true)" -ge 4 ] &&
+  [ "$(printf '%s\n' "$all" | grep -c '^/fg/depth/' || true)" -ge 2 ]
 }
 
 # 2019 == 0x07E3 in /proc/net/udp's local_address column. No ss/netstat dependency.
@@ -274,13 +278,14 @@ gate() {
 }
 
 gate_gazebo() {
-  gate "Gazebo advertises the 4 /fg/sensor topics (gz topic -l)" "$GATE_GAZEBO_S" probe_gz_topics \
-    "The world may be up while the ADR-007 camera pair is not advertising — read the gazebo window." \
+  gate "Gazebo advertises the 4 /fg/sensor + 2 /fg/depth topics (gz topic -l)" "$GATE_GAZEBO_S" probe_gz_topics \
+    "The world may be up while a camera mount is not advertising — read the gazebo window. Both
+  mounts are counted separately: the ADR-007 nadir pair AND the ADR-019 forward depth camera." \
     gazebo
 }
 
 gate_bridge() {
-  gate "the 4 /fg/sensor topics cross into ROS 2 (ros2 topic list)" "$GATE_BRIDGE_S" probe_ros_topics \
+  gate "the 4 /fg/sensor + 2 /fg/depth topics cross into ROS 2 (ros2 topic list)" "$GATE_BRIDGE_S" probe_ros_topics \
     "A missing-library crash in the bridge window means the three runtime deps are absent (they are
   container-ephemeral until the image is rebuilt) — re-run 'up': preflight installs them." bridge
 }
@@ -623,8 +628,8 @@ cmd_status() {
   fi
   if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTAINER"; then
     say "container '$CONTAINER': running"
-    if probe_gz_topics;   then say "  gz   4 /fg/sensor advertisements: yes"; else warn "  gz   4 /fg/sensor advertisements: NO"; fi
-    if probe_ros_topics;  then say "  ros2 4 /fg/sensor topics: yes";         else warn "  ros2 4 /fg/sensor topics: NO"; fi
+    if probe_gz_topics;   then say "  gz   4 /fg/sensor + 2 /fg/depth advertisements: yes"; else warn "  gz   4 /fg/sensor + 2 /fg/depth advertisements: NO"; fi
+    if probe_ros_topics;  then say "  ros2 4 /fg/sensor + 2 /fg/depth topics: yes";         else warn "  ros2 4 /fg/sensor + 2 /fg/depth topics: NO"; fi
     if probe_agent_port;  then say "  udp  micro-ROS agent on 2019: yes";     else warn "  udp  micro-ROS agent on 2019: NO"; fi
     # Those three are liveness checks on shared resources — they cannot tell WHOSE processes they
     # found. Green gates with no session means something else is flying: say so, loudly.

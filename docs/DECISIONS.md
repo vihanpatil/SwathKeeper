@@ -3349,3 +3349,77 @@ it, and it confirmed the ruling's architecture on every axis.
 Owner / roles: user (direction + ratification); exec-council (ruling); five research agents
 (sourced findings, recorded in the ruling's amendment block); product-lead (scope guard);
 tech-lead (recorded); robotics-sim-engineer + perception-ml-engineer (sensor-in-sim phase, next).
+
+## ADR-020: The forward obstacle sensor is a gz-sim `depth_camera` on its own level, nose-mounted aperture — and its booking gate refuses to authorise a flight on config prose   (2026-08-26, status: ACCEPTED offline — built host-side, TWO adversarial QA rounds, NOT YET RENDERED)
+
+**Nothing in this build has ever been rendered.** Every claim below is host-side arithmetic,
+source-reading verified at the pinned SHAs, and offline rehearsal; the commissioning Docker
+session (`docs/runbooks/FORWARD_DEPTH_SENSOR.md`, gates D1–D6) is where each one earns or loses
+its live standing.
+
+**Context.** ADR-017 am. 1 measured `speed_at_which_nadir_becomes_safe_mps = None`: bird_0 closes
+at its own 6.002 m/s and nadir's 2.480 m horizon would have to be 17.8–38.8 m. ADR-019 §2
+promoted a forward depth camera to scope.
+
+**Sensor.** gz-sensors8 **`depth_camera`**, second link `fg_depth_mount` on the existing
+`iris_with_gimbal_ndvi` wrapper. `rgbd_camera` rejected (an extra colour pass with zero
+consumers; ADR-003 am. 10 measured a co-aperture band at gap +0.000); radar refused per
+ADR-019 §5. The NDVI mount, config and gate are untouched, and the static gate asserts the four
+`/fg/sensor/*` bridge entries still exist byte-for-byte.
+
+**Mount pose.** xyz **(0.15, 0, 0)** m, rpy **(0, 0, 0)**, fixed joint to
+`iris_with_gimbal::base_link`, sensors only. rpy 0 *is* forward because Gazebo cameras look along
+sensor +X; the pinhole instinct `(-π/2, 0, -π/2)` aims at body −Y and would still return a
+plausible frame — which is why only geometry gates catch it (the ADR-007 am. 5 lesson, gated
+up-front this time). Licensed by the general `optical_to_body_matrix` reproducing
+`ndvi_georef.CAMERA_TO_BODY_SIGNS` exactly at the nadir mount's live-verified rpy — QA proved the
+composition-order mutant is caught ONLY by that check.
+
+**FOV / range / rate.** 640×480, hfov 1.1033 rad (fx = fy = 520.006, vertical ±24.775°), 5.0 Hz,
+clip 0.1–60.0 m, noise none (transfer gap **TG-6**). Topics `/fg/depth/image` (32FC1) and
+`/fg/depth/camera_info` — the latter **derived** by gz from `<topic>`, never declared (verified
+in gz-sensors source; declaring one would be dead config that looks live).
+
+**Geometry.** Level, no tilt: the ±6 m threat band fits the frustum beyond `6·fy/cy = 13.00 m`;
+a 10° down-tilt would push the band's upper edge to 22.74 m — a hole inside the required
+horizon. A 0.18 m bird spans the measured 2.0 px morphology floor to **46.80 m** — a bound
+calibrated on the *NDVI* detector's morphology (disclosed; re-measure booked for the segmenter
+session). **Clip semantics are asymmetric:** near culls on Z-depth, far culls on Euclidean slant
+while the stored value is Z-depth, so the effective Z horizon at the frame corner is
+**47.56 m — 1.6 % over the acquisition bound, not the 28 % the on-axis figure suggests** (a
+static-gate check now enforces the corner bound). The contract's range window is exclusive at
+both ends: a clip plane is where gz stops measuring, and a value AT it is a refusal, never a
+detection.
+
+**Booking gate (ADR-019 §6).** `scripts/predict_forward_lead.py`, every input imported from its
+owner, conservative form `margin = (acq/(v+v_bird)) / (t_req + latency) ≥ 1.3`, `t_req` pinned to
+the analytic closed forms (there is **one** plant implementation; it is deliberately not
+"cross-checked" against itself — QA proved that check vacuous and it was removed). On the
+committed config: **PASS 2.0–9.0 m/s, FAIL at 10.0 m/s** (ArduCopter's `WPNAV_SPD` default);
+**recommended 5.0 m/s — margin 1.811×, required horizon 33.59 m, 28.2 % headroom** vs 4.3 % at
+9 m/s. **Exit contract, pinned by a property test across every mode: 0 = PASS and BOOKABLE,
+reachable ONLY with the full live input set (fx+cy+measured acquisition range) AND, in a sweep,
+every swept speed passing — a sweep chooses a speed, a single `--speed` run authorises it;
+1 = FAIL; 2 = REFUSAL (missing or garbage input — never a claim about the sensor);
+3 = PASS but NOT bookable.** Today's verdict is 3, by construction, until gates D1/D3 supply
+live numbers.
+
+**Clutter.** Depth has no material discriminator and mapped clutter is inside the horizon
+(canopies enter the frame from ~24.4 m, ground from ~32.5 m). Coincidence with the static map is
+**annotated, never suppressed** (`Detection.static_map_hint` + counters; nothing consumes the
+hint yet — a proposed contract addition for the policy). Clutter **merging** is unsolved and
+owned by the segmenter session: a bird in the ground band dies to an `isfinite`-style mask, so
+the segmenter must key on depth *discontinuity*.
+
+**Gates.** Host `scripts/check_depth_mount.py` (23 checks incl. the corner bound and a
+structural bridge parse, in the suite). Render `scripts/verify_depth_mount_geometry.sh` (D2
+aim/range/self-occlusion, **D2-OFFAXIS** Z-depth-vs-slant discrimination, **D2-NEAR/FAR/CULL**
+literal out-of-clip pixel semantics, **D3** contiguous-prefix acquisition range, labelled
+best-case-scene resolvability). Liveness `scripts/check_render_alive.py` now requires both
+apertures. Session procedure `docs/runbooks/FORWARD_DEPTH_SENSOR.md`.
+
+Owner / roles: robotics-sim-engineer (built + both fix rounds); qa-safety-reviewer (two
+adversarial rounds — physics confirmed by independent re-derivation, exit contract and five gate
+holes found and closed, every fix re-verified by probe); perception-ml-engineer (the segmenter,
+next session); flight-software-engineer (wiring the seam + the `static_map_hint` contract field);
+tech-lead (recorded).

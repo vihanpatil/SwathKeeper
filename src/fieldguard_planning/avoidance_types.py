@@ -43,6 +43,16 @@ class Detection:
     # and scripted sources do not stamp yet, and the staleness gate deliberately fails OPEN for
     # unstamped detections (see AvoidancePolicy `max_detection_age_s`).
     stamp_s: Optional[float] = None
+    # ADR-019: the id of the MAPPED static obstacle whose 3D geofence this detection's estimated
+    # position falls inside, or None. Written only by `depth_detect.DepthDetectionSource` when it is
+    # given a static-map annotator: the forward depth camera sees tree canopies from ~24.4 m and the
+    # ground from ~32.5 m, both inside the horizon it needs, and depth alone cannot tell a tree from
+    # a bird sitting next to one.
+    # IT IS AN ANNOTATION, NOT A FILTER, and deliberately so: suppressing detections that coincide
+    # with a mapped obstacle would delete exactly the bird-beside-a-tree case, and a missed obstacle
+    # is a safety bug where a wasted dodge is not (ADR-003 am. 10's carry-forward hazard). NOTHING
+    # CONSUMES IT YET -- it is a channel offered to the policy, which still decides alone.
+    static_map_hint: Optional[str] = None
 
 
 @dataclass(frozen=True)

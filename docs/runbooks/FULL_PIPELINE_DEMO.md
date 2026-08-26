@@ -24,8 +24,8 @@ scripts/fly_pipeline.sh --gate-geometry up   # + the mount-geometry gate after t
 `up` turns tmux mouse mode on for the `swathkeeper` session (session-scoped only — your other tmux
 sessions are untouched): click a pane or window name to focus it; the `Ctrl-b` prefix also works.
 
-What it adds over copy-paste is the **ordering and the gates** — Gazebo's four `fg/sensor`
-advertisements, the four `/fg/sensor` ROS 2 topics, the **mandatory** render-alive probe (which on
+What it adds over copy-paste is the **ordering and the gates** — Gazebo's four `fg/sensor` and two
+`fg/depth` advertisements, the same six as ROS 2 topics, the **mandatory** render-alive probe (which on
 DEGRADED restarts Gazebo + the bridge and re-probes, twice, then refuses to fly), and UDP 2019
 bound before SITL boots. Two things `up` deliberately does **not** do: **it never flies** (no `arm`,
 no `mode`, no `wp load` is ever sent — SITL stays an interactive pane and the fly recipe below is
@@ -145,24 +145,29 @@ then this is a no-op — run it either way, it costs a second and a missing one 
 docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH:-}:/root/ardu_ws/install/ardupilot_gazebo/share" && gz sim -v4 -s -r --headless-rendering /workspace/fieldguard/sim/worlds/farmguard_field.sdf'
 ```
 *What's happening:* the farm world loads headless — 18 calibrated-temperature trees, 3 bird
-models, the drone with its ADR-007 dual-band camera pair (RGB Red + thermal-as-synthetic-NIR).
+models, the drone with **two** sensor mounts: the ADR-007 dual-band nadir pair (RGB Red +
+thermal-as-synthetic-NIR) and the ADR-019 forward depth camera.
 *Look for:* ~40 `Loaded system … Thermal` lines (the per-visual temperature authoring), all four
-`fg/sensor/*` advertisements, **no** `Actor skin mesh` warnings (the pre-ADR-012 bug), no
-`Failed to load a world`.
+`fg/sensor/*` advertisements **and** `fg/depth/image` + `/fg/depth/camera_info`, **no**
+`Actor skin mesh` warnings (the pre-ADR-012 bug), no `Failed to load a world`.
+The depth camera's info topic is **derived** by gz (`<topic>` minus its last segment), not declared
+— if it ever shows up as `/fg/depth/image/camera_info`, stop and read
+[`FORWARD_DEPTH_SENSOR.md`](FORWARD_DEPTH_SENSOR.md) gate D1 before bridging anything.
 
 ## Shell 2 — the sensor bridge (Gazebo → ROS 2)
 
 ```bash
-docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort'
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=/workspace/fieldguard/sim/bridge/fg_sensor_bridge.yaml -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort -p qos_overrides./fg/depth/image.publisher.reliability:=best_effort'
 ```
-*What's happening:* the locked `/fg/*` contract crosses into ROS 2. The two `qos_overrides` are the
+*What's happening:* the locked `/fg/*` contract crosses into ROS 2. The three `qos_overrides` are the
 **image** topics only: the bridge publishes RELIABLE by default, and every consumer of these topics
 (`ndvi_node`, `record_node`) already subscribes `qos_profile_sensor_data` — BEST_EFFORT — so the
 reliable half of the contract was retransmission machinery for ~900 KB samples nobody asked to be
 retransmitted. `camera_info` is deliberately left RELIABLE (small, and it is the control that proves
 the override is what changed the image topics — see the yaml's header note for why this cannot live
 in the config file at the pinned SHA).
-*Look for:* **four** `Creating GZ->ROS Bridge` lines (the sensor topics only — the recorder reads
+*Look for:* **six** `Creating GZ->ROS Bridge` lines — four `/fg/sensor/*` and two `/fg/depth/*`
+(camera topics only — the recorder reads
 the sim clock natively via gz-transport, deliberately NOT through this bridge: Gazebo's /clock is
 ~350 msgs/s and bridging it starved the image pipeline, measured live). A missing-library crash
 here means the Shell-0 apt step was skipped.
