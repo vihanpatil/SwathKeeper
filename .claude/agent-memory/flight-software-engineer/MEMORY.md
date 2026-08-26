@@ -4,4 +4,5 @@
 - [Host-quiet is a flight gate](host_quiet_confound.md) — other Docker containers halved both bands and voided a flight; how to tell host load from a code regression
 - [2026-08-25 flight: lead time, not ordering](flight_20260825_lead_time.md) — 0.0067 m CPA measured; nadir FOV gives ~0.4 s of warning and the executor has no maneuver-completion — reshapes R4
 - [Plant model + the confound resolved](plant_model_and_confound.md) — the real GUIDED command path, effective a_max 1.05-1.85 vs 2.5, 08-18 fits NO plant, and the ADR-017 sweep's answer: no safe speed exists
+- [Evidence-consumption seams](evidence_consumption_seams.md) — gate functions to CALL for verdicts/CPA/tree stats, per-window dodge displacement (1.8 cm is NOT the GUIDED-window number), airborne-window rule, joins that don't exist
 - [Extractability audit](extractability_audit.md) — what leaves the sim intact, no-packaging/REPO_ROOT costs, the two rival "covered" definitions + the 6.92 vs 7.5 m swath error, ecosystem form facts
