@@ -7,13 +7,18 @@ Every bug QA finds (missed detection, silently-skipped coverage cell, geofence b
 ## How to run (all three work, from repo root)
 
 This file is the **one home** for the suite totals; `README.md` and `SETUP.md` quote them from here.
-Measured on the verified host 2026-08-25 — re-run all three and re-quote if you change any of them.
+Measured on the verified host 2026-08-26 — re-run all three and re-quote if you change any of them.
 
 ```bash
-python3 -m unittest discover -s tests/fieldguard_planning   # 822 tests, OK (skipped=2) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # 57 host-side launcher + CI-config tests, OK
-python3 -m pytest tests -q                                  # both at once: 877 passed, 2 skipped, 0 xfail
+python3 -m unittest discover -s tests/fieldguard_planning   # 911 tests, OK (skipped=2) — the original CI invocation
+python3 -m unittest discover -s tests -p 'test_*.py'        # 150 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1058 passed, 1 FAILED, 2 skipped, 0 xfail
 ```
+
+**The 1 failure is deliberate and load-bearing:** `test_ci_evidence_gate…test_step_passes_on_the_
+committed_evidence` is red because the committed 2026-08-25 take breached its GT-CPA bar and the
+acknowledgement's second half is deliberately withheld (marker, no pin — runbook §6a). It stays red
+until the clean re-fly; a run where it is the ONLY failure is the expected green-state of this tree.
 
 `discover -s tests/fieldguard_planning` never walks `tests/test_*.py` (they're one level up and a
 different discover pattern), so CI runs it as a **second, separate job** — a stale CI config silently

@@ -44,3 +44,20 @@ to a live gate or a real eval run, re-verified at each use).
   heading count equals the ATX heading count — so never leave a text line directly above a `---`
   rule (Markdown turns it into a setext heading and the build fails as "heading drift").
 - Image **alt text is a claim too**. It was the one place a draft README overclaimed (2026-08-25).
+- **Only embed or link artifacts a FRESH CLONE will have.** Much of `eval/results/` exists only on
+  the build machine: clip `frames/rgb/*.png` are gitignored (only `meta.json`, `poses.jsonl`,
+  `heatmap/` are tracked) and `adr003_*/overlays/` is gitignored **except** the 8 allowlisted
+  2026-08-25 PNGs. Local-only assets are fine as *video source footage* (the rendered video is the
+  deliverable); they are never README links. Check `git ls-files` before citing an image path.
+- **A draft under `docs/` is link-gated too.** `scripts/build_docs_site.py` rglobs `docs/**/*.md`
+  and resolves each `<a href>` **relative to the source file's own directory** — so `eval/results/…`
+  written in `docs/drafts/` is a broken link and hard-fails the build, even though the identical
+  path is correct in `README.md` at the root. Write draft READMEs with **backticked paths** plus one
+  apply-note saying which become links. Images are NOT checked (`img src` never reaches the gate),
+  but fencing the `![…](…)` lines keeps the rendered draft page clean and the alt text exact.
+  Fenced blocks are also excluded from the heading-count gate, so `#` inside a fence is safe.
+- **An honest image can still lie.** On the 08-25 overlays, frame 965's ground-truth box sits ~15 px
+  off the rendered bird (applied-pose render lag, IoU 0.511) while the detector's box is tight — a
+  GT-only still reads as "the detector missed," the opposite of what happened. Use the `gtdet_*`
+  variants (both boxes) or frame 964 (IoU 0.826). Ask perception which frame is representative
+  before cropping anything.

@@ -33,6 +33,30 @@ Bullets in `<impact/metric> by <technical approach>` form. Every number re-verif
   12× throughput collapse to a Fast DDS shared-memory segment that silently discarded fragments and
   reported success.
 
+## Earned by the 2026-08-26 offline session (four new bullets)
+
+- **Cancelled a planned flight and redirected the project's roadmap on an offline measurement** by
+  replaying three logged flights through a jerk/accel/velocity-limited point-mass model of the
+  autopilot (every firmware constant cited to source at the pinned SHA) and sweeping **81
+  configurations** — 2-10 m/s × every escape candidate × three plant models: **no mission speed
+  makes the nadir sensor geometry safe** (warning capped at **0.41 s** by the intruder's own 6.0 m/s
+  closing speed vs a **1.25 s** minimum escape; 2.48 m of sensor horizon against 17.8-38.7 m
+  required), which promoted a second forward-facing sensor from growth path into scope.
+- **Retired a long-open comparison experiment on evidence rather than leaving it in limbo** —
+  measuring across 4,566 frames / 1.40 Gpx that the candidate "second sensor" shared the primary's
+  band **bit-for-bit**, so it could never answer the question it was open for; the incumbent
+  detector's ADOPT verdict was simultaneously **re-confirmed against a working rival at gap +0.000**
+  (safety metrics identical, 3.1×/27× better precision).
+- **Corrected a metric that had flattered my own decision**, showing a demoted monocular range
+  estimator actually agrees with ground truth at closest approach to **3.3 mm** (not the 20 cm
+  previously cited) — the error was the evaluation geometry, not the estimator — while leaving the
+  demotion in place on its load-bearing argument.
+- **Found a safety check that reported a direct hit as 7.00 m of clearance** by diffing two
+  implementations of the same closest-approach metric on identical bytes: a segment-vs-vertex fix had
+  never been back-ported to the legacy path. Fixed red-first (7.0000 → **0.0000 m**; two historical
+  breach figures deepened to 0.0393 / 0.0391 m and were republished) and pinned by a property test
+  that forbids the two implementations from ever disagreeing again.
+
 ## Earned earlier (still current)
 
 - **Closed a deferred detection decision with measured evidence** — per-bird-track false-negative
@@ -56,10 +80,15 @@ Bullets in `<impact/metric> by <technical approach>` form. Every number re-verif
 - "Verified reactive avoidance on the real render" / "avoided a bird in flight" as a **success**.
   The only real-detection take is INVALID. The honest verb is *engaged*, not *avoided*; the loop
   displaced the vehicle **1.8 cm** against a 10 m command.
-- Any NDVI-vs-RGB second-sensor delta. ADR-003 criterion 2 is open; `baseline_rgb.py`'s birdness is
-  deliberately inverted, so its 0.000 scores are **not** RGB's ceiling.
-- The −0.61 threshold as settled (PROVISIONAL — range half of the FP study open).
-- Dashboard / demo video / anything Week 7. Not started.
+- Any NDVI-vs-RGB **second-sensor** delta. The study RAN and closed (ADR-003 am. 10) by measuring
+  that the arm was never a second sensor — so a sensor-diversity number does not exist and cannot
+  come from it. Quote the detector-vs-detector figures instead. The old "birdness is inverted"
+  caveat is **retired** (wrong feature, not wrong sign).
+- The −0.61 threshold as settled (PROVISIONAL; range half narrowed 2026-08-26 across a 2.3× depth
+  span, open beyond ~11 m).
+- Any test-suite count until it is re-measured into `tests/README.md` — the tree currently
+  contradicts itself (877/2 there vs 1028 + 902 in BUILD_LOG, one red by design).
+- Dashboard / demo video / README as **shipped**. Week 7 went active 2026-08-26; drafts only.
 - "3310 frames" as a clip size — 2639 are post-landing parked frames. Quote 671 airborne / 649
   painting.
 

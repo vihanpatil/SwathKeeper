@@ -1,3 +1,23 @@
+# DRAFT — full README text for review (2026-08-26)
+
+**Status: DRAFT. Nothing here has been applied to `README.md`.** This is the complete replacement
+text, written to the contract in `docs/drafts/README_SKELETON.md`. §A is verbatim-frozen; §B is the
+approved first-person arc; everything else is written to its stated intent, sources and length.
+
+**Two mechanical notes for the apply step** (both are consequences of this file living under
+`docs/`, not editorial choices):
+
+* **Repo paths are backticked here; they become markdown links when applied to `README.md`.**
+  `scripts/build_docs_site.py` resolves intra-repo links relative to the *source file's* directory,
+  so `eval/results/…` written from `docs/drafts/` is a broken link and hard-fails the docs build.
+  From `README.md` at the repo root, the same relative paths resolve. Link every backticked path
+  that names a file a reader would want to open.
+* **The two image lines are in fenced blocks**, for the same reason plus alt-text fidelity — paste
+  them unfenced. Both assets are git-tracked (`.gitignore` allowlists `heatmap/` and the eight
+  2026-08-25 overlay PNGs), so a fresh clone renders them.
+
+Everything from the next heading down is the README.
+
 # SwathKeeper
 
 **An autonomous ag-survey drone that reacts to obstacles its mission plan never knew about — and
@@ -13,8 +33,10 @@ silently skipped swath is a test failure rather than a rounding error. Crop-heal
 out of the same flight and the same camera. It runs on ArduPilot + Gazebo + ROS 2, in simulation,
 which is what makes the numbers below re-runnable by anyone.
 
+```markdown
 ![NDVI crop-health map from one simulated flight: a 2.5 m grid over the field, with bright canopy
 cells over the three tree rows against darker soil](eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.png)
+```
 
 *One flight (`real_flight_20260825T205705Z`), stitched offline: **720 of 720** cells on a 2.5 m grid
 from **649 painting frames of 671 airborne**; **18/18** trees imaged, **11** canopy-grade, median
@@ -87,17 +109,17 @@ infrastructure** (ADR-019) — not a capability this repo demonstrates.
 
 | Measurement | Number | Proved by |
 |---|---|---|
-| Coverage integrity, live flight | **720 covered / 0 debt**; 116 at-risk cells recovered across 4 diverts; 1858 path points | [eval/results/live_flight_log_20260825T210402Z.json](eval/results/live_flight_log_20260825T210402Z.json) + its `.SAFETY_FINDING.md` |
-| Detector rate, first in-air measurement | **1301 / 1302 frames = 99.92 %** against a 0.90 floor | same log; [docs/DECISIONS.md](docs/DECISIONS.md) ADR-013 am. 18 |
-| Bird clearance on that same flight | **0.0067 m horizontal at 4.03 m vertical, against a 3.00 m bar — INVALID.** Reported as the system working | [eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md](eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md) |
-| Detection quality, real render (ADR-003 criterion 3) | per-track FNR **0.000**, 3/3 intruders, 20 obstacle-visible frames; precision 0.708 / recall 0.850 (TP 17 / FP 7 / FN 3) | [eval/results/adr003_20260823/spike_scores.json](eval/results/adr003_20260823/spike_scores.json) |
+| Coverage integrity, live flight | **720 covered / 0 debt**; 116 at-risk cells recovered across 4 diverts; 1858 path points | `eval/results/live_flight_log_20260825T210402Z.json` + its `.SAFETY_FINDING.md` |
+| Detector rate, first in-air measurement | **1301 / 1302 frames = 99.92 %** against a 0.90 floor | same log; `docs/DECISIONS.md` ADR-013 am. 18 |
+| Bird clearance on that same flight | **0.0067 m horizontal at 4.03 m vertical, against a 3.00 m bar — INVALID.** Reported as the system working | `eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md` |
+| Detection quality, real render (ADR-003 criterion 3) | per-track FNR **0.000**, 3/3 intruders, 20 obstacle-visible frames; precision 0.708 / recall 0.850 (TP 17 / FP 7 / FN 3) | `eval/results/adr003_20260823/spike_scores.json` |
 | Adopted detector vs the working RGB comparison arm (criterion 2, closed 2026-08-26) | safety numbers **identical**; precision 0.708 → 0.227 (3.1×) on the adopted clip, 1.000 → 0.037 (27×) in the air; **gap +0.000 → ADOPT** | ADR-003 am. 10 |
-| Map completeness | **720 / 720** cells, 2.5 m grid, 649 painting frames | [eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.json](eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.json) |
-| Tree localization, same clip | **18/18** imaged, **11/18** canopy-grade, median lift **+0.5562**, all 11 positive cells < 2.0 m from a tree centre | [scripts/check_tree_positions.py](scripts/check_tree_positions.py) on that clip |
+| Map completeness | **720 / 720** cells, 2.5 m grid, 649 painting frames | `eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.json` |
+| Tree localization, same clip | **18/18** imaged, **11/18** canopy-grade, median lift **+0.5562**, all 11 positive cells < 2.0 m from a tree centre | `scripts/check_tree_positions.py` on that clip |
 | Recording cadence | **5.0 Hz** flat, 100 % delivery on both bands (was 0.41 Hz — a Fast DDS shared-memory segment was the root cause) | that clip's `meta.json` |
 | Live↔offline equivalence | flight-logged obstacle positions reproduced to **1 µm** across SciPy 1.8.0 (air) / 1.13.1 (host), all 1301 in-window frames | ADR-009 am. 2 |
 | Monocular range estimator vs ground truth at closest approach | agrees to **3.3 mm** (0.0035 m vs 0.0067 m) — and is still refused as a gate, on purpose | ADR-013 am. 19 |
-| Automated tests | **1058 passed, 1 failed, 2 skipped, 0 xfail** (`python3 -m pytest tests -q`). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-08-26 — re-run and re-quote if you change the suite |
+| Automated tests | **1058 passed, 1 failed, 2 skipped, 0 xfail** (`python3 -m pytest tests -q`). The single failure is deliberate: the CI evidence gate is red on the committed breach | `tests/README.md`, measured 2026-08-26 — re-run and re-quote if you change the suite |
 
 Two caveats this repo refuses to round off. The −0.61 real-render detection threshold is
 **PROVISIONAL** — narrowed on 2026-08-26 across a 2.3× depth span (3.9 / 6.9 / 9.0 m), still open
@@ -177,8 +199,10 @@ from "documented growth path" into scope, and my pre-flight check now refuses ev
 actually fly on this geometry — so I can't honestly book another of these flights until that sensor
 exists. The system found its own sensor's limit and refused to fly what it can't pass.
 
+```markdown
 ![Two NDVI frames from that flight with boxes drawn on them: the ground-truth position of the bird
 and, tight around the same bird, the box the detector produced](eval/results/adr003_20260825/overlays/gtdet_a_ndvi_direct_ndvi_frame_000964.png)
+```
 
 *The only two frames of the whole flight with the intruder inside the image — the detector boxed
 both, and the harness still refused to call two frames evidence.*
@@ -186,11 +210,11 @@ both, and the harness still refused to call two frames evidence.*
 ## How this repo proves things
 
 * **Pre-registration.** The failure condition is written into the runbook before the flight, so the
-  result cannot be reinterpreted afterwards ([docs/runbooks/AVOIDANCE_REAL_DETECTION.md](docs/runbooks/AVOIDANCE_REAL_DETECTION.md) §7).
+  result cannot be reinterpreted afterwards (`docs/runbooks/AVOIDANCE_REAL_DETECTION.md` §7).
 * **Commanded is never recorded as flown.** A ledger bug that recorded dodge setpoints as flown
   understated coverage debt by up to **32 cells per scenario**; found in the 2026-08-18 audit, fixed
   and regression-pinned the same day (ADR-013).
-* **Gates have to be able to fail, and they have to catch themselves.** [eval/score.py](eval/score.py)'s
+* **Gates have to be able to fail, and they have to catch themselves.** `eval/score.py`'s
   zero-denominator ADOPT bug; `check_tree_positions.py`'s "PASS (vacuous)"; a CI evidence step that
   printed SKIP…PASS having validated nothing; a legacy check that measured path *corners* instead of
   the path, under which the one fixture that "passed" was a direct hit (7.0000 m → 0.0000 m, fixed
@@ -200,7 +224,7 @@ both, and the harness still refused to call two frames evidence.*
   recurred on 2026-08-25, with a green 99.92 % detect rate on a flight that flew through a bird. Two
   instances make it a pattern, not an anecdote.
 
-The full log is [docs/DECISIONS.md](docs/DECISIONS.md): 19 architecture decision records, where corrections land as
+The full log is `docs/DECISIONS.md`: 19 architecture decision records, where corrections land as
 dated **amendments** rather than edits, because the log is append-only. The amendments are the
 interesting part.
 
@@ -233,9 +257,9 @@ hardware data or an outside conversation exists to support it.
 
 ## Run it
 
-* **Host Python only, no Docker** — the test suite and the offline NDVI stitch: [SETUP.md](SETUP.md).
+* **Host Python only, no Docker** — the test suite and the offline NDVI stitch: `SETUP.md`.
 * **The full sim in one command** — flies a mission and proves itself:
-  [docs/runbooks/FULL_PIPELINE_DEMO.md](docs/runbooks/FULL_PIPELINE_DEMO.md).
+  `docs/runbooks/FULL_PIPELINE_DEMO.md`.
 * **Reproduce the safety verdicts on the committed evidence**, nothing to install:
 
 ```bash
@@ -252,11 +276,11 @@ marker file beside the log explains how to reproduce that number.
 |---|---|
 | **See it move, nothing to install** | the dashboard — three views over the committed artifacts, every figure computed in your browser, sha256 provenance in the footer, 5-step tour. *Pages not enabled yet;* run `python3 -m http.server 8000` and open `/dashboard/` |
 | **Watch the 2–3 min narrated walkthrough** | demo video — TODO, not yet recorded |
-| **Read the failure, written up beside its evidence** | [eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md](eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md) |
-| **See the pre-registration in situ** | [docs/runbooks/AVOIDANCE_REAL_DETECTION.md](docs/runbooks/AVOIDANCE_REAL_DETECTION.md) §7 |
-| **Know why each choice was made, and what it cost** | [docs/DECISIONS.md](docs/DECISIONS.md) — the ADR log with its amendments |
-| **See exactly where the project stands, including what is not done** | [docs/ROADMAP.md](docs/ROADMAP.md) |
-| **Run it / how it works / how it was built** | [SETUP.md](SETUP.md) · [docs/SPEC.md](docs/SPEC.md) · [TIGER_TEAM_GUIDE.md](TIGER_TEAM_GUIDE.md) |
+| **Read the failure, written up beside its evidence** | `eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md` |
+| **See the pre-registration in situ** | `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` §7 |
+| **Know why each choice was made, and what it cost** | `docs/DECISIONS.md` — the ADR log with its amendments |
+| **See exactly where the project stands, including what is not done** | `docs/ROADMAP.md` |
+| **Run it / how it works / how it was built** | `SETUP.md` · `docs/SPEC.md` · `TIGER_TEAM_GUIDE.md` |
 
 ## What I'd do next
 
@@ -269,7 +293,7 @@ marker file beside the log explains how to reproduce that number.
    conservative plant. The gate exists to end failure theater: the next take is *designed* to pass.
 3. **Then a mapped-wire corridor demo** — wires as a fresh per-field survey, never an external GIS
    layer, with metres of buffer because catenary sag moves 0.15–1.4 m across the design temperature
-   swing. No camera wire detection is promised. (The ratified program: [docs/DECISIONS.md](docs/DECISIONS.md) ADR-019.)
+   swing. No camera wire detection is promised. (The ratified program: `docs/DECISIONS.md` ADR-019.)
 
 ## Names, and how it was built
 
@@ -279,4 +303,4 @@ container. That topic contract is live-verified, and renaming verified interface
 re-opens confirmed state for zero functional gain. If you see `fg_`, you're in the right place.
 
 Built by a Claude Code *tiger team*: eight specialized subagents (product, tech-lead, perception/ML,
-sim, flight software, devops, QA/safety, GTM), each owning its own gates. See [TIGER_TEAM_GUIDE.md](TIGER_TEAM_GUIDE.md).
+sim, flight software, devops, QA/safety, GTM), each owning its own gates. See `TIGER_TEAM_GUIDE.md`.

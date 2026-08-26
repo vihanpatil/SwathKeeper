@@ -43,8 +43,9 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
 **Generators (stdlib + numpy):**
 - `gen_boustrophedon.py` — boustrophedon coverage mission → `config/missions/boustrophedon.waypoints`.
 - `gen_farm_world.py` — the farm world SDF **and** the `config/static_obstacles.json` geofence export
-  from one tree list (kept in sync). Also emits the ADR-007 dual-band NDVI sensor mount and a
-  calibrated `<temperature>` on every visual, from `config/ndvi_camera.json`.
+  from one tree list (kept in sync). Also emits BOTH sensor mounts — the ADR-007 dual-band nadir
+  NDVI pair with a calibrated `<temperature>` on every visual (`config/ndvi_camera.json`) and the
+  ADR-019 forward depth camera (`config/depth_camera.json`).
 
 **Checks / regression:**
 - `predict_bird_visibility.py` — **run this before spending a Docker session on a detection flight,
@@ -57,6 +58,26 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   only geometry can fix it) or `TIMING` (does cross, just rarely). `--backtest <clip>` replays a
   flown clip's own poses through the identical geometry, and reproducing the demo take's measured
   0/454 is what makes the prediction trustworthy (ADR-003 amendment 2).
+- `predict_forward_lead.py` — **THE ADR-019 BOOKING GATE**: does the forward depth camera buy enough
+  lead to clear the 3.00 m bar at a given mission speed? `--speed` is REQUIRED (same doctrine, same
+  reason). Every number is imported from its owner — the bar from `PolicyParams`, the plant from
+  `eval/point_mass.GUIDED_DEFAULT`, the bird speed from the birds config, the frame period from
+  `config/depth_camera.json` — so the gate cannot drift from the control law. Four exit codes:
+  **0** PASS *and bookable* (live-measured `--fx`/`--acq-range-m`), **1** FAIL, **2** refusal (no
+  speed), **3** PASS but NOT bookable (config-sourced inputs; ADR-019 item 6 wants the horizon from
+  the sensor, not from prose). `--sweep LO:HI:STEP` picks a mission speed. Measured on the committed
+  config: PASS 2.0–9.0 m/s, **FAIL at 10.0** (ArduCopter's `WPNAV_SPD` default), 1.811× at 5.0.
+- `check_depth_mount.py` — the HOST-side geometry gate for the ADR-019 forward mount, ~50 ms, no
+  container: the SDF really carries the sensor and no dead `<camera_info_topic>`, the SDF pose ==
+  the config == `depth_detect`'s importable mirror, the optical axis derived from the SDF rpy is
+  body +X — and, the check that licenses the rest, the SAME general formula fed the NADIR mount's
+  rpy reproduces `ndvi_georef.CAMERA_TO_BODY_SIGNS`, the extrinsic verified in the real render to
+  2.2 px. Run in the suite too, so nobody has to remember it.
+- `verify_depth_mount_geometry.sh` — the IN-RENDER half of the above, and the only place the
+  acquisition range can honestly be measured: one physics-free world, vehicle parked nose-east in
+  clear sky, `bird_0` teleported to known ranges. Gates aim/range/self-occlusion at 10 m, then
+  sweeps for the range at which the bird stops surviving the adopted morphology. Feed that number
+  to `predict_forward_lead.py --acq-range-m`. See `docs/runbooks/FORWARD_DEPTH_SENSOR.md`.
 - `check_mission_geofence.py` — min XY clearance of the mission path vs. the tree geofence (exits 1 on
   the documented, altitude-safe row-0 overlap — expected, not a failure).
 - `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses, or frame FNR / precision slip past their calibrated floors (ADR-003).
@@ -95,3 +116,8 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
 - `stitch_ndvi.py` — the offline post-flight stitch (ADR-010): a spike-schema clip → per-cell mean
   NDVI on the same canonical 2.5 m / 720-cell grid as the coverage ledger, joinable by `cell_id` →
   `heatmap.json` + `heatmap.png`. Exits nonzero on an empty stitch.
+- `build_dashboard_data.py` — populates `dashboard/data/` for the static v1 dashboard (ADR-018).
+  Copies flight logs / safety markers / stitched heatmaps byte-for-byte and derives the rest by
+  CALLING the gates (`check_live_flight_log`, `check_tree_positions`, `coverage.build_grid`), so the
+  page can never hold a verdict the gate does not. Idempotent; `--check` exits 1 when the committed
+  tree is stale and is pinned by `tests/test_build_dashboard_data.py`.
