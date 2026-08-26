@@ -37,13 +37,13 @@
    }
   },
   "b_synthetic_rgb": {
-   "TP": 0,
-   "FP": 3,
-   "FN": 2,
-   "precision": 0.0,
-   "recall": 0.0,
-   "fnr": 1.0,
-   "per_bird_track_fnr": 1.0,
+   "TP": 2,
+   "FP": 52,
+   "FN": 0,
+   "precision": 0.037037037037037035,
+   "recall": 1.0,
+   "fnr": 0.0,
+   "per_bird_track_fnr": 0.0,
    "birds_with_visible_frames": 1,
    "visible_bird_frames": 2,
    "label_srcs": {
@@ -55,14 +55,18 @@
     {
      "bird_id": "bird_0",
      "visible_frames": 2,
-     "matched_frames": 0,
+     "matched_frames": 2,
      "closest_range_m": 3.95,
      "t_closest_s": 193.0,
-     "detected_before_closest": false
+     "detected_before_closest": true
     }
    ],
    "params": {
-    "thresh": 110,
+    "birdness": "grvi",
+    "thresh": 0.0322,
+    "low_is_bird": true,
+    "thresh_source": "real-render default, PROVISIONAL (bird/background GRVI midpoint, criterion-2 pixel study)",
+    "thresh_provisional": true,
     "min_area": 6,
     "max_area": 5000
    }

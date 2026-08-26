@@ -23,6 +23,11 @@ Runs scripted scenarios headless and emits metrics — no "it works" without a n
   where the threshold belongs — lifting it needs the false-positive characterisation.
   `tests/fieldguard_planning/test_ndvi_detect.py` pins the detector's boxes against three committed
   real-render frames and, where the clip is on disk, against the whole 1256-frame adopted run.
+- `rgb_pixel_study.py` — ADR-003 **criterion 2**, the independent RGB pixel study (2026-08-26).
+  4,566 frames / 1.4027 Gpx / 16,686 bird pixels across both committed real clips, ~3 min on the
+  host, no Docker. Emits `results/criterion2_rgb_study_<UTC>/results.json`, which is the evidence
+  `baseline_rgb.py`'s real-render threshold is recomputed from. Read `SUMMARY.md` beside it for the
+  verdict; the numbers are generated, the verdict is authored.
 - `scenarios/` — the QA safety scenarios (spec + coverage-debt invariant); `generate_flight_logs.py`
   drives the real avoidance loop to produce each scenario's `flight_log.json`, activating its assertion.
 
@@ -98,11 +103,21 @@ projection hand-checked (a bird 5 m below a level hover lands on the principal p
    the ground plane tiles, the bird-altitude plane does not. **The geometry half is fixed
    (ADR-015):** bird_0 now patrols *down* the x=15 lane, and
    `scripts/predict_bird_visibility.py` predicts PASS — medians 8/6/11 frames at the 5 Hz sensor
-   tick, no bird structural. **The throughput half is not:** at the demo take's actual 0.407 Hz the
-   same geometry still predicts 0/0/1, so this item stays open on recording throughput
-   (ADR-013 am. 5-6a), not on where the birds are. Run the predictor before spending a session.
-2. **`baseline_rgb.py`'s birdness is inverted for this world** — see that file's KNOWN-WRONG note.
-   (b)'s numbers on a real clip are meaningless until it is recalibrated.
+   tick **and 3 m/s**, no bird structural. **Neither the throughput half nor the SPEED half is:** at
+   the demo take's actual 0.407 Hz the same geometry predicts 0/0/1, and at the ~9 m/s the
+   2026-08-25 take actually flew it predicts 2/2/3 and FAILs — the medians above are a 3 m/s figure
+   and nothing else (ADR-016; `--speed` is now required, with no default). Run the predictor at the
+   speed and cadence you will really fly before spending a session.
+2. ~~**`baseline_rgb.py`'s birdness is inverted for this world.**~~ **CLOSED 2026-08-26** by the
+   criterion-2 pixel study (`rgb_pixel_study.py`, evidence in
+   `results/criterion2_rgb_study_*/results.json`). The fix was **not** a polarity flip — measured
+   over 1.4027 Gpx, min-channel is the wrong *feature* in either direction. (b)'s real-render
+   birdness is now **GRVI = (G−R)/(G+R) < +0.0322**, a class-mean midpoint recomputed from the
+   study by `tests/fieldguard_planning/test_rgb_pixel_study.py`; the synthetic arm keeps
+   min-channel > 110 and reproduces ADR-003's deciding run box-for-box. **`results/adr003_20260823/`
+   and `adr003_20260825/` were regenerated on the new arm** — re-scoring the committed artifacts now
+   prints **gap +0.000 → ADOPT (a)** (it printed the retired gap −0.850 until 2026-08-26); arm (a) is
+   untouched at TP 17 / FP 7 / FN 3.
 3. **(b)'s FNR is not comparable to (a)'s on a partial-RGB clip** — `score.py` iterates the ground
    truth's frames, so frames that carry no RGB score against (b) as missed rather than as unseen.
    See `baseline_rgb.run`'s LIMITATION note.

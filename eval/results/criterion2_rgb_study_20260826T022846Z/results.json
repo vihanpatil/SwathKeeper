@@ -1,0 +1,1388 @@
+{
+ "study": "ADR-003 criterion 2 -- independent RGB pixel study on the real render",
+ "generated_utc": "2026-08-26T16:13:09Z",
+ "generator": "eval/rgb_pixel_study.py",
+ "clips": [
+  {
+   "tag": "real_flight_20260823T073644Z",
+   "clip": "/Users/vihanpatil/personal/projects/auto-drone-sim/eval/results/clips/real_flight_20260823T073644Z",
+   "ground_truth": "/Users/vihanpatil/personal/projects/auto-drone-sim/eval/results/adr003_20260823/ground_truth.json"
+  },
+  {
+   "tag": "real_flight_20260825T205705Z",
+   "clip": "/Users/vihanpatil/personal/projects/auto-drone-sim/eval/results/clips/real_flight_20260825T205705Z",
+   "ground_truth": "/Users/vihanpatil/personal/projects/auto-drone-sim/eval/results/adr003_20260825/ground_truth.json"
+  }
+ ],
+ "denominators": {
+  "frames": 4566,
+  "pixels": 1402675200,
+  "bird_pixels": 16686,
+  "background_pixels": 1402658514,
+  "bird_visible_frames": 22,
+  "birds": [
+   "bird_0",
+   "bird_1",
+   "bird_2"
+  ]
+ },
+ "oracle_validation": {
+  "real_flight_20260823T073644Z": {
+   "frames": 1256,
+   "pixels": 385843200,
+   "background_floor_ndvi": -0.44060173630714417,
+   "darkest_bird_frame_ndvi": -0.8666762709617615,
+   "oracle_threshold": -0.5,
+   "bird_pixels": 13434,
+   "floor_above_oracle_on_bird_frames": -0.44060173630714417,
+   "empty_band": [
+    -0.8666762709617615,
+    -0.44060173630714417
+   ],
+   "oracle_frames": [
+    611,
+    612,
+    613,
+    614,
+    615,
+    671,
+    672,
+    673,
+    674,
+    675,
+    676,
+    677,
+    678,
+    679,
+    737,
+    738,
+    739,
+    740,
+    741,
+    742
+   ],
+   "gt_visible_frames": [
+    611,
+    612,
+    613,
+    614,
+    615,
+    671,
+    672,
+    673,
+    674,
+    675,
+    676,
+    677,
+    678,
+    679,
+    737,
+    738,
+    739,
+    740,
+    741
+   ],
+   "oracle_not_in_gt": [
+    742
+   ],
+   "gt_not_in_oracle": []
+  },
+  "real_flight_20260825T205705Z": {
+   "frames": 3310,
+   "pixels": 1016832000,
+   "background_floor_ndvi": -0.44060173630714417,
+   "darkest_bird_frame_ndvi": -0.8383951783180237,
+   "oracle_threshold": -0.5,
+   "bird_pixels": 3252,
+   "floor_above_oracle_on_bird_frames": -0.44060173630714417,
+   "empty_band": [
+    -0.8383951783180237,
+    -0.44060173630714417
+   ],
+   "oracle_frames": [
+    964,
+    965
+   ],
+   "gt_visible_frames": [
+    964,
+    965
+   ],
+   "oracle_not_in_gt": [],
+   "gt_not_in_oracle": []
+  }
+ },
+ "band_independence": {
+  "claim": "ADR-007: the NDVI Red band IS this RGB camera's R channel, so the criterion-2 'second sensor' shares a band, a sensor, its optics, its mount and its frame clock with the primary one",
+  "method": "invert NDVI with rho_red = R/255 (ndvi_fusion.rescale_red:85-87) and report how many distinct rho_nir values the frame's red_levels collapse onto. THE COLLAPSE RATIO IS THE PROOF: only bit-for-bit band identity folds dozens of 8-bit red levels onto a handful of reflectances.",
+  "value_check": "the recovered values are gate2_summary.json's MEASURED mean_rho_nir (bird 0.040333 / soil 0.211666 / canopy 0.854167), NOT config/ndvi_camera.json's AUTHORED calibrated_rho_nir (0.05 / 0.20 / 0.85; -19.3 % / +5.8 % / +0.5 % apart). gate2 came from this same pipeline, so this is self-consistency against a same-pipeline artifact plus code identity -- NOT cross-validation against config.",
+  "frames": {
+   "real_flight_20260823T073644Z": [
+    {
+     "frame_id": 611,
+     "pixels": 307200,
+     "red_levels": 93,
+     "distinct_reconstructed_rho_nir": 3,
+     "collapse_ratio": 31.0,
+     "values": [
+      0.040333,
+      0.211666,
+      0.854167
+     ],
+     "all_within_unit_interval": true
+    },
+    {
+     "frame_id": 612,
+     "pixels": 307200,
+     "red_levels": 93,
+     "distinct_reconstructed_rho_nir": 3,
+     "collapse_ratio": 31.0,
+     "values": [
+      0.040333,
+      0.211666,
+      0.854167
+     ],
+     "all_within_unit_interval": true
+    }
+   ],
+   "real_flight_20260825T205705Z": [
+    {
+     "frame_id": 964,
+     "pixels": 307200,
+     "red_levels": 73,
+     "distinct_reconstructed_rho_nir": 3,
+     "collapse_ratio": 24.3,
+     "values": [
+      0.040333,
+      0.211666,
+      0.854167
+     ],
+     "all_within_unit_interval": true
+    },
+    {
+     "frame_id": 965,
+     "pixels": 307200,
+     "red_levels": 72,
+     "distinct_reconstructed_rho_nir": 3,
+     "collapse_ratio": 24.0,
+     "values": [
+      0.040333,
+      0.211666,
+      0.854167
+     ],
+     "all_within_unit_interval": true
+    }
+   ]
+  }
+ },
+ "features": {
+  "R": {
+   "feature": "R",
+   "bird": {
+    "n_px": 16686,
+    "min": 52.0,
+    "max": 144.0,
+    "mean": 91.93509528946421
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 52.0,
+    "max": 139.0,
+    "mean": 137.9983835916031
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 137.0,
+    "best_fnr": 0.04153182308522119,
+    "best_fpr": 0.0030261392617191214
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 0.9705741340045547,
+    "best_threshold": 140.0,
+    "best_fnr": 0.9705741340045547,
+    "best_fpr": 0.0
+   },
+   "empty_band_width_bird_low": -92.0,
+   "empty_band_width_bird_high": -87.0
+  },
+  "G": {
+   "feature": "G",
+   "bird": {
+    "n_px": 16686,
+    "min": 52.0,
+    "max": 143.0,
+    "mean": 89.15228335131248
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 71.0,
+    "max": 162.0,
+    "mean": 160.9583337915703
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.0025381537733281815,
+    "fnr_at_zero_fpr": 0.8475967877262376,
+    "best_threshold": 143.0,
+    "best_fnr": 0.0,
+    "best_fpr": 0.0025381537733281815
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 52.0,
+    "best_fnr": 0.0,
+    "best_fpr": 1.0
+   },
+   "empty_band_width_bird_low": -72.0,
+   "empty_band_width_bird_high": -110.0
+  },
+  "B": {
+   "feature": "B",
+   "bird": {
+    "n_px": 16686,
+    "min": 47.0,
+    "max": 120.0,
+    "mean": 82.69171760757521
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 47.0,
+    "max": 116.0,
+    "mean": 114.90806023439572
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 113.0,
+    "best_fnr": 0.05801270526189617,
+    "best_fpr": 0.00302613712292342
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 0.9696751767949179,
+    "best_threshold": 117.0,
+    "best_fnr": 0.9696751767949179,
+    "best_fpr": 0.0
+   },
+   "empty_band_width_bird_low": -73.0,
+   "empty_band_width_bird_high": -69.0
+  },
+  "min_channel": {
+   "feature": "min_channel",
+   "bird": {
+    "n_px": 16686,
+    "min": 47.0,
+    "max": 117.0,
+    "mean": 81.41070358384275
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 47.0,
+    "max": 116.0,
+    "mean": 114.90806023439572
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 113.0,
+    "best_fnr": 0.004195133644971816,
+    "best_fpr": 0.00302613712292342
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 0.9999400695193575,
+    "best_threshold": 117.0,
+    "best_fnr": 0.9999400695193575,
+    "best_fpr": 0.0
+   },
+   "empty_band_width_bird_low": -70.0,
+   "empty_band_width_bird_high": -69.0
+  },
+  "max_channel": {
+   "feature": "max_channel",
+   "bird": {
+    "n_px": 16686,
+    "min": 52.0,
+    "max": 144.0,
+    "mean": 93.70753925446482
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 79.0,
+    "max": 162.0,
+    "mean": 160.9584230698934
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.0026307115831615733,
+    "fnr_at_zero_fpr": 0.7639937672300132,
+    "best_threshold": 144.0,
+    "best_fnr": 0.0,
+    "best_fpr": 0.0026307115831615733
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 52.0,
+    "best_fnr": 0.0,
+    "best_fpr": 1.0
+   },
+   "empty_band_width_bird_low": -65.0,
+   "empty_band_width_bird_high": -110.0
+  },
+  "luminance": {
+   "feature": "luminance",
+   "bird": {
+    "n_px": 16686,
+    "min": 51.99999999999999,
+    "max": 137.315,
+    "mean": 89.24783962603381
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 71.371,
+    "max": 149.879,
+    "mean": 148.8435774962622
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.0030194156009664373,
+    "fnr_at_zero_fpr": 0.8399856166846458,
+    "best_threshold": 137.315,
+    "best_fnr": 0.0,
+    "best_fpr": 0.0030194156009664373
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 51.99999999999999,
+    "best_fnr": 0.0,
+    "best_fpr": 1.0
+   },
+   "empty_band_width_bird_low": -65.944,
+   "empty_band_width_bird_high": -97.87899999999999
+  },
+  "chroma_max_minus_min": {
+   "feature": "chroma_max_minus_min",
+   "bird": {
+    "n_px": 16686,
+    "min": 0.0,
+    "max": 58.0,
+    "mean": 12.296835670622078
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 23.0,
+    "max": 58.0,
+    "mean": 46.05036283549768
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 0.22911422749610455,
+    "best_threshold": 45.0,
+    "best_fnr": 0.1382596188421431,
+    "best_fpr": 0.0011769913942147148
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 48.0,
+    "best_fnr": 0.8759439050701187,
+    "best_fpr": 0.0015567124700745232
+   },
+   "empty_band_width_bird_low": -35.0,
+   "empty_band_width_bird_high": -58.0
+  },
+  "G_minus_R": {
+   "feature": "G_minus_R",
+   "bird": {
+    "n_px": 16686,
+    "min": -20.0,
+    "max": 36.0,
+    "mean": -2.782811938151744
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": -25.0,
+    "max": 55.0,
+    "mean": 22.959950199967203
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.9974338672142405,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 21.0,
+    "best_fnr": 0.001198609612849122,
+    "best_fpr": 6.568241598396629e-06
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 0.9999984593541632,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": -20.0,
+    "best_fnr": 0.0,
+    "best_fpr": 0.9999984593541632
+   },
+   "empty_band_width_bird_low": -61.0,
+   "empty_band_width_bird_high": -75.0
+  },
+  "G_minus_B": {
+   "feature": "G_minus_B",
+   "bird": {
+    "n_px": 16686,
+    "min": -6.0,
+    "max": 42.0,
+    "mean": 6.4605657437372646
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 23.0,
+    "max": 55.0,
+    "mean": 46.050273557174584
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.0008219712699081082,
+    "fnr_at_zero_fpr": 0.22911422749610455,
+    "best_threshold": 42.0,
+    "best_fnr": 0.0,
+    "best_fpr": 0.0008219712699081082
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": -6.0,
+    "best_fnr": 0.0,
+    "best_fpr": 1.0
+   },
+   "empty_band_width_bird_low": -19.0,
+   "empty_band_width_bird_high": -61.0
+  },
+  "ExG_2G_minus_R_minus_B": {
+   "feature": "ExG_2G_minus_R_minus_B",
+   "bird": {
+    "n_px": 16686,
+    "min": -6.0,
+    "max": 72.0,
+    "mean": 3.677753805585521
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 4.0,
+    "max": 110.0,
+    "mean": 69.01022375714179
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.9974197746893654,
+    "fnr_at_zero_fpr": 0.24841184226297497,
+    "best_threshold": 64.0,
+    "best_fnr": 0.0002996524032122805,
+    "best_fpr": 3.0949799660218655e-05
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": -6.0,
+    "best_fnr": 0.0,
+    "best_fpr": 1.0
+   },
+   "empty_band_width_bird_low": -68.0,
+   "empty_band_width_bird_high": -116.0
+  },
+  "GRVI": {
+   "feature": "GRVI",
+   "bird": {
+    "n_px": 16686,
+    "min": -0.08074534161490683,
+    "max": 0.1956521739130435,
+    "mean": -0.012607842401944819
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": -0.11801242236024845,
+    "max": 0.2517985611510791,
+    "mean": 0.07695006334257264
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.9970508039136317,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 0.07017543859649122,
+    "best_fnr": 0.00305645451276515,
+    "best_fpr": 6.273800723530916e-06
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 0.9999956760680241,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": -0.08074534161490683,
+    "best_fnr": 0.0,
+    "best_fpr": 0.9999956760680241
+   },
+   "empty_band_width_bird_low": -0.3136645962732919,
+   "empty_band_width_bird_high": -0.33254390276598594
+  },
+  "norm_green": {
+   "feature": "norm_green",
+   "bird": {
+    "n_px": 16686,
+    "min": 0.3261802575107296,
+    "max": 0.4263565891472868,
+    "mean": 0.33744581515335176
+   },
+   "background": {
+    "n_px": 1402658514,
+    "min": 0.33969465648854963,
+    "max": 0.45549738219895286,
+    "mean": 0.38896933618141166
+   },
+   "bird_is_LOW": {
+    "fpr_at_zero_fnr": 0.9970508039136317,
+    "fnr_at_zero_fpr": 0.24841184226297497,
+    "best_threshold": 0.3872053872053872,
+    "best_fnr": 0.002397219225698244,
+    "best_fpr": 6.275226587331719e-06
+   },
+   "bird_is_HIGH": {
+    "fpr_at_zero_fnr": 1.0,
+    "fnr_at_zero_fpr": 1.0,
+    "best_threshold": 0.3261802575107296,
+    "best_fnr": 0.0,
+    "best_fpr": 1.0
+   },
+   "empty_band_width_bird_low": -0.08666193265873717,
+   "empty_band_width_bird_high": -0.12931712468822326
+  }
+ },
+ "derived_threshold": {
+  "feature": "GRVI",
+  "polarity": "bird is LOW",
+  "bird_mean_grvi": -0.012607842401944819,
+  "bird_px": 16686,
+  "background_mean_grvi": 0.07695006334257264,
+  "background_px": 1402658514,
+  "midpoint": 0.03217111047031391,
+  "rounded_4dp": 0.0322,
+  "constant_in_baseline_rgb": 0.0322,
+  "construction": "class-mean midpoint -- the same construction that produced the NDVI arm's -0.61 from eval/results/gate2_summary.json",
+  "at_shipped_threshold": {
+   "bird_px": 16686,
+   "background_px": 1402658514,
+   "fnr": 0.03601821886611534,
+   "fpr": 5.111008793976493e-06
+  },
+  "pixel_rates_by_threshold": {
+   "0": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.7932398417835311,
+    "fpr": 4.848649854628837e-06
+   },
+   "0.005": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.04129210116265136,
+    "fpr": 4.855779173632849e-06
+   },
+   "0.01": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.03907467337888049,
+    "fpr": 4.891425768652911e-06
+   },
+   "0.02": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.03805585520795873,
+    "fpr": 5.041141467737172e-06
+   },
+   "0.0322": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.03601821886611534,
+    "fpr": 5.111008793976493e-06
+   },
+   "0.05": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.024092053218266796,
+    "fpr": 5.664956880588257e-06
+   },
+   "0.07": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.005154021335251113,
+    "fpr": 6.2295989457060396e-06
+   },
+   "0.0765": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.002996524032122694,
+    "fpr": 0.1781927457790343
+   },
+   "0.077": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.002996524032122694,
+    "fpr": 0.9969802721348612
+   },
+   "0.08": {
+    "bird_px": 16686,
+    "background_px": 1402658514,
+    "fnr": 0.0029365935514802377,
+    "fpr": 0.9969802764124526
+   }
+  }
+ },
+ "pixel_ceiling": {
+  "in_sample": {
+   "bird_px": 16686,
+   "background_px": 1402658514,
+   "colours_bird_only": 503,
+   "colours_background_only": 992,
+   "colours_in_both": 71,
+   "fnr_at_zero_fpr": 0.019237684286227977,
+   "fpr_at_zero_fnr": 1.9106574930753245e-07
+  },
+  "holdout": {
+   "leave_out_bird_0": {
+    "lut_learned_on_other_birds": {
+     "bird_px": 8401,
+     "background_px": 1402658514,
+     "fnr": 0.999761933103202,
+     "fpr": 1.3403119727543321e-07
+    },
+    "grvi_threshold_rule": {
+     "bird_px": 8401,
+     "background_px": 1402658514,
+     "fnr": 0.03154386382573504,
+     "fpr": 5.111008793976493e-06
+    }
+   },
+   "leave_out_bird_1": {
+    "lut_learned_on_other_birds": {
+     "bird_px": 3565,
+     "background_px": 1402658514,
+     "fnr": 1.0,
+     "fpr": 1.4900276718385928e-07
+    },
+    "grvi_threshold_rule": {
+     "bird_px": 3565,
+     "background_px": 1402658514,
+     "fnr": 0.009537166900420724,
+     "fpr": 5.111008793976493e-06
+    }
+   },
+   "leave_out_bird_2": {
+    "lut_learned_on_other_birds": {
+     "bird_px": 4720,
+     "background_px": 1402658514,
+     "fnr": 0.9997881355932203,
+     "fpr": 1.005233979565749e-07
+    },
+    "grvi_threshold_rule": {
+     "bird_px": 4720,
+     "background_px": 1402658514,
+     "fnr": 0.06398305084745759,
+     "fpr": 5.111008793976493e-06
+    }
+   },
+   "train_real_flight_20260823T073644Z_test_real_flight_20260825T205705Z": {
+    "lut_learned_on_the_other_clip": {
+     "bird_px": 3252,
+     "background_px": 1016828748,
+     "fnr": 0.006150061500615034,
+     "fpr": 3.5404191778417345e-08
+    },
+    "grvi_threshold_rule": {
+     "bird_px": 3252,
+     "background_px": 1016828748,
+     "fnr": 0.03198031980319804,
+     "fpr": 3.6525324518067225e-06
+    }
+   }
+  }
+ },
+ "per_bird": {
+  "bird_0": {
+   "bird_px": 8401,
+   "GRVI": {
+    "feature": "GRVI",
+    "bird": {
+     "n_px": 8401,
+     "min": 0.0,
+     "max": 0.1956521739130435,
+     "mean": 0.002333411395820644
+    },
+    "background": {
+     "n_px": 1402658514,
+     "min": -0.11801242236024845,
+     "max": 0.2517985611510791,
+     "mean": 0.07695006334257264
+    },
+    "bird_is_LOW": {
+     "fpr_at_zero_fnr": 0.9970508039136317,
+     "fnr_at_zero_fpr": 1.0,
+     "best_threshold": 0.07017543859649122,
+     "best_fnr": 0.006070705868349013,
+     "best_fpr": 6.273800723530916e-06
+    },
+    "bird_is_HIGH": {
+     "fpr_at_zero_fnr": 0.9999951513501454,
+     "fnr_at_zero_fpr": 1.0,
+     "best_threshold": 0.07853403141361257,
+     "best_fnr": 0.99404832758005,
+     "best_fpr": 0.003019726439275012
+    },
+    "empty_band_width_bird_low": -0.3136645962732919,
+    "empty_band_width_bird_high": -0.2517985611510791
+   }
+  },
+  "bird_1": {
+   "bird_px": 3565,
+   "GRVI": {
+    "feature": "GRVI",
+    "bird": {
+     "n_px": 3565,
+     "min": -0.08074534161490683,
+     "max": 0.049586776859504134,
+     "mean": -0.06911909320614835
+    },
+    "background": {
+     "n_px": 1402658514,
+     "min": -0.11801242236024845,
+     "max": 0.2517985611510791,
+     "mean": 0.07695006334257264
+    },
+    "bird_is_LOW": {
+     "fpr_at_zero_fnr": 5.635726672671806e-06,
+     "fnr_at_zero_fpr": 1.0,
+     "best_threshold": 0.049586776859504134,
+     "best_fnr": 0.0,
+     "best_fpr": 5.635726672671806e-06
+    },
+    "bird_is_HIGH": {
+     "fpr_at_zero_fnr": 0.9999956760680241,
+     "fnr_at_zero_fpr": 1.0,
+     "best_threshold": -0.08074534161490683,
+     "best_fnr": 0.0,
+     "best_fpr": 0.9999956760680241
+    },
+    "empty_band_width_bird_low": -0.16759919921975258,
+    "empty_band_width_bird_high": -0.33254390276598594
+   }
+  },
+  "bird_2": {
+   "bird_px": 4720,
+   "GRVI": {
+    "feature": "GRVI",
+    "bird": {
+     "n_px": 4720,
+     "min": 0.0,
+     "max": 0.06837606837606838,
+     "mean": 0.003481381318808971
+    },
+    "background": {
+     "n_px": 1402658514,
+     "min": -0.11801242236024845,
+     "max": 0.2517985611510791,
+     "mean": 0.07695006334257264
+    },
+    "bird_is_LOW": {
+     "fpr_at_zero_fnr": 6.196804078287582e-06,
+     "fnr_at_zero_fpr": 1.0,
+     "best_threshold": 0.06837606837606838,
+     "best_fnr": 0.0,
+     "best_fpr": 6.196804078287582e-06
+    },
+    "bird_is_HIGH": {
+     "fpr_at_zero_fnr": 0.9999951513501454,
+     "fnr_at_zero_fpr": 1.0,
+     "best_threshold": 0.0,
+     "best_fnr": 0.0,
+     "best_fpr": 0.9999951513501454
+    },
+    "empty_band_width_bird_low": -0.18638849073631683,
+    "empty_band_width_bird_high": -0.2517985611510791
+   }
+  }
+ },
+ "attribution": {
+  "components": 26,
+  "positionally_confident": 23,
+  "apparent_size_agrees_on_confident": 23,
+  "resolved_by_apparent_size": [
+   {
+    "frame_id": 613,
+    "n_px": 1769,
+    "positional_bird": "bird_1",
+    "positional_dist_px": 233.4,
+    "size_bird": "bird_0",
+    "depth_from_size_m": 3.94,
+    "attributed": "bird_0",
+    "attribution": "apparent-size (positional label was lagged)",
+    "clip": "real_flight_20260823T073644Z"
+   },
+   {
+    "frame_id": 677,
+    "n_px": 569,
+    "positional_bird": "bird_2",
+    "positional_dist_px": 228.2,
+    "size_bird": "bird_1",
+    "depth_from_size_m": 6.96,
+    "attributed": "bird_1",
+    "attribution": "apparent-size (positional label was lagged)",
+    "clip": "real_flight_20260823T073644Z"
+   },
+   {
+    "frame_id": 739,
+    "n_px": 327,
+    "positional_bird": "bird_2",
+    "positional_dist_px": 119.3,
+    "size_bird": "bird_2",
+    "depth_from_size_m": 9.17,
+    "attributed": "bird_2",
+    "attribution": "apparent-size (positional label was lagged)",
+    "clip": "real_flight_20260823T073644Z"
+   }
+  ],
+  "note": "the apparent-size rule is only used where the projected label was lagged; it is cross-checked against every positionally-confident component first, and it never looks at colour, so it cannot be circular with the study it feeds"
+ },
+ "detector_arm": {
+  "real_flight_20260823T073644Z": {
+   "a_ndvi_direct": {
+    "TP": 17,
+    "FP": 7,
+    "FN": 3,
+    "precision": 0.7083333333333334,
+    "recall": 0.85,
+    "fnr": 0.15,
+    "per_bird_track_fnr": 0.0,
+    "birds_with_visible_frames": 3,
+    "visible_bird_frames": 20,
+    "label_srcs": {
+     "applied": 20
+    },
+    "unscoreable_label_frames": 0,
+    "ambiguous_label_frames": 8,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "closest_range_m": 3.95,
+      "t_closest_s": 122.8,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_1",
+      "visible_frames": 5,
+      "matched_frames": 4,
+      "closest_range_m": 6.97,
+      "t_closest_s": 122.6,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_2",
+      "visible_frames": 13,
+      "matched_frames": 11,
+      "closest_range_m": 8.97,
+      "t_closest_s": 135.0,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 24,
+    "fp_vs_static_map": {
+     "fp_boxes": 7,
+     "inside_tree_geofence": 1,
+     "one_to_two_geofence_radii": 1,
+     "beyond_two_radii": 5,
+     "unprojectable": 0,
+     "geofence_radius_m": 2.0,
+     "beyond_examples": [
+      {
+       "frame_id": 671,
+       "nearest_tree_m": 10.57,
+       "enu_m": [
+        25.57,
+        24.94
+       ]
+      },
+      {
+       "frame_id": 677,
+       "nearest_tree_m": 6.08,
+       "enu_m": [
+        35.73,
+        30.66
+       ]
+      },
+      {
+       "frame_id": 679,
+       "nearest_tree_m": 4.61,
+       "enu_m": [
+        35.74,
+        26.76
+       ]
+      },
+      {
+       "frame_id": 739,
+       "nearest_tree_m": 6.64,
+       "enu_m": [
+        46.4,
+        36.75
+       ]
+      },
+      {
+       "frame_id": 742,
+       "nearest_tree_m": 4.45,
+       "enu_m": [
+        44.33,
+        36.04
+       ]
+      }
+     ]
+    }
+   },
+   "b_rgb_grvi": {
+    "TP": 17,
+    "FP": 58,
+    "FN": 3,
+    "precision": 0.22666666666666666,
+    "recall": 0.85,
+    "fnr": 0.15,
+    "per_bird_track_fnr": 0.0,
+    "birds_with_visible_frames": 3,
+    "visible_bird_frames": 20,
+    "label_srcs": {
+     "applied": 20
+    },
+    "unscoreable_label_frames": 0,
+    "ambiguous_label_frames": 8,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "closest_range_m": 3.95,
+      "t_closest_s": 122.8,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_1",
+      "visible_frames": 5,
+      "matched_frames": 4,
+      "closest_range_m": 6.97,
+      "t_closest_s": 122.6,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_2",
+      "visible_frames": 13,
+      "matched_frames": 11,
+      "closest_range_m": 8.97,
+      "t_closest_s": 135.0,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 75,
+    "fp_vs_static_map": {
+     "fp_boxes": 58,
+     "inside_tree_geofence": 52,
+     "one_to_two_geofence_radii": 1,
+     "beyond_two_radii": 5,
+     "unprojectable": 0,
+     "geofence_radius_m": 2.0,
+     "beyond_examples": [
+      {
+       "frame_id": 671,
+       "nearest_tree_m": 10.57,
+       "enu_m": [
+        25.57,
+        24.96
+       ]
+      },
+      {
+       "frame_id": 677,
+       "nearest_tree_m": 6.07,
+       "enu_m": [
+        35.75,
+        30.66
+       ]
+      },
+      {
+       "frame_id": 679,
+       "nearest_tree_m": 4.6,
+       "enu_m": [
+        35.74,
+        26.74
+       ]
+      },
+      {
+       "frame_id": 739,
+       "nearest_tree_m": 6.64,
+       "enu_m": [
+        46.4,
+        36.75
+       ]
+      },
+      {
+       "frame_id": 742,
+       "nearest_tree_m": 4.45,
+       "enu_m": [
+        44.33,
+        36.04
+       ]
+      }
+     ]
+    }
+   },
+   "birds_in_clip": 3,
+   "threshold_sweep": {
+    "0": {
+     "TP": 4,
+     "FP": 50,
+     "FN": 16,
+     "precision": 0.07407407407407407,
+     "recall": 0.2,
+     "per_bird_track_fnr": 0.6666666666666666,
+     "n_detections": 54
+    },
+    "0.005": {
+     "TP": 17,
+     "FP": 55,
+     "FN": 3,
+     "precision": 0.2361111111111111,
+     "recall": 0.85,
+     "per_bird_track_fnr": 0.0,
+     "n_detections": 72
+    },
+    "0.0322": {
+     "TP": 17,
+     "FP": 58,
+     "FN": 3,
+     "precision": 0.22666666666666666,
+     "recall": 0.85,
+     "per_bird_track_fnr": 0.0,
+     "n_detections": 75
+    },
+    "0.07": {
+     "TP": 17,
+     "FP": 61,
+     "FN": 3,
+     "precision": 0.21794871794871795,
+     "recall": 0.85,
+     "per_bird_track_fnr": 0.0,
+     "n_detections": 78
+    },
+    "0.077": {
+     "TP": 0,
+     "FP": 3,
+     "FN": 20,
+     "precision": 0.0,
+     "recall": 0.0,
+     "per_bird_track_fnr": 1.0,
+     "n_detections": 3
+    }
+   }
+  },
+  "real_flight_20260825T205705Z": {
+   "a_ndvi_direct": {
+    "TP": 2,
+    "FP": 0,
+    "FN": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fnr": 0.0,
+    "per_bird_track_fnr": 0.0,
+    "birds_with_visible_frames": 1,
+    "visible_bird_frames": 2,
+    "label_srcs": {
+     "applied": 2
+    },
+    "unscoreable_label_frames": 0,
+    "ambiguous_label_frames": 0,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "closest_range_m": 3.95,
+      "t_closest_s": 193.0,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 2,
+    "fp_vs_static_map": {
+     "fp_boxes": 0,
+     "inside_tree_geofence": 0,
+     "one_to_two_geofence_radii": 0,
+     "beyond_two_radii": 0,
+     "unprojectable": 0,
+     "geofence_radius_m": 2.0,
+     "beyond_examples": []
+    }
+   },
+   "b_rgb_grvi": {
+    "TP": 2,
+    "FP": 52,
+    "FN": 0,
+    "precision": 0.037037037037037035,
+    "recall": 1.0,
+    "fnr": 0.0,
+    "per_bird_track_fnr": 0.0,
+    "birds_with_visible_frames": 1,
+    "visible_bird_frames": 2,
+    "label_srcs": {
+     "applied": 2
+    },
+    "unscoreable_label_frames": 0,
+    "ambiguous_label_frames": 0,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "closest_range_m": 3.95,
+      "t_closest_s": 193.0,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 54,
+    "fp_vs_static_map": {
+     "fp_boxes": 52,
+     "inside_tree_geofence": 52,
+     "one_to_two_geofence_radii": 0,
+     "beyond_two_radii": 0,
+     "unprojectable": 0,
+     "geofence_radius_m": 2.0,
+     "beyond_examples": []
+    }
+   },
+   "birds_in_clip": 3,
+   "threshold_sweep": {
+    "0": {
+     "TP": 0,
+     "FP": 51,
+     "FN": 2,
+     "precision": 0.0,
+     "recall": 0.0,
+     "per_bird_track_fnr": 1.0,
+     "n_detections": 51
+    },
+    "0.005": {
+     "TP": 2,
+     "FP": 51,
+     "FN": 0,
+     "precision": 0.03773584905660377,
+     "recall": 1.0,
+     "per_bird_track_fnr": 0.0,
+     "n_detections": 53
+    },
+    "0.0322": {
+     "TP": 2,
+     "FP": 52,
+     "FN": 0,
+     "precision": 0.037037037037037035,
+     "recall": 1.0,
+     "per_bird_track_fnr": 0.0,
+     "n_detections": 54
+    },
+    "0.07": {
+     "TP": 2,
+     "FP": 55,
+     "FN": 0,
+     "precision": 0.03508771929824561,
+     "recall": 1.0,
+     "per_bird_track_fnr": 0.0,
+     "n_detections": 57
+    },
+    "0.077": {
+     "TP": 0,
+     "FP": 3,
+     "FN": 2,
+     "precision": 0.0,
+     "recall": 0.0,
+     "per_bird_track_fnr": 1.0,
+     "n_detections": 3
+    }
+   }
+  }
+ },
+ "rival_features": {
+  "why": "the pixel table's best rows are NOT the feature that shipped -- ExG and G-B beat GRVI on pixel FNR, and G-B beats it by three orders of magnitude on fpr_at_zero_fnr. Each rival is therefore run END TO END at its OWN class-mean midpoint (the identical construction GRVI's +0.0322 comes from) on the only clip whose 3-bird denominator can separate them. The pixel-dominant feature loses a whole bird; that is why the DETECTOR decides and the pixel table only shortlists.",
+  "clip": "real_flight_20260823T073644Z",
+  "shipped": "GRVI",
+  "results": {
+   "GRVI": {
+    "own_midpoint": 0.03217111047031391,
+    "bird_mean": -0.012607842401944819,
+    "background_mean": 0.07695006334257264,
+    "pixel": {
+     "bird_px": 16686,
+     "background_px": 1402658514,
+     "fnr": 0.03601821886611534,
+     "fpr": 5.111008793976493e-06
+    },
+    "TP": 17,
+    "FP": 58,
+    "FN": 3,
+    "precision": 0.22666666666666666,
+    "recall": 0.85,
+    "fnr": 0.15,
+    "per_bird_track_fnr": 0.0,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_1",
+      "visible_frames": 5,
+      "matched_frames": 4,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_2",
+      "visible_frames": 13,
+      "matched_frames": 11,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 75
+   },
+   "ExG_2G_minus_R_minus_B": {
+    "own_midpoint": 36.343988781363656,
+    "bird_mean": 3.677753805585521,
+    "background_mean": 69.01022375714179,
+    "pixel": {
+     "bird_px": 16686,
+     "background_px": 1402658514,
+     "fnr": 0.02067601582164691,
+     "fpr": 4.984819847605473e-06
+    },
+    "TP": 17,
+    "FP": 57,
+    "FN": 3,
+    "precision": 0.22972972972972974,
+    "recall": 0.85,
+    "fnr": 0.15,
+    "per_bird_track_fnr": 0.0,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_1",
+      "visible_frames": 5,
+      "matched_frames": 4,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_2",
+      "visible_frames": 13,
+      "matched_frames": 11,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 74
+   },
+   "G_minus_B": {
+    "own_midpoint": 26.255419650455924,
+    "bird_mean": 6.4605657437372646,
+    "background_mean": 46.050273557174584,
+    "pixel": {
+     "bird_px": 16686,
+     "background_px": 1402658514,
+     "fnr": 0.18979983219465424,
+     "fpr": 2.7226869276323375e-06
+    },
+    "TP": 13,
+    "FP": 48,
+    "FN": 7,
+    "precision": 0.21311475409836064,
+    "recall": 0.65,
+    "fnr": 0.35,
+    "per_bird_track_fnr": 0.3333333333333333,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_1",
+      "visible_frames": 5,
+      "matched_frames": 0,
+      "detected_before_closest": false
+     },
+     {
+      "bird_id": "bird_2",
+      "visible_frames": 13,
+      "matched_frames": 11,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 61
+   },
+   "G_minus_R": {
+    "own_midpoint": 10.088569130907729,
+    "bird_mean": -2.782811938151744,
+    "background_mean": 22.959950199967203,
+    "pixel": {
+     "bird_px": 16686,
+     "background_px": 1402658514,
+     "fnr": 0.02217427783770831,
+     "fpr": 5.530925683312824e-06
+    },
+    "TP": 17,
+    "FP": 61,
+    "FN": 3,
+    "precision": 0.21794871794871795,
+    "recall": 0.85,
+    "fnr": 0.15,
+    "per_bird_track_fnr": 0.0,
+    "per_bird": [
+     {
+      "bird_id": "bird_0",
+      "visible_frames": 2,
+      "matched_frames": 2,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_1",
+      "visible_frames": 5,
+      "matched_frames": 4,
+      "detected_before_closest": true
+     },
+     {
+      "bird_id": "bird_2",
+      "visible_frames": 13,
+      "matched_frames": 11,
+      "detected_before_closest": true
+     }
+    ],
+    "n_detections": 78
+   }
+  }
+ },
+ "elapsed_s": 210.5,
+ "verdict": {
+  "authored_by": "perception-ml-engineer, 2026-08-26",
+  "recommendation": "RETIRE-ARM",
+  "answer": "baseline_rgb's 1.000 FNR measured a wrong FEATURE, not a wrong sign: min-channel cannot beat FNR 0.99994 in the shipped polarity and costs 482.3x GRVI's false-positive rate when flipped. The real signal on this world is chromatic -- soil and canopy are green-dominant, all three bird materials are not -- and GRVI < +0.0322 drives the SAME blob detector to EXACTLY the NDVI arm's safety numbers (identical TP/FN/recall/frame-FNR, per-bird-track FNR 0.000 on both clips) while losing precision 0.227 vs 0.708 (n=20 bird-frames, 3 birds) and 0.037 vs 1.000 (n=2, 1 bird). All 103 false positives the RGB arm adds land inside the 2 m ADR-001 tree geofence: the trunk material 0.35/0.22/0.10 and bird_1's 0.30/0.22/0.10 are the same brown to 0.05 in red, and the trunk is the MORE bird-like of the two, so per-bird fnr_at_zero_fpr is 1.000 for every bird -- no threshold catches a bird pixel without also catching trunk. The thermal band resolves them (ADR-007 gate 2: trunk -0.026 vs bird -0.789); the visible bands cannot.",
+  "reasoning": "RETIRE as an OPEN criterion-2 item, not because the arm failed -- it works now and its result is banked -- but because `band_independence` above MEASURES that it is not a second sensor: inverting NDVI with rho_red = R/255 collapses dozens of distinct 8-bit red levels onto 3 rho_nir values (gate2's MEASURED means, not config's authored ones -- the collapse is the proof, not the value match), so the arm shares a band, a sensor, its optics, its mount and its frame clock with the primary instrument. It contributes G and B and nothing geometric, while the measured bottleneck is geometric (2.48 m sensor horizon, 0.175 s of lead at the flown 9.4 m/s; 5 of 7 in-cylinder frames 1.4-7.8 m outside the image edge). Criterion 2's remaining budget belongs to ADR-017's forward-facing sensor, priced in geometry.",
+  "closes": [
+   "baseline_rgb's 1.000 FNR is retired as a claim about RGB's ceiling",
+   "'could RGB have matched the adopted detector?' -- on safety yes exactly, on precision no",
+   "'should min-channel's polarity be flipped?' -- no, it is the wrong feature either way",
+   "'why not the feature that tops the pixel table?' -- because it loses a bird. G-B beats GRVI on pixel FNR (0.00082 vs 0.00306) and by 3 orders of magnitude on fpr_at_zero_fnr, and at its own midpoint it scores per-bird-track FNR 0.333: bird_1, 0 of 5 frames, never detected before closest approach -- its brown G-B of 24 sits on the background minimum of 23. GRVI, ExG and G-R all hold 0.000 at precision 0.227 / 0.230 / 0.218, statistically the same. The DETECTOR decides; the pixel table only shortlists (see rival_features).",
+   "ADR-003's ADOPT now rests on a WORKING comparison arm; decision rule unchanged, gap 0.000"
+  ],
+  "does_not_close": [
+   "the -0.61 NDVI threshold's PROVISIONAL flag. Its RANGE half is NARROWED, not closed: this study measures bird cores at 3.9 / 6.9 / 9.0 m depth all reading <= -0.8276, so the 'only ever exercised at ~4 m' line in ADR-003 am. 9 / ROADMAP item 3 is true of the 08-25 clip and understates the adopted 08-23 one. Still unmeasured beyond ~11 m; the r_px ~ 2.2 -> ~40 m bound stays DERIVED; n=20 with 8 label-ambiguous stands.",
+   "anything needing a different mount or sensor (ADR-017's forward-facing camera) -- that is a geometry question for predict_bird_visibility.py over a new extrinsic, then a flight. Not closable offline on the committed clips, at all.",
+   "generalisation past this world: one lighting condition and four authored material constants. NDVI's empty band is a property of the authored scene as much as of NDVI."
+  ],
+  "carry_forward": "tree trunks and bird_1 are the same colour to a visible-band sensor. Harmless only while every brown object is in config/static_obstacles.json -- a fence post, a bale or a second vehicle would be dodged by the RGB arm and invisible to the NDVI arm. **v1 flies NDVI-only, so the LIVE failure mode is the invisible brown object, not the cry-wolf dodge** -- an unsurveyed warm-signature-less obstacle reads as background to the shipped detector, and a missed obstacle is a safety bug where a wasted dodge is not."
+ }
+}

@@ -64,6 +64,11 @@ secrets/
 # detections, spike_scores; overlays excluded below as regenerable imagery)
 !eval/results/adr003_*/
 eval/results/adr003_*/overlays/
+# ADR-003 criterion 2's RGB pixel study (~28 KB of summary metrics, no frames). Committed for the
+# same reason as the applied-pose logs: eval/baseline_rgb.py's real-render threshold is DERIVED
+# from the class means in this results.json, and tests/fieldguard_planning/test_rgb_pixel_study.py
+# recomputes it from here — without the file the constant loses its evidence.
+!eval/results/criterion2_rgb_study_*/
 !eval/results/clips/
 eval/results/clips/*
 !eval/results/clips/real_flight_*/

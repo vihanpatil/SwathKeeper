@@ -57,10 +57,12 @@ what limits detection range** (see [[sensor-horizon-vs-threat-cylinder]]). PROVI
 lifted on a clip with birds at 3+ distinct ranges, not on another pass at 4 m.
 
 **Still open:**
-- **−0.61 stays PROVISIONAL** (FP side now strong, range side untested, n=1 bird).
-- **Criterion 2 has no comparison arm.** `baseline_rgb`'s "bright + achromatic" birdness is
-  INVERTED on this world, so its 1.000 FNR measures the wrong signal. The 2026-08-25 clip ships
-  3310 real RGB PNGs — the input an independent RGB pixel study needs, unused so far.
+- **−0.61 stays PROVISIONAL**, but the reason narrowed again on 2026-08-26: the range side IS
+  exercised at 3.9 / 6.9 / 9.0 m on the adopted clip (all cores ≤ −0.8276), so "only ever at ~4 m"
+  describes the 08-25 clip alone. What is left: nothing beyond ~11 m, and n=20 with 8 ambiguous.
+- ~~**Criterion 2 has no comparison arm.**~~ **ANSWERED 2026-08-26** — the arm works now
+  (GRVI, not min-channel) and matches NDVI on every safety metric at 0.227 precision vs 0.708.
+  See [[criterion2-rgb-study]]; recommendation to product-lead is RETIRE-ARM, unratified.
 
 **How to apply:** quote every rate with its denominator attached. Any new detector claim re-runs
 `eval/run_spike.sh` + `scripts/check_spike_regression.py`. See [[bird-label-timing]] for why real

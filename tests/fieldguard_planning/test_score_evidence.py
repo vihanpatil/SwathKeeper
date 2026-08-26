@@ -201,14 +201,16 @@ class TestRgbArmSurvivesPartialRgbClips(unittest.TestCase):
         clip = self._clip([{"frame_id": 0, "rgb_path": "frames/rgb/frame_000000.png"},
                            {"frame_id": 1},
                            {"frame_id": 2, "rgb_path": "frames/rgb/frame_000002.png"}])
-        frames, skipped = baseline_rgb.run(clip, thresh=110, min_area=6, max_area=5000)
+        frames, skipped = baseline_rgb.run(clip, baseline_rgb.SYNTHETIC_BIRDNESS,
+                                           min_area=6, max_area=5000)
         self.assertEqual([f["frame_id"] for f in frames], [0, 2])
         self.assertEqual(skipped, [1])
 
     def test_full_rgb_clip_skips_nothing(self):
         clip = self._clip([{"frame_id": i, "rgb_path": f"frames/rgb/frame_{i:06d}.png"}
                            for i in range(3)])
-        frames, skipped = baseline_rgb.run(clip, thresh=110, min_area=6, max_area=5000)
+        frames, skipped = baseline_rgb.run(clip, baseline_rgb.SYNTHETIC_BIRDNESS,
+                                           min_area=6, max_area=5000)
         self.assertEqual(len(frames), 3)
         self.assertEqual(skipped, [])
 

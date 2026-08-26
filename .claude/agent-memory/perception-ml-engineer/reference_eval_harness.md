@@ -16,6 +16,11 @@ Pipeline: `annotate_real_clip.py` (real clips: bird labels from the driver's app
 `label_from_sim.py` (poses → GT boxes via the ONE `ndvi_georef.project_world_point` primitive) →
 `baseline_ndvi.py` / `baseline_rgb.py` → `score.py`. One-shot: `eval/run_spike.sh` with `CLIP=` /
 `RESULTS=` env overrides.
+**Both baselines now resolve their signal per render from `meta.json`** (`baseline_rgb.resolve_birdness`
+mirrors `baseline_ndvi.resolve_threshold` and refuses a clip that does not declare `synthetic`):
+synthetic = min-channel > 110, real render = GRVI < +0.0322 (2026-08-26, [[criterion2-rgb-study]]).
+`rgb_pixel_study.py` is the criterion-2 evidence generator — manual, ~3 min, needs the gitignored
+frames; its `results.json` IS committed because the RGB threshold is recomputed from it by test.
 
 **Scoring a real clip without mutating it.** Everything downstream of `annotate_real_clip.py` reads
 `<clip>/poses.jsonl` and nothing else, so the documented path is `--in-place`. When that is not
