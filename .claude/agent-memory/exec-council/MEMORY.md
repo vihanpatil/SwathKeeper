@@ -4,4 +4,5 @@
   hole, but value mislabeled (evidence culture + ledger are the asset; bird framing is proxy;
   full-stack-wholesale <5 % odds → demonstrator-hybrid); actuation blind spot found (84 maneuvers,
   0.5–4 % compliance, confound resolvable offline); next session = point-mass replay + cheap
-  honesty fixes, then ONE re-fly, then Week 7 immediately; tripwires inside.
+  honesty fixes, then ONE re-fly, then Week 7 immediately; tripwires inside. **RATIFIED by the
+  user 2026-08-25 — binding; recorded as ADR-016 + ROADMAP entries.**

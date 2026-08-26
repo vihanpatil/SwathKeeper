@@ -15,7 +15,7 @@ nothing gets added to scope without something else being cut in the same breath,
 | Weeks 1-2 — sim foundation + detection decision | ✅ complete (2026-08-04) |
 | Weeks 3-4 — reactive avoidance + coverage-debt loop | ✅ complete, **demonstrated live** (2026-08-05); first FULL ledger closure **720/0**, 19/19 vetted, on the current stack (2026-08-23, ADR-013 am. 11). **Safety asterisk (am. 12):** both historical avoidance flights breached bird clearance at ~5 cm under green gates. CPA is now a gated metric (R1 shipped); R2/R3 landed 2026-08-24 and await their live gate |
 | Week 5 — NDVI pipeline | ✅ closed. Four ADR-007 gates green live; mount geometry corrected + gated (2.2 px). **Recording throughput CLOSED 2026-08-22** (ADR-013 am. 9): the Fast DDS SHM segment was the root cause — 100 % delivery on both bands, painting cadence 0.41 → **5.0 Hz flat**, and the first full-grid map, **720/720 cells**, 18/18 trees imaged / 14 canopy-grade (am. 10) |
-| Week 6 — real detector on the seam + comparison arm | 🟡 **FLOWN 2026-08-25 — half live-gated, and the pre-registered breach happened.** The seam flew on one clock; the detector ran **1301/1302 frames = 99.92 %** in the air against a 90 % floor; R2 passed live (4 maneuvers accepted, min swept clearance 1.340 m ≥ 1.0, 8 candidate rejections); the ledger closed **720 covered / 0 debt**, 1858/1858 truth ticks, 0 clock-domain violations; the NDVI half is the best take yet (720/720 cells, **18/18 trees imaged, 11/18 canopy-grade, median lift +0.5562** vs the adopted clip's 9/18 / +0.5402). **The take is INVALID: `gt_cpa_m` 0.0067 m to bird_0, `gt_cpa_gated_m` −1.1210 m against the 3.00 m bar.** Marker written; **pin deliberately not added** — the record stands INVALID/exit 1 until re-flown after R4. Detail below. Still open: criterion 2's RGB study; −0.61 stays **PROVISIONAL** (background half now done, range half not) |
+| Week 6 — real detector on the seam + comparison arm | 🟡 **FLOWN 2026-08-25 — half live-gated, and the pre-registered breach happened.** The seam flew on one clock; the detector ran **1301/1302 frames = 99.92 %** in the air against a 90 % floor; R2 passed live (4 maneuvers accepted, min swept clearance 1.340 m ≥ 1.0, 8 candidate rejections); the ledger closed **720 covered / 0 debt**, 1858/1858 truth ticks, 0 clock-domain violations; the NDVI half is the best take yet (720/720 cells, **18/18 trees imaged, 11/18 canopy-grade, median lift +0.5562** vs the adopted clip's 9/18 / +0.5402). **The take is INVALID: `gt_cpa_m` 0.0067 m to bird_0, `gt_cpa_gated_m` −1.1210 m against the 3.00 m bar.** Marker written; **pin deliberately not added** — the record stands INVALID/exit 1 until re-flown after R4. Detail below. **2026-08-26 offline arc (ADR-016 executed):** the point-mass replay resolved the actuation confound and **fired the ADR-017 tripwire** (no safe nadir speed exists → second forward sensor promoted to scope); the honesty-fix bundle landed through three QA rounds; the legacy CPA gate's vertex-only geometry fixed red-first (the one "passing" fixture was a direct hit); **criterion 2 CLOSED — RETIRE-ARM** (the arm shares the primary's band/aperture/mount/clock; ADOPT re-confirmed against a *working* arm, gap +0.000); −0.61 stays **PROVISIONAL**, now narrowed (background half done; range half exercised to a 2.3× depth span, open beyond ~11 m) |
 | Week 7 — dashboard, demo video, README/GTM | ⏳ not started (deliberately last) |
 
 ### The 2026-08-25 take — what it measured (the system working)
@@ -38,9 +38,11 @@ Two gates were green on top of it — the 99.92 % detect rate and the ledger —
 instance of the standing trap: **gates that measure VALUES cannot catch GEOMETRY.**
 
 Also measured, and load-bearing for the next booking: the runbook's own §0b abort gate
-(`predict_bird_visibility.py`) **PASSes at its 3.0 m/s default and FAILs at the ~9.4 m/s the encounter
-was actually flown**. Its `DEFAULT_SPEED_MPS` provenance cites a file that contains no speed figure.
-That default is what booked a 2-frame encounter.
+(`predict_bird_visibility.py`) **PASSed at its then-3.0 m/s default and FAILs at the ~9.4 m/s the
+encounter was actually flown**. That default's provenance cited a file containing no speed figure,
+and it is what booked a 2-frame encounter. **CLOSED 2026-08-25 (ADR-016):** `--speed` is now
+REQUIRED with no default (a missing speed exits 2 — a refusal, distinct from PASS 0 / FAIL 1), and
+the gate FAILs the committed geometry at every speed the vehicle actually flies.
 
 Quote **671 airborne / 649 painting** frames from this clip, never `num_frames` 3310 — teardown was
 skipped, so 2639 frames are a parked drone below the ground plane (all zero-update; the honest
@@ -97,8 +99,11 @@ cannot sit un-run — and also gates seed-42 FNR (`check_spike_regression.py`) a
 (`check_live_flight_log.py` over the two **committed** `eval/results/live_flight_log_*.json`). That
 evidence step is **no longer vacuous**: it prints the file count every run and hard-FAILs on zero,
 where before it printed SKIP…PASS and went green having validated nothing.
-Public main is **behind**: everything since 2026-08-22 — throughput round 3, ADR-003 am. 7, R1, and
-today's four — lives on `feat/throughput-instrumentation`. Full narrative: `docs/BUILD_LOG.md`.
+Public main is **current as of 2026-08-25** (the take evidence went to main directly —
+`3c08d82`, a clean fast-forward, no PR; main CI is **red by design** on the pre-registered
+half-acknowledgement until the clean re-fly). The 2026-08-26 session's work (ADR-016 execution:
+replay + bundle + gate CPA fix + criterion-2 closure) is in the working tree, **uncommitted**.
+Full narrative: `docs/BUILD_LOG.md`.
 
 ## Standing traps (learned the expensive way; still live)
 
@@ -108,11 +113,20 @@ today's four — lives on `feat/throughput-instrumentation`. Full narrative: `do
   2026-08-21 take's "454 frames" read five times better than the 51-frame artifact it produced.
 - **Cells imaged is not the metric.** Three pre-mount-fix clips imaged *more* cells and *more* trees
   and returned **zero** canopy-grade trees, with every positive cell 6.4-11.9 m off any tree.
-- **Run the host predictor before booking any flight** (`scripts/predict_bird_visibility.py`, ~1 s).
+- **Run the host predictor before booking any flight**
+  (`scripts/predict_bird_visibility.py --speed <the mission's actual speed>`, ~1 s; `--speed` is
+  required and has no default since ADR-016).
   **Run it at the speed the mission will actually fly** — 2026-08-25 proved the default is the defect:
   PASS at the 3.0 m/s default, FAIL at `--speed 8` and `--speed 9.4`, and the take flew ~9.4 and got
   2 bird-visible frames of 3310. The published medians 8/6/11 are the 3 m/s figure. **Refuse the
   session on medians 0/0/1** — that is how the 2026-08-21 take produced 0 of 454.
+- **No speed makes nadir safe on the flown encounter geometry (2026-08-26, QA-confirmed).** Do not
+  book a nadir real-detection avoidance take expecting a GT-CPA green: bird_0's own 6.0 m/s closing
+  speed caps sensor lead at 0.41 s *from a hover*, and every escape needs ≥1.25 s. §0b now refuses
+  every real booking speed on this geometry — that refusal is the gate working (ADR-017 am. 1).
+- **The §0b visibility medians are NOT monotone in speed** (lane-arrival phase aliasing; measured
+  2026-08-26): sweep the mission's speed range, never assume "faster is conservative". And a
+  `guided_ceiling` resume in any flight log makes that take **diagnostic, not evidence**.
 - **One open question, unproven at n=3, no ADR until someone separates it:** trees sitting *under* a
   flight lane read soil-grade (+0.000 / +0.614 / +0.622) while trees imaged from *between* lanes read
   +0.85…+0.92. Parallax fill vs sample poverty are both consistent. It would matter for the NDVI
@@ -120,44 +134,47 @@ today's four — lives on `feat/throughput-instrumentation`. Full narrative: `do
 
 ## Next up, in order
 
-1. **R4 — escape geometry, promoted from RECORDED-OPEN by measurement, not by appetite.** The
-   one-line evidence: **0.0067 m horizontal overflight of bird_0 at 4.03 m vertical separation while
-   the loop was engaged, with 1.8 cm of lateral displacement flown.** R4 was deferred 2026-08-24 with
-   the promotion condition written down — "a flight that fails its own GT-CPA gate is the measurement
-   that would promote R4" — and that flight has now happened. **Something is cut to pay for it: see
-   the 2026-08-25 cut-log line.**
+**2026-08-25 — Council Ruling 001 RATIFIED (ADR-016). 2026-08-26 — its item 1 EXECUTED and the
+tripwire FIRED.** The point-mass confound-resolver ran over all three committed flights, survived
+two adversarial QA rounds, and answered everything it was built to answer (ADR-016 am. 2,
+ADR-017 am. 1). The honesty-fix bundle landed the same session through three QA rounds (ADR-016
+am. 1), the legacy CPA gate's vertex-only geometry was found and fixed red-first (ADR-013 am. 19),
+and criterion 2 closed (ADR-003; RETIRE-ARM — the comparison arm measurably shares its band,
+aperture, mount and clock with the primary sensor).
 
-   **R4 must be re-scoped before it is built, and it cannot ship alone.** Price it against the
-   **0.175 s of sensor lead and 0.4 s of in-image dwell that were actually available**, not against
-   the policy's 12 m cylinder — the sensor horizon is 2.48 m. Three consequences:
-   - the reversal-preferring candidate order is structurally unavailable on lane x=15 (that lane *is*
-     tree row 0), so the fix cannot be candidate ordering alone;
-   - **gate R4 on lead time as well as CPA** — a green CPA on 0.175 s of lead is bought by luck;
-   - if R4 adopts a CLIMB, the gate will print `gt_cpa_m NONE-IN-BAND`, which must be read alongside
-     `min_horizontal_any_band_m` or it is a vacuous green.
+1. **DECIDED 2026-08-26 (user): (A) then (B) — Week 7 is the ACTIVE item (see item 6), then the
+   forward sensor + re-fly.** The user is looped in directly on README/doc shaping. Background —
+   the replay voided Ruling 001's "ONE re-fly, then Week 7" order by measurement:
+   **no speed makes nadir safe on the flown encounter** (`speed_at_which_nadir_becomes_safe = None`
+   across 81 cells × 3 plants; bird_0's own 6.0 m/s closing speed caps lead at 0.41 s from a hover;
+   every escape needs ≥ 1.25 s; nadir needs 17.8–38.8 m of forward sensing and has 2.48 m). Per
+   ADR-017's pre-written contingency the **second forward-facing sensor is promoted from growth
+   path to scope** — the tilt stays rejected — so a green re-fly requires the sensor first, and
+   the choice is:
+   - **(A) Week 7 now** — demo/README/dashboard on the honest story ("the system measured its own
+     sensor's limit and refused to fly what it can't pass"), sensor + re-fly after.
+     **Product-lead recommendation**, aligned with Ruling 001's visibility argument and its
+     tripwire (b), which forces the demo after two more sessions regardless.
+   - **(B) Forward sensor first** — multiple engineering sessions before anything is visible.
 
-   The cheapest lever is not R4 at all: **fix `DEFAULT_SPEED_MPS` (or make `--speed` required) and
-   re-run the §0b abort gate at the flown speed before booking anything.** Booking under the 3 m/s
-   default buys another 2-frame encounter.
+2. **R4, re-scoped by the replay (built AFTER the sequencing decision, WITH the sensor):** the
+   binding constraint is **lead time, not candidate ordering** — the 0° reversal never resolves at
+   any lead × plant, and the earliest physically-resolving lead on the flown encounter is
+   **1.25 s** (±90° forward sidesteps at the ANGLE_MAX ceiling; 2.00 s through the policy's
+   XY-only tree vet, which is a third confound R4's sizing must not inherit — relax it with
+   `is_safe_3d`, it is not a plant property). Gate R4 on **lead time as well as CPA**; a climb
+   prints `NONE-IN-BAND` and must be read beside `min_horizontal_any_band_m`. Also owed to the
+   next flight, whatever it is: record the **achieved flight mode per tick** in the schema-2 log
+   (the 2026-08-18 wrong-way anomaly — commanded 10 m south, flew 14.5 m north — cannot be
+   diagnosed offline without it), freeze `drive_birds.py` before scoring, and run teardown.
 
-   **Then the re-fly** — same runbook, same pre-registration, same one-outcome-that-fails-it
-   (an unscoreable artifact). Two things it must fix that this take exposed: freeze `drive_birds.py`
-   before scoring (the truth track grew 1348 → 2202 records *after* the flight log was written, so
-   this take's per-bird denominators are irreproducible), and **run teardown** — §4 step 2 was skipped
-   and nothing in `status` or the runbook noticed.
+   **Decision still owed before this session's marker/evidence pattern repeats:** the record shape
+   for committed breach evidence (CI runs the gate with no `--truth`; a second committed applied
+   track makes takes ambiguous and the CPA never prints). Product-lead call, unchanged.
 
-   **Decision owed before the marker/evidence set is committed:** CI runs the safety gate with no
-   `--truth`, and committing this take's applied track makes ≥2 candidates overlap → the log goes
-   INVALID for *ambiguous truth track* and the CPA breach is **never printed**. The two-half
-   acknowledgement has only ever run on legacy-pinned logs. Pick the record shape (keep evidence
-   uncommitted / prune the 2026-08-23 track / teach CI to pass `--truth` / sidecar-pinned truth)
-   **before** anything is committed. This is a product-lead call, not a build's.
-
-   **Open question this raises and I am not deciding by default: does the camera stay NADIR?** A
-   forward tilt is the single biggest lever on lead time (the detector has ~40 m of unusable range
-   headroom) — and nadir is what the entire NDVI half is built on, which this same clip scored its
-   best-ever tree gate with. Non-mount alternatives: fly encounter lanes slower, or fund criterion 2's
-   second sensor. Costs a `docs/DECISIONS.md` entry either way; ask the user, do not guess.
+   **DECIDED 2026-08-25 (user, ADR-017): the camera stays NADIR for v1** — sensor-honest speed
+   doctrine, second sensor as the lead-time path, tilt REJECTED. The contingency in that ADR
+   **fired 2026-08-26** (no safe speed exists): see item 1.
 
 <details>
 <summary>Superseded: the pre-flight plan for the 2026-08-25 take (kept for the pre-registration record)</summary>
@@ -233,7 +250,7 @@ today's four — lives on `feat/throughput-instrumentation`. Full narrative: `do
 
 </details>
 
-2. **Full boustrophedon + the short-vs-long evidence study, on the FINAL config.** ADR-013 am. 10
+3. **Full boustrophedon + the short-vs-long evidence study, on the FINAL config.** ADR-013 am. 10
    answered both questions as byproducts of one flight (n=1 per arm): run-age decay was segment
    exhaustion wearing a clock's clothes and is retired, and the long mission is the better evidence
    artifact too — same per-minute frame yield, **1.4× better on cells/min**, because it spreads frames
@@ -246,48 +263,67 @@ today's four — lives on `feat/throughput-instrumentation`. Full narrative: `do
    canopy-grade, median lift +0.5562, 5.0 Hz flat for a third independent flight. Its CPA verdict does
    not touch the NDVI half; only the short `test_2lane` arm and the write-up remain, offline.
 
-3. **Criterion 2 — the independent RGB pixel study (deferred 2026-08-24; see cut log).** ~1 h,
-   offline, and the clip already exists. Required because `baseline_rgb.py`'s "bright + achromatic"
-   birdness is **inverted on this world**: its 1.000 FNR measures the wrong signal and **must not be
-   quoted as RGB's ceiling** in any interview or README line. Same visit closes the −0.61 threshold's
-   PROVISIONAL flag, which needs false-positive characterisation (7 FP at n=20; on the adopted clip
-   the area filter rejected nothing, so those FPs are real blobs, not speck noise) — that is
-   perception-ml-engineer's call, not a build's. **The background half of that characterisation is now
-   DONE (2026-08-25):** across 3310 frames / 1.02 Gpx, **zero** non-bird pixels fall below −0.50 while
-   bird pixels top out at −0.6697 — a 0.229-wide empty band, so any threshold in it is bit-identical
-   on this clip. What remains is the **range** half: −0.61 has only ever been exercised at ~4 m depth
-   on a 47 px bird, so lifting PROVISIONAL needs a clip with birds at 3+ distinct ranges, not another
-   pass at 4 m. The take also handed criterion 2 its input for free: 3310 real 640×480 RGB PNGs, and a
-   concrete measured case (7 in-cylinder frames → 2 in-image on the single NDVI camera).
+4. **Criterion 2 — CLOSED 2026-08-26 (see the ADR-003 closure and the cut log): RETIRE-ARM.** The
+   independent RGB pixel study ran over both committed clips (4,566 frames / 1.40 Gpx / 16,686
+   measured bird pixels at 3.9/6.9/9.0 m) and answered everything the arm could answer: the old
+   1.000-FNR birdness was the wrong *feature*, not the wrong sign (the real RGB signal is
+   chromatic); at its honest ceiling RGB matches the adopted detector's safety numbers identically
+   and loses 3.1×/27× on precision to a trunk≈bird_1 material collision only the thermal band
+   separates — so **ADR-003's ADOPT now rests on a working comparison arm (gap +0.000)**. The
+   decisive measurement: the RGB R channel **is** the NDVI Red band bit-for-bit, so the arm never
+   was a second sensor and cannot answer criterion 2's geometry question; its budget moves to
+   ADR-017's forward-facing sensor. The −0.61 threshold's **range half is partially closed** (the
+   adopted clip exercises it over a 2.3× depth span, every bird core ≤ −0.83); PROVISIONAL stays
+   for ranges beyond ~11 m. Carry-forward hazard, recorded: v1 flies NDVI-only, so the live
+   exposure is the **invisible brown object** not in the static map.
 
-4. **Doc + evidence long-tail.** The three items that were at the top of this list are **done**
-   (2026-08-24): the ADR amendments for everything that landed that day are written (ADR-013 am.
-   13-17 plus their ADR-003/ADR-009 companions, so `DECISIONS.md` no longer stops at 2026-08-23);
-   the ADR-003 header line no longer contradicts its own amendment 7; and
-   `eval/scenarios/*/flight_log.json` have been regenerated on the shipped control law
-   (`lateral_tree_margin_m` 1.0 — check the `params` block in any `maneuver` event), so they may be
-   quoted as current behaviour again. What remains: the documentation-review fix-list (78 items,
-   ~70 remaining — list + exact edits preserved), **deferred 2026-08-25 behind R4 (see cut log)**.
-   Two entries are exempt because they are wrong-in-a-load-bearing-way, not polish: the published
-   `predict_bird_visibility` medians 8/6/11 are the 3 m/s figure and appear in this file, `BUILD_LOG.md`
-   and `DECISIONS.md`; and the safety gate's own note explains the missed-detection signal as "a bird
-   behind the drone is invisible to a forward-facing camera" — **the mount is nadir**, and a wrong
-   explanation retires the right question.
+5. **Doc + evidence long-tail.** The documentation-review fix-list (78 items, ~70 remaining — list
+   + exact edits preserved) stays **deferred behind the sequencing decision** (cut log 2026-08-25).
+   The two load-bearing-wrong exemptions are now **both fixed (2026-08-26)**: every runnable
+   `predict_bird_visibility` invocation carries `--speed` and the medians are qualified at every
+   site the bundle's QA could find; and the safety gate's "forward-facing camera" explanation is
+   corrected in place with a dated note — the mount is nadir, and the take measured the real
+   geometry (≤9 % of the cylinder in view).
 
-5. **Week 7 — the exit being guarded.** Dashboard (replay + avoidance log + NDVI overlay on the
-   shared cell grid), demo video, GTM pass. Last and light: it is the proof, not the point.
+6. **Week 7 — ACTIVE NOW (decided 2026-08-26, option A).** Dashboard (replay + avoidance log +
+   NDVI overlay on the shared cell grid), demo video, GTM pass. Light: it is the proof, not the
+   point. The story it tells is the honest one this session finished measuring — "the system
+   found its own sensor's limit and refused to fly what it can't pass." **README and doc shaping
+   happen WITH the user in the loop** (their standing instruction), not delegated to an agent.
 
 ## Explicit stretch goals (documented, NOT v1 blockers)
 - Full coverage-debt reconciliation (v1 ships "avoid, return to next waypoint" + honest debt,
   ADR-002; AP_DDS exposes no mission-current service at the pinned SHA, so this is genuinely
   harder, not just deferred — source-verified, see ADR-006).
 - Scaling from 2-3 birds to a flock / higher obstacle density.
-- Second-sensor config promoted from comparison arm to a supported operating mode.
+- Second-sensor config promoted from comparison arm to a supported operating mode — **now the
+  documented growth path for detection lead time (ADR-017): a forward-facing detection sensor
+  beside the nadir survey camera, chosen over any tilt of the single mount.**
 - Live in-node NDVI stitching (offline is the v1 decision, ADR-010).
 
 ## Cut / deferred log
 _(product-lead records cuts here with date + reason — interview material.)_
 
+- **2026-08-26 — criterion 2's NDVI+RGB comparison arm RETIRED as open work (ADR-003 closure;
+  product-lead call under the ratified "forced binary").** Not because RGB lost — it matched the
+  safety numbers exactly — but because the study *measured* that the arm was never a second
+  sensor: the RGB R channel is the NDVI Red band bit-for-bit, so it cannot answer what a second
+  sensor buys in range or lead time, and the measured bottleneck is geometric. The arm stays in
+  `run_spike.sh` as the regression check that guards the shared blob detector; criterion 2's
+  remaining budget moves to ADR-017's forward-facing sensor.
+- **2026-08-26 — Ruling 001's "ONE re-fly, then Week 7" sequence is VOIDED by measurement, and the
+  sequencing decision escalates to the user.** The replay proved no nadir re-fly can pass the
+  GT-CPA bar (tripwire (a) fired; ADR-017 am. 1), so the re-fly now sits *behind* the promoted
+  forward sensor. Options on the table: Week 7 first on the honest story (product-lead
+  recommendation; tripwire (b) forces the demo after two more sessions anyway) vs sensor first.
+  Nothing is cut yet — this line exists so the voiding is booked, not slid past. **Resolved the
+  same day: the user chose (A) then (B) — see ADR-017 am. 1 and Next-up items 1/6.**
+- **2026-08-25 — Council Ruling 001 RATIFIED (user); R4-as-candidate-ordering is deferred behind
+  the offline point-mass replay, and full-stack-wholesale is demoted to demonstrator-hybrid.** The
+  replay re-scopes R4 by measurement (the direction/warning/plant confound on the 84 committed
+  maneuvers is resolvable offline, no flight needed); the demotion trades an ambition with <5 %
+  odds for the viable hybrid — a reference stack that proves the extractable core. Recorded as
+  ADR-016; ruling text in `.claude/agent-memory/exec-council/ruling-001-founding-reevaluation.md`.
 - **2026-08-25 — R4 is IN; the doc fix-list long-tail and item 2's short `test_2lane` arm are cut out
   of its way.** R4 was promoted by its own written condition (a flight that fails its GT-CPA gate) —
   0.0067 m at 4.03 m vertical with 1.8 cm of lateral escape flown — so scope is paid for in the same

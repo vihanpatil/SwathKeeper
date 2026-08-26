@@ -1,6 +1,6 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-25 (first real-detection take BREACHED; G43-G55 open; G53 RETRACTED; G54 = no avoidance command has ever moved the vehicle >0.42 m against 10 m commanded; G55 = the gate tells the operator to DELETE the marker on a breaching log whose truth join failed)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-26 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale published CPA figures after the segment back-port; G76 the criterion-2 RGB study's ADOPT gap is not reproducible from the committed detections_rgb.json)
 metadata:
   type: project
 ---
@@ -8,6 +8,360 @@ metadata:
 Standing safety-hunt list. Recheck before any sign-off; close/append as they resolve. Scenario and
 regression locations: [[reference-safety-scenario-catalog]]. Which artifact proves which published
 number: [[reference-docs-evidence-chain]].
+
+**RE-VERIFIED 2026-08-26 (fix round, `replay_point_mass_20260826T152528Z.json`): G61-G73 ARE ALL
+CLOSED — every one re-probed against the fixed code, not by re-running the builder's tests. THE
+LOAD-BEARING CHECK: the `tripwire` block is BIT-IDENTICAL to my independently-validated pre-fix
+artifact except for one ADDED key (`robustness_attacks`), and `verdict.q3` is byte-for-byte
+unchanged — so the already-quoted tripwire result was not disturbed by any of the fixes, including
+the `v_entry_mps` deletion. Suites: pytest 1015/1(pre-registered)/2, unittest 897 OK, 61/61 replay
+tests. MUTATION: 15 mutants, **14 killed**, and BOTH previously-surviving mutants are now caught
+(`legality_guard_gone` -> 2 red incl. a test named for it; `scanner_parm_dead`/`scanner_paramset_dead`
+-> 1 and 2 red). The one survivor is message text only (rewording the GUIDED-LOCK reason string
+breaks nothing; the machinery IS held — dropping `logs_skipped` or the exit-2 branch both go red).
+Highlights worth not re-deriving: C1 verified fixed at the source (`cov_bird_at_turnaround`
+`closest_approach` 7.0000 -> **0.0000**, the direct hit is now visible, and a fly-THROUGH property
+test pins the two CPA paths together); C3's band audit reproduces my independent numbers exactly
+(climb lead 2.0 guided_default band-free min **0.7829 m** vs my 0.78); the robustness attacks
+reproduce mine to 4 dp (0.6539 m / 4.59x, depth needed 11.39 m, 45 deg -> 0.2351 m / 12.76x); the
+scanner fires on all 8 planted surfaces incl. `param set` in scripts/*.sh, scripts/*.py and
+docs/runbooks/*.md, and correctly does NOT fire on `param set MIS_RESTART`.**
+
+- **G76 — I CAUSED THIS ONE. My finding m8 was WRONG and the fix built on it is a regression:
+  at leads >= 2.0 s the counterfactual now STOPS SIMULATING BEFORE THE ENCOUNTER.** I claimed the
+  old fixed-end horizon (`t_resume + 3 s`) "manufactured deferrals" at long lead. It did not — under
+  a fixed absolute end a longer lead buys MORE flying time, and re-checking the pre-fix artifact the
+  lead-3.0 deferrals were genuine retreats. The fix made the horizon a fixed DURATION from each
+  cell's own command (`t_end = t_cmd + horizon_s`, `replay_point_mass.py:888,913`), but the bird
+  arrives at a fixed ABSOLUTE time — so a cell at lead L is only simulated to
+  `t_takeover + (horizon_s - L)`, and at L = 3.0 s with horizon_s = 3.434 s that is 0.434 s past
+  takeover. MEASURED on the 08-25 sweep, shipped rule vs a takeover-anchored end: **72 of 429 cells
+  change their honesty number or verdict and 32 flip `resolved` False -> True.** Worst: `climb` /
+  `brake` at lead 3.0 `poscontrol_bare` report `min_horizontal_threat_m` **12.5514 m** where the
+  encounter-covering window gives **0.5037 m** — i.e. **C3's exact defect relocated from VERTICAL
+  scoping to TEMPORAL scoping, in the very field added to prevent it.** **The two headline leads are
+  UNAFFECTED** (physical 1.25 s / legal 2.00 s, same per-plant breakdown under both rules — verified
+  by recomputation), so nothing quotable is wrong; the long-lead half of the table is.
+  **How to apply:** `t_end = max(t_cmd, t_takeover) + horizon_s`, and pin it with a test that a
+  cell's window always contains the flown-CPA instant. Lesson for me: I flagged m8 as MINOR and
+  speculative and it was still acted on — say "UNVERIFIED, do not act" out loud, or verify it.
+- **G77 — the admissibility filter M4 added is applied to the robustness SWEEP and not to the two
+  DECLARED axes, and the difference is the number TG-5 publishes.** `admissible_dt_floor_s` for
+  `live_flight_log_20260823T004031Z` is **0.197 s** (p99 step 1.9699 m/tick / WPNAV_SPD 10), so the
+  declared `assumed_dt_0.16s` axis implies a **12.312 m/s** cruise and is inadmissible by the tool's
+  own rule — yet it stays in `verdict.q1.rows` with a FIT verdict, is counted in
+  `fit_verdict_counts`, and is the **sole source of the 1.85 endpoint** of
+  `fitted_a_max_ne_mps2_range [1.05, 1.85]`. The admissible-only figure is **1.05 m/s2, one axis of
+  one flight**. No row carries an admissibility field, so a reader cannot see it. Calibration in
+  the tool's favour: the one flight with a real clock scores 10.099/10.0 = **1.01x**, so the
+  heuristic is only mildly over-strict and 08-23's 1.23x is a solid exclusion. Bounded: 08-23's
+  own verdict is unchanged on the admissible axis, so `command_path_worked` does not move.
+
+**OPENED 2026-08-26 — ADVERSARIAL REVIEW OF THE POINT-MASS CONFOUND-RESOLVER
+(`eval/point_mass.py`, `eval/replay_point_mass.py`, `tests/test_point_mass_replay.py`,
+`eval/results/replay_point_mass_20260826T002121Z.json`). The tool's PHYSICS and its Q3 TRIPWIRE are
+sound and hand-reproducible — every number I re-derived matched to 4 dp, and the "no safe speed"
+answer survives three robustness attacks the report does not make. The defects are in what the
+artifact SAYS around those numbers. Ranked by consequence.**
+- **G61 — THE COMMITTED SAFETY GATE REPORTS 7.00 m ON A FIXTURE THAT FLIES STRAIGHT THROUGH THE
+  BIRD. Pre-existing, not a replay defect; the replay's own numbers are what exposed it.**
+  `closest_approach()` (`scripts/check_live_flight_log.py:408-434`) is a min over PATH VERTICES only
+  — no segment interpolation, no vertical scoping. MEASURED, vertex vs point-to-segment on the same
+  bytes: `eval/scenarios/cov_bird_at_turnaround/flight_log.json` **7.0000 → 0.0000 m** (the 15 m
+  turnaround segment (15,58)→(30,58) passes through the detection at (22,58); nearest vertices 7 m
+  and 8 m away, segment length 15 m against a p95 of 2 m); `cov_two_birds_simultaneous`
+  **1.0000 → 0.0000**; `cov_bird_over_cell` 0.0000 → 0.0000; `geo_avoid_into_tree` 1.0000 → 1.0000;
+  `live_flight_log_20260818T144711Z` **0.0597 → 0.0393**; `live_flight_log_20260823T004031Z`
+  **0.0518 → 0.0391**. `cov_bird_at_turnaround` is the ONE fixture that passes the CPA bar and it is
+  a direct hit — the degenerate-geometry family, blind exactly where the scenario was authored to
+  look. The optimistic values are PINNED by `test_reproduces_the_flown_encounters_cpa`
+  (`tests/fieldguard_planning/test_check_live_flight_log.py:200-209`) and quoted in DECISIONS:1920,
+  :2304 and README. G22's `_point_segment_xy_m` fix went into the schema-2 `ground_truth_cpa` and was
+  never back-ported to the legacy path, which round 5 turned into a CLOSED LIST — so the closed list
+  is exactly the set of artifacts still scored by the optimistic geometry. **How to apply:** point
+  `closest_approach` at `_point_segment_xy_m` over consecutive path pairs (~6 lines, the function is
+  already imported in the same file), regenerate the fixtures, and expect
+  `cov_bird_at_turnaround` to flip to BREACH — that flip IS the fix's proof.
+- **G62 — THE REPLAY'S Q1 HEADLINE ANSWERS THE WINDOW IT DECLARED UNANSWERABLE.**
+  `command_path_worked = winner != "H_broken_m"` (`eval/replay_point_mass.py:543`) is computed with
+  no reference to `discriminating`, so the 2026-08-25 row — whose own `fit_verdict` is
+  **"EVIDENCE INSUFFICIENT -- window too short to separate H_plant from H_broken"**, separation
+  0.0051 m = **0.56 telemetry quanta**, power NOT DISCRIMINATING — still lands in
+  `command_path_worked_by_flight` as **True** and in the printed line *"THE COMMAND PATH MOVED THE
+  AIRCRAFT on 3 of 5 windows … {…20260825…: True}"*. Same inversion as G55: "we could not tell"
+  printed as a positive finding. Worse, the tool's OTHER command mode on the same flight —
+  `latched_first`, which is what the executor actually did on 08-25 (one latch, two relatches) —
+  reports `H_broken` nearest, `command_path_worked False`, and the confident string
+  **"FIT … [MARGINAL: hypotheses only 4.1 telemetry quanta apart]"**. Two modes, opposite signs, and
+  the verdict block silently keeps only `CMD_PRIMARY`. **How to apply:** gate
+  `command_path_worked` on `discriminating` (None/UNKNOWN otherwise), and make the headline print
+  the denominator of ANSWERABLE windows, not of replayed ones.
+- **G63 — A "CLIMB" RESOLUTION IS A BAND-EXIT WEARING A CLEARANCE NUMBER — the exact vacuous green
+  ADR-013 am. 18 pre-registered in writing.** `cleared`/`resolved` (`replay_point_mass.py:766-769`)
+  inherit `ground_truth_cpa`'s ±`vertical_threat_m` scoping, and `band_exit` is only True when the
+  CPA is None, so a PARTIAL band exit scores the last in-band instant as if it were the closest
+  approach. MEASURED on the 08-25 sweep, in-band CPA vs the true minimum horizontal separation to
+  the SAME bird: `climb` lead 2.0 `guided_default` **5.35 m reported / 0.78 m actual** (at dz 7.4 m);
+  `poscontrol_bare` **14.77 / 0.17 m**; `angle_max_ceiling` **14.34 / 0.014 m** (1.4 cm, at dz
+  14.5 m); lead 3.0 `poscontrol_bare` **28.08 / 0.50 m**. `climb` is therefore listed in
+  `verdict.q2.rows[…].resolving_candidates` for the encounter and printed as `climb True 2.00 5.351`
+  in the stdout table. The lateral candidates are honest (dz stays 4.00 m, in-band == unscoped).
+  The discriminator already exists per row and is discarded: `min_horizontal_any_band_m`. Note that
+  claiming a climb as an escape also rests on the bird's z, which ADR-009 decided not to trust.
+  **How to apply:** a cell whose vertical separation ever leaves the band must print BAND-EXIT with
+  the unscoped minimum beside it and must not enter `resolving_candidates`.
+- **G64 — A FLIGHT THAT NEVER RESUMED IS SILENTLY ABSENT FROM THE STUDY, AND THE RUN STILL EXITS 0.**
+  `load_encounter` returns None when there is no takeover/resume PAIR or no maneuver
+  (`replay_point_mass.py:196-198, 229-230`) and `build_report` does `if enc is None: continue`
+  (:1021-1022). REPRODUCED: the real 08-23 log with its `resume` event deleted → `load_encounter`
+  None; the CLI on that log alone → **exit 0**, `flights: []`, `verdict.q1.rows: []`,
+  `plant_explains_n_of [0,0]`, `command_path_worked_n_of [0,0]`, Q3 "NOT COMPUTED", and the skipped
+  log's name appears NOWHERE in the artifact. That shape is precisely **G56** (the new
+  `RESUME_CLEAR_TICKS = 3` hysteresis can pin the vehicle in GUIDED for the rest of the flight → an
+  unmatched takeover), i.e. the instrument goes blind on the failure the same session just created.
+  The author DID think about too many encounters (>1 takeover raises a ValueError naming the count)
+  and not about too few — absence is the bug, again. `main()` returns 2 only when the GLOB is empty,
+  never when every log was skipped. **How to apply:** carry a `skipped: [{stem, reason}]` list into
+  the artifact and print it; treat "0 encounters replayed" as a refusal, not a report.
+- **G65 — Q2's "earliest resolving lead 2.00 s on all plants" is set by the TREE VET, not by lead
+  time, on the plant that matters most.** `_setpoint_legal` (:786-812) uses the XY-only
+  `GeofenceMap.segment_clearance` against `lateral_tree_margin_m` 1.0, and the swept path starts at
+  the vehicle's OWN position — which on lane x=15 (orchard row 0) is up to **1.99 m inside** the
+  exclusion radius, so even `brake` (setpoint == current position) is booked illegal at leads
+  0.5-1.75 s. MEASURED: on `angle_max_ceiling` the encounter is genuinely resolved (bar met AND bird
+  passed) at lead **1.25 s** (`sidestep_ahead_±90`, CPA 3.33/3.40 m) and at 1.5/1.75 s by eight more
+  cells — every one discarded as `setpoint_legal: false`. `min_resolving_lead_by_plant_s` reports
+  2.0 for all three. `geofence.py:156-157` says in its own comment that the XY query is a cruise
+  query and `is_safe_3d` is the altitude-aware one; the escapes being refused are at 15 m over a
+  3.5 m canopy. So the confound-resolver leaves a THIRD confound unseparated (lead time vs candidate
+  ordering vs the policy's lateral tree margin), and the difference is 2.00 vs 1.25 s = 60 % on the
+  required sensor horizon a second-sensor spec would be written against. **Mutation proof that
+  nobody is holding this:** deleting `and r["setpoint_legal"]` from `_cf_summary` (:1125) breaks
+  **zero** tests.
+- **G66 — the 08-18 entry velocity is an artefact of the estimator's window, and H_broken is built
+  on it.** `velocity_at(..., window_s=0.6)` on a staircase: the 08-18 pre-takeover 0.6 s window
+  holds 4 samples and **2 distinct positions** (the flight is 83 % zero-steps; pose updates every
+  ~2.5 ticks). MEASURED |v| at windows 0.3/0.6/1.0/2.0/4.0 s = **3.006 / 0.902 / 0.859 / 1.252 /
+  1.360 m/s** — a 3.3× spread — and the H_broken it produces swings **−36.67 → −10.48 m** against an
+  observed −14.54 m. At a 2 s window H_broken is −15.27 m, i.e. "the vehicle just carried on at its
+  pre-takeover cruise" explains 08-18 to **0.73 m**. The NO-FIT verdict does not flip (it gets
+  stronger), but the printed `entry speed 0.90 m/s` is not a measurement of that flight. 08-23 and
+  08-25 are stable (<5 % across 0.3-1.0 s windows) — the defect is specific to the staircase log.
+- **G67 — the tick-period robustness sweep's reported BEST cell is physically impossible, and
+  nothing in the tool notices.** 08-18's best is quoted at **dt 0.05 s / 14.75 % / PARTIAL**; at that
+  period the flight's own p99 step (0.8798 m/tick) implies a **17.6 m/s** cruise against WPNAV_SPD
+  10 m/s, and 08-23's dt-0.05 row reports an entry speed of **26.96 m/s**. The tool computes
+  `implied_cruise_speed_mps` in `step_diagnostic` for the two declared axes and never applies it to
+  the sweep. Admissible rows (dt ≥ 0.10, from a single 0.8906 m tick step ÷ 10 m/s ≥ 0.089 s) give
+  08-18 **58.9-62.8 %** — so the NO-FIT is stronger than advertised and the quoted figure comes from
+  a cell the plant forbids. Same family as "never rest a claim on a boundary": the optimum sits on
+  the sweep's own lower edge.
+- **G68 — the TUNING OVERRIDE scan looks in the one place this project does NOT set parameters, and
+  no test proves it fires.** `_tuning_override_scan` (:1150-1173) globs `config/**/*.parm` only. The
+  documented override channel here is the MAVProxy prompt: `scripts/fly_pipeline.sh:459-460` and
+  `scripts/run_farm_mission.sh:69-71` already `param set MIS_RESTART/AUTO_OPTIONS/DISARM_DELAY`, and
+  **the ADR-017 speed doctrine's natural implementation is `param set WPNAV_SPD <n>` in exactly that
+  block** — after which the study is void and the scan still prints "CHECKED at run time: no
+  override". Second unchecked surface: SITL frame defaults. VERIFIED BY ME at the pinned SHA that
+  `Tools/autotest/default_params/copter.parm` and `gazebo-iris.parm` set **no** `WPNAV_*`/`PSC_*`/
+  `GUID_*`/`ANGLE_MAX` — so the conclusion holds today, but that warrant lives in this memory, not
+  in the tool. The scan itself is GOOD: it fires on 9 syntax variants (space/comma/equals/tab/
+  indented/lowercase/trailing-comment, WPNAV_/PSC_/GUID_/ANGLE_MAX) — proven in a sandbox. But
+  `test_the_defaults_assumption_is_checked_against_the_repo_not_asserted` is an if/else that passes
+  on either branch: **neutering the detector breaks zero tests.**
+- **G69 — two thirds of 08-25's "observed compliance" is the cruise leg.** `observed_along_cmd_
+  window_m` **+0.0541 m** projects onto `cmd_unit` (−1.0, −0.0091). Decomposed: the x term (the real
+  cross-track dodge) is **+0.0182 m**; the y term is **+0.0360 m**, which is the ongoing −3.95 m
+  cruise leaking through a 0.52° misalignment. `observed_compliance_window_pct 0.541 %` must not be
+  quoted as what the dodge achieved; G54's 0.054 m / 0.018 m figures remain the honest ones.
+- **G70 (minor, doctrinally loud) — the one constant that is NOT a firmware default carries a
+  dangling URL.** `point_mass.py:155-156` cites `AC_AttitudeControl.h:26` for
+  `AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT 30.0`. At the pinned SHA the string "ANGLE_MAX" does not
+  appear in that header at all; the define is at **AC_AttitudeControl.cpp:26**. Value verified
+  correct (and `AP_GROUPINFO("ANGLE_MAX", 24, …, AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT)` at
+  AC_AttitudeControl.cpp:164). Same family as G46's `DEFAULT_SPEED_MPS` citing a file with no speed
+  in it — in the bundle whose own doctrine paragraph is "physical parameters come from the vehicle,
+  never from prose".
+- **G71 (minor) — the telemetry has TWO quanta and the discriminating-power denominator silently
+  uses the smaller.** MEASURED on all three flights: E/x = **0.009078 m**, N/y = **0.011131 m**
+  (separate lat/lon round-trips). `_position_quantum_m` pools both axes and returns the min, while
+  the displacement being tested is projected onto the COMMAND direction — which is pure N on 08-18
+  and 08-23 and pure E on 08-25. The right axis is used on 08-25 by luck. The docstring's "0.009078
+  on all three flights, whose next step size up is exactly 5x that" is wrong twice (the next step up
+  is 1.227× — the other axis). The MARGINAL 4.14-quanta row is 3.5 % from flipping to EVIDENCE
+  INSUFFICIENT.
+- **G72 (minor, latent) — `max_displacement_m`'s `v_entry_mps` term is not velocity-capped and
+  double-counts.** It adds `v_entry*T` flat and then computes the from-rest profile on top, never
+  re-checking `v_max_ne`. MEASURED against an independent fine integration: v0 = 3 m/s → **5.229 m
+  claimed vs 3.729 m true**; v0 = 9 m/s → **14.076 vs 9.576**. No caller passes a non-zero entry
+  velocity today (`tripwire` and `time_to_displace_s` both use 0) and no test covers it — so it is
+  dead-but-wrong, and "what lead does a MOVING vehicle need" is the next question anyone asks of
+  this module.
+- **G73 (minor) — three smaller ones, all one-liners.** (a) `_bird_xy`'s docstring claims "nearest
+  candidate … uncertainty never buys clearance" and the code takes `positions[0]`, which is the
+  `pose_from_applied` answer, not the nearest (bounded: it feeds the away-vector and `_passed_bird`,
+  never the CPA). (b) `sensor_horizon_m`'s `axis_taken` says it exists "so a mount rotation cannot
+  silently swap them" and then takes `max(hx, hy)` — which IS the silent swap; correct today
+  (`predict_bird_visibility.py:43` confirms the 640-px axis is along-track) and optimistic, so
+  conservative for a negative verdict, but wrong the moment a forward sensor is modelled. (c) TG-5
+  labels the fitted `a_max` **MEASURED** while both endpoints of the 1.05-1.85 range come from ONE
+  schema-1 flight under two ASSUMED tick periods — the module's own rule is "Nothing from a
+  schema-1 log is ever labelled measured". (d) the `CMD_*` comment justifies `as_commanded` as
+  primary with "rms of 0.62 m … versus 1.11 m" and the shipped artifact says 1.3185/3.8112 (dt 0.20)
+  and 0.4955/1.0976 (dt 0.16) — stale numbers under the choice that decides 08-25's verdict.
+  (e) the counterfactual horizon is `t_resume + 3 s`, anchored to the REAL resume, so the simulated
+  duration is 15.2 s (08-18) / 6.8 s (08-23) / 3.4 s (08-25): leads are not comparable across
+  flights, and at leads ≥ 2.5 s on 08-25 the encounter simply falls outside the horizon and is
+  booked as a "deferral".
+
+**WHAT THE REPLAY GOT RIGHT AND MUST NOT BE RE-LITIGATED (verified independently 2026-08-26,
+recorded so a later round does not re-spend the time):** the integrator matches an independently
+written fine integration to **7.5e-6 relative** on all three plants; `simulate` never beats the
+closed-form bound by more than 8.3e-6 m; the 5 ms step is converged (5e-6 m); `sqrt_controller`
+matches the two-branch AP_Math form exactly; **every plant constant + `GUID_OPTIONS` default 0 +
+`WPNavUsedForPosControl = 1<<6` + `pva_control_start`'s WPNav seeding + "WPNAV_JERK 1.0 is NOT on
+this path" verified at ArduPilot 9895756d**; the whole Q3 tripwire arithmetic hand-reproduced
+(0.4132 s / 0.2278 m / 27.25-38.75-17.75 m / climb 2.084-1.528-1.350 s); the artifact regenerates
+bit-identically modulo `generated_utc`; the tool is genuinely not-a-gate (output gitignored by
+`.gitignore:21`, zero references in `.github/` or `scripts/`, exit 0 or 2 only, no bar); and
+**13 of 15 behavioural mutants were killed** (the two survivors are G65 and G68).
+
+**OPENED 2026-08-25 (b) — ADVERSARIAL REVIEW OF THE ADR-016 "cheap honesty fixes" BUNDLE
+(MIS_RESTART pin / `--speed` required / threat-clear hysteresis / derived swath). All four items
+are real fixes and all four regression claims were proven RED against the pre-fix code by
+behavioural mutation. These are what the bundle OPENED or left open.**
+
+> **ALL FIVE (G56-G60) CLOSED and RE-VERIFIED 2026-08-25 (b, round 2).** `GUIDED_CEILING_TICKS = 305`
+> at the top of `step()`; `_is_clear_tick` requires PROCEED **and** no `n_stale_dropped`; the design
+> note quotes the measured 0.48 s; an AST test evaluates the node's actual swath expression; the
+> docs and six agent files carry `--speed`; the monotonicity claim is reworded to "NOT monotone".
+> Closure evidence (all mine, all mutation-proved): `_enforce_guided_ceiling` neutered → 6 tests red;
+> `_is_clear_tick` staleness ignored → 2 red; node swath → `7.5` / `derive(20.0)` / `7.4999` → 2 red
+> each; `gate_encounter_closure` neutered → 6 red, severity downgraded → 2 red; `CRUISE_ALT_M`
+> 15→16 → 2 red. Committed-gate stdout byte-identical (only the script's own filename differs when
+> run from a temp copy), exit 1 both sides. **What CLOSED does not mean here:** the ceiling BOUNDS
+> the stall, it does not prevent it — 1200 ticks of a 1-in-3 duty cycle gives 4 takeovers, 3
+> `guided_ceiling` resumes and **6 of 1200 ticks in AUTO**. That is the accepted residual; the gate
+> now NOTEs each ceiling resume and FAILs a terminal unmatched takeover, so it can never be silent.
+
+- **G76 — the criterion-2 RGB study's ADOPT-gap headline is not reproducible from the committed
+  artifacts, and two of its numbers are mislabelled.** Study is otherwise sound (verdicts: RGB's
+  honest ceiling / ADOPT re-confirmed / RETIRE-ARM). Three defects, none changing a verdict:
+  (a) `eval/results/adr003_20260823/detections_rgb.json` is still the OLD min-channel run, so
+  `score.py` on the committed evidence prints **gap -0.850, arm FNR 1.000** — the number the study
+  retires. The claimed "gap +0.000" reproduces only after re-running `baseline_rgb.py` (I did: 75
+  detections, gap +0.000, ADOPT). Regenerate the committed detections or the evidence chain is
+  broken. (b) The band-independence values are gate2's MEASURED `mean_rho_nir`, not the AUTHORED
+  `calibrated_rho_nir` — the word "authored" appears in `eval/rgb_pixel_study.py`'s docstring, in
+  `results.json.band_independence.method`, and in a TEST NAME
+  (`test_ndvi_inverts_against_the_rgb_red_channel_to_the_authored_materials`). (c) "460x GRVI's
+  false-positive rate" is **482.3x**; 460 comes from dividing by `G_minus_R`'s best_fpr
+  (6.568e-06) instead of GRVI's (6.274e-06) — adjacent rows in the feature table. Repeated in
+  `eval/rgb_pixel_study.py` VERDICT, `eval/baseline_rgb.py`'s docstring, and perception's memory.
+
+- **G75 — THE CPA SEGMENT BACK-PORT MOVED FIVE PUBLISHED NUMBERS AND THE DOCS STILL QUOTE THE OLD
+  ONES.** `closest_approach()` now measures the flown PATH, not its vertices. Independently
+  reproduced (vertex-only vs segment, same artifacts): `cov_bird_at_turnaround` **7.0000 → 0.0000**
+  (the ONE fixture that cleared the 3 m bar was a fly-through), `cov_two_birds` 1.0000 → 0.0000,
+  live 2026-08-18 **0.0597 → 0.0393**, live 2026-08-23 **0.0518 → 0.0391**, and the 08-25 take's
+  `detection_cpa_m` **0.2096 → 0.0035** with `range_estimate_error_at_cpa_m` **−0.2028 → +0.0033**.
+  Verdicts and exit codes on all three committed logs are UNCHANGED (only the numbers move) and CI
+  is colour-invariant (`ci.yml`'s glob is `eval/results/*flight_log*.json`; the fixtures are not
+  scored by CI). **The defect is the published figures that now contradict the tool**: living docs
+  `.github/workflows/ci.yml:108` ("all four CPA numbers bit-identical -- 0.0000 / 7.0000 / 1.0000 /
+  1.0000"), `eval/scenarios/README.md:147`, and the acknowledgement marker
+  `eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md:24,108` — that marker is one of
+  the two halves of the breach-acknowledgement contract and a reader re-runs the gate in 2 s.
+  Append-only history needing a dated amendment instead: `docs/DECISIONS.md:1920`, `:2304`,
+  `:2668-2669`, `:2787`. **And the interpretation inverts, which is the part that is not
+  bookkeeping:** am. 12's text argues the estimator "earned its demotion" from a 20 cm disagreement
+  with ground truth; corrected, the monocular apparent-size ray agrees to **3.3 mm**. The demotion
+  may still be right (a MISS at closest approach produces no detection at all — an argument
+  independent of the number), but the cited evidence no longer says what it is quoted as saying.
+  Note am. 16's actual load-bearing claim SURVIVES: CPA depends only on `flown_path_enu` +
+  detections, both byte-identical across the regeneration, so "bit-identical across a control-law
+  change" still holds — only the values are stale.
+
+- **G74 — CLOSED 2026-08-26.** `_enforce_guided_ceiling()` moved to the BOTTOM of `step()`; verified
+  max 1 `set_mode` per tick across an exhaustive sweep of ceilings 4..39 (every mod-3 phase) at both
+  1-in-3 and 1-in-2 duty cycles, and moving it back to the top turns
+  `test_no_tick_ever_emits_more_than_one_mode_switch` red on BOTH its sub-cases plus
+  `test_the_ceiling_restarts_the_encounter_it_does_not_disable_avoidance`. **Keep the lesson: that
+  pin was nearly vacuous.** A ceiling whose expiry lands on a PROCEED tick shows max 1 switch/tick
+  even at the broken top placement — measured, ceilings 9 and 11 both PASS against the defect,
+  only ceilings ≡ 1 mod 3 catch it. The shipped test asserts `ceiling % 3 == 1` inline and runs two
+  such ceilings. **Any future "no more than one X per tick" test must state and assert its phase.**
+  Original finding: THE CEILING'S HAND-BACK ISSUES TWO MODE SWITCHES INSIDE ONE CONTROL TICK.
+  `_enforce_guided_ceiling()` runs at the TOP of `step()`, so when the ceiling expires on a DIVERT
+  tick the same callback does `set_mode(AUTO)` → `set_mode(GUIDED)` → `send_setpoint_enu(...)`.
+  REPRODUCED with a spy sink: all three calls inside one `step()`. `Ros2VehicleSink.set_mode` is
+  **non-blocking `call_async`** (`src/fieldguard_planning/ros2_adapter.py:~156`), and that file's own
+  comment states the executor "asserts the mode exactly ONCE per takeover and once per hand-back and
+  nothing re-sends a rejected switch" — the ceiling path breaks that invariant, and the failure it
+  guards against is a setpoint stream published while ArduPilot is actually in AUTO. **Fix is free:**
+  move `_enforce_guided_ceiling()` to the BOTTOM of `step()`. MEASURED on the same duty cycle: zero
+  ticks with more than one mode switch, resume at tick 305, re-takeover at 307. The "top" placement
+  is also UNPINNED — moving it below the decision handler breaks **zero** tests, so the design note's
+  "running it here rather than inside a handler is what makes it unconditional" is prose, not a
+  gated property (it is unconditional at either end of `step()`, since it sits outside the branches).
+  Minor riders: the sizing comment says "61 ticks" but `ticks_in_guided` is INCLUSIVE, so that
+  encounter reports **62** — and the test hardcodes `longest_flown = 61` rather than deriving it
+  from the committed logs; `gate_encounter_closure` is wired only into `check_schema2`, so a legacy
+  log (the four fixtures, and any future self-activating pending scenario) gets no closure check;
+  and the UNCLOSED-ENCOUNTER text names only the duty-cycle cause, while an operator tearing down
+  mid-dodge produces the identical signature.
+
+- **G56 — CLOSED (see above). THE NEW RESUME HYSTERESIS CAN PIN THE VEHICLE IN GUIDED FOR THE REST OF THE FLIGHT, and
+  no gate, test or event can see it.** `AvoidanceExecutor._handle_proceed` needs
+  `RESUME_CLEAR_TICKS = 3` CONSECUTIVE PROCEED ticks; any DIVERT/HOLD zeroes the counter. So ANY
+  detection duty cycle ≥ 1-in-3 ticks (a flickering bird at the FOV edge; 15 % FN is the ADOPTED
+  detector's own rate) means the counter never reaches 3. REPRODUCED: feed `"dpp" * 30` →
+  **90 ticks, 1 takeover, 0 resumes, mode GUIDED at the end**; the same input at
+  `resume_clear_ticks=1` (pre-fix) gives 30 resumes. The mission never resumes, the remaining field
+  books as debt, and the vehicle hovers on a latched dodge point. There is no max-GUIDED bound, no
+  `guided_ticks` counter (`resume_pending` resets to 1,2,1,2… so the log looks healthy), and
+  `check_live_flight_log.py` has NO takeover↔resume pairing check at all (`ENCOUNTER_KINDS` at
+  :258 does not even contain `resume`). Worse, `test_the_gap_resets_the_clear_counter`
+  (tests/…/test_avoidance_executor.py) pins the lock-in as CORRECT behaviour without bounding it.
+  **How to apply:** ask for a GUIDED-tick ceiling with an explicit `resume(trigger=…)` or a
+  `guided_ticks` field, and a gate that fails an unmatched takeover, before the re-fly.
+- **G57 — a tick on which the staleness gate threw away EVERY detection counts as a "clear" tick.**
+  REPRODUCED: DIVERT, then 3 PROCEEDs each carrying `debug.n_stale_dropped = 2` → `resume` with
+  `trigger: "threat_cleared"`, and the resume event records nothing about the discards. Unreadable
+  evidence is being booked as confirmed absence — the mirror image of the "stale detection treated
+  as live" family. Pre-existing in effect (1 tick pre-fix) but design note 4 now explicitly claims
+  to own "ABSENCE persistence", so this is the place to fix it: a stale-drop tick should reset the
+  counter, or the resume must carry `n_stale_ticks`.
+- **G58 — the hysteresis's advertised 0.6 s is 0.48 s in the air, and the ceiling test cannot
+  see it.** `test_the_default_cannot_outlast_the_policys_own_staleness_gate` asserts
+  `RESUME_CLEAR_TICKS / CONTROL_HZ ≤ max_detection_age_s` using the NOMINAL 5 Hz. Measured on
+  `eval/results/live_flight_log_20260825T210402Z.json`: 1855 tick dts, **median 0.160 s** (6.25
+  ticks/sim-s), p05 0.063, max 0.253. So 3 ticks = 0.48 s median / 0.19 s at p05, and the design
+  note's premise "one missed 5 Hz frame is exactly one clear tick" is false — the control loop
+  outruns the camera, so a 2-frame detector hole can already reach 3 clear ticks. The inequality's
+  conclusion survives at the worst measured dt (0.76 s < 1.0 s); its stated MEANING does not.
+  Same family as the pinned VALUES-vs-GEOMETRY lesson.
+- **G59 — the half of the swath fix that actually flies is untested.** `avoidance_node` now calls
+  `derive_swath_half_width_m(CRUISE_ALT_M)` (:431) and that value is what lands in every live
+  flight log's `swath_half_width_m` and coverage ledger. MUTATION PROOF: replacing it with the old
+  `7.5` literal breaks **zero** tests across both runners. The new `TestSwathComesFromTheCamera`
+  pins `coverage.DEFAULT_SWATH_HALF_WIDTH_M`, which the node never reads. Second homes that
+  survived: `eval/scenarios/generate_flight_logs.py:35 SWATH_HALF_M = 7.5` (disclosed in
+  eval/scenarios/README.md, so a deferral not a hole — but it will diverge silently the day
+  `ndvi_camera.json` moves) and `avoidance_node.CRUISE_ALT_M = 15.0` vs
+  `field_polygon.mission_altitude_m = 15.0` (two homes for the altitude the derivation hangs on).
+  Math independently verified: fx 520.006 px, depth 14.92 m, cross-track half **6.886077 m**,
+  along-track 9.181 m, 1.228 m inter-lane strip, 0.636 m quantization margin, 720/720 unchanged.
+- **G60 — the abort gate's "monotonic in speed" justification is FALSE.**
+  `predict_bird_visibility.py`'s docstring, runbook §0b and `scripts/README.md` all justify "when
+  unsure pass the FAST end" with "speed only removes frames from view". MEASURED on the committed
+  config (0.1 m/s sweep, 1.0–20.0 m/s, `--fps 5.0`): bird_1's median frames-in-view goes **0 at
+  8.0 m/s → 3 at 8.5 m/s**; bird_2 **3 at 9.4 → 4 at 11**; failing-bird count goes **2 at 3.5 m/s →
+  1 at 4.0 m/s**. No PASS→FAIL→PASS inversion was found in 1.0–6.0 @ 0.1 m/s, so the RULE survives
+  on this config while its stated REASON does not. Cause is aliasing: speed shifts the drone's
+  arrival phase at each lane against the scripted bird's patrol, and the 55-offset sweep only
+  phases the BIRD. **How to apply:** the doc must say "empirically non-monotone; sweep, do not
+  assume", or the tool should sweep speed itself.
 
 **OPENED 2026-08-25 — FIRST REAL-DETECTION AVOIDANCE TAKE FLEW AND BREACHED
 (`live_flight_log_20260825T210402Z`, gt_cpa_m 0.0067 m to bird_0 at tick 991 / t_sim 202.775,

@@ -46,6 +46,12 @@ files here, don't reset. Open gaps: [[project-open-safety-gaps]].
   zero detections: that is what a MISSED bird looks like.
 - Detection-derived CPA survives as `detection_cpa_m` + `range_estimate_error_at_cpa_m`, labelled
   ESTIMATOR CHECK, NOT A SAFETY GATE.
+- **THE TWO CPA IMPLEMENTATIONS DISAGREE AND THE LEGACY ONE IS OPTIMISTIC (measured 2026-08-26).**
+  `closest_approach()` (legacy path) minimises over PATH VERTICES; `ground_truth_cpa` (schema 2)
+  minimises over SEGMENTS since G22. Same bytes, both ways: scenario fixtures 7.0000→**0.0000**,
+  1.0000→**0.0000**, 0.0000→0.0000, 1.0000→1.0000; historical logs 0.0597→0.0393 and
+  0.0518→0.0391. So the closed legacy list is exactly the artifact set still scored by the weaker
+  geometry, and `cov_bird_at_turnaround` — the only fixture that PASSES — is a direct hit. See G61.
 - Committed flight logs and `bird_drive_*` are gitignore EXCEPTIONS, so tests may read them but
   should skip if absent.
 - Degenerate-range / vet-margin regressions off the 2026-08-23 demo:
@@ -234,3 +240,115 @@ bit-identically (1256 frames / 24 boxes / thresh -0.61) and `eval/score.py` repr
 `src/fieldguard_planning/ndvi_detect.py`.
 
 Detection FNR metric everything routes through: `eval/score.py` (`per_bird_track_fnr`).
+
+## BEHAVIOURAL-MUTATION HARNESS (adopted 2026-08-25, use it for every "proven red pre-fix" claim)
+A full `git show HEAD:<file>` revert usually yields an **ImportError** — a symbol-absence red, which
+proves nothing about behaviour. Instead copy `src/ tests/ config/ scripts/ docs/ eval/*.py
+eval/scenarios/` into a scratch dir (skip `eval/results`, it is 12 GB) and apply the SMALLEST
+mutation that restores the old BEHAVIOUR while keeping every new symbol exported. Then diff the
+failing-test set against an unmutated sandbox baseline (`comm -23`), so a pre-existing sandbox
+failure cannot be mistaken for a catch. Mutations that worked on the ADR-016 bundle:
+* hysteresis → force `self.resume_clear_ticks = 1` in `AvoidanceExecutor.__init__` (6 tests red,
+  incl. `test_a_single_empty_frame_does_not_resume`);
+* predictor → `--speed` `default=REFERENCE_SPEED_MPS` (3 red) and, separately, the verdict line
+  back to `{v['statistic']}` without the speed (1 red);
+* swath → `DEFAULT_SWATH_HALF_WIDTH_M = 7.5` (2 red) and the wrong image axis
+  `image_width_px` in `derive_swath_half_width_m` (4 red);
+* MIS_RESTART → `git show HEAD:config/sitl_params/dds_udp.parm` (1 red, right message) and dropping
+  `--add-param-file` from `scripts/run_farm_mission.sh` (site subTest red).
+**REVIEWING AN OFFLINE PIXEL STUDY (criterion-2 RGB study, 2026-08-26) — the three probes that
+mattered.** (1) *Re-pick the frames yourself.* The band-independence check only ran on 2 bird frames
+per clip; re-running the NDVI inversion `n = (R/255)(1+NDVI)/(1-NDVI)` on frames I chose (first,
+quartiles, last, plus non-bird ones) is what showed it collapses **93 distinct R x 144 distinct NDVI
+-> 3 distinct rho_nir**. That collapse is the actual proof the bands are shared; my first objection
+(a flat-shaded world would collapse trivially) was REFUTED by measuring the input diversity, so
+measure it before raising it. The code clinches it anyway: `ndvi_fusion.rescale_red` is
+`red_u8/255.0`. (2) *Check whether "authored" means authored.* The three reconstructed values are
+`gate2_summary.json`'s `mean_rho_nir` (MEASURED: 0.040333/0.211666/0.854167), not its
+`calibrated_rho_nir` (AUTHORED: 0.05/0.20/0.85) — a self-consistency check wearing an independent
+check's label. (3) *Run the detector on the runner-up feature.* GRVI ranks **8th of 12** on the
+study's own pixel table (ExG and G-B dominate it on both axes), which looks damning until you run
+them through the same blob detector: G-B gives per-bird-track FNR **0.333** (loses a whole bird)
+while GRVI gives 0.000, and ExG ties GRVI. **Pixel-level dominance is not detector-level safety** —
+always re-run the arm, never rank features off the table alone.
+
+**PHASE MATTERS in any "at most one X per tick" test (2026-08-26).** The pin for the GUIDED
+ceiling's double `set_mode` nearly shipped vacuous: with a 1-in-3 duty cycle the DIVERT ticks are
+1, 4, 7 ..., so only a ceiling ≡ 1 mod 3 expires ON a DIVERT tick and exposes the defect. Measured
+against the broken placement: ceiling 9 -> max 1 switch/tick (PASSES), 10 -> 2 (catches), 11 -> 1
+(PASSES), 310 -> 2 (catches). The shipped test asserts `ceiling % 3 == 1` inline and runs two such
+ceilings. Whenever a test drives a periodic stream to a threshold, state the phase relationship as
+an assertion, and sweep every residue before believing a green.
+
+**Re-derive evidence figures in the test, never quote them.** `GUIDED_CEILING_TICKS` is sized at
+5 x the longest GUIDED window ever flown; the test now globs `eval/results/live_flight_log_*.json`,
+pairs takeover->resume and counts INCLUSIVELY (the same count `_ticks_in_guided()` reports), giving
+62 -- not the 61 a delta gives. Both mutations go red: undersizing the ceiling to 5*61, and
+reverting the derivation to the exclusive count.
+
+**The mutations that found NOTHING are the finding:** `avoidance_node.py:431` swath back to `7.5`
+and deleting `gen_boustrophedon.py`'s strip report both break ZERO tests (see G59).
+
+**Suite baselines measured 2026-08-25 on the ADR-016 bundle** (all three runners, host python3.9):
+`pytest tests -q` → 942 passed / 1 failed / 2 skipped; `unittest discover -s tests/fieldguard_planning`
+→ 852 OK / 2 skipped; `unittest discover -s tests -p 'test_*.py'` → 93 run / 1 failure. The single
+failure in both top-level runners is the pre-registered
+`test_ci_evidence_gate.TestLiveFlightLogGateHasEvidence.test_step_passes_on_the_committed_evidence`
+(the 08-25 take is INVALID by design). Note `pytest tests` and `unittest discover -s tests` are NOT
+the same population — pytest collects the fieldguard_planning subtree too; quote which you ran.
+
+**Scenario-fixture regeneration check** (`python3 eval/scenarios/generate_flight_logs.py`): it is
+byte-idempotent, so re-run it and `shasum -a 256 eval/scenarios/*/flight_log.json` before/after to
+prove a claimed regeneration is deterministic. To prove a regeneration is EVENTS-ONLY, compare each
+top-level key's `sha256(json.dumps(..., sort_keys=True))` against `git show HEAD:<path>` — the
+2026-08-25 hysteresis regeneration changed `events` alone (resume shifted exactly +2 ticks, 2
+`resume_pending` proceeds added per scenario; `coverage_ledger`/`flown_path_enu`/`requeue_events`/
+`swath_half_width_m` identical, debt 144/720 in all four). Do NOT compare gate output by copying
+logs to a scratch path: `check_live_flight_log.py` whitelists `eval/scenarios/*/flight_log.json`
+by path (`PRE_SEAM_LEGACY_STEMS`), so a moved copy fails "NO 'run' BLOCK" for the wrong reason.
+
+## REVIEWING AN OFFLINE STUDY TOOL (added 2026-08-26, from the point-mass confound-resolver)
+A study in `eval/` has no pass/fail bar, so the usual gate probes do not apply. What worked:
+- **Write the reference side yourself.** A model verified against ANOTHER function in the same
+  module proves consistency, not correctness. For `eval/point_mass.py` I wrote a from-scratch
+  `a = min(j*t, a_max)`, v-clipped, 200 k-step integrator and compared: 7.5e-6 relative on all
+  three plants. That is what makes "the physics is fine" a finding instead of a shrug. Then assert
+  `simulate() <= max_displacement_m()` (the bound must hold) and halve `integration_dt_s` to show
+  convergence. `scratchpad/probe_physics.py`.
+- **Follow EVERY provenance URL, at the pinned SHA, with `curl`.** Six of seven constants were
+  exactly where the comment said (`AC_WPNav.cpp:8` WP_SPD_DEFAULT 10.0, `AC_WPNav.h:15`
+  WPNAV_ACCELERATION_MS 2.5, `AC_PosControl.h:19/20/25-30`, `AC_PosControl.cpp:63`
+  POSCONTROL_NE_POS_P 1.0, `mode_guided.cpp:252-260` pva_control_start,
+  `Parameters.cpp:825` GUID_OPTIONS default 0, `mode.h:1213` WPNavUsedForPosControl = 1<<6). The
+  seventh, ANGLE_MAX, cited a header that does not contain the string (G70). One `curl` each.
+- **Also fetch the params the SIM applies that the repo does not contain.**
+  `sim_vehicle.py -f gazebo-iris` loads `Tools/autotest/default_params/{copter,gazebo-iris}.parm`
+  BEFORE `--add-param-file`. Neither sets WPNAV_*/PSC_*/GUID_*/ANGLE_MAX at 9895756d — checked, so
+  the firmware code defaults really did fly. A repo-only `.parm` scan cannot tell you this (G68).
+- **Ask what the tool does with FEWER inputs than expected, not just more.** The replay refuses
+  loudly on 2 encounters and silently drops 0 (G64). Probe shape: delete the `resume` event from a
+  real log, run the CLI on it alone, read the exit code and grep the artifact for the log's name.
+- **When a metric is vertically or otherwise SCOPED, recompute it unscoped per row.** The scoped
+  CPA said 14.34 m; the unscoped minimum to the same bird was 0.014 m (G63). The tool already
+  computed the unscoped number and threw it away — grep the artifact for fields nothing reads.
+- **Sweep the estimator's own window, not just the model's parameters.** `velocity_at`'s 0.6 s
+  window on a staircase log gave a 3.3x spread in entry speed and a 26 m swing in the hypothesis
+  built on it (G66). Any least-squares-over-a-window helper deserves this.
+- **Cross-check a robustness sweep's winning cell against a physical bound.** The tick-period sweep
+  reported its best fit at a dt implying a 17.6 m/s cruise against a 10 m/s velocity cap (G67).
+- **Behavioural mutants for a study**: 15 applied to `eval/point_mass.py` + `eval/replay_point_mass.py`
+  in a `cp` sandbox (`scratchpad/build_sandbox.py` + `run_mut.py`), 13 killed. The killers worth
+  reusing: forward-Euler on velocity or position (2 red — the trapezoid pin is real), `(v_des-v)/dt`
+  bang-bang accel (4 red incl. `test_the_approach_does_not_limit_cycle`), plain-P position law
+  (1 red), per-axis instead of vector accel cap (2 red), dropping the jerk ramp from the closed form
+  (2 red), each plant constant (1 red). **The two survivors ARE the findings**: dropping
+  `and r["setpoint_legal"]` from `_cf_summary`, and neutering `_tuning_override_scan`.
+- **Prove a run-time "CHECKED, not asserted" scan actually fires** — write the trigger file into the
+  SANDBOX (never the real `config/`), sweep the syntaxes a real `.parm` uses (space, comma, equals,
+  tab, indented, lowercase, trailing comment), and delete it. An if/else test that passes on both
+  branches proves nothing.
+
+**Live tick rate, for any test that divides by `CONTROL_HZ`:** the flown median sim-time tick dt is
+**0.160 s (6.25 ticks/sim-s)**, not the nominal 0.200 — measured from
+`eval/results/live_flight_log_20260825T210402Z.json`'s `run.tick_stamp_sim_s` (1855 deltas, p05
+0.063, p95 0.186, max 0.253). Any "N ticks = N/5 seconds" claim is ~25 % optimistic (G58).

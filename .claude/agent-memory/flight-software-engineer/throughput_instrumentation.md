@@ -133,6 +133,13 @@ all 4 participants):
 `predict_bird_visibility.py --fps 5.0` now **PASSES** (medians 8/6/11, bird_0 visible at 55/55
 driver-start offsets), so the ADR-003 full-coverage re-fly is bookable — it had been blocked on
 throughput since the demo take.
+**CORRECTED 2026-08-25 (ADR-016): that PASS is a 3.0 m/s figure and nothing else.** The medians are
+monotonic in ground speed — PASS at 3.0, FAIL at 5.0 (2 of 3 birds), FAIL 3-of-3 from 8.5 up, and
+2/2/3 at the ~9 m/s the 2026-08-25 take flew. `--speed` is now REQUIRED with no default (`ap.error`,
+exit 2 = refusal, distinct from PASS 0 / FAIL 1); `REFERENCE_SPEED_MPS = 3.0` survives only to keep
+the published medians reproducible in tests. **The gate FAILs on the committed geometry at every
+speed the vehicle actually flies** — booking the next detection take needs a geometry or a speed
+change first.
 
 **Pairing is no longer a stage at all:** `unpaired_red_count` 0, every histogram bucket 0. The
 same-tick model was right all along — pairing loss was purely NIR transport loss re-expressed, and

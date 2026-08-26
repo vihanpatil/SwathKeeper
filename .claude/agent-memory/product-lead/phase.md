@@ -11,10 +11,12 @@ to bird_0 at 4.03 m vertical, gated −1.1210 m vs the 3.00 m bar → **INVALID 
 pin deliberately withheld). Diagnosis is geometry, not the detector: 7 in-cylinder frames → 2
 in-image, sensor lead 0.175 s, policy lead 0.000 s. **R4 escape geometry is now #1 by measurement**,
 paid for by deferring the doc fix-list and item 2's short arm (cut logged in ROADMAP 2026-08-25).
-Three things I owe a call on: the record shape for committing breach evidence (CI can't pass
-`--truth`; committing the track makes the take *ambiguous* and the CPA never prints), whether the
-camera stays **nadir** (lead time vs the whole NDVI half — ask the user, don't guess), and fixing
-`predict_bird_visibility.py`'s `DEFAULT_SPEED_MPS` 3.0 before any re-fly is booked.
+Calls resolved 2026-08-25: **nadir DECIDED by the user (ADR-017)** — camera stays nadir for v1,
+sensor-honest speed doctrine buys lead time (re-fly speed off the replay's sweep), second
+forward-facing sensor is the documented growth path, tilt REJECTED; `predict_bird_visibility.py`'s
+speed default is being fixed in the ADR-016 honesty bundle. Still owed: the record shape for
+committing breach evidence (CI can't pass `--truth`; committing the track makes the take
+*ambiguous* and the CPA never prints).
 *(An earlier 2026-08-25 docs-cleanup session changed no engineering state. Scope ruling: [[scope-guards]].)*
 (The ~7-8-week hard deadline was **dropped 2026-08-18** — quality over calendar. The scope guard
 survives it: [[scope-guards]].)
@@ -34,9 +36,16 @@ survives it: [[scope-guards]].)
   `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`. Suite 530/2/2 → **805 green / 2 skipped / 0 xfailed**.
   None of it is *done*: every piece awaits the same live gate.
 
+**Council Ruling 001 RATIFIED by the user 2026-08-25 (ADR-016):** the offline point-mass
+confound-resolver replay precedes any R4 build (84 maneuvers, 0.5–4 % displacement compliance,
+direction/warning/plant confounded — resolvable offline); then the cheap honesty-fix bundle, ONE
+re-fly, **Week 7 immediately**, extraction only after the clean pass. Tripwire: replay proves 3 m
+never clearable from nadir → the mount decision reopens before further avoidance work.
+
 **Open, in order (`docs/ROADMAP.md` "Next up" is the live truth; this is orientation):**
-1. **R4 escape geometry**, re-scoped against 0.175 s of lead (not the 12 m cylinder), gated on lead
-   time as well as CPA — then the re-fly. Fix the predictor's speed default first.
+1. **The point-mass replay** (ratified next step), then **R4 escape geometry** re-scoped to what it
+   measures — against 0.175 s of lead (not the 12 m cylinder), gated on lead time as well as CPA —
+   then the re-fly. Fix the predictor's speed default first.
 2. Item 2's long arm now EXISTS (the take was a full boustrophedon, best-ever tree gate 11/18
    canopy-grade); only the short `test_2lane` arm remains, and it is deferred behind R4.
 3. Criterion 2's offline RGB pixel study (its input — 3310 RGB PNGs — rode this take for free).

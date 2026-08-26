@@ -1,5 +1,8 @@
 # Council Ruling 001 — the founding re-evaluation (2026-08-25)
 
+> **RATIFIED by the user 2026-08-25.** The §4 direction is binding; the §5 tripwires are live.
+> Recorded as `docs/DECISIONS.md` ADR-016 and in `docs/ROADMAP.md` (Next up + cut log, same date).
+
 **Question (from the user):** Is SwathKeeper a hole — outdated, not useful, a waste of code and
 tokens? Evaluate every decision. Set direction under the new dual-track charter (portfolio v1 +
 extractable product seed for ag-survey drone companies; preferred form: full reference stack).

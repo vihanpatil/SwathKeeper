@@ -2041,9 +2041,13 @@ constant we chose, self-referential the moment a real detector supplies the posi
   that means avoidance was dead — the totals themselves stay a reading, since "every detection
   expired" and "no bird was ever seen" are opposite diagnoses; and the missed-detection
   line "bird truly inside the cylinder on N tick(s); the loop engaged on M" — gating that would
-  measure geometry, since a bird behind the drone is invisible to a forward-facing camera, but a
-  large N−M on the first real-detector flight IS the FNR finding and will only be seen if someone
-  reads the line.
+  measure geometry, since the NADIR camera images only a small slice of the threat cylinder, so
+  most in-cylinder ticks are structurally out of view *(corrected 2026-08-26: this note originally
+  said "a bird behind the drone is invisible to a forward-facing camera" — the mount is nadir and
+  has been since ADR-007; the reasoning survives, the stated geometry was wrong, and the take then
+  measured it: ≤9 % of the cylinder cross-section in view, 7 in-cylinder frames → 2 in-image)*,
+  but a large N−M on the first real-detector flight IS the FNR finding and will only be seen if
+  someone reads the line.
 * **One combined runbook**, `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`: `fly_pipeline.sh up` (7
   panes, whose one-liners it deliberately does not re-spell — one source of truth per command) plus
   an 8th `docker exec` shell for `--detect`; both scipy preflights; the ADR-015 geometry precheck
@@ -2939,3 +2943,330 @@ backtest); product-lead (owns the speed-vs-survey-time trade); tech-lead (record
   give that counter a **flight-window denominator** so it stops counting poses the flight never saw.
 Owner / roles: robotics-sim-engineer (driver + teardown order); qa-safety-reviewer (the consumer that
 noticed the drift); tech-lead (recorded).
+
+## ADR-016: Council Ruling 001 is RATIFIED — the offline point-mass confound-resolver precedes any R4 build, and Week 7 follows the one re-fly   (2026-08-25, status: ACCEPTED — user ratification of the Executive Council's inaugural ruling)
+
+**Context.** The first real-detection take breached its own GT-CPA gate exactly as pre-registered
+(ADR-013 am. 18). The strategic re-evaluation's red team then named the blind spot no gate had:
+**no avoidance command has ever measurably moved the aircraft** — across the 3 committed live
+flights, 84 accepted maneuvers commanded ~10 m and achieved 0.18 / 0.42 / 0.05 m lateral
+(0.5–4 % displacement compliance, not improved by warning time), with ArduCopter flying at default
+tuning (no `WPNAV_*`/`GUID_*` anywhere in the repo). Candidate ordering (R4-as-scoped), warning
+time, and plant compliance are **confounded**; every existing gate answers "was the setpoint
+vetted?", none answers "did the aircraft go there?".
+
+**Decision (the ratified direction, verbatim in intent from the ruling):**
+1. **Next is the offline point-mass replay of the three committed flights** — a velocity/accel-
+   limited vehicle model swept over candidate order × lead time × plant limits. It resolves the
+   confound without a flight, re-scopes R4 by measurement instead of appetite, and seeds the
+   transfer-gap register (the plant IS the biggest sim-to-real gap).
+2. **The cheap honesty-fix bundle rides the same arc:** `MIS_RESTART` pinned in the param file;
+   `predict_bird_visibility.py` speed read from the flight, not a 3.0 m/s constant; ~10-line threat
+   persistence/hysteresis; swath half-width derived from `camera_info` (kills the ~7.7 % area
+   over-claim); criterion 2 forced binary — run the 1 h RGB pixel study or retire the arm.
+3. **Then ONE re-fly** flying whatever the replay says actually buys clearance — then **Week 7
+   immediately** (demo, README description, dashboard-light). The repo has 0 stars and no
+   description after 30 days; visibility is the scarcest resource on both tracks.
+4. **Extraction starts only after the clean pass** — publishing a component whose headline safety
+   claim is a documented failure inverts the story.
+
+**Price paid (scope guard honoured):** R4-as-candidate-ordering — the roadmap's #1 by its own
+promotion condition — is deferred behind the replay; the full-stack-wholesale ambition is demoted
+to demonstrator-hybrid (a reference stack that proves the extractable core).
+
+**Tripwires (reverse through Ruling 002, not silence):** (a) the replay shows even a perfect
+escape cannot clear 3 m at the maximum lead time nadir geometry can ever give → **reopen the
+nadir-only mount decision** before any further avoidance work; (b) two more working sessions with
+Week 7 unstarted → the demo ships regardless of engineering state; (c) a real integrator
+conversation happens → re-convene on product form with actual data.
+
+**Doctrine adopted:** physical parameters come from the vehicle/sensor, never from prose (the
+swath 7.5-vs-6.886 m, `DEFAULT_SPEED_MPS` 3.0-vs-flown-9.4, and unpinned `MIS_RESTART` defects are
+one pattern).
+
+Full ruling text: `.claude/agent-memory/exec-council/ruling-001-founding-reevaluation.md`; the
+underlying re-evaluation report is the 2026-08-25 strategic-reeval artifact. Owner / roles:
+product-lead (sequencing), exec-council (ruling), tech-lead (recorded); ratified by the user
+2026-08-25.
+
+## ADR-017: The camera stays NADIR for v1 — lead time is bought with a sensor-honest speed doctrine; the growth path is a SECOND forward-facing sensor, never a tilt   (2026-08-25, status: ACCEPTED — user decision)
+
+**Context.** One camera is doing two jobs whose ideal pointing directions are perpendicular, and
+the coupling was accidental, never scoped (Ruling 001 §5). The take's anatomy (ADR-013 am. 18):
+nadir at the bird's depth images a 4.96 × 3.72 m footprint against a 12 m threat cylinder (≤ ~9 %
+of the cross-section ever in view), sees 2.48 m ahead → **0.175 s of warning at the flown
+~9.4 m/s**, while a 3 m dodge at ArduCopter's default lateral acceleration needs on the order of
+1.5 s. The same mount is what every NDVI result is validated on — ADR-007's four green gates, the
+2.2 px mount-geometry gate, the −0.61 calibration, and this clip's best-ever tree gate (18/18,
++0.5562).
+
+**Decision (user, choosing among the three brokered options):**
+1. **v1 keeps nadir.** The NDVI half stays closed; re-opening live-verified state to buy lead time
+   is refused on the same principle that kept the ADR-011 rename out (verified interfaces are not
+   re-opened for a different concern's convenience).
+2. **The v1 answer to detection lead time is a speed doctrine: never outfly the sensor horizon.**
+   The re-fly's encounter-lane speed is read off the point-mass replay's speed sweep ("the speed at
+   which nadir becomes safe"), and the §0b abort gate must PASS **at the speed the mission will
+   actually fly** (its `--speed` is being made non-defaultable in the ADR-016 honesty bundle).
+   Warning time comes from slowing toward the sensor's limit, not from pretending the sensor sees
+   farther than it does.
+3. **The growth path is criterion 2's second sensor, promoted in writing:** a forward-facing
+   detection sensor alongside the nadir survey camera — decoupling the two jobs the way real ag
+   platforms do (incumbents ship dedicated obstacle sensors). Documented, not built in v1 (the
+   scope guard stands; the ROADMAP stretch-goal entry now carries this ADR's pointer).
+4. **A forward tilt of the single camera is REJECTED** — for v1 and as the growth path. It
+   un-closes Week 5, invalidates the nadir-validated calibrations, and trades a working survey
+   instrument for warning time the second-sensor path buys without the destruction.
+
+**Contingency, stated before the replay reports:** if the sweep finds **no** speed at which nadir
+geometry clears the 3.00 m bar, option 1's premise fails — the decision returns to the user with
+the second sensor as the leading candidate. The tilt stays rejected regardless. This also
+sharpens ADR-016 tripwire (a): "reopen the nadir-only mount decision" can no longer mean a tilt —
+it means promoting the second sensor from growth path to v-next scope.
+
+Owner / roles: user (decision); product-lead (brokered the options, guards the scope);
+tech-lead (recorded); robotics-sim-engineer (mission-speed mechanics at the re-fly);
+gtm-narrative-lead (the doctrine — "the drone flies no faster than it can see" — is a demo and
+interview line, capture it in Week 7).
+
+### ADR-016 amendment 1 (2026-08-26, the honesty bundle LANDED through three adversarial rounds): MIS_RESTART pinned, the predictor refuses to guess, resume hysteresis with a bounded GUIDED ceiling, the swath comes from the camera — and one of the bundle's own justifications measured FALSE
+
+All four ratified item-2 fixes are in, each pinned by tests proven red against the pre-fix code,
+then hardened by a QA pass (1 critical / 5 major found), a fix round, a re-verification, and a
+closing micro-round. Offline; the hysteresis and the ceiling still owe the live gate.
+
+* **`MIS_RESTART 0` is pinned in `config/sitl_params/dds_udp.parm`** — loaded via
+  `--add-param-file` by every DDS-enabled SITL start (5 sites verified by hand), previously only
+  typed at the MAVProxy prompt. `0` = resume is what `_nearest_upcoming_wp` and the single-hand-back
+  design assume; at `1` every dodge would re-fly from lane 1 and the ledger would book it as flown.
+  The typed belt-and-braces line stays (a stale `eeprom.bin` can outrank a file default).
+  **Mechanism unflown** — the 2026-08-05 confirmation was of the typed form.
+* **`predict_bird_visibility.py --speed` is REQUIRED, no default** (a missing speed exits 2 — a
+  refusal, distinct from PASS 0 / FAIL 1). A derived default was rejected as a second
+  constant-from-prose: no mission file or pinned param carries a speed. `DEFAULT_SPEED_MPS` →
+  `REFERENCE_SPEED_MPS = 3.0`, kept only so the published medians stay reproducible. Consequence,
+  stated plainly: **§0b now FAILs the committed geometry at every speed the vehicle actually
+  flies** (the take's encounter ran median 8.5 / peak 10.9 m/s measured from its own stamps), so
+  no detection take is honestly bookable until geometry or speed changes — which is ADR-016's
+  sequencing working, not a regression.
+* **QA measured the gate's own justification false:** "speed only removes frames, so fast is the
+  conservative direction" is **empirically NON-monotone** (per-bird medians rise with speed in
+  several places; failing-bird count drops 2→1 between 3.5 and 4.0 m/s; cause is lane-arrival
+  phase aliasing — the 55-offset sweep phases the bird, not the vehicle's arrival). No
+  PASS→FAIL→PASS inversion exists on this config (swept 1.0–6.0 at 0.1 steps), so the operational
+  rule survives with the honest wording: *run the mission's speed range; do not assume a
+  direction.* Reworded at every site.
+* **Threat-clear hysteresis:** resume from GUIDED needs `RESUME_CLEAR_TICKS = 3` consecutive clear
+  PROCEED ticks (the flown window closed 0.434 s after opening, on its first empty frame). A tick
+  whose detections were all staleness-dropped is NOT clear (unreadable evidence is not absence).
+  QA's critical find: the counter resets on any threat tick, so a 1-in-3 flicker never resumes —
+  an unbounded, uninstrumented GUIDED stall the suite initially pinned as *correct*. Closed with
+  **`GUIDED_CEILING_TICKS = 310`** (5× the longest window ever flown, 62 ticks inclusive on
+  2026-08-18, re-derived from the committed logs by test, not prose), an explicit
+  `resume(trigger="guided_ceiling")` BACKSTOP (a real flight log containing one is diagnostic, not
+  evidence), `resume_pending` carrying `ticks_in_guided`, and enforcement at the BOTTOM of `step()`
+  after a second QA round proved the top placement double-switched modes in one tick (pinned: no
+  tick may emit more than one `set_mode`; the naive pin was vacuous on 2 of 3 duty-cycle phases —
+  the shipped test forces expiry onto a DIVERT tick). The ceiling is a legibility fix, not a cure:
+  a sustained flicker still starves the survey (measured 6/1200 ticks in AUTO), and fixing that is
+  a detector problem. Design-note arithmetic corrected to the measured tick: 3 ticks = **0.48 s**
+  flown (median 0.160 s, n=1855), not 0.6, with the 5 Hz-camera/6.25 Hz-loop rate-ratio caveat.
+* **Swath half-width derives from `config/ndvi_camera.json`**: cross-track half = depth·240/fx =
+  **6.886 m** at 15 m (fx 520.006 px; the old "7.7 %" figure omitted the 0.08 m mount offset —
+  true over-claim **8.19 %**). `avoidance_node.SWATH_HALF_M = 7.5` is deleted; the flown value is
+  pinned by an AST test that *evaluates* the node's expression (a 7.4999 mutation goes red).
+  **The committed missions now knowingly disagree:** 15 m lane pitch vs 13.772 m true swath leaves
+  a 1.228 m unimaged strip per lane pair; 720/720 survives only by cell-centre quantization
+  (0.636 m margin, pinned). Re-planning lanes is the re-fly's business. The scenario generator's
+  own `SWATH_HALF_M = 7.5` stays — it is a scenario-construction knob, now labelled as such.
+* **The gate grew `gate_encounter_closure`** (schema-2 only): an unmatched takeover FAILs as
+  UNCLOSED ENCOUNTER (naming both known causes: duty-cycle flicker and operator teardown
+  mid-dodge), a `guided_ceiling` resume is NOTEd loudly, and the hysteresis budget is priced
+  against the log's own measured tick rate. Executor knobs are now readable in every artifact:
+  top-level **`executor_params`** beside `swath_half_width_m` (deviation from "inside `run`"
+  reviewed and ACCEPTED — scenario logs have no `run` block, and those were exactly the logs the
+  gap was proven on; the depth asymmetry vs `run.policy_params` is recorded here so nobody tidies
+  it later). Committed-evidence gate output byte-identical; scenario logs regenerated
+  byte-idempotently, ledger/debt untouched (144/720 each).
+
+Suites at close of the bundle rounds: host+planning green but for the one pre-registered
+`test_ci_evidence_gate` red (the committed 2026-08-25 breach — by design until the clean re-fly).
+Owner / roles: flight-software-engineer (built all rounds); qa-safety-reviewer (three adversarial
+passes, every finding probe-reproduced); robotics-sim-engineer (param-file reach); tech-lead
+(recorded).
+
+### ADR-013 amendment 19 (2026-08-26, the legacy CPA path measured VERTICES, not the path): the segment back-port — the one scenario fixture that "passed" was a direct hit, and the demoted estimator turns out to agree with ground truth to 3.3 mm
+
+Found by the replay QA comparing the two CPA geometries on the same bytes. G22 (am. 15) fixed
+segment-vs-vertex for the schema-2 `ground_truth_cpa` and the fix was **never back-ported** to the
+legacy `closest_approach()` — the path that scores pre-seam logs and, when run by hand, the
+scenario fixtures. `cov_bird_at_turnaround`'s detection sits dead-centre of the 15 m turnaround
+leg, 7 m from the nearest vertex: the gate read **7.0000 m** on a fly-through.
+
+* **Fix:** `closest_approach()` now minimises over segments via the existing
+  `_point_segment_xy_m` (~6 lines; a malformed sample joins its neighbours — longer swept path,
+  the safe direction). **Proof was the flip, red-first:** new expectations failed against the old
+  geometry, then: `cov_bird_at_turnaround` 7.0000 → **0.0000**; `cov_two_birds_simultaneous`
+  1.0000 → **0.0000** (all four fixtures are fly-throughs by construction — the am. 16 scoping
+  premise, now with the right numbers); live 2026-08-18 **0.0597 → 0.0393**, 2026-08-23
+  **0.0518 → 0.0391** — verdict lines and exit codes byte-identical, both stay ACKNOWLEDGED;
+  a property test pins that the two CPA implementations agree on a deliberate fly-through, so
+  they cannot diverge again.
+* **The estimator-agreement inversion.** On the 2026-08-25 take, `detection_cpa_m` 0.2096 →
+  **0.0035** and `range_estimate_error_at_cpa_m` −0.2028 → **+0.0033**: the vertex-only geometry
+  was inflating the estimator-error metric, and the monocular apparent-size ray actually agrees
+  with ground-truth CPA to **3.3 mm** here. am. 12 cited the 20 cm disagreement as part of the
+  estimator's demotion; that citation is corrected — **the demotion itself stands on its other
+  leg** (a miss at closest approach produces no detection at all, so detection-CPA can never be a
+  gate), which was always the load-bearing argument.
+* am. 16's claim survives on its actual content: CPA depends only on `flown_path_enu` +
+  detections, both byte-identical across regeneration — "bit-identical across a control-law
+  change" still holds; only the values quoted alongside it were stale. Living documents carrying
+  the old numbers (CI comment, `eval/scenarios/README.md`, the 2026-08-25 SAFETY_FINDING marker,
+  one test docstring) were corrected the same day with dated notes; the historical figures in this
+  log's earlier entries are records of what the gate reported at the time and stay as written.
+* CI colour provably unchanged: its glob is `eval/results/*flight_log*.json` only, and no
+  automated path points the gate at the fixtures.
+
+Owner / roles: qa-safety-reviewer (found, on the replay round); flight-software-engineer (fixed,
+red-first); tech-lead (recorded).
+
+### ADR-016 amendment 2 (2026-08-26, ratified item 1 EXECUTED): the point-mass confound-resolver ran over all three flights — the red team's headline pooled two failure modes, the flagship window cannot answer at all, and candidate ordering was never the binding constraint
+
+`eval/point_mass.py` + `eval/replay_point_mass.py` (deliberately in `eval/`, NOT a gate, cannot be
+wired into CI; every firmware constant carries its ArduPilot source at the pinned SHA, spot-checked
+against the actual source by QA). Built, then held to three adversarial rounds (two on the tool
+itself); everything below is the post-round, quotable state — artifact
+`replay_point_mass_20260826T160218Z.json`.
+
+* **Q1 — did the command path ever move the aircraft?** *"Demonstrably YES on 2026-08-23;
+  demonstrably NO on 2026-08-18; and 2026-08-25's 0.434 s window CANNOT TELL — the hypotheses are
+  0.56 telemetry quanta apart."* The 08-18 flight was commanded 10 m south for 61 ticks and flew
+  **14.5 m north**; no plant fits at any admissible tick period (best 40.3 %) — and the cause is
+  **not isolated offline**: mode-switch-never-happened, a setpoint-frame error, and plant are all
+  consistent with this window (schema-1 has no mode readback; **the next schema-2 flight should
+  record the achieved flight mode per tick**). The red team's "84 maneuvers / 0.5–4 % compliance"
+  therefore **pooled two distinct failure modes** (73 % of the denominator is the NO-FIT flight),
+  and its Δx measure was the wrong axis on two of three flights (along-command the historical
+  figures are −145 % / −218 % — the vehicle went the *other way*). On the flights where the path
+  worked, the tiny displacements are ≈ what ArduCopter *defaults* predict for sub-second windows:
+  fitted effective `a_max_NE` **1.05 m/s²** (ONE admissible axis of ONE flight, ESTIMATED) vs the
+  2.5 default — the transfer-gap register's first number (TG-5; TG-1..4: attitude/motor lag, EKF
+  lag, wind/drag, mode-switch latency — all directionally optimistic for the model, none measured).
+* **Q2 — what lead time would have resolved the flown encounter?** Physically: **1.25 s**
+  (ANGLE_MAX-ceiling plant; ±90° forward sidesteps). Legally — through the policy's XY-only
+  swept-path tree vet at 15 m altitude over a 3.5 m canopy — **2.00 s**, with 16
+  physically-resolving cells refused by that vet: **a third confound (the tree margin) that R4
+  sizing must not inherit** (read the physical number for any second-sensor horizon spec; the vet
+  is `is_safe_3d`'s job to relax, not a plant property). The 0° reversal **never** resolves at any
+  lead × plant, confirming am. 18: R4-as-candidate-ordering would have flown to a second honest
+  failure. A climb is **BAND-EXIT**, not clearance (true horizontal separation at its best cell:
+  0.006 m) — the am. 18 vacuous-green, now structurally unprintable: band-exit cells carry the
+  band-free minimum and can never enter the resolving set. Sensor lead measured on the take:
+  0.175 s. **Lead time, not ordering, is the binding constraint.**
+* **QA history, kept honest:** the tool's own first Q1 stdout printed "the command path moved the
+  aircraft on 3 of 5 windows" over a window its own verdict called unanswerable — the G55 failure
+  family, caught and fixed (unanswerable is now a first-class verdict everywhere). A fix built on
+  a wrong QA finding (m8, retracted) briefly truncated long-lead cells *before the bird arrived* —
+  32 cells flipped to "resolved" on a window that never contained the encounter; re-caught,
+  re-fixed (`t_end` is absolute; every cell now proves it covers the flown-CPA instant), headline
+  numbers invariant throughout. The tuning-override scan reads all three surfaces params actually
+  come from (`.parm` files repo-wide minus dot-dirs, `param set` lines in scripts/runbooks, and
+  the SITL frame defaults verified at the pinned SHA and warranted in-tool) — ADR-017's own speed
+  doctrine will land as a `param set`, and the scan must catch the day it does.
+
+Owner / roles: flight-software-engineer (built); qa-safety-reviewer (two adversarial rounds, every
+headline hand-recomputed); tech-lead (recorded). The replay is the first executable
+missed-detection scenario and the seed of the transfer-gap register, per Ruling 001.
+
+### ADR-017 amendment 1 (2026-08-26, the contingency FIRED): no speed makes nadir safe — QA-confirmed as measured — so the second forward-facing sensor is promoted from growth path to scope
+
+The Q3 sweep this ADR pre-committed to: **`speed_at_which_nadir_becomes_safe_mps = None`.** Not
+one cell of 81 (mission speeds 2–10 m/s × every candidate incl. climb and brake × three plants up
+to the physical ANGLE_MAX ceiling) clears the 3.00 m bar — and slowing down cannot fix it, because
+bird_0 closes at its own **6.002 m/s**, capping lead at **0.4132 s from a hover** (worth 0.228 m of
+escape). Nadir's 2.480 m forward horizon would need to be **17.8–38.8 m** (plant-dependent) at the
+flown speed. The result survived three pre-registered attacks: no altitude inside the ±6 m band
+rescues it (best 0.654 m, 4.6× short; the depth that would work is outside the band, where the
+bird is not a threat by definition), the along-track axis choice is the optimistic one, and
+ANGLE_MAX at 45° still falls 12.8× short. QA hand-reproduced every number to 4 dp and verified the
+sweep can return a positive answer when given a longer horizon; the tripwire block stayed
+bit-identical through every subsequent fix round.
+
+**Consequences, per this ADR's own §contingency:** option 1's premise (a safe nadir speed exists)
+is FALSE on this encounter geometry; the **second forward-facing sensor moves from documented
+growth path to scope**; the tilt stays rejected. Ruling 001's sequencing ("ONE re-fly, then
+Week 7") is voided by measurement — no nadir re-fly can pass the GT-CPA bar, and §0b now honestly
+refuses every real booking speed. **The open user decision is sequencing:** Week 7 first on the
+honest story (recommended by product-lead: visibility is the scarcest resource, and tripwire (b)
+forces the demo after two more sessions regardless) versus building the forward sensor first.
+Criterion 2's second-sensor study money moves to this sensor (see the ADR-003 closure): the
+measured bottleneck is geometric, and a same-aperture second band buys no geometry.
+
+**Sequencing DECIDED by the user 2026-08-26: (A) then (B).** Week 7 ships first on the honest
+story (demo video, README/GTM, dashboard-light), then the forward-facing sensor lands and the ONE
+re-fly follows it. Standing instruction attached to the decision: the user is looped in directly
+on the README and document shaping — the GTM narrative is collaborative, not delegated.
+
+Owner / roles: user (owns the sequencing decision); exec-council (Ruling 002 on request);
+product-lead (recommendation recorded); tech-lead (recorded).
+
+### ADR-003 amendment 10 (2026-08-26, criterion 2 CLOSED — RETIRE-ARM): the RGB comparison arm measurably never was a second sensor, the old 1.000 FNR was the wrong feature not the wrong sign, and ADOPT now rests on a WORKING arm at gap +0.000
+
+The forced-binary study (`eval/rgb_pixel_study.py`, ratified in ADR-016 item 2) ran over **both**
+committed real clips — 4,566 frames / 1.403 Gpx / 16,686 bird pixels on 22 frames, three birds at
+3.9 / 6.9 / 9.0 m — with the bird oracle validated, not assumed (darkest non-bird pixel is the
+identical float −0.44060174 on both clips independently; the partition is exhaustive). Reviewed
+adversarially; every load-bearing claim re-derived by QA, then a five-item fix round.
+
+* **The standing "birdness is INVERTED" caveat is retired — the feature was wrong, not the sign.**
+  min-channel bird=HIGH cannot beat FNR 0.99994 at any threshold; *flipped*, its best point is
+  still **482.3×** worse on false positives than the chromatic signal. The real RGB signal is
+  green-vs-red (the birds' materials are near-achromatic; soil and canopy are green-dominant).
+* **RGB's honest ceiling on this world:** GRVI at the class-mean-midpoint threshold **+0.0322**
+  (same construction that produced −0.61) reaches pixel FNR ≈ 0.036 at FPR ≈ 5e−06 *and
+  generalises there* (a leave-one-bird-out colour LUT scores FNR ≈ 1.0 — the exact-colour Bayes
+  bound is memorisation of a flat-shaded world's 1,566 colours, proven, not warned about). At the
+  detector: **per-bird tables IDENTICAL to the adopted NDVI arm on both clips — safety matched —
+  precision 0.708 → 0.227 (3.1×) on the adopted clip and 1.000 → 0.037 (27×) in the air.** Every
+  one of the 103 extra FP boxes projects inside a surveyed tree's 2 m geofence: the world authors
+  a material collision (trunk 0.35/0.22/0.10 vs bird_1 0.30/0.22/0.10) that **no RGB threshold
+  separates** (`fnr_at_zero_fpr` = 1.000 for all three birds) and the authored thermal band
+  resolves cleanly — ADR-007's rejected-alternative reasoning paying for itself on real
+  detections. The rival-feature check inverts instructively: **G−B tops the pixel table and loses
+  bird_1 entirely at the detector (0 of 5 frames)** — better on pixels, blind to precisely the
+  bird whose brown collides with the trunk; that inversion is why the detector-level test decides.
+* **ADOPT re-confirmed against a WORKING arm, and the committed evidence now proves it:** the
+  committed `detections_rgb.json` + `spike_scores.json` under `adr003_20260823/` and
+  `adr003_20260825/` still held the retired min-channel arm (internally consistent with each
+  other — the stale pair *agreed*); both regenerated red-first with the standard tooling, with a
+  new pin that `spike_scores.json` must match a fresh re-score of the detections beside it.
+  Re-scoring committed artifacts now prints **(a) 0.708/0.850, per-bird FNR 0.000; (b) 0.227,
+  per-bird FNR 0.000; gap +0.000 → ADOPT (a)** — decided on precision against a working rival,
+  not on a broken arm's vacuous 1.000. *Correction to the record:* am. 7's arm-(b) line ("0.000
+  across the board") and am. 9's (b) figures (TP 0 / FP 3 / FN 2) describe the retired min-channel
+  arm and are superseded by the regenerated artifacts; arm (a)'s numbers are untouched and the
+  synthetic deciding run still reproduces box-for-box.
+* **The closure itself — why RETIRE-ARM:** measured, not argued: the RGB PNG's R channel **is**
+  the NDVI Red band bit-for-bit (`ndvi_fusion.rescale_red` = R/255 feeding `compute_ndvi`; the
+  exact inversion collapses 59–93 distinct R levels to the 2–3 measured ρ_nir values, ≥24×
+  collapse, pinned by test — self-consistency plus code identity, stated as such). The arm shares
+  band, aperture, optics, mount, FOV and frame clock with the primary sensor, so it cannot answer
+  criterion 2's actual question — what a second sensor buys in range and lead time — and the
+  measured bottleneck is geometric (2.48 m horizon, 0.175 s lead). The arm stays in
+  `run_spike.sh` as the regression check guarding the shared blob detector; criterion 2's
+  remaining budget moves to ADR-017's forward-facing sensor.
+* **−0.61 PROVISIONAL, narrowed not lifted:** the adopted clip exercises the threshold over a
+  2.3× depth span (3.9/6.9/9.0 m, every bird core ≤ −0.8276 — ≥ 0.22 below threshold at all three
+  ranges), correcting the "only ever exercised at ~4 m" line; open beyond ~11 m, where the FOV is
+  the binding limit anyway. Both arms' results are properties of this one authored world and
+  lighting; stated in the artifact.
+* **Carry-forward hazard, direction named:** trunks and bird_1 are the same colour to a
+  visible-band sensor — harmless only while every brown object is in `static_obstacles.json`.
+  **v1 flies NDVI-only, so the live failure mode is the invisible brown object** (fence post,
+  bale, vehicle) reading as background to the shipped detector; a missed obstacle is a safety bug
+  where a wasted dodge is not.
+
+Owner / roles: perception-ml-engineer (study + fixes); qa-safety-reviewer (adversarial review,
+every headline re-derived); product-lead (RETIRE-ARM call under the ratified forced binary);
+tech-lead (recorded).

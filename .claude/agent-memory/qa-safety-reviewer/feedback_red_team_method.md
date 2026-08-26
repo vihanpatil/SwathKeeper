@@ -45,3 +45,19 @@ survey's −59 % unit-sales collapse went unmentioned; PX4-Avoidance's archival 
 transition never completed" when the repo is ROS 1 Noetic only and died in the ROS 1 EOL wave.
 **How to apply:** follow the URL, and specifically look for the datum in the source that cuts the
 other way.
+
+**6. A SPECULATIVE finding will be acted on anyway — verify it or say DO NOT ACT.** Added
+2026-08-26 after I caused a regression. In the point-mass replay review I filed m8 ("the fixed
+counterfactual horizon manufactures deferrals at long lead") as a MINOR one-liner from reading the
+code, without recomputing. It was **wrong** — under a fixed absolute end a longer lead buys MORE
+flying time, and the long-lead deferrals were genuine retreats. The builder fixed it faithfully,
+and the fix made the simulation stop before the encounter at leads >= 2.0 s: 72 of 429 cells moved,
+32 flipped, and the new band-free honesty field went from 0.50 m to 12.55 m on one cell — the same
+vacuous-green shape I had just made them fix, relocated from vertical to temporal scoping (G76).
+**Why:** every finding I file gets implemented; there is no second reviewer between me and the
+diff. Severity does not protect anyone — MINOR items get fixed too, and a fix to a non-problem is
+pure risk.
+**How to apply:** run the two-line recomputation before filing, or label the item
+`UNVERIFIED — do not act, confirm first` in the finding itself. Cheapest form: re-score the same
+artifact under the current rule and the proposed rule and diff the verdicts; if nothing moves, the
+finding is cosmetic and should say so.

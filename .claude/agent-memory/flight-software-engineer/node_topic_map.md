@@ -1,6 +1,6 @@
 ---
 name: node-topic-map
-description: FieldGuard ROS 2 node/topic map, package layout, locked AP_DDS /ap/* contract (Weeks 3-4 live) + Weeks 5-6 NDVI nodes, the avoidance control parameters incl. R2/R3 as landed 2026-08-24, the two-half CPA-breach acknowledgement contract, and the test-flight gate's evidence-yield floor parameters
+description: FieldGuard ROS 2 node/topic map, package layout, locked AP_DDS /ap/* contract (Weeks 3-4 live) + Weeks 5-6 NDVI nodes, the avoidance control parameters incl. R2/R3 (2026-08-24) and the ADR-016 honesty bundle (resume hysteresis, camera-derived swath, pinned MIS_RESTART, 2026-08-25), the two-half CPA-breach acknowledgement contract, and the test-flight gate's evidence-yield floor parameters
 metadata:
   type: project
 ---
@@ -126,6 +126,70 @@ dataclass default that `check_live_flight_log.py` reads as its bar. Unknown knob
   `max_detection_age_s=`). Evidence for 1.0: the adopted clip's `frame_age_sim_s` is p50 0.143 /
   max 0.156 s (n=1256), ~6x headroom. Unstamped detections still fail OPEN, so the scripted sources
   are untouched; turning the gate OFF is now an explicit `max_detection_age_s=None`.
+- `RESUME_CLEAR_TICKS` **3, new 2026-08-25 (ADR-016)** — an `avoidance_executor` module constant
+  (overridable per-instance via `AvoidanceExecutor(resume_clear_ticks=...)`, same idiom as
+  `vertical_margin_m`), NOT a `PolicyParams` field: the policy stays pure and stateless, and this is
+  an executor concept. How many CONSECUTIVE PROCEED ticks end an encounter. Before it, ONE empty
+  frame resumed: the 2026-08-25 take's GUIDED window closed on `threat_cleared` 0.434 s after it
+  opened, on the first tick with no in-cylinder detection (4 detection ticks 991-994, resume at
+  995). Bounds: >= 2 or it is not hysteresis; <= `max_detection_age_s * CONTROL_HZ` (= 5) or the
+  executor holds GUIDED on evidence the policy has already declared absent. While armed the executor
+  commands NOTHING and stays in GUIDED (the vehicle keeps flying the latched, already-vetted point);
+  each waiting tick logs `resume_pending {clear_ticks, required}` and the resume logs
+  `clear_ticks_required`. A HOLD tick resets the counter (a HOLD is a threat, not a clear frame).
+  Entry is untouched — the first detection still takes over on its own tick.
+  Side effect to expect: `eval/scenarios/*/flight_log.json` shift their resume 2 ticks later; CI's
+  `generate_flight_logs.py` + `git diff --exit-code` gate means they MUST be regenerated with any
+  change to this constant. Ledger/flown path are unaffected.
+- **`check_live_flight_log.closest_approach` measures SEGMENTS, not vertices (fixed 2026-08-25).**
+  It minimised over sampled path POINTS, so a bird overflown between two samples scored the nearer
+  sample's distance. `_point_segment_xy_m` had been in the file since G22 (`ground_truth_cpa` used
+  it) and was never back-ported. Flips, all measured: `cov_bird_at_turnaround` 7.0000 -> **0.0000**
+  (the ONE scenario fixture that cleared the 3 m bar was a fly-through), `cov_two_birds` 1.0000 ->
+  0.0000, the two historical breaches 0.0597 -> **0.0393** and 0.0518 -> **0.0391** (verdicts and
+  exit codes unchanged, stems still pinned), and the 08-25 take's detection-referenced context CPA
+  0.2096 -> 0.0035 (which also collapsed `range_estimate_error_at_cpa_m` -0.2028 -> +0.0033, i.e.
+  the monocular estimator agrees with GT to 3 mm once the geometry is right). ADR-013 am. 12's
+  0.0518/0.0597 are the OLD numbers; docs quoting them are history, not bugs.
+- `GUIDED_CEILING_TICKS` **310 = 5 x 62, new 2026-08-25 (QA C1)** — the backstop WITHOUT WHICH the
+  hysteresis above is a hang. Runs at the BOTTOM of `step()`, never the top (QA N1): at the top, an
+  expiry landing on a DIVERT tick emitted set_mode(AUTO)+set_mode(GUIDED)+send_setpoint inside ONE
+  callback, and `Ros2VehicleSink.set_mode` is a non-blocking `call_async` whose own comment states
+  the once-per-takeover invariant. Pinned by a test counting mode switches per tick (the placement
+  was previously unpinned — moving it broke nothing). Sized on the INCLUSIVE window count
+  (`resume_tick - takeover_tick + 1`), the same count `_ticks_in_guided()` reports; the test
+  re-derives 62 from the committed logs rather than trusting the comment.
+  Resetting the clear counter on every threat tick means a detection
+  duty cycle of 1-in-`resume_clear_ticks` or denser NEVER resumes: measured, `DIVERT, PROCEED,
+  PROCEED` x30 = 90 ticks, 1 takeover, 0 resumes, locked in GUIDED, rest of the field booked debt,
+  and `resume_pending` cycling 1,2,1,2 so the artifact read healthy. Sized off the encounter
+  evidence: longest GUIDED window ever flown is 61 ticks (2026-08-18), then 19 (08-23), 4 (08-25);
+  5x that is ~49 s at the measured tick. Fires -> `_resume("guided_ceiling", ...)` carrying
+  `ticks_in_guided` + `ceiling_ticks` + a reason, NEVER `threat_cleared`. It does not disable
+  avoidance: entry is instantaneous, so a still-present threat re-takes-over on the next tick with a
+  fresh latch — the ceiling breaks a stuck STATE. `resume_pending` now also carries
+  `ticks_in_guided`/`ceiling_ticks` (that is the instrumentation half of the finding).
+  A "clear" tick is also now PROCEED **with readable evidence**: `debug["n_stale_dropped"]` resets
+  the counter (unreadable evidence is not absence — QA M2), which is only safe because of the
+  ceiling. Constructor validates `resume_clear_ticks >= 1` and `ceiling >= resume_clear_ticks`.
+- **Tick period is 0.160 s median, NOT the nominal 0.200** (n=1855, 08-25 `run.tick_stamp_sim_s`;
+  p95 0.186, max 0.253) — the loop runs ~6.25 Hz against the 5 Hz camera, so ticks and frames are
+  not 1:1. 3 clear ticks = **0.48 s**, not 0.6. Never restate the nominal arithmetic.
+- **`log["executor_params"]`** (top level, beside `swath_half_width_m`, every log incl. scenario
+  ones): `resume_clear_ticks`, `guided_ceiling_ticks`, `relatch_threshold_m`, `vertical_margin_m`.
+  The executor's counterpart to `run.policy_params`; needed because an encounter-free flight writes
+  no resume event to carry them. `check_live_flight_log.gate_encounter_closure` fails an UNCLOSED
+  encounter (takeovers > resumes = the flight ended in GUIDED), reports a `guided_ceiling` resume
+  loudly, and prices `resume_clear_ticks x measured mean tick <= max_detection_age_s` from the log's
+  own stamps. It is SILENT when there is nothing to say, so committed logs print byte-identically.
+- `swath_half_width_m` **6.886 m, DERIVED 2026-08-25 (ADR-016)** — was a 7.5 m literal in TWO homes
+  (`coverage.DEFAULT_SWATH_HALF_WIDTH_M` and `avoidance_node.SWATH_HALF_M`, now deleted). One home:
+  `coverage.derive_swath_half_width_m(alt)` off `config/ndvi_camera.json`; the node calls it with its
+  own `CRUISE_ALT_M` and prints the result at startup. CROSS-track = the 480 px axis (13.772 m full),
+  not the 640 px one (18.36 m) — the 2026-08-18 "measurement" that closed this as 9.2 m half-swath
+  read the wrong axis. 15 m lanes therefore leave a **1.228 m unimaged strip**; 720/720 survives only
+  because 2.5 m cell CENTRES sit at most 6.25 m from a lane (0.636 m of margin). `eval/scenarios/
+  generate_flight_logs.SWATH_HALF_M = 7.5` is deliberately NOT changed — it is a fixture knob.
 - Two detection sources, mutually exclusive at the CLI: `--demo` (scripted bird at ENU (30,30,15),
   `proximity_bird_source`, triggers within 10 m, lingers 12 s — tight enough not to fire on adjacent
   lanes) and `--detect` (the real ADR-003 am. 7 NDVI blob detector — see [[detection-seam-live]]).
@@ -229,5 +293,10 @@ dataclass default that `check_live_flight_log.py` reads as its bar. Unknown knob
 - `DISARM_DELAY 0` needed or the vehicle auto-disarms ~10s after arming before a mission starts.
 - `AUTO_OPTIONS 3` needed to allow arming + auto-takeoff directly into AUTO mode.
 - `MIS_RESTART 0` required for the avoidance executor's resume assumption to hold (ADR-006).
+  **PINNED since 2026-08-25 in `config/sitl_params/dds_udp.parm`** (ADR-016) — that one file is
+  loaded by every DDS SITL start (`fly_pipeline.sh`, `run_farm_mission.sh`, three docs), so the pin
+  reaches every flow by construction; `tests/test_fly_pipeline.TestSitlParamFile` pins both the value
+  and the reach. The MAVProxy recipe still types it as belt-and-braces for a hand-started SITL.
+  Before that it existed ONLY as a typed prompt line — skippable, and a skip is invisible.
 - **Agent BEFORE SITL** (see above) — the single most time-costly ordering gotcha found in Week 3-4
   live validation.

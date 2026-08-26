@@ -6,6 +6,67 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-08-26 — the replay answers what the flight could not, and the answer fires the tripwire everyone had pre-signed
+
+**Ruling 001's item 1 executed offline, in one session, through six adversarial QA rounds.** The
+~50-line point-mass replay the red team asked for became `eval/point_mass.py` + `replay_point_mass.py`
+(deliberately not a gate), a jerk/accel/velocity-limited reproduction of AC_PosControl's input
+shaping with every constant cited to ArduPilot source at the pinned SHA — and it took the "84
+maneuvers, 0.5–4 % compliance" headline apart into three different answers:
+
+- **2026-08-23: the command path worked.** The tiny displacement is what ArduCopter *defaults*
+  predict for a short window — fitted effective lateral accel **1.05 m/s²** against the 2.5
+  default (one admissible axis, ESTIMATED; the attitude/motor lag the point mass omits is the
+  transfer-gap register's first number).
+- **2026-08-18: the command path did nothing.** Commanded 10 m south for 61 ticks; flew 14.5 m
+  *north*. No plant fits at any admissible tick period. Cause not isolatable offline —
+  mode-switch-never-happened, frame error, and plant are all consistent — so the next schema-2
+  flight records the achieved flight mode per tick.
+- **2026-08-25: the flagship window cannot tell.** 0.434 s of GUIDED separates the hypotheses by
+  5 mm — 0.56 telemetry quanta. Reported as EVIDENCE INSUFFICIENT, which the tool's first draft
+  printed as a confident positive until QA caught it (the G55 family, again).
+
+**The counterfactual sweep retired R4-as-candidate-ordering before a line of it was built:** the
+0° reversal never resolves at any lead × plant; the earliest *physically* resolving lead on the
+flown encounter is **1.25 s** against the 0.175 s the sensor gave (2.00 s through the policy's
+XY-only tree vet — a third confound, now separated and named for R4's sizing).
+
+**And the tripwire fired: `speed_at_which_nadir_becomes_safe = None`.** Eighty-one cells, three
+plants up to the physical ANGLE_MAX ceiling, and not one clears 3.00 m — because bird_0 closes at
+its own 6.0 m/s, capping warning at 0.41 s *from a hover*. Nadir has 2.48 m of forward sensing and
+needs 17.8–38.8. QA hand-reproduced every number, attacked it with altitude, axis choice and a 45°
+tilt-limit hypothesis, and cleared it for quoting; it stayed bit-identical through every later fix
+round. Per ADR-017's pre-written contingency, **the second forward-facing sensor is promoted from
+growth path to scope, the tilt stays rejected**, and the sequencing (Week 7 first vs sensor first)
+escalates to the user — Ruling 001's "one re-fly then Week 7" is voided by measurement, since no
+nadir re-fly can pass the bar it would be flown against.
+
+**The same session landed the rest of the ratified bundle, each piece QA'd red-first:**
+`MIS_RESTART 0` pinned into the param file every DDS bringup loads; `predict_bird_visibility.py
+--speed` REQUIRED (the §0b gate now honestly refuses every speed the vehicle actually flies on
+this geometry — and its "faster is conservative" justification measured *false*: visibility is
+non-monotone in speed via lane-arrival aliasing); threat-clear hysteresis with a bounded,
+evidence-sized GUIDED ceiling after QA proved the unbounded version could silently stall the
+mission forever on a flickering detection; the swath half-width derived from `camera_info`
+(6.886 m, not 7.5 — the committed missions knowingly carry a 1.228 m inter-lane strip until the
+re-plan). And the criterion-2 study closed the comparison arm with the session's cleanest
+measurement: **the RGB R channel is the NDVI Red band bit-for-bit**, so the "second sensor" never
+was one — while at its honest ceiling RGB matches the adopted detector's safety numbers exactly
+and loses 3.1×/27× on precision to a trunk-vs-bird material collision only the thermal band
+separates. ADOPT re-confirmed against a *working* arm, gap +0.000. **RETIRE-ARM.**
+
+**Two latent defects fell out of the QA rounds, both in things that were already "done":** the
+legacy CPA path measured *vertices*, not the path — `cov_bird_at_turnaround`, the one scenario
+fixture that passed the CPA bar, was a direct hit reading as 7.00 m (fixed red-first; historical
+breaches deepen 0.0597→0.0393 / 0.0518→0.0391 with verdicts byte-identical) — and with segment
+geometry the demoted monocular estimator turns out to agree with ground truth at CPA to **3.3 mm**;
+the 20 cm "error" that helped justify its demotion was the gate's geometry, not the estimator.
+
+Suites 888 → **1028 + 902** (one red: the pre-registered CI evidence gate, standing until the
+clean re-fly). Session direction record: Ruling 001 RATIFIED (ADR-016), nadir DECIDED (ADR-017),
+tripwire FIRED (ADR-017 am. 1). The full anatomy is in ADR-016 am. 1–2, ADR-013 am. 19, and the
+ADR-003 closure.
+
 ## 2026-08-25 — the loop closes on a bird the drone found itself, and the gate written the day before fails the take
 
 **THE FLIGHT HAPPENED.** For the first time in this project, the avoidance loop ran on a bird that
@@ -294,7 +355,9 @@ gates are mutually exclusive (median frames 10/6/4/3/3 at z=6/8/9/10/11 — the 
 z ≤ 8, the cylinder needs z ≥ 9). A lane-**parallel** bird has cross-track offset 0 and satisfies
 both. So bird_0's line moved onto the x=15 lane at 11 m and took the threat role; bird_1 took its
 8 m. Altitude multiset {6, 8, 11} **identical before and after** — a reassignment, not a lowered
-flock. Predictor now says **PASS** (medians 8/6/11, nothing structural); the near-miss is unchanged
+flock. Predictor now says **PASS at 3 m/s** (medians 8/6/11, nothing structural — and *only* at
+3 m/s: it FAILs from 5 m/s up, which is why `--speed` became required with no default on 2026-08-25,
+ADR-016); the near-miss is unchanged
 at **4.00 m**, and it got *harder*: the threat bird now patrols down orchard row 0, so the policy
 rejects its own preferred 0° dodge ("clears tree by only −1.11 m") and takes +45°. The nominal world
 finally reaches the "avoidance must never create a new collision" branch only a hand-built scenario
