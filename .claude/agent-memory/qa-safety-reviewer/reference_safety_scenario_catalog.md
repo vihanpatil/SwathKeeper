@@ -1,6 +1,6 @@
 ---
 name: reference-safety-scenario-catalog
-description: Where the SwathKeeper safety scenarios, regression files, flight-log gates (legacy + schema 2) and truth-track evidence live, and how to run them
+description: Where the SwathKeeper safety scenarios, regression files, flight-log gates (legacy + schema 2) and truth-track evidence live, and how to run them; plus the ADR-019 forward-depth probe set (exit-contract collision, mount-matrix mutants, resolvability sweep, gz-source verification)
 metadata:
   type: reference
 ---
@@ -352,3 +352,61 @@ A study in `eval/` has no pass/fail bar, so the usual gate probes do not apply. 
 **0.160 s (6.25 ticks/sim-s)**, not the nominal 0.200 — measured from
 `eval/results/live_flight_log_20260825T210402Z.json`'s `run.tick_stamp_sim_s` (1855 deltas, p05
 0.063, p95 0.186, max 0.253). Any "N ticks = N/5 seconds" claim is ~25 % optimistic (G58).
+
+## ADR-019 forward depth sensor — reusable probes (built 2026-08-26 review)
+
+Host-only, all ~seconds, no container. Everything below reproduced against the uncommitted build;
+gaps they exposed are G78-G89 in [[project-open-safety-gaps]].
+
+- **Exit-contract collision probe (the one that matters):**
+  `python3 scripts/predict_forward_lead.py --sweep 2:10:1; echo $?` -> **0**, the tool's own
+  `EXIT_PASS_BOOKABLE`, on config-only inputs. Compare `--speed 5.0` -> 3. Any tool with a mode
+  switch that shares an exit-code namespace deserves this two-line probe.
+- **Unbounded "live" override probe:** `--speed 5 --fx 520.0058 --acq-range-m 100` -> exit 0
+  BOOKABLE on a 60 m far clip. Then `--acq-range-m inf`, `--speed nan|inf|0|-10`. A flag that
+  launders config into "live" by its mere presence is honour-system, not a gate.
+- **Mutation set for a mount extrinsic (4 mutants, all killed, ~10 s):** swap the composition ORDER
+  in `optical_to_body_matrix` (`OPTICAL_TO_SENSOR @ R` instead of `R @ OPTICAL_TO_SENSOR`) — this is
+  the good one, because at the FORWARD mount's identity rpy both orders agree, so it is caught ONLY
+  by the nadir cross-check `test_formula_reproduces_the_live_verified_nadir_extrinsic` + the static
+  gate. That is the proof the cross-check is load-bearing rather than decorative. Also:
+  `OPTICAL_TO_SENSOR = I`; `band_covered_from_m` -> `cy/fy`; `margin` -> the lenient form;
+  `bookable = passed`. Back up to scratchpad and `cp` back — two of the three files are untracked,
+  so `git checkout` will not restore them.
+- **Vacuity probe for any "two functions cross-check each other" claim:** replace the primitive with
+  a monotone-but-wrong body (`return 3.0*t*t` for `max_displacement_m`) and see whether the
+  cross-check test stays green. It did (G80) — `time_to_displace_s` is bisection ON
+  `max_displacement_m`, so they are one function.
+- **2.0 px resolvability floor, re-measured independently:** filled disc on a 61x61 grid through
+  `ndvi_detect.detect_blobs(mask, 6, 5000)`, sub-pixel offsets swept 0..0.5 in 0.02 steps in both
+  axes (676 placements, the full fundamental domain by lattice symmetry). r=2.00 survives every
+  placement, r=1.99 fails at (0,0). The builder's constant reproduces exactly and is if anything
+  slightly conservative. Note the floor is measured against the NDVI detector's morphology for a
+  segmenter that does not exist yet.
+- **World byte-reproducibility:** `python3 scripts/gen_farm_world.py --world-out $SCRATCH/regen.sdf
+  --obstacles-out $SCRATCH/regen_obstacles.json` then `diff`. ALWAYS pass `--obstacles-out` to a
+  scratch path: the generator rewrites `config/static_obstacles.json` in place by default.
+- **gz source citations are checkable in ~60 s** and were all correct at the pinned branches:
+  `curl raw.githubusercontent.com/gazebosim/gz-sensors/gz-sensors8/src/{CameraSensor,DepthCameraSensor}.cc`
+  and `gz-rendering/gz-rendering8/ogre2/src/{Ogre2DepthCamera.cc,media/materials/programs/GLSL/depth_camera_fs.glsl}`.
+  Verified: `CameraSensor.cc:662-676` pops the last `<topic>` segment; `DepthCameraSensor.cc:249`
+  calls base `Sensor::Load` (never `CameraSensor::Load`, so `<camera_info_topic>` is dead for this
+  type); `:401` `SetAntiAliasing(2)` hardcoded with a `\todo`; `:561` `Update()` early-returns on
+  `!HasDepthConnections() && !HasPointConnections()`; the point-cloud publisher IS advertised
+  unconditionally at Load; `Ogre2DepthCamera.cc:103,106` `dataMaxVal=+INF_D / dataMinVal=-INF_D`;
+  the shader stores `point.x = -viewSpacePos.z` (Z-depth) and culls on `length(point) > far` —
+  Euclidean far, but Z-depth NEAR (`point.x < near`), an asymmetry the config does not mention.
+  Consequence worth keeping: the effective far horizon is `60/|ray_dir|`, so **47.6 m at the frame
+  corner** against a 46.80 m acquisition bound — 1.6 % margin, not the 22 % the on-axis reading
+  suggests.
+
+### Probe hygiene: `__pycache__` can serve a stale mutant (learned the hard way 2026-08-26)
+
+**Always run mutation rounds with `PYTHONDONTWRITEBYTECODE=1`, or `find src -name __pycache__ -exec
+rm -rf {} +` between mutants.** Two of my depth-sensor mutations were same-byte-length edits
+(`fy_px / cy_px` -> `cy_px / fy_px`; `= 2.0` -> `= 1.8`) applied within the same mtime second as the
+restore, so CPython's (mtime-seconds, size) pyc-invalidation check considered the cached bytecode
+valid and the gate ran the PREVIOUS mutant. It produced a plausible, wrong "the gate catches this"
+result twice. **The tell that saved it: measure the CLEAN baseline's failure count inside the same
+probe** — mine came back 1 when it should have been 0. Every mutation harness in this repo should
+print the unmutated baseline first and assert it is green.

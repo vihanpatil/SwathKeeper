@@ -1,10 +1,13 @@
-# SwathKeeper ADR-007 NDVI sensor bridge -- ros_gz_bridge parameter_bridge config file.
+# SwathKeeper camera bridge -- ros_gz_bridge parameter_bridge config file.
 #
-# Bridges the four locked /fg/sensor/* topics (docs/DECISIONS.md ADR-007) from Gazebo to ROS 2.
+# Bridges the four locked /fg/sensor/* topics (docs/DECISIONS.md ADR-007, the nadir NDVI pair) plus
+# the two /fg/depth/* topics (ADR-019, the forward depth camera) from Gazebo to ROS 2.
 # GZ_TO_ROS only: these are camera outputs, nothing ever publishes back into Gazebo on these
 # topics. gz_topic_name == ros_topic_name by construction (sim/worlds/farmguard_field.sdf's
-# <topic>/<camera_info_topic> values, generated from config/ndvi_camera.json, already match this
-# file 1:1) -- this is a pure encoding/type bridge, not a rename.
+# <topic>/<camera_info_topic> values, generated from config/ndvi_camera.json and
+# config/depth_camera.json, already match this file 1:1) -- this is a pure encoding/type bridge,
+# not a rename. The /fg/sensor/* block is UNCHANGED and must stay so: it is live-verified state
+# (ADR-007 Gate 1) and ADR-019 item 7 freezes NDVI work for the duration of the avoidance push.
 #
 # Run (inside the fieldguard-sim container, ROS 2 sourced, after Gazebo is up -- see
 # docs/runbooks/NDVI_VALIDATION.md Gate 1):
@@ -60,6 +63,42 @@
 
 - ros_topic_name: "/fg/sensor/nir/camera_info"
   gz_topic_name: "/fg/sensor/nir/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# --- ADR-019 forward depth camera (config/depth_camera.json) -------------------------------------
+# Two topics, not three. THE POINT CLOUD IS DELIBERATELY NOT BRIDGED: DepthCameraSensor also
+# advertises `<topic>/points` (gz.msgs.PointCloudPacked), and gz-sensors8 only builds it when
+# something is SUBSCRIBED -- `HasPointConnections()` gates both the ConnectNewRgbPointCloud hookup
+# and the per-frame conversion (src/DepthCameraSensor.cc). Leaving it unbridged therefore costs
+# nothing and saves a full XYZRGB pass per frame on a software renderer. The same source has a
+# consequence worth knowing at bringup: `Update()` returns early when NOTHING is subscribed to
+# either the depth image or the points, so a missing bridge means zero depth frames AND zero depth
+# render cost. "No frames" can mean "no subscriber", not only "broken sensor".
+#
+# `/fg/depth/camera_info` is DERIVED by gz, not declared in the SDF: DepthCameraSensor::Load never
+# calls CameraSensor::Load, so `<camera_info_topic>` is silently ignored for this sensor type and
+# the name comes from AdvertiseInfo() splitting `<topic>` and dropping its last segment
+# (src/CameraSensor.cc:662-676): `fg/depth/image` -> `/fg/depth/camera_info`. If a live
+# `gz topic -l` ever shows `/fg/depth/image/camera_info` instead, the derivation changed and THIS
+# is the line to fix -- do not "helpfully" add a <camera_info_topic> element to the world.
+#
+# QoS for the depth image is a command-line ROS PARAMETER, exactly as for the two /fg/sensor images
+# and for exactly the reason spelled out above -- see the bridge one-liner in
+# docs/runbooks/FULL_PIPELINE_DEMO.md Shell 2:
+#   -p qos_overrides./fg/depth/image.publisher.reliability:=best_effort
+# The depth frame is 640*480*4 = 1,228,800 B, the same fragment class (19 fragments) as the fused
+# /fg/ndvi/image the ADR-013 am. 9 SHM segment fix was sized for.
+
+- ros_topic_name: "/fg/depth/image"
+  gz_topic_name: "/fg/depth/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/fg/depth/camera_info"
+  gz_topic_name: "/fg/depth/camera_info"
   ros_type_name: "sensor_msgs/msg/CameraInfo"
   gz_type_name: "gz.msgs.CameraInfo"
   direction: GZ_TO_ROS

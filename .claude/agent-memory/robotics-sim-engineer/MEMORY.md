@@ -10,4 +10,5 @@
 - [Recording-throughput levers](recording_throughput_levers.md) — CLOSED 2026-08-22 (Fast DDS SHM segment, 5.0 Hz flat); plus the disproven 5→2 Hz lever and the two kept ones.
 - [Bird ground-truth track](bird_ground_truth_track.md) — the applied-pose log is the only bird truth (labels + safety CPA); clock-anchor numbers, schema 1.0 vs 1.1, offline flight rehearsal.
 - [Avoidance-with-real-detection take](avoidance_real_detection_take.md) — the Week-6 runbook: precheck gates + margins, 7 panes + the unlaunched 8th shell, post-flight gate sequence and verdict meanings.
+- [Forward depth sensor (ADR-019)](forward_depth_sensor.md) — the second aperture: mount pose + the Gazebo +X generalization, gz depth_camera source facts, gate margins, booking-gate numbers.
 - [Unfinalized clip / skipped teardown](teardown_unfinalized_clip.md) — 2026-08-25: `down` skipped, recorder + drive_birds ran on for 22 min; recover via the shipped send_ctrl_c, never rebuild meta offline.

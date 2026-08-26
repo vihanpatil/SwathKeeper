@@ -27,3 +27,12 @@ Data-driven scenario + mission configuration so scenarios can be added without c
   the sensor-mount attachment pose, and the per-material-class `<temperature>` calibration table
   (canopy/trunk/soil/bird). Consumed by `scripts/gen_farm_world.py` (world) and
   `scripts/check_ndvi_bands.py` (the Gate 2 pixel smoke test, `docs/runbooks/NDVI_VALIDATION.md`).
+  **FROZEN** for the duration of the ag-avoidance push (ADR-019 item 7).
+- `depth_camera.json` — ADR-019 forward depth camera: the SECOND aperture's mount pose, intrinsics,
+  rate, clip planes and the booking-gate constants that are not owned elsewhere. Nadir cannot buy
+  detection lead time at any speed (ADR-017 am. 1), so detection moves forward while NDVI stays
+  closed. Every gz-sensors claim in it carries a source citation, including the one most likely to
+  be got wrong by analogy with `ndvi_camera.json`: a `depth_camera` sensor IGNORES
+  `<camera_info_topic>` and derives the name from `<topic>` instead. Consumed by
+  `scripts/gen_farm_world.py` (world), `scripts/check_depth_mount.py` (static geometry gate) and
+  `scripts/predict_forward_lead.py` (the booking gate).

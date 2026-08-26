@@ -93,10 +93,16 @@ cat <<EOF
 
   source /root/ardu_ws/install/setup.bash
   ros2 run ros_gz_bridge parameter_bridge --ros-args \\
-    -p config_file:=$REPO_IN_CONTAINER/sim/bridge/fg_sensor_bridge.yaml
+    -p config_file:=$REPO_IN_CONTAINER/sim/bridge/fg_sensor_bridge.yaml \\
+    -p qos_overrides./fg/sensor/rgb/image.publisher.reliability:=best_effort \\
+    -p qos_overrides./fg/sensor/nir/image.publisher.reliability:=best_effort \\
+    -p qos_overrides./fg/depth/image.publisher.reliability:=best_effort
+
+  # (the three qos_overrides are the IMAGE topics only -- see sim/bridge/fg_sensor_bridge.yaml's
+  #  header for why reliability cannot live in that file at the pinned ros_gz SHA)
 
   # Then, from any shell with ROS 2 sourced:
-  ros2 topic list | grep '^/fg/sensor'    # expect 4 topics
+  ros2 topic list | grep '^/fg/'          # expect 6: 4 /fg/sensor + 2 /fg/depth (ADR-019)
   ros2 topic hz /fg/sensor/nir/image      # steady rate, not zero
 
   # Gate 2 (the actual proof -- run once Shell B is armed and flying, and this bridge is up):

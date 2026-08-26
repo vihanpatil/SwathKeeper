@@ -1,6 +1,6 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-26 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale published CPA figures after the segment back-port; G76 the criterion-2 RGB study's ADOPT gap is not reproducible from the committed detections_rgb.json)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-26 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build -- booking-gate exit contract + what D1-D6 cannot see)
 metadata:
   type: project
 ---
@@ -8,6 +8,113 @@ metadata:
 Standing safety-hunt list. Recheck before any sign-off; close/append as they resolve. Scenario and
 regression locations: [[reference-safety-scenario-catalog]]. Which artifact proves which published
 number: [[reference-docs-evidence-chain]].
+
+**G78-G89 ALL CLOSED 2026-08-26 (fix round re-verified on `feat/forward-depth-sensor` over
+HEAD 66b4f67, every closure re-probed against the fixed code rather than by re-running the
+builder's tests).** Exit matrix: NO config-sourced path reaches 0 in either mode; only the full live
+set (`--fx` + `--cy` + `--acq-range-m`, fx/cy now enforced as a SET) does. Every garbage input
+(`inf/100/nan/0/-3/1e12/60.0001`, bad fx, bad cy, bad speed) exits 2 with a message naming the clip.
+My own 3x plant mutant now kills 3 independent closed-form tests. Clip bounds exclusive both ends
+(60.0 and 0.1 refused, 59.999/0.101 accepted, regression-pinned by a test named for the old
+behaviour). Static gate 23/23 and it now FAILS on my band-inversion mutant and on acquisition beyond
+the 47.56 m corner bound. Annotator is annotate-never-suppress, degrades to unannotated + counted
+when it raises, reuses `unsafe_obstacle_3d`. `check_render_alive` requires `/fg/depth/image` gated on
+`depth_expected(world)` with worse-verdict-wins. D2 OFFAX/AXES/NEAR/FAR/CULL added and genuinely
+discriminating (OFFAX asserts `== Z-depth AND != slant`). D3 uses a contiguous-prefix aggregator at
+2 m granularity. Suites re-run by me: pytest **1134 / 1 pre-registered / 2**, unittest **987 OK**,
+world + obstacles regen byte-identical. Numbers re-derived by hand: |ray| 1.125285 -> OFFAX Z 19.84
+vs slant 22.33 (2.49 apart); corner |ray| 1.261627 -> 47.56 m; 128/27 = 4.74 -> 128/46 = 2.78 ticks
+(41 % cut). RESIDUALS, both minor: **(a)** a LIVE `--sweep` with mixed rows still exits 0 (it means
+"some speed is bookable", not "yours is"), and the PASS*/caveat footer prints only when
+`not live_inputs`, so the one case that exits 0 alongside FAIL rows carries no caveat line;
+**(b)** there is still NO ADR-020 in `docs/DECISIONS.md` while a test comment, the static gate's
+message and the runbook all reference it. Original text kept below as the record of what was found.
+
+**OPENED 2026-08-26 — ADVERSARIAL REVIEW OF THE ADR-019 FORWARD DEPTH SENSOR BUILD (uncommitted
+tree over HEAD 3b77fd0). Everything host-side in that build re-derived by hand and reproduced; the
+mount math, the three geometry numbers, the 2.0 px floor, byte-reproducibility and all six
+gz-sensors/gz-rendering source citations are CORRECT (line numbers match upstream). The holes are
+all in the BOOKING GATE's exit contract and in what the D-gates can and cannot see.**
+
+- **G78 (CRITICAL) — `predict_forward_lead.py --sweep` exits 0 on purely CONFIG-sourced inputs, and
+  0 is the tool's own `EXIT_PASS_BOOKABLE`.** The docstring and both runbooks publish "exit 0 =
+  PASS and BOOKABLE — book the dodge flight". `main()`'s sweep branch returns
+  `EXIT_PASS_BOOKABLE if any_pass else EXIT_FAIL`, ignoring bookability entirely; the sweep output
+  contains the word "bookable" ZERO times and prints "fastest passing mission speed: 9 m/s". The
+  runbook's own §0 host-precondition block tells you to run `--sweep 2:10:0.5`. So the exact
+  "second meaning on one exit code" the tool's docstring says it was split from
+  `predict_bird_visibility.py` to avoid is present in the tool. Worse: the test suite PINS it —
+  `test_sweep_prints_a_row_per_speed_and_exits_zero_when_any_pass` asserts
+  `returncode == pfl.EXIT_PASS_BOOKABLE` for a config-sourced sweep. Repro:
+  `python3 scripts/predict_forward_lead.py --sweep 2:10:1; echo $?` -> 0.
+  Fix: sweep must return `EXIT_PASS_NOT_BOOKABLE` (3) unless BOTH `--fx` and `--acq-range-m` were
+  given, and print a bookability line per row.
+- **G79 (MAJOR) — `--acq-range-m` is unbounded: a horizon longer than the far clip books the
+  flight.** `--acq-range-m 100` (or `inf`) with any `--fx` -> exit 0 BOOKABLE, margin 3.87x, on a
+  sensor whose SDF far clip is 60.0 m. Nothing validates the measured horizon against
+  `camera.clip_far_m`, and nothing validates `--fx` against the config at all (honor system). Also
+  `--speed nan|inf` -> exit 1 FAIL (reads as "the sensor is not enough" when the input was
+  garbage); `--speed 0` and negative speeds are accepted.
+- **G80 (MAJOR) — `escape_clears_the_bar` is a vacuous check and its stated purpose is
+  structurally impossible.** The report advertises it as a forward re-derivation so "the two plant
+  functions cannot silently disagree" — but `point_mass.time_to_displace_s` IS bisection ON
+  `max_displacement_m`. One function and its numeric inverse. PROVEN: replacing
+  `max_displacement_m`'s body with `3.0*t*t` (monotone, 3x optimistic) leaves
+  `test_the_two_plant_functions_agree` GREEN and makes `escape_clears_the_bar` report 37.566 m and
+  PASS while t_req silently drops 1.792 -> 1.000 s. The mutant is caught only by the value pins
+  (published margin 1.811, the 10 m/s FAIL), never by the advertised cross-check.
+- **G81 (MAJOR) — the D-gates cannot discriminate Z-depth from slant range, because the only range
+  capture is ON-AXIS.** D2 RANGE teleports bird_0 dead ahead at 10 m, where pinhole Z-depth and
+  Euclidean slant range are identical by construction. The two hypotheses only differ off-axis: at
+  the frame edge the error is 1/cos = 1.17x, i.e. a 46 m detection placed at 54 m. Never rest a
+  safety claim on the one geometry where the alternatives agree. MISSING GATE: one capture with the
+  bird at a known lateral/vertical pixel offset.
+- **G82 (MAJOR) — D3 takes `max(detected)`, so one lucky far hit inflates the horizon that books
+  the flight.** `SWEEP_RANGES="10 20 25 30 35 40 45 50 55"` is 5 m-granular where the booking
+  headroom at 9 m/s is 4.3 % (~2.0 m), and the aggregator is optimistic (should be the largest R
+  with every shorter R also detected). D3's scene is also best-case: `blind_boxes` masks on
+  `isfinite(depth)` alone, against +inf sky, noiseless, physics stripped, vehicle static. That
+  number then promotes the gate from exit 3 to exit 0.
+- **G83 (MAJOR) — no gate measures depth delivery under flight load.** D5 runs `ros2 topic hz` on a
+  parked vehicle with no SITL, no recorder, no birds — the condition under which throughput was
+  never the problem. ADR-013's lesson was `red_frames/camera_info_frames` DURING a flight.
+  `check_render_alive.py` (the mandatory probe `fly_pipeline.sh` gates on) subscribes only
+  `/fg/sensor/rgb/image`, so `up` goes all-green with a dead depth camera. `probe_ros_topics` is a
+  name-existence check: the bridge advertises the ROS side whether or not gz ever publishes.
+- **G84 (MAJOR) — `DepthDetectionSource` accepts a depth of EXACTLY the far clip, which is the
+  value its own docstring says it exists to refuse.** `if not (min_range_m <= d <= max_range_m)`
+  is inclusive; probed, `depth=60.0` -> one Detection at 60 m, `dropped_out_of_range=0`. Latent
+  today (gz-rendering8 `dataMaxVal = +INF_D`, verified at source), but the invariant as written is
+  not the invariant as coded, and no live gate establishes what gz actually writes outside the
+  clips. Same at the near plane (0.1 accepted).
+- **G85 (MAJOR, standing) — the depth path has NO material discriminator and no static-map
+  cross-check.** Depth alone cannot tell a tree from a bird; the nadir path at least had inverse-
+  NDVI birdness. `DepthDetectionSource` hardcodes `confidence=1.0`, `track_id=None`, and does not
+  consult `geofence.GeofenceMap` / `static_obstacles.json` at all. Tree tops (3.8 m, rows at
+  x=15/40/65) enter the forward frame from ~24.4 m and ground from ~32.5 m at a 15 m cruise —
+  inside the 33.6 m required horizon. The runbook's "Known gaps" list does not name this.
+- **G86 (MINOR) — the "live" path mixes live and config intrinsics.** `evaluate()` takes `--fx`
+  live but always computes `cy = image_height_px/2` from config, then labels the block
+  `fx_source: live camera_info`. Probed: `--fx 260` gives `band in frame from 6.50 m`; if fx really
+  were 260 the sensor is 320x240 and cy=120, so the true figure is 13.0 m — a 2x-optimistic PASS.
+  No `--cy`/`--height` flag exists.
+- **G87 (MINOR) — the authorising artifact is ungated and schema-ambiguous.** `--sweep --json`
+  writes `{"sweep": [...]}` with no top-level `verdict`, to the same path the runbook calls "the
+  artifact that authorises the dodge flight". Nothing in CI or `tests/` ever reads
+  `eval/results/booking_gate_*.json`, unlike `check_live_flight_log.py` for flight logs.
+- **G88 (MINOR) — `check_depth_mount.py` reports numbers it does not check.** Mutating
+  `band_covered_from_m` to `band_half*cy/fy` makes the gate print "in frame from 2.77 m" and still
+  say PASS 21/21 (check E only asserts an ordering, `from_m < acq_m`). Only the unit-test value
+  pins (13.000) catch it. Check F is a raw substring scan of the bridge yaml including comments.
+- **G89 (MINOR) — doc-surface contradictions introduced by the build.** `scripts/build_docs_site.py`
+  GROUPS still says "Four, and you run all four" and omits `FORWARD_DEPTH_SENSOR.md`, so the built
+  site files the new runbook under "Other documents — Not yet placed in the docs map" while
+  `docs/README.md` now says five. `docs/ROADMAP.md` ("current truth") is untouched and never
+  mentions a NEVER-RUN depth camera now sitting in the committed world SDF. Runbook §4 says the bus
+  carries "RGB (15), NIR (10) and NDVI (19)" = 44 fragments/tick two paragraphs above saying
+  "~27 then, ~46 now" (the 27 is the bridge PARTICIPANT's count and is the right frame; SHM
+  segments are per-participant). Agent memory says the static gate is "PASS 20/20"; it is 21.
+  `AVOIDANCE_REAL_DETECTION.md` inserts §0f before §0e.
 
 **RE-VERIFIED 2026-08-26 (fix round, `replay_point_mass_20260826T152528Z.json`): G61-G73 ARE ALL
 CLOSED — every one re-probed against the fixed code, not by re-running the builder's tests. THE

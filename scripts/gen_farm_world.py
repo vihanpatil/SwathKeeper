@@ -8,9 +8,11 @@ always describe exactly what's physically in the Gazebo world):
   1. sim/worlds/farmguard_field.sdf      -- the Gazebo world (field ground plane, orchard tree
                                              rows as static models, scripted bird models as
                                              dynamic obstacles, the iris_with_gimbal vehicle plus
-                                             the ADR-007 dual-band NDVI sensor mount, and a
-                                             per-visual <temperature> plugin on every visual in the
-                                             world -- ground, every tree trunk/canopy, every bird).
+                                             BOTH sensor mounts -- the ADR-007 dual-band NDVI pair
+                                             looking down and the ADR-019 forward depth camera
+                                             looking ahead -- and a per-visual <temperature> plugin
+                                             on every visual in the world -- ground, every tree
+                                             trunk/canopy, every bird).
   2. config/static_obstacles.json         -- rewritten in place: the 'obstacles' array is replaced
                                              with the flattened, authoritative per-tree list
                                              computed from that same file's 'layout' section.
@@ -23,6 +25,8 @@ Reads (all data-driven, no code changes needed for a new scenario):
   - config/birds/farm_world_birds.json (scripted dynamic bird actor trajectories)
   - config/ndvi_camera.json          (ADR-007 dual-band sensor mount: intrinsics/rate + the
                                        per-material-class temperature calibration table)
+  - config/depth_camera.json         (ADR-019 forward depth camera: the second aperture's mount
+                                       pose, intrinsics/rate and clip planes)
 
 World-level plugin set, spherical_coordinates, and the vehicle <include>/pose are copied verbatim
 from ardupilot_gz's own iris_runway.sdf (the world already proven to load in this project's
@@ -50,6 +54,7 @@ DEFAULT_FIELD_POLYGON = REPO_ROOT / "config" / "field_polygon.json"
 DEFAULT_STATIC_OBSTACLES = REPO_ROOT / "config" / "static_obstacles.json"
 DEFAULT_BIRDS = REPO_ROOT / "config" / "birds" / "farm_world_birds.json"
 DEFAULT_NDVI_CAMERA = REPO_ROOT / "config" / "ndvi_camera.json"
+DEFAULT_DEPTH_CAMERA = REPO_ROOT / "config" / "depth_camera.json"
 DEFAULT_WORLD_OUT = REPO_ROOT / "sim" / "worlds" / "farmguard_field.sdf"
 
 GROUND_MARGIN_M = 25.0  # ground plane extends this far past the field polygon bbox on each side
@@ -233,10 +238,82 @@ def sdf_ground_plane(polygon_m, ndvi_cfg: dict) -> str:
 """
 
 
-def sdf_vehicle_with_ndvi_sensor(ndvi_cfg: dict) -> str:
+def sdf_forward_depth_mount(depth_cfg: dict) -> str:
+    """The ADR-019 forward depth camera: a SECOND link + fixed joint on the same wrapper model.
+
+    Separate link from the ADR-007 pair on purpose -- the two apertures point 90 degrees apart, so
+    they cannot share a pose, and the NDVI mount is live-verified state ADR-019 forbids re-opening.
+    Attachment mechanism is byte-for-byte the one Gate 0 proved on 2026-08-05 (nested-model
+    composition + <joint type="fixed"> onto `iris_with_gimbal::base_link`); see
+    config/depth_camera.json "mount" for why that scoped name and not the fully-nested one.
+
+    Two things here are easy to get wrong by analogy with the NDVI block, and both are verified
+    against gz-sensors8 source rather than remembered (citations in config/depth_camera.json):
+      * rpy (0,0,0) IS the forward pose. Gazebo cameras look along sensor +X, so identity gives
+        optical z = body +X (forward), u+ = body -Y (right), v+ = body -Z (down). The pinhole
+        Z-forward instinct, rpy (-pi/2, 0, -pi/2), aims this camera out of the right flank -- the
+        ADR-007 am. 5 bug class, gated up front by scripts/check_depth_mount.py.
+      * NO <camera_info_topic> element. DepthCameraSensor::Load never calls CameraSensor::Load, so
+        that element is silently ignored for this sensor type; the info topic is DERIVED from
+        <topic> by dropping its last segment (`fg/depth/image` -> `/fg/depth/camera_info`).
+        Emitting one would be dead config that looks live.
+    """
+    m = depth_cfg["mount"]
+    cam = depth_cfg["camera"]
+    mx, my, mz, mroll, mpitch, myaw = m["mount_pose_xyz_rpy"]
+    ixx, iyy, izz = m["mount_inertia_diag"]
+    depth_topic = cam["topics"]["depth_image"].lstrip("/")
+    return f"""
+      <!-- ADR-019 (Council Ruling 002) forward depth camera: the SECOND aperture. Nadir cannot
+           buy detection lead time at any speed (ADR-017 am. 1: its 2.480 m forward horizon would
+           have to be 17.8 to 38.8 m), so detection moves to its own forward-looking sensor while
+           the NDVI survey pair above stays exactly where four green gates left it. Sensors only,
+           no visual and no collision, so this link can never occlude either camera.
+           rpy (0,0,0) IS forward: Gazebo cameras look along sensor +X, so identity gives optical
+           z = body +X. No camera_info_topic element: DepthCameraSensor ignores it and DERIVES
+           /fg/depth/camera_info from this topic by dropping the last segment.
+           Source values and the full derivation: config/depth_camera.json. -->
+      <link name="{m['mount_link_name']}">
+        <pose>{mx} {my} {mz} {mroll} {mpitch} {myaw}</pose>
+        <inertial>
+          <mass>{m['mount_mass_kg']}</mass>
+          <inertia>
+            <ixx>{ixx}</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>{iyy}</iyy><iyz>0</iyz>
+            <izz>{izz}</izz>
+          </inertia>
+        </inertial>
+
+        <sensor name="fg_depth_camera" type="{depth_cfg['depth']['gz_sensor_type']}">
+          <pose>0 0 0 0 0 0</pose>
+          <camera>
+            <horizontal_fov>{cam['horizontal_fov_rad']}</horizontal_fov>
+            <image>
+              <width>{cam['image_width_px']}</width>
+              <height>{cam['image_height_px']}</height>
+              <format>{depth_cfg['depth']['gz_pixel_format']}</format>
+            </image>
+            <clip><near>{cam['clip_near_m']}</near><far>{cam['clip_far_m']}</far></clip>
+          </camera>
+          <always_on>1</always_on>
+          <update_rate>{cam['update_rate_hz']}</update_rate>
+          <topic>{depth_topic}</topic>
+        </sensor>
+      </link>
+
+      <joint name="{m['mount_joint_name']}" type="fixed">
+        <parent>{m['parent_link_scoped_from_wrapper']}</parent>
+        <child>{m['mount_link_name']}</child>
+      </joint>
+"""
+
+
+def sdf_vehicle_with_sensor_mounts(ndvi_cfg: dict, depth_cfg: dict) -> str:
     """The vehicle include (same URI + spawn pose as ardupilot_gz's iris_runway.sdf -- spawns at
-    field polygon origin (0,0), the mission's home/first waypoint) PLUS the ADR-007 dual-band NDVI
-    sensor mount, added by wrapping model://iris_with_gimbal in a new outer <model> (nested SDF
+    field polygon origin (0,0), the mission's home/first waypoint) PLUS BOTH sensor mounts: the
+    ADR-007 dual-band NDVI pair (nadir, survey) and the ADR-019 forward depth camera (ahead,
+    detection -- `sdf_forward_depth_mount` above). Both are
+    added by wrapping model://iris_with_gimbal in a new outer <model> (nested SDF
     model composition -- the same pattern iris_with_gimbal/model.sdf itself uses to attach its own
     gimbal to iris_with_standoffs) rather than forking the external, pinned-SHA vehicle model. See
     config/ndvi_camera.json ("mount") for the full derivation/verification notes on the
@@ -329,7 +406,7 @@ def sdf_vehicle_with_ndvi_sensor(ndvi_cfg: dict) -> str:
         <parent>{m['parent_link_scoped_from_wrapper']}</parent>
         <child>{m['mount_link_name']}</child>
       </joint>
-    </model>
+{sdf_forward_depth_mount(depth_cfg)}    </model>
 """
 
 
@@ -407,10 +484,10 @@ def sdf_bird_model(bird: dict, ndvi_cfg: dict) -> str:
 """
 
 
-def build_sdf(field_cfg, static_cfg, birds_cfg, ndvi_cfg, obstacles) -> str:
+def build_sdf(field_cfg, static_cfg, birds_cfg, ndvi_cfg, depth_cfg, obstacles) -> str:
     parts = [sdf_world_header(field_cfg)]
     parts.append(sdf_ground_plane(field_cfg["polygon_m"], ndvi_cfg))
-    parts.append(sdf_vehicle_with_ndvi_sensor(ndvi_cfg))
+    parts.append(sdf_vehicle_with_sensor_mounts(ndvi_cfg, depth_cfg))
     parts.append("\n    <!-- Static obstacles (ADR-001): known tree positions from a pre-flight "
                   "boundary survey, geofenced; see config/static_obstacles.json for the "
                   "machine-readable export flight-software consumes. Kept in sync with this world "
@@ -432,6 +509,7 @@ def main():
     ap.add_argument("--static-obstacles", type=Path, default=DEFAULT_STATIC_OBSTACLES)
     ap.add_argument("--birds", type=Path, default=DEFAULT_BIRDS)
     ap.add_argument("--ndvi-camera", type=Path, default=DEFAULT_NDVI_CAMERA)
+    ap.add_argument("--depth-camera", type=Path, default=DEFAULT_DEPTH_CAMERA)
     ap.add_argument("--world-out", type=Path, default=DEFAULT_WORLD_OUT)
     ap.add_argument("--obstacles-out", type=Path, default=None,
                      help="defaults to --static-obstacles (rewritten in place)")
@@ -442,13 +520,14 @@ def main():
     static_cfg = json.loads(args.static_obstacles.read_text())
     birds_cfg = json.loads(args.birds.read_text())
     ndvi_cfg = json.loads(args.ndvi_camera.read_text())
+    depth_cfg = json.loads(args.depth_camera.read_text())
 
     obstacles = compute_obstacles(static_cfg, field_cfg["polygon_m"])
     static_cfg["obstacles"] = obstacles
     obstacles_out.write_text(json.dumps(static_cfg, indent=2) + "\n")
     print(f"[gen_farm_world] {len(obstacles)} static tree obstacles -> {obstacles_out}")
 
-    sdf_text = build_sdf(field_cfg, static_cfg, birds_cfg, ndvi_cfg, obstacles)
+    sdf_text = build_sdf(field_cfg, static_cfg, birds_cfg, ndvi_cfg, depth_cfg, obstacles)
 
     # Static validation: the output must at minimum be well-formed XML. This does NOT confirm the
     # SDF is semantically valid to gz-sim (that needs the real `gz sim` parser, which only runs in
@@ -463,7 +542,8 @@ def main():
     n_temp_visuals = 1 + 2 * len(obstacles) + len(birds_cfg["birds"])  # ground + trunk/canopy + birds
     print(f"[gen_farm_world] well-formed XML confirmed; wrote world "
           f"({len(birds_cfg['birds'])} bird models (driven by scripts/drive_birds.py, ADR-012), {len(obstacles)} trees, "
-          f"ADR-007 NDVI sensor mount, {n_temp_visuals} calibrated <temperature> visuals) "
+          f"ADR-007 NDVI sensor mount + ADR-019 forward depth mount, "
+          f"{n_temp_visuals} calibrated <temperature> visuals) "
           f"-> {args.world_out}")
 
 
