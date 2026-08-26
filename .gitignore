@@ -63,7 +63,17 @@ secrets/
 # The ADR-003 verdict run's scores (am. 7: the ADOPT decision's own evidence — labels,
 # detections, spike_scores; overlays excluded below as regenerable imagery)
 !eval/results/adr003_*/
-eval/results/adr003_*/overlays/
+# ...with ONE exception, and the word "regenerable" above is why it is needed: overlays regenerate
+# only from the clip's FRAMES, and those are never committed (3.8 GB of .npy/.png per flight,
+# excluded below). So a fresh checkout can reproduce every number in this directory and not one
+# picture. The 2026-08-25 take's four stills (~60 KB) are the only in-repo form of the flagship
+# flight's 2-frame encounter — the README and demo figures point at them. Contents-exclude + child
+# negation, not a directory exclude: a `dir/` exclude cannot be pierced (see the note above).
+# Regenerate with:  python3 eval/label_from_sim.py --clip eval/results/adr003_20260825/clipview \
+#   --out <tmp>/gt.json --overlay eval/results/adr003_20260825/overlays --overlay-frames 964 965 \
+#   --overlay-detections eval/results/adr003_20260825/detections_ndvi.json
+eval/results/adr003_*/overlays/*
+!eval/results/adr003_20260825/overlays/*.png
 # ADR-003 criterion 2's RGB pixel study (~28 KB of summary metrics, no frames). Committed for the
 # same reason as the applied-pose logs: eval/baseline_rgb.py's real-render threshold is DERIVED
 # from the class means in this results.json, and tests/fieldguard_planning/test_rgb_pixel_study.py

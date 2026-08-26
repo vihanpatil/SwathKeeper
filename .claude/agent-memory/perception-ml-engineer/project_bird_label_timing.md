@@ -1,6 +1,6 @@
 ---
 name: bird-label-timing
-description: Bird ground-truth labels lag the render by 0.12-0.81 s (driver hold + gz-CLI latency); only the applied-pose log makes them scoreable
+description: Bird ground-truth labels lag the render by 0.12-0.81 s (driver hold + gz-CLI latency); only the applied-pose log makes them scoreable — and even APPLIED labels carry a measured ~15 px residual
 metadata:
   type: project
 ---
@@ -36,3 +36,15 @@ pose. Every label carries `label_src` (`applied`/`spawn`/`generator` = scoreable
 `unknown` = refused by `score.py`). The driver half is UNGATED until a flight runs it — first
 re-fly must confirm the log exists, covers the clip's sim span, and that the annotator reports
 `applied` labels. See [[ndvi-rgb-spike]], [[eval-harness-core]].
+
+**APPLIED labels are scoreable, not exact — measured 2026-08-26 by overlaying box on pixel.** On
+the 2026-08-25 take's only two bird-visible frames, the applied-pose GT box vs the committed
+detector box: frame 964 IoU **0.826** (boxes nearly coincident), frame 965 (the CPA frame, range
+3.95 m) IoU **0.511** — the label sits ~15 px LEFT of the rendered bird, about a third of the
+47 px box. Visible to the eye in
+`eval/results/adr003_20260825/overlays/gtdet_a_ndvi_direct_ndvi_frame_000965.png`. So the residual
+survives the applied-log fix at roughly 1/13 of the modelled error, and the CPA frame — the one
+that matters — clears the 0.3 IoU bar by 0.21, not by a mile. Two consequences: do not raise the
+scoring IoU above ~0.4 without re-measuring this, and never present a bare `gt_*` still as "the
+detector's box" — on frame 965 the red label box visibly misses the bird the detector framed
+tightly, which reads as a detector failure and is the opposite of the truth.

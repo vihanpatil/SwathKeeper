@@ -38,6 +38,16 @@ that must survive a clobber: `live_flight_log_*.json`, `gate2_summary.json`,
 2026-08-18. The `.npy` frame bulk and any other raw run output stay ignored; commit summary metrics
 into reports, not raw frame data.
 
+**Overlay stills** (`label_from_sim.py --overlay`) are the one exception to "regenerable, so not
+committed", and only for `adr003_20260825/overlays/*.png`: they regenerate from the clip's FRAMES,
+and those are never committed, so a fresh checkout reproduces every number in that directory and
+not one picture. Three flags decide what a still shows — `--overlay` (dir), `--overlay-frames`
+(exact frame ids; the closest-approach default shows ONE frame per bird, wrong when the whole
+encounter is two frames), `--overlay-detections` (adds a `gtdet_<approach>_*` pair with the
+detector's box in cyan beside the label's in red, refusing a detections file from another clip).
+A frame with no visible bird still writes a still, and the tool says so on stderr: a boxless
+picture is what a labelling failure looks like too.
+
 ## Ground truth for real clips
 
 The synthetic spike clips carry `birds[]` on every `poses.jsonl` line; a clip from the live
