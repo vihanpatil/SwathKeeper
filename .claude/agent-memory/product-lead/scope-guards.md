@@ -1,13 +1,16 @@
 ---
 name: scope-guards
-description: Standing product-lead scope guard (survives the dropped deadline) + the recorded cuts, incl. the 2026-08-24 R4/R5, criterion-2 and no-tracker cuts
+description: Standing product-lead scope guard (survives the dropped deadline) + the recorded cuts, incl. ADR-019's NDVI freeze and the R4/R5, criterion-2 and no-tracker cuts
 metadata:
   type: project
 ---
 
 **Standing call, in force for the rest of the project: DO NOT ADD SCOPE. GUARD THE EXITS.** Nothing
 is added without something cut in the same breath. Every `/standup` is measured against protecting
-the Week-7 demo + dashboard exit, not feature count.
+the demo exit, not feature count. **The exit moved 2026-08-26 (ADR-019):** the dashboard is BUILT
+(ADR-018) and Week 7 is down to its user-gated remainder, so what is being guarded now is the
+**bar-clearing bird dodge on the forward depth sensor, then the wire demo take** — a 6-7-session
+track (honest range 5-10). See [[phase]].
 
 **Why:** the original framing came from the 2026-08-05 external review, whose blunt headline was
 that the failure mode is *slippage into no demo*, not under-scoping. The ~7-8-week hard deadline was
@@ -23,12 +26,24 @@ cut/deferred log — add new ones there with date + reason):
 - **No retrofitted startup / "billion-dollar" narrative (2026-08-05).** Sim-only, solo,
   portfolio-honest framing is the asset; inflating it turns ADR honesty into an interview red flag.
 - **No code-identifier rename (2026-08-18, ADR-011).** `fieldguard_planning`, `/fg/*` etc. stay.
-- **Safety scope bounded to R2/R3 for v1 (2026-08-24).** ADR-013 am. 12 ranked five fixes; R1
-  shipped, R2 + R3 landed offline 2026-08-24 and fly on the next avoidance flight. **R4**
-  (reversal-preferring candidate order) and **R5** (ArduPilot `FENCE_*` backstop + lanes moved
-  inboard) stay recorded-open, NOT v1 blockers — R4 needs closing geometry v1 does not have, and R5
-  is a second boundary authority bolted on beside a working one. They are the classic "while we're
-  in there" and are refused on sight until R2/R3 have flown.
+- **Safety scope bounded to R2/R3 for v1 (2026-08-24), then R4 promoted by its own written
+  condition (2026-08-25).** R1 shipped; R2 flew green 2026-08-25, R3 missed by 15 mm and is still
+  un-exercised. **R4 is IN** — the take failed its own GT-CPA gate, which was the pre-registered
+  trigger — but the 2026-08-26 replay re-scoped it: the binding constraint is **lead time, not
+  candidate ordering**, so R4 is built WITH the forward sensor and gated on lead time as well as
+  CPA. **R5** (ArduPilot `FENCE_*` backstop + inboard lanes) stays recorded-open, NOT a v1
+  blocker — a second boundary authority bolted beside a working one — and moved behind the wire
+  demo by ADR-019 §7. Classic "while we're in there"; refused on sight.
+- **ADR-019 §7 (2026-08-26) — the push was paid for in the same breath.** In: forward depth sensor,
+  birds-first working dodge, mapped-wire scenario. Out: **ALL NDVI work frozen** (research verdict:
+  keep-as-is, invest nothing more), short `test_2lane` arm RETIRED OUTRIGHT, doc long-tail + R5
+  behind the wire demo, Week 7 shrunk to zero engineering sessions. Claims ceiling recorded:
+  **"sim-demonstrated, evidence-gated"** — "essential / field-ready / pay-for" is vetoed until
+  external validation exists. Wire-mapping recon pass is a GATED stretch goal (A2), strictly after
+  the birds dodge works.
+- **No flight booked on a design number (2026-08-26, ADR-019 §6).** The booking gate must exit 0
+  on live-measured inputs; exit 3 (PASS on config prose) is not bookable. The next take is designed
+  to pass — a failure after a predicted pass convenes Ruling 003, not another instructive breach.
 - **Criterion 2's RGB pixel study deferred behind the avoidance flight (2026-08-24).** Perception
   wanted it in-session; my call. The flight live-gates four landed things and criterion 2 gates none
   of them; the study is offline, ~1 h, and its clip already exists, so deferring costs ordering and

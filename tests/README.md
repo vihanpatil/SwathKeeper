@@ -10,9 +10,9 @@ This file is the **one home** for the suite totals; `README.md` and `SETUP.md` q
 Measured on the verified host 2026-08-26 — re-run all three and re-quote if you change any of them.
 
 ```bash
-python3 -m unittest discover -s tests/fieldguard_planning   # 911 tests, OK (skipped=2) — the original CI invocation
+python3 -m unittest discover -s tests/fieldguard_planning   # 988 tests, OK (skipped=2) — the original CI invocation
 python3 -m unittest discover -s tests -p 'test_*.py'        # 150 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1058 passed, 1 FAILED, 2 skipped, 0 xfail
+python3 -m pytest tests -q                                  # both at once: 1135 passed, 1 FAILED, 2 skipped, 0 xfail
 ```
 
 **The 1 failure is deliberate and load-bearing:** `test_ci_evidence_gate…test_step_passes_on_the_

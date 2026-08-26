@@ -1,71 +1,67 @@
 ---
 name: phase
-description: Current SwathKeeper phase (Week 6 — the 2026-08-25 take FLEW and breached as pre-registered; R4 is now #1) and the booking bar for flights
+description: Current SwathKeeper phase (as of 2026-08-26 — Ruling 002/ADR-019 ag-avoidance push is the program; forward depth sensor built host-side, commissioning today) and the booking bar for flights
 metadata:
   type: project
 ---
 
-**As of 2026-08-25: Week 6 — THE TAKE FLEW, and it breached exactly as pre-registered.**
-Seam + R2 + detector (99.92 % in air) + ledger (720/0) all live-gated green; `gt_cpa_m` **0.0067 m**
-to bird_0 at 4.03 m vertical, gated −1.1210 m vs the 3.00 m bar → **INVALID stands** (marker written,
-pin deliberately withheld). Diagnosis is geometry, not the detector: 7 in-cylinder frames → 2
-in-image, sensor lead 0.175 s, policy lead 0.000 s. **R4 escape geometry is now #1 by measurement**,
-paid for by deferring the doc fix-list and item 2's short arm (cut logged in ROADMAP 2026-08-25).
-Calls resolved 2026-08-25: **nadir DECIDED by the user (ADR-017)** — camera stays nadir for v1,
-sensor-honest speed doctrine buys lead time (re-fly speed off the replay's sweep), second
-forward-facing sensor is the documented growth path, tilt REJECTED; `predict_bird_visibility.py`'s
-speed default is being fixed in the ADR-016 honesty bundle. Still owed: the record shape for
-committing breach evidence (CI can't pass `--truth`; committing the track makes the take
-*ambiguous* and the CPA never prints).
-*(An earlier 2026-08-25 docs-cleanup session changed no engineering state. Scope ruling: [[scope-guards]].)*
-(The ~7-8-week hard deadline was **dropped 2026-08-18** — quality over calendar. The scope guard
-survives it: [[scope-guards]].)
+**As of 2026-08-26: the program is the ADR-019 ag-avoidance push, not "finish Week 6".**
+Council Ruling 002 RATIFIED WITH AMENDMENTS by the user (ADR-019): product-intent dual-track,
+claims capped at "sim-demonstrated, evidence-gated". Engineering track in order, priced in
+sessions (6-7, honest range 5-10): **forward depth camera in sim (1-2) → booking-gate PASS (1) →
+bar-clearing BIRD dodge (1) → mapped-wire scenario (2) → wire demo take (1)**. Wires are
+fresh-per-field-survey mapped infrastructure with a meters-scale sag buffer; no camera wire
+detection promised; radar-in-sim researched and REJECTED.
 
-**What closed, so it is never re-opened as "next up":**
-- Weeks 1-2 sim foundation, Weeks 3-4 avoidance loop — complete, live; ledger closed 720/0
-  (ADR-013 am. 11).
-- **Week 5 NDVI: closed.** Four ADR-007 gates green; mount geometry corrected + gated.
-- **Recording throughput: CLOSED 2026-08-22** (am. 9). Fast DDS SHM segment was the root cause;
-  5.0 Hz flat, first 720/720 map. Do NOT retry `update_rate_hz` 5 → 2 (disproven, 16× worse).
-- **ADR-003 criterion 3: CLOSED 2026-08-23** (am. 7) — ADOPT NDVI-direct, per-bird FNR 0.000.
-  −0.61 stays PROVISIONAL pending FP characterisation.
-- **2026-08-24 — four things landed OFFLINE in one session:** the detector on the
-  `detection_source` seam (ADR-009), R2 (`lateral_tree_margin_m` 1.0) + R3 (degenerate re-latch
-  refusal), the GT-CPA gate (ground truth replaces self-referential detection-CPA; legacy logs keep
-  their verdict on a versioned branch), and the combined runbook
-  `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`. Suite 530/2/2 → **805 green / 2 skipped / 0 xfailed**.
-  None of it is *done*: every piece awaits the same live gate.
+**Why the order changed (the measurement, not appetite):** the 2026-08-26 point-mass replay fired
+the ADR-017 tripwire — `speed_at_which_nadir_becomes_safe = None` on the flown encounter (bird_0
+closes at its own 6.0 m/s, caps lead at 0.41 s from a hover; every escape needs ≥1.25 s; nadir
+needs 17.8-38.8 m of forward sensing and has 2.48 m). So the **second forward sensor was promoted
+from growth path to scope**, the tilt stays REJECTED, and **the R4 re-fly now sits behind the
+sensor — and is not a separate flight, it IS the bar-clearing dodge take.**
 
-**Council Ruling 001 RATIFIED by the user 2026-08-25 (ADR-016):** the offline point-mass
-confound-resolver replay precedes any R4 build (84 maneuvers, 0.5–4 % displacement compliance,
-direction/warning/plant confounded — resolvable offline); then the cheap honesty-fix bundle, ONE
-re-fly, **Week 7 immediately**, extraction only after the clean pass. Tripwire: replay proves 3 m
-never clearable from nadir → the mount decision reopens before further avoidance work.
+**Sensor status (ADR-020, 2026-08-26):** built host-side, statically gated 23/23 + 80 host tests,
+**never rendered** — the booking gate `scripts/predict_forward_lead.py` PASSes the design at
+5.0 m/s (margin 1.811×) but exits **3 = NOT BOOKABLE** by construction until D1/D3 supply live
+`fx`/`cy`/acquisition range. Commissioning Docker session = `docs/runbooks/FORWARD_DEPTH_SENSOR.md`
+gates D1-D6, with the booking gate as D4. My placement/pricing, in ROADMAP: 2 sessions against the
+ratified 1-2, D4 absorbed into commissioning; the segmenter session ADR-019 §8 never priced puts
+the track at **7 of 6-7**, not under it.
 
-**Open, in order (`docs/ROADMAP.md` "Next up" is the live truth; this is orientation):**
-1. **The point-mass replay** (ratified next step), then **R4 escape geometry** re-scoped to what it
-   measures — against 0.175 s of lead (not the 12 m cylinder), gated on lead time as well as CPA —
-   then the re-fly. Fix the predictor's speed default first.
-2. Item 2's long arm now EXISTS (the take was a full boustrophedon, best-ever tree gate 11/18
-   canopy-grade); only the short `test_2lane` arm remains, and it is deferred behind R4.
-3. Criterion 2's offline RGB pixel study (its input — 3310 RGB PNGs — rode this take for free).
-   −0.61's **background** FP half is now closed; the **range** half needs birds at 3+ distinct ranges.
-4. Doc long-tail — deferred behind R4, except the two load-bearing wrong facts (published 8/6/11
-   medians are the 3 m/s figure; the gate's note says "forward-facing camera" but the mount is nadir).
-5. Week 7 — dashboard, demo video, GTM. The exit being guarded.
+**Closed — never re-open as "next up":** Weeks 1-2 foundation; Weeks 3-4 avoidance loop (ledger
+720/0); Week 5 NDVI (four ADR-007 gates, mount gated); recording throughput (2026-08-22, Fast DDS
+SHM segment, 5.0 Hz flat — do NOT retry `update_rate_hz` 5 → 2); **ADR-003 criterion 3** (ADOPT
+NDVI-direct, per-bird FNR 0.000) and **criterion 2** (2026-08-26 RETIRE-ARM — the RGB R channel IS
+the NDVI Red band bit-for-bit, so the arm never was a second sensor; its budget went to the forward
+sensor). The 2026-08-25 take FLEW and breached as pre-registered (`gt_cpa_m` 0.0067 m, gated
+−1.1210 m vs the 3.00 m bar) — INVALID stands, marker written, pin deliberately withheld, main CI
+red by design until the clean re-fly.
 
-**The booking bar, learned 2026-08-24 — this is the durable part:** a Docker session is priced on
-the *artifact*, and an artifact is worthless if the gate that scores it can print a false PASS. QA's
-adversarial pass found six findings in the freshly-built GT-CPA gate (1 critical, 4 major), each
-reproduced with a probe — e.g. a 0.8 s frozen clock turning a true 0.0000 m CPA into a 3.5000 m
-PASS. So **"the code is landed" is not the booking bar; "the gate cannot lie" is.** Closing them is
-not new scope — it is the no-band-aids rule applied to the certifier.
+**Frozen / cut for this push (2026-08-26, ADR-019 §7):** ALL NDVI work frozen (research verdict:
+keep-as-is, invest nothing more — plain NDVI is commoditized, the live reactive loop is the gap);
+short `test_2lane` arm RETIRED OUTRIGHT; doc long-tail + R5 move behind the wire demo; **Week 7
+shrinks to its user-gated remainder only** (voiceover, README application, Pages — zero engineering
+sessions) and runs in parallel. Dashboard is BUILT and browser-verified (ADR-018); README APPLIED.
+
+**Still owed by me (product-lead):** the record shape for committed breach evidence (CI runs the
+gate with no `--truth`; a second committed applied track makes takes ambiguous and the CPA never
+prints). Unchanged, still a product-lead call.
+
+**The booking bar — the durable part:** a Docker session is priced on the *artifact*, and an
+artifact is worthless if the gate scoring it can print a false PASS (QA found 6 such holes in the
+fresh GT-CPA gate; a 0.8 s frozen clock turned a true 0.0000 m CPA into a 3.5000 m PASS). "The code
+is landed" is not the bar; **"the gate cannot lie" is.** New since ADR-019 §6: **the
+no-failure-theater tripwire** — no flight is booked until the predictor clears 3.00 m with ≥1.3×
+lead margin on `guided_default`. The next take is *designed to pass*; a failure after a predicted
+pass is a plant-model finding that convenes Ruling 003, not another instructive breach.
 
 **How to apply:** flights need the user at the controls, so a session goal is agent-doable offline
-work unless it is explicitly prepping/booking a flight. Book a user-flown Docker session only when
-ONE take clears several blockers at once (that pattern has now paid off twice), run the host
-predictor first **at the speed the mission will fly** (2026-08-25: PASS at the 3 m/s default, FAIL at
-the flown 9.4 — that default booked a 2-frame encounter), and pre-register the expected outcome. The
-2026-08-25 pre-registration paid off exactly as intended: the take failed its own gate and that is
-reported as the system working, never spun as a pass. Also: **run teardown and freeze the bird driver
-before scoring** — skipping both cost this take reproducible denominators and nearly its clip.
+work unless it is explicitly prepping/booking a flight. Book a user-flown session only when ONE
+take clears several blockers (that pattern has paid off twice). Run the host predictors first —
+`predict_forward_lead.py` for the forward sensor (monotone in speed) AND
+`predict_bird_visibility.py --speed <actual>` (required, no default since ADR-016; **non-monotone**
+in speed, so sweep the range — the two gates do not substitute for each other). Pre-register the
+expected outcome, run teardown, and freeze the bird driver before scoring.
+*(Scope ruling: [[scope-guards]].)*
+(The ~7-8-week hard deadline was **dropped 2026-08-18** — quality over calendar; the scope guard
+survives it.)
