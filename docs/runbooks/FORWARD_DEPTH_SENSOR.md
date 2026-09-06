@@ -8,9 +8,16 @@ to its own aperture while the NDVI survey pair stays exactly where four green ga
 **This is a COMMISSIONING session, not a flight.** Nothing here arms, and no dodge take may be
 booked until §3 exits 0. One Docker session, ~20 minutes of gates, host quiet.
 
-> **Status: NEVER RUN.** Everything below is authored and verified host-side (the static geometry
-> gate at 23/23, the booking-gate arithmetic, 80 host tests). Verified offline is not rendered.
-> Numbers marked *(host)* are predictions to compare the render against, not results.
+> **RUN 2026-09-06: D2 PASS 8/8, D3 measured (see §2); D5/D6 pending.** The mount renders and
+> agrees with `scripts/check_depth_mount.py`; the booking gate has live inputs (§3) and the
+> acquisition rule those inputs feed is **ADR-020 amendment 1**. D5 (delivery under flight load)
+> and D6 (cruise pitch) come from the flight and are **not yet measured** — every §4/§5 number
+> below is still a prediction. Numbers marked *(host)* are predictions to compare the render
+> against; the 2026-09-06 measured values are called out inline.
+>
+> *First-run history, kept because it is the lesson:* run 1 **FAILED (exit 1) on the harness, not
+> the sensor** — it stripped the physics plugin, so every `set_pose` was a silent no-op and the
+> gates scored empty sky. See §2 "How the harness moves the bird".
 
 ### Where this sits among the runbooks
 | runbook | what it does |
@@ -96,7 +103,10 @@ does not carry), and reports the worse of the two verdicts.
 
 ## 2. Gate D2 + D3 — the mount aims where it claims, and how far it actually sees
 
-Run it **alone**, before or instead of a bringup: it launches its own second rendering Gazebo.
+Run it **alone**, before or instead of a bringup: it launches its own second rendering Gazebo, and
+it **refuses (exit 4)** if one is already up — a leftover `/depthcheck/` server would answer its
+probes with another run's scene, and a bringup's Gazebo starves the software renderer they would
+share. `scripts/fly_pipeline.sh down` first if §1 left one running.
 
 ```bash
 docker exec -it fieldguard-sim bash /workspace/fieldguard/scripts/verify_depth_mount_geometry.sh
@@ -105,17 +115,49 @@ docker exec -it fieldguard-sim bash /workspace/fieldguard/scripts/verify_depth_m
 It parks the vehicle at (60, 30, 15) nose-east — clear of both tree rows, open sky along the optical
 axis — and teleports `bird_0` to known ranges dead ahead.
 
-| gate | assertion | *(host)* prediction |
+**How the harness moves the bird** *(rewritten 2026-09-06, after the gate's first run scored a bird
+that never moved).* The script edits its own `/tmp` copy of the world in exactly two places, and
+asserts both landed before it launches anything:
+
+* **Physics is KEPT; gravity is zeroed** (`<gravity>0 0 0</gravity>` as the first child of
+  `<world>`). `/world/<w>/set_pose` is served by `UserCommands`, whose `PoseCommand::Execute` only
+  creates a `components::WorldPoseCmd`; the **only** consumer of that component is the Physics
+  system (`PhysicsPrivate::UpdatePhysics`). Strip physics — as the first version of this script did,
+  to stop the nested-include vehicle free-falling — and every teleport is a silent no-op while the
+  service still replies `data: true`, because that Boolean means **queued, not moved**. Making the
+  wrapper `<static>` is not the fix either: a nested include does not inherit it (measured again on
+  2026-09-06 — the vehicle fell 15.0 → 0.19 m). With gravity zeroed, a free body with no forces on
+  it stays parked: the vehicle held **exactly** (60, 30, 15) over a >25 s probe.
+* **`field_ground`'s plane grows 125.00 → 425.00 m east-west, in the copy only.** The real ground
+  ends at x = 100, i.e. **39.85 m** ahead of the parked camera, so nothing in the committed world
+  reaches the 60 m far clip from this pose and **D2 CULL has nothing to measure** (the first run
+  read 39.70 m — the scene's edge, not the clip). The extension touches nothing else: the boundary
+  it creates is a clean curve, 0 fragment components through the morphology.
+
+**Every teleport is verified.** After each `set_pose` the script reads the model back off
+`/world/depthcheck/pose/info` and requires ≤ 0.05 m on each axis, printing the readback beside every
+capture; the vehicle's park pose is checked the same way at world-up **and** after the last capture.
+Any mismatch is **exit 4** and the run stops — a gate that cannot place its target does not get to
+score pixels. `sim/worlds/farmguard_field.sdf` and `scripts/gen_farm_world.py` are untouched by all
+of this (`tests/test_verify_depth_mount_geometry.py` pins that, and re-runs the sed on the host).
+
+| gate | assertion | *(host)* prediction → **measured 2026-09-06, run 2** |
 |---|---|---|
-| **D2 CLEAR** | no finite depth pixel nearer than 1.0 m | 0 px — the airframe mesh is the one thing host math cannot settle, so this is the real news |
-| **D2 RANGE** | nearest finite depth at the 10 m on-axis capture | **9.820 m** (10 − the 0.18 m bird radius), ±0.20 m. A nadir mount from this pose reads **15.000 m** |
-| **D2 AIM** | blind near-cluster centroid vs the principal point | (320, 240), ≤ 15 px |
-| **D2 OFFAX** | the reading at pixel (560, 120) is **Z-depth, not slant range** | **19.84 m**, not the 22.33 m slant — 2.49 m apart against a 0.20 m tolerance |
-| **D2 AXES** | that same target lands where u+=right / v+=down predicts | (560, 120), ≤ 15 px |
-| **D2 NEAR** | bird parked 0.25 m ahead → literal pixel values at the principal point | `['-inf']`, **not** `0.1` |
-| **D2 FAR** | some of the 10 m frame is `+inf` (sky past the far clip) | ~80 % of pixels |
-| **D2 CULL** | greatest finite Z-depth = far ÷ \|ray\| **at its own pixel** | ~57.8 m at \|ray\| 1.038, **not** 60.0 |
-| **D3** | greatest range at which the bird survives the adopted morphology | **46.8 m** *(host pinhole bound)* — the measurement is the point |
+| **D2 CLEAR** | no finite depth pixel nearer than 1.0 m | 0 px — the airframe mesh is the one thing host math cannot settle, so this is the real news → **0 px, PASS** |
+| **D2 RANGE** | nearest finite depth at the 10 m on-axis capture | **9.820 m** (10 − the 0.18 m bird radius), ±0.20 m. A nadir mount from this pose reads **15.000 m** → **9.821 m** |
+| **D2 AIM** | blind near-cluster centroid vs the principal point | (320, 240), ≤ 15 px → **(320, 240), error 0.0 px** |
+| **D2 OFFAX** | the reading at pixel (560, 120) is **Z-depth, not slant range** | **19.84 m**, not the 22.33 m slant — 2.49 m apart against a 0.20 m tolerance → **19.822 m**, i.e. Z 19.840 and **not** slant 22.326 |
+| **D2 AXES** | that same target lands where u+=right / v+=down predicts | (560, 120), ≤ 15 px → **(560, 120) exact** |
+| **D2 NEAR** | bird parked 0.25 m ahead → literal pixel values at the principal point | `['-inf']`, **not** `0.1` → **`['-inf']`** |
+| **D2 FAR** | some of the 10 m frame is `+inf` (sky past the far clip) | ~80 % of pixels — the reasoning assumes ground *all the way to the clip*, which is what the harness's plane extension buys → **0.796** |
+| **D2 CULL** | greatest finite Z-depth = far ÷ \|ray\| **at its own pixel** | ~57.8 m at \|ray\| 1.038, **not** 60.0 → **57.99 m at (289, 374), \|ray\| 1.034, far ÷ \|ray\| = 58.01** |
+| **D3** | greatest range at which the bird survives the adopted morphology | **46.8 m** *(host pinhole bound)* — the measurement is the point → **optical prefix 58.0 m (a FLOOR); BOOKABLE 46.0 m** (see below) |
+
+**Live intrinsics, 2026-09-06:** `fx` **520.0058046927554**, `cy` **240.0**, read in the check-world
+copy. The config-derived focal length is `(640/2)/tan(1.1033/2)` = **520.0058046927555** — they agree
+to **1 ULP**, which is a float's last bit and not a discrepancy. The booking gate takes its `fx`/`cy` from
+the **real bringup's** `/fg/depth/camera_info` (§3): this world is a copy, and "the copy agreed" is
+evidence, not the source.
 
 **Why D2 alone is not enough (M3).** On the optical axis Z-depth and slant range are *identical by
 construction*, so a mount that reported slant range would pass AIM, RANGE and CLEAR perfectly and
@@ -136,14 +178,59 @@ background. That discharges the anti-aliasing unknown the host bound could not (
 `SetAntiAliasing(2)` past the SDF), and it stays an **upper bound on the mission horizon**, where the
 bird crosses tree canopies and the ground band. The aggregator reports the longest **contiguous
 prefix** of detected ranges, never `max()`: a hit after a miss is aliasing, and letting it set the
-number would promote the booking gate to exit 0 on noise. **Write the printed number down.**
+number would promote the booking gate to exit 0 on noise. **Write the printed number down — only if
+this run exited 0.** A run that failed a mount gate still prints the sweep (it is the diagnostic
+that says whether the target resolved at all), but the script labels the number *NOT A MEASUREMENT
+OF THIS MOUNT* and refuses to print the `predict_forward_lead.py` line, because that number was read
+through geometry the same run just disproved.
 
+**D3 prints TWO numbers, and only one of them books a flight** *(the rule is ADR-020 amendment 1,
+2026-09-06)*:
+
+* the **OPTICAL PREFIX** — the contiguous prefix itself. On 2026-09-06 the bird was **DETECTED at
+  every swept range, 10 → 58 m**, so the prefix is a **FLOOR**: the sweep ran out of clip, not out
+  of target. Apparent radius tracked the pinhole prediction to ~40 m (9.00 px measured vs 9.36 at
+  10 m; 3.00 vs 3.12 at 30 m) and then **PLATEAUED at a 4×4 px patch (r 2.00 px) from 40 to 58 m**
+  while pinhole predicts 2.34 → 1.61 px. In a noiseless sky-backed scene an analytic sphere plus
+  gz's hardcoded AA(2) returns a finite depth for **any** pixel a sample touches, so the footprint
+  stops shrinking. **In this scene the optics out-resolve any far clip** — which makes the prefix a
+  statement about the scene, not a horizon.
+* the **BOOKABLE** range — the longest prefix range that also sits inside the **frame-corner
+  Z-depth horizon** `far ÷ |ray_corner|` = **47.56 m** on the live `fx`/`cy`. Past that bound the
+  *same* target away from the optical axis is culled to `+inf` — the asymmetry **D2 CULL** measures
+  two gates up — and `predict_forward_lead.py` refuses it (`acquisition_within_corner_far_clip`).
+  A horizon has to hold at the **worst** pixel, not the best one. On 2026-09-06: **46.0 m.**
+
+**The sweep quantum is 2 m in this band, so 46.0 is the last SWEPT value under 47.56 — not the
+bound.** The true horizon lies in [46.0, 47.56] m and the gate books the low end, which costs lead
+time; being wrong in that direction cannot hurt anyone.
+
+*If it exits 1* one of the mount gates failed and the script names it. The sweep below it is not a
+property of this mount; nothing from that run reaches ADR-020 or the booking gate.
+*If it exits 124, 130 or 143* the run was aborted, not scored — a capture timed out, or something
+killed it. Same standing as exit 4, but without a banner, so read the code. **Only exit 0 and exit 1
+say anything about the mount.**
+*If it exits 4* nothing it printed is a measurement — the harness itself failed. It names which:
+a gz server was already up (tear it down), the world copy did not get its two edits (the committed
+world changed shape under the sed), a teleport did not apply (check the copy still carries
+`gz-sim-physics-system`), or the vehicle is not parked at (60, 30, 15). Fix that and re-run; do not
+read the numbers above the failure.
 *If D2 CLEAR fails* the aperture is occluded by the airframe: move `mount.mount_pose_xyz_rpy` in
 `config/depth_camera.json` forward/up, regenerate the world, re-run §0, re-run this.
 *If D2 AIM, RANGE, OFFAX or AXES fails* stop. Do not record anything with this mount, and do not
 "fix" it by adjusting the georef — read `config/depth_camera.json`'s `mount_pose_rpy_note` first.
 *If the sweep says the bird was still detected at the longest swept range*, that is a floor, not the
-horizon: raise `SWEEP_RANGES` in the script and the `clip_far_m` in the config, and re-run.
+horizon — and on 2026-09-06 it did. **Do not chase it by raising `clip_far_m`.** The bookable number
+is bounded by the frame corner, not by the prefix, so a longer clip buys the booking gate nothing;
+what it does buy is clutter, measured from this render's own geometry: at far 60 m the ground
+returns finite from row ~374 and the ±6 m threat band's lower edge shares rows with it only below
+**23.2 m**, but at far 100 m the ground goes finite from row ~319 and that overlap grows to
+**39.6 m** — i.e. across essentially the whole 33.59 m horizon the booking gate needs at 5 m/s.
+Raising the clip walks mapped ground into exactly the band the (unbuilt) segmenter has to key on.
+The clip stays **60 m**. If a later mission speed genuinely needs more horizon, the cheaper lever is
+a **tighter bound, not a longer clip**: re-derive the corner from the threat band's own worst pixel
+rather than the frame's (**50.8 m** at R = 47.6) — a `predict_forward_lead.py` change with its own
+ADR entry, worth ~4 m.
 
 ---
 
@@ -159,9 +246,24 @@ Then, on the host:
 
 ```bash
 python3 scripts/predict_forward_lead.py --speed <the speed the mission will actually fly> \
-        --fx <K[0] from above> --cy <K[5] from the SAME message> --acq-range-m <D3> \
+        --fx <K[0] from above> --cy <K[5] from the SAME message> --acq-range-m <D3 BOOKABLE> \
         --json eval/results/booking_gate_$(date -u +%Y%m%dT%H%M%SZ).json
 ```
+
+**`--acq-range-m` takes D3's BOOKABLE number, never the optical prefix** (ADR-020 am. 1). **`--fx`
+and `--cy` come from the command above — the REAL bringup's `/fg/depth/camera_info`.** §2's
+check-world copy printed `fx` 520.0058046927554 / `cy` 240 and the config agrees to every digit, but
+that world is a copy with two edits in it; "the copy agreed" is corroboration, not the source.
+
+**Measured 2026-09-06, at 5.0 m/s on live intrinsics:**
+
+| `--acq-range-m` | exit | verdict |
+|---|---|---|
+| **46.0** (D3 bookable) | **0** | **PASS and BOOKABLE** — margin **1.780×** (3.832 s available vs 2.152 s needed), corner headroom **3.4 %**, required horizon **33.59 m** → 27.0 % headroom |
+| 58.0 (optical prefix) | 1 | FAIL on `acquisition_within_corner_far_clip` **and nothing else** — 58.0 > 47.56 m, headroom −18.0 %; the lead margin was 2.245× |
+
+That contrast is the whole reason the bookable number is clamped: hand the gate the prefix and it
+refuses a sensor that is fine, at **every** speed, because the corner check does not depend on speed.
 
 **`--fx` and `--cy` are a SET.** `fx` sets the acquisition range and `cy` sets the threat-band
 coverage, so a live `fx` against a config `cy` is a 2×-optimistic answer assembled from two
@@ -274,16 +376,21 @@ not a config tweak.
 
 ## 6. What this session owes the record
 
-1. The D3 number, in a `docs/DECISIONS.md` ADR-020 amendment — it is the first *measured* property
-   of this sensor and it supersedes the host-side 46.80 m bound.
+1. The D3 number **from a run that exited 0**, in a `docs/DECISIONS.md` ADR-020 amendment — it is
+   the first *measured* property of this sensor and it supersedes the host-side 46.80 m bound. A
+   number from any other exit code is not a property of this mount and does not go in the record.
+   **DONE 2026-09-06 → ADR-020 amendment 1: optical prefix 58.0 m (a FLOOR), BOOKABLE 46.0 m.** The
+   rule stays standing: re-run this gate after any mount or config change, and the record takes the
+   *bookable* number.
 2. The booking-gate JSON (`eval/results/booking_gate_<UTC>.json`) — the artifact that authorises
    the dodge flight. It carries a top-level `verdict` with `pass`, `bookable` and `exit_code`;
    `scripts/predict_forward_lead.validate_report` refuses to write a malformed one and the host test
-   reads it back.
-3. The §4 delivery **ratio with its denominator and window length** (depth frames ÷ camera_info
-   frames, under flight load) — the first measurement of this bus since a third image stream joined
-   it.
-4. The measured cruise pitch from §5.
+   reads it back. *(2026-09-06: the numbers are in §3; the JSON is written from the real bringup's
+   `camera_info`, so it belongs to the flight session, not to the §2 run.)*
+3. **STILL OWED (D5).** The §4 delivery **ratio with its denominator and window length** (depth
+   frames ÷ camera_info frames, under flight load) — the first measurement of this bus since a
+   third image stream joined it.
+4. **STILL OWED (D6).** The measured cruise pitch from §5.
 5. Anything gz did differently from the source-verified expectations in
    `config/depth_camera.json` — those citations are checkable, and a correction is worth more than
    a green tick.
@@ -319,6 +426,13 @@ not a config tweak.
   actually runs is booked for the segmenter session**, and until then the 46.80 m host bound
   inherits an assumption from a different detector. (D3 measures the render, so it is unaffected —
   but D3 also runs `detect_blobs`, so the same re-measure applies to the sweep's criterion.)
+  **2026-09-06 sharpens this: the re-measure is now mandatory, because the render does not do what
+  the floor was calibrated on.** The footprint plateaus at a 4×4 px patch instead of shrinking with
+  range, and at that plateau the component survives on **area** (16 px vs `DEFAULT_MIN_AREA` 6),
+  not on a 2 px radius — the printed `r_apparent 2.00 px` coincides with `MIN_RESOLVING_RADIUS_PX`
+  arithmetically, not causally. A floor measured on synthetic discs describes the discs; the
+  segmenter's floor must be measured **against this render**, and against a *cluttered* one, where
+  the bird is finite-against-finite rather than finite-against-`+inf`.
 * **Whether the nadir bird-visibility gate is still a precondition for a dodge take** is an open
   question for the ADR, not for this runbook: with detection on the forward sensor,
   `predict_bird_visibility.py` gates the NDVI *map*, not the dodge. It is still a real gate for the

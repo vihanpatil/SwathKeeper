@@ -74,10 +74,20 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   rpy reproduces `ndvi_georef.CAMERA_TO_BODY_SIGNS`, the extrinsic verified in the real render to
   2.2 px. Run in the suite too, so nobody has to remember it.
 - `verify_depth_mount_geometry.sh` — the IN-RENDER half of the above, and the only place the
-  acquisition range can honestly be measured: one physics-free world, vehicle parked nose-east in
-  clear sky, `bird_0` teleported to known ranges. Gates aim/range/self-occlusion at 10 m, then
-  sweeps for the range at which the bird stops surviving the adopted morphology. Feed that number
-  to `predict_forward_lead.py --acq-range-m`. See `docs/runbooks/FORWARD_DEPTH_SENSOR.md`.
+  acquisition range can honestly be measured: one **zero-gravity** world copy — physics KEPT,
+  because `set_pose` is applied only by the Physics system and stripping it made every teleport a
+  silent no-op — vehicle parked nose-east in clear sky, `bird_0` teleported to known ranges and
+  **verified by a pose readback** (≤ 0.05 m, else exit 4: a gate that cannot place its target does
+  not score pixels). Gates aim/range/self-occlusion at 10 m, then sweeps for the range at which the
+  bird stops surviving the adopted morphology. It prints **two** ranges (ADR-020 am. 1): the
+  *optical prefix*, which in a sky-backed scene is clip-limited and is a resolvability FLOOR, and
+  the **BOOKABLE** range — the longest prefix range inside the frame-corner Z-depth horizon
+  `far/|ray_corner|`, since gz culls on Euclidean slant. Feed the **bookable** one to
+  `predict_forward_lead.py --acq-range-m` — **only from a run that exited 0**: a run that failed a
+  mount gate labels the sweep *not a measurement* and refuses to print that command line, because
+  the range was read through geometry the same run disproved. Exit 0 and 1 are the only codes that
+  say anything about the mount; 4 (and 124/130/143) mean the run was never scored. See
+  `docs/runbooks/FORWARD_DEPTH_SENSOR.md`.
 - `check_mission_geofence.py` — min XY clearance of the mission path vs. the tree geofence (exits 1 on
   the documented, altitude-safe row-0 overlap — expected, not a failure).
 - `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses, or frame FNR / precision slip past their calibrated floors (ADR-003).

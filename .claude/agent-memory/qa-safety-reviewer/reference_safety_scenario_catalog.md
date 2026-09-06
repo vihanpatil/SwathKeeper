@@ -400,6 +400,36 @@ gaps they exposed are G78-G89 in [[project-open-safety-gaps]].
   corner** against a 46.80 m acquisition bound — 1.6 % margin, not the 22 % the on-axis reading
   suggests.
 
+### DRIVE A RENDER GATE'S SCORING BLOCK WITH SYNTHETIC FRAMES (built 2026-09-06, reusable)
+
+`scripts/verify_depth_mount_geometry.sh`'s python scoring block is a self-contained heredoc that
+reads `frame_<tag>.json` (base64 `<f4`, `width`/`height`) + `camera_info.json` out of `$OUT`. Extract
+it with `SCRIPT.rsplit("<<'PYEOF'\n", 1)[1].rsplit("\nPYEOF", 1)[0]` — **rsplit, not split**: there
+are two `PYEOF` heredocs and `split` silently welds `pose_check`'s python to the scoring block — then
+rewrite `sys.path.insert(0, "/workspace/fieldguard/src")` to the repo and run it as a script.
+Build the frames from an INDEPENDENT pinhole model (camera at (60.15, 30, 15) looking +X;
+`Z_opt = dE`, `X_opt = -dN`, `Y_opt = -dU`; ground `Z = 15/yr`; ray-sphere for the bird; `+inf` where
+`Z*|ray| > 60`, `-inf` where `Z < 0.1`). ~120 lines, no gz, ~2 s. `scratchpad/synth.py`.
+**It reproduced the published numbers and the first run's failure to the digit:** truth scene →
+exit 0, D2 RANGE 9.820, OFFAX 19.820 vs slant 22.326, FAR **80 %**, CULL **57.78 m at |ray| 1.038**
+(the runbook's *(host)* row says "~57.8 m at |ray| 1.038"); committed-125 m-ground scene → FAR
+**91 %** and greatest finite Z **39.80 m at pixel (0,436), |ray| 1.233** — the live 2026-09-06 run
+read 39.70 m at that same pixel and same |ray|. Injected mount bugs are all caught: slant-range →
+OFFAX+CULL FAIL; nadir → RANGE+OFFAX+NEAR+CULL FAIL; far-clamp → five FAIL. Use this before any
+render session that will consume a number, and keep it as the scoring half's only host coverage.
+
+### TWO MUTATION ROUNDS, NOT ONE: shape vs enforcement (2026-09-06)
+A script-testing test file can be strong on one half and vacuous on the other, and one round hides
+it. Round A mutated the *world-copy behaviour* (`/gz-sim-physics-system/d` restored, gravity append
+removed, ground sed removed, `POSE_TOL_M` loosened, readback dropped, `vehicle_check` dropped,
+`pgrep` restored, sweep bounds moved): **11/12 killed**. Round B mutated *enforcement* on the same
+file (refusal softened to `echo`, guard condition halved either way, `harness_fail`'s `exit 4` →
+`exit 1`, `TOL_M` 0.20→6.0, `TOL_PX` 15→400, D2 CULL 1.0→25.0 m, D3 back to `max()`,
+`SystemExit(0 if ok else 1)` → `SystemExit(0)`): **11/12 SURVIVED, 31/31 green every time.**
+The `exit 4` mutant survives because `harness_fail`'s own `echo` contains the string "exit 4" —
+a test reading `func_body` (comments + echoes) instead of `func_code`. Always run round B.
+`scratchpad/mut.py` + `mut2.py`; always print the CLEAN baseline first (31 passed).
+
 ### Probe hygiene: `__pycache__` can serve a stale mutant (learned the hard way 2026-08-26)
 
 **Always run mutation rounds with `PYTHONDONTWRITEBYTECODE=1`, or `find src -name __pycache__ -exec
@@ -410,3 +440,19 @@ valid and the gate ran the PREVIOUS mutant. It produced a plausible, wrong "the 
 result twice. **The tell that saved it: measure the CLEAN baseline's failure count inside the same
 probe** — mine came back 1 when it should have been 0. Every mutation harness in this repo should
 print the unmutated baseline first and assert it is green.
+
+## The ideal-disc resolvability ladder (host-side, ~1 s, no container) — 2026-09-06
+
+The cheapest independent check on any in-render acquisition-range claim. Rasterise a centre-sampled
+disc of radius `fx*R_obj/z` at sub-pixel offsets {0,0.25,0.5}^2, push it through the SAME
+`ndvi_detect.detect_blobs(mask, DEFAULT_MIN_AREA=6, DEFAULT_MAX_AREA)`, take the WORST offset. This
+is the procedure that produced `MIN_RESOLVING_RADIUS_PX = 2.0`, run as a function of range instead
+of radius. For fx=520.0058, r_bird=0.18 it gives: survives to **46 m** (bbox 3x4, r_apparent 1.75),
+**erased by the opening at 48 m** (r_pinhole 1.950) and every range beyond.
+
+Use it to bound any D3 sweep from ABOVE without touching `clip_far_m`. On 2026-09-06 it is what
+separated the render's 58.0 m floor (a 4x4 box the ideal model says cannot exist) from the 46 m
+where render, morphology and the 46.80 m pinhole bound all agree — see G102. Render and ideal bboxes
+match to +/-1 px from 10 to 46 m, then diverge qualitatively; the bird really is a 0.18 m analytic
+`<sphere>` (D2 RANGE 9.821 vs 9.820, 18 px at 10 m both), so the divergence is an unexplained
+AA/rasterisation effect, not a geometry mismatch. **Any claim that rests on that regime is unproven.**
