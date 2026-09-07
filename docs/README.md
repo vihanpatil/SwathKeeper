@@ -19,8 +19,8 @@ Three kinds of document live here, and the kind tells you how much to trust it.
 - [`BUILD_LOG.md`](BUILD_LOG.md) — **the narrative**: what shipped, what broke, and what the break
   taught. Read it when you want the story rather than the state.
 
-**Runbooks** (`runbooks/` — operational, run inside the Docker sim session; five, and you run all
-five):
+**Runbooks** (`runbooks/` — operational, run inside the Docker sim session; **five you run**, plus
+one pre-registration for a take that has not flown):
 - [`runbooks/SIM_BRINGUP.md`](runbooks/SIM_BRINGUP.md) — **how to rebuild the environment from
   scratch**: image, ROS 2 workspace, ArduPilot with `--enable-DDS`, and the four macOS gotchas.
   You need this once, or when a layer breaks. To *fly*, use `scripts/fly_pipeline.sh` instead.
@@ -36,12 +36,35 @@ five):
   the drone dodges a bird it detected itself**: both preflights, the human-flown rule, evidence-first
   teardown, and the post-flight safety gate. It carries a pre-registered expectation, written before
   the flight, that this flight may honestly fail its own gate. Worth reading even if you never run it.
+  Since ADR-021 it also carries §1a, the **forward-depth** variant of the detection shell — whose log
+  is deliberately **unscoreable** until the depth gates land.
+- [`runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`](runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md)
+  — **not a procedure: a pre-registration.** What the forward-depth dodge take is expected to do,
+  and what would falsify it, written down *before* the flight so no result can be reinterpreted
+  afterwards. The same instrument that correctly called the 2026-08-25 breach in advance.
 - [`runbooks/AVOIDANCE_DEMO.md`](runbooks/AVOIDANCE_DEMO.md) — **the deterministic regression arm**:
   `avoidance_node --demo` with scripted birds, for checking the loop still behaves without paying
   for perception. Its bringup half is superseded — its own banner says which half is which. Read that
   banner first for the other reason: both of this repo's ACKNOWLEDGED bird-clearance breaches were
   flown on this arm, the escape geometry behind them is still open, and **a re-run is expected to
   breach again** — the banner carries the CPA bar and the two-half rule for what to do when it does.
+
+**Design notes** (`design/` — a build's specification, written **before** it was built, kept as the
+thing the build was scored against; each one is superseded by its ADR, never by silence):
+- [`design/DEPTH_SEGMENTER_DESIGN.md`](design/DEPTH_SEGMENTER_DESIGN.md) — the tech-lead's design for
+  the forward depth segmenter: the contract, the operator, the rejected alternatives, and — the part
+  that matters — the **constant-selection rules and the pass bars, pre-registered before a single
+  frame was rendered**. Became **ADR-021** on 2026-09-07; read it beside the ADR to see what was
+  predicted, what was measured, and the two places the render corrected the note.
+- [`design/DEPTH_SEGMENTER_ALGORITHM.md`](design/DEPTH_SEGMENTER_ALGORITHM.md) — perception's
+  companion note on the prototype operator and the numbers that chose its constants. Written
+  **concurrently and independently** of the design note above; the two arrived at the same core
+  decision (discontinuity, never `isfinite`) for the same measured reason, which is worth more than
+  either document alone.
+- [`design/depth_segmenter_stations.json`](design/depth_segmenter_stations.json) — the machine-readable
+  79-station dataset spec (every value a *prediction*; the labeller recomputes from the render's own
+  pose readbacks and the run fails if they disagree). The rendered set adds six pitched diagnostics
+  and is `eval/results/depth_dataset_20260907/stations_rendered.json`.
 
 **Historical** (`archive/` — frozen records, kept because live docs and committed ADRs cite them;
 plus [`SPIKE_ndvi_vs_rgb.md`](SPIKE_ndvi_vs_rgb.md), the closed ADR-003 spike, left outside

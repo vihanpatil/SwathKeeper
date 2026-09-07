@@ -1,56 +1,60 @@
 ---
 name: depth-segmenter-design
-description: Pre-ADR-021 depth segmenter design (2026-09-07) — discontinuity not isfinite, the >=11.3 m in-band step that makes the margin free, and the two open deltas against the parallel prototype
+description: ADR-021 (2026-09-07) — the depth segmenter is BUILT, SCORED (all 7 bars) and WIRED, and has NEVER FLOWN; the blocker before the dodge is that a depth flight log is deliberately UNSCOREABLE
 metadata:
   type: project
 ---
 
-`docs/design/DEPTH_SEGMENTER_DESIGN.md` + `docs/design/depth_segmenter_stations.json` (79 stations)
-were written 2026-09-07 as the design that becomes **ADR-021** once built and gated. Nothing is
-built and nothing is measured on a render.
+**Status 2026-09-07: the design note became ADR-021 — ACCEPTED, confirmation-pending the first
+depth flight.** `docs/design/DEPTH_SEGMENTER_DESIGN.md` (pre-registered rules + bars) and
+`docs/design/DEPTH_SEGMENTER_ALGORITHM.md` (perception's parallel note) are both in
+`docs/README.md`'s map and `build_docs_site.py`'s GROUPS under "Design notes"; the JSON station file
+cannot be in GROUPS (discovery walks `docs/**/*.md` only) and is linked from `docs/README.md`.
 
-**Why:** ADR-020 commissioned the forward depth mount but the 46.0 m booked acquisition range is a
-best-case-scene upper bound taken with a blind `isfinite` mask and NO SEGMENTER; the runbook's
-Known-gaps merge hazard (bird in the ground band joins the ground component, `max_area` deletes it)
-is the thing the segmenter must close. See [[adr020-depth-commissioning]].
+**Why this memory still matters:** the numbers below are the ones a future session will want to
+quote, and two of them are counter-intuitive enough to be re-derived wrongly.
 
-**How to apply:** the load-bearing facts, so they are not re-derived —
+**How to apply — the load-bearing facts, verified against the artifact before quoting:**
 
-* **The geometric fact that makes the whole design cheap:** with a LEVEL camera at 15 m over flat
-  ground with 3.8 m trees, *any* obstacle inside the ±6 m threat band is **≥ 11.3 m nearer than its
-  background** (ground: step ≥ 1.5R; canopy: ≥ 0.867R; above-axis: sky = inf). Minimum across the
-  79 stations is 16.35 m. So a ~2 m discontinuity margin has a 5.6× factor and costs safety nothing.
-  All three qualifiers matter; **attitude breaks it first** (worst observed −12.50°).
-* **A flat-SE morphological closing (local far-envelope) reproduces a monotone ground ramp EXACTLY**
-  — measured 0.0 m residual over the frame interior — so the ground band never becomes its own
-  candidate, and the cull boundary produces no false candidate either. The only residual is a
-  frame-border artifact, **1.425 m at K=21**, which is what puts a floor under the margin.
-* **Cost:** min/max closing 4.6 ms/frame on host, flat in K (scipy separable path); naive
-  `median_filter(size=21)` is **1061 ms**. Budget anchor: the NDVI detector measured
-  **p95 8.211 ms / max 41.917 ms, n=1302** in-container on the same 640×480
-  (`eval/results/live_flight_log_20260825T210402Z.json`).
-* **Never `max_area`.** Deleting the largest thing in the frame is fail-dangerous; saturation is
-  handled by nearest-first ordering plus a box cap, which discards the FAR candidates.
-* **The annotator can never fire on an in-band bird in this world** (trees top at 3.8 m, geofence
-  4.8 m, band starts at 9 m): `detections_near_known_obstacle` is a clutter accountant, not a bird
-  discriminator. Corollary — canopy rims and cull edges un-project below the band and the policy's
-  own vertical test deletes them for free, with no appearance-based suppression.
-* **Dataset:** must be rendered on the **COMMITTED 125×110 m ground plane, not the 425 m check-world
-  extension** — the finite-ground footprint is bounded at 57.78 m forward / ±30.38 m lateral, and
-  every station pose keeps it on the committed plane (min margin 7.07 m). The plane's extent IS part
-  of what is being measured. Labels must come from the **camera LINK pose readback**, not the
-  commanded model pose (`base_link` sits 0.195 m up).
+* **Adopted constants** (`src/fieldguard_planning/depth_segment.py::DEFAULT_PARAMS`, provenance
+  string points at the artifact): K **15**, margin **1.5 m**, min_area **10 px**, open_iter **0**,
+  max_boxes **64**, near/far 0.1/60.0, `link_break` **False**. Every one is a sweep output.
+  Artifact: `eval/results/depth_segmenter_score_20260907T110000Z.json`; human report:
+  `eval/results/depth_dataset_20260907/REPORT.md`.
+* **Bars, all PASS, with denominators:** FNR 0/49 · merge mislabels 0/71 · unmapped FP 0.0/frame
+  over 8 · range p95 0.1076 m over 63 matches (vs **1.65 m median** for the monocular ray it
+  replaces) · runtime host p95 6.708 ms **n=425** (NOT the n=79 counters row) · determinism 0/79 ·
+  mutation red on the two independent terms.
+* **Acquisition 46.0 m QUALIFIES the ADR-020 booking and never raises it**, read as `≥` (no station
+  failed → last rung, not a horizon). **Clutter claim reaches only 28 m**; every rung from 30 m is
+  sky-backed, geometrically forced (an in-band bird at 46 m has its ground background past the 60 m
+  cull). Best-case clause KEEPS static vehicle / noiseless sensor / level attitude.
+* **The resolving floor was re-measured on THIS operator: 2.0 px → 46.80 m** (arithmetic coincidence
+  with the NDVI number, not inheritance) — it binds the horizon 0.76 m tighter than the 47.558 m
+  corner clamp. At `min_area_px=6` it would be 58.50 m. Closes ADR-020 am. 1 item 3.
+* **Two REPORTED-not-barred numbers, and the first is the safety one.** *Median-flip margin:* the
+  box ships the component MEDIAN, so a mixed component is truthful only while the bird holds the
+  majority — worst case **1 pixel** (S042/S046: 32 of 60 px; a flip reports **54.511 m instead of
+  29.956 m**), and `range_error_p95` structurally cannot see it. Centroid p95 0.93 px / max 4.335.
+* **The correction the render forced:** an object **wider than K returns ZERO candidates, not a
+  ring** (a grey closing preserves a pit wider than the SE) — a 1.3 m canopy sphere is invisible
+  inside ~25 m. **An unplanned LARGE near obstacle is a named blind spot** no bar on this dataset can
+  see; survivable only because this world's large objects are the mapped trees.
+* **The two design-vs-prototype deltas are SETTLED by measurement:** the morphological closing won
+  (it is the shipped operator), and the ring test / `link_break` is **OFF** — under the corrected
+  merge rule it moves no bar, and it can **withhold** (a seam cut drops two adjacent 12-px objects
+  below min_area and returns nothing). Its better REPORTED numbers are on the record (range p95
+  0.1076→0.0775, centroid 4.335→0.665 px) and were deliberately not adopted: retuning after seeing
+  the numbers is fitting to one's own data. Pre-registerable next round = `link_break` with cut
+  components exempt from `min_area_px`, plus a two-bird station arm.
 
-**Two OPEN deltas against the parallel prototype** (`eval/depth_segmenter_proto.py`, written
-concurrently by another lane; both arrived independently at discontinuity-not-isfinite):
-1. background estimator — block-median-of-medians (their measured ground residual 0.070/0.609 m) vs
-   morphological closing (exact, 200× cheaper than a naive median). Settle on the dataset.
-2. **their "ring test" WITHHOLDS components judged to be the near side of a larger surface** — which
-   is also what a large unplanned obstacle looks like, and it withholds *before* un-projection.
-   Recommendation: tag and count, never withhold (same rule as `DepthDetectionSource` rule 9).
-   This is a safety-direction disagreement, not a tuning choice.
+**THE BLOCKER before any dodge take is booked (ADR-021 open item 1):** `DETECTOR_SOURCES` in
+`scripts/check_live_flight_log.py` **deliberately excludes `depth_blob`** — every schema-2 detector
+gate was written for the nadir NDVI camera — so a depth flight log is **UNSCOREABLE** and the take
+would produce an INVALID log by construction. A reviewed diff with depth-specific gates must land
+first. Booking already applies (`gate_booked_speed` counts `depth_blob` as avoidance: authorisation
+is not scoring). Then: launcher must pass `--detection-source depth`, and a scripted `test-flight`
+with no birds gets D5/D6 **at the booked 5.0 m/s** (both are still 3.50 m/s numbers).
 
-Two design docs now live in `docs/design/` (mine `_DESIGN.md`, theirs `_ALGORITHM.md`) — they need
-reconciling into one before ADR-021, and neither is in `docs/README.md`'s map or
-`build_docs_site.py`'s GROUPS yet (they will land under "Other documents"; see
-[[moving-a-doc-costs-a-stub]]).
+Related: [[adr020-depth-commissioning]], [[a-gate-is-only-as-true-as-its-scene]],
+[[avoidance-take-blockers]].

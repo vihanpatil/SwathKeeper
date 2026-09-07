@@ -3350,7 +3350,7 @@ Owner / roles: user (direction + ratification); exec-council (ruling); five rese
 (sourced findings, recorded in the ruling's amendment block); product-lead (scope guard);
 tech-lead (recorded); robotics-sim-engineer + perception-ml-engineer (sensor-in-sim phase, next).
 
-## ADR-020: The forward obstacle sensor is a gz-sim `depth_camera` on its own level, nose-mounted aperture — and its booking gate refuses to authorise a flight on config prose   (2026-08-26, status: ACCEPTED — **COMMISSIONED: all six D-gates MEASURED live 2026-09-06/07** (amendments 1-2). D2 **8/8 PASS**; D3 optical prefix **58.0 m (a clip-limited FLOOR)** / **BOOKABLE 46.0 m**, user-ratified 2026-09-07; D4 **exit 0 — PASS and BOOKABLE at 5.0 m/s, margin 1.780×** on the live six-number intrinsic set, artifact `eval/results/booking_gate_20260907T064136Z.json`; D5 **132 / 132 = 1.000** and D6 **−1.18° median, −12.50° worst attitude of the flight** — but **D5 and D6 were both measured at a 3.50 m/s median ground speed, not at the booked 5.0 m/s**, so delivery and pitch AT THE BOOKED SPEED remain UNMEASURED and are owed by the dodge flight. **Amendment 3 (2026-09-07): the booked speed is ENFORCED — `--booking` types `WP_SPD 5.0` into the recipe (the first build's `WPNAV_SPEED 500` named a parameter that does not exist at the pinned SHA) and the flight-log gate checks the flown speed per ENCOUNTER against booked × 1.10.** The "NOT YET RENDERED" preamble below is SUPERSEDED, not deleted)
+## ADR-020: The forward obstacle sensor is a gz-sim `depth_camera` on its own level, nose-mounted aperture — and its booking gate refuses to authorise a flight on config prose   (2026-08-26, status: ACCEPTED — **COMMISSIONED: all six D-gates MEASURED live 2026-09-06/07** (amendments 1-2). D2 **8/8 PASS**; D3 optical prefix **58.0 m (a clip-limited FLOOR)** / **BOOKABLE 46.0 m**, user-ratified 2026-09-07; D4 **exit 0 — PASS and BOOKABLE at 5.0 m/s, margin 1.780×** on the live six-number intrinsic set, artifact `eval/results/booking_gate_20260907T064136Z.json`; D5 **132 / 132 = 1.000** and D6 **−1.18° median, −12.50° worst attitude of the flight** — but **D5 and D6 were both measured at a 3.50 m/s median ground speed, not at the booked 5.0 m/s**, so delivery and pitch AT THE BOOKED SPEED remain UNMEASURED and are owed by the dodge flight. **Amendment 3 (2026-09-07): the booked speed is ENFORCED — `--booking` types `WP_SPD 5.0` into the recipe (the first build's `WPNAV_SPEED 500` named a parameter that does not exist at the pinned SHA) and the flight-log gate checks the flown speed per ENCOUNTER against booked × 1.10.** **ADR-021 (2026-09-07): the segmenter this ADR left as a hole is BUILT and SCORED — its cluttered acquisition range measured 46.0 m, which QUALIFIES this booking and does not raise it (the best-case-scene clause loses "no clutter" to 28 m and loses "blind `isfinite` mask", and KEEPS static vehicle, noiseless sensor and level attitude), and the 2.0 px resolving floor is re-measured on the segmenter's own morphology at 46.80 m — closing amendment 1's open item 3.** The "NOT YET RENDERED" preamble below is SUPERSEDED, not deleted)
 
 **Nothing in this build has ever been rendered.** Every claim below is host-side arithmetic,
 source-reading verified at the pinned SHAs, and offline rehearsal; the commissioning Docker
@@ -4041,3 +4041,384 @@ tests); flight-software-engineer (flight-log gate, encounter windows, schema 1.3
 scanner warrant); qa-safety-reviewer (the seven findings, the WP_SPD source trace, the encounter
 reproduction); orchestrator (this record; product-lead tiebreak on the open items deferred to the
 user's morning).
+
+---
+
+## ADR-021: The forward depth segmenter keys on depth DISCONTINUITY against a local far-envelope, never on `isfinite` — and every constant it ships with is the OUTPUT of a sweep on a cluttered labelled render, not a number anyone chose   (2026-09-07, status: ACCEPTED — **confirmation-pending the first depth flight**. All seven pre-registered gates PASS on an 85-station cluttered render (`eval/results/depth_segmenter_score_20260907T110000Z.json`): FNR **0 misses / 49**, merge mislabels **0 / 71**, unmapped FP **0.0 per frame / 8**, range p95 **0.1076 m / 63 matches**, runtime host p95 **6.708 ms / n = 425**, determinism **0 / 79**, mutation red on both independent terms. Cluttered acquisition **46.0 m — QUALIFIES the ADR-020 booking, does not raise it**. The wiring into `avoidance_node` is built and host-tested and **has never flown**; a depth flight log is also **deliberately UNSCOREABLE** until a reviewed diff brings depth-specific gates, so this entry does not flip on evidence, it flips on a take)
+
+**The one sentence.** A depth camera cannot tell a tree from a bird — it only knows *nearer* — so the
+segmenter is one boring textbook operator, a **black top-hat on depth**
+(`closing(D, K) − D > margin_m`), and every constant in it was **measured** on a cluttered labelled
+dataset by rules written down in `docs/design/DEPTH_SEGMENTER_DESIGN.md` §3.2/§4 **before a single
+frame was rendered**.
+
+### Decision
+
+`src/fieldguard_planning/depth_segment.py` — one module, no new dependency (numpy + scipy are
+already in the image for `ndvi_detect`), fitting the **already-locked** ADR-020 seam signature
+unchanged:
+
+```
+B    = closing(D, K x K flat) = minimum_filter(maximum_filter(D, K), K)   # the LOCAL FAR ENVELOPE
+step = B - D
+mask = isfinite(D) AND near_m < D < far_m AND step > margin_m
+label 8-connected -> area floor -> (bbox, MEDIAN depth of the component's own mask pixels)
+```
+
+* **No `max_area`.** Deleting the largest thing in the frame is fail-dangerous by construction;
+  saturation is handled by **nearest-first ordering plus `max_boxes`**, so a truncation drops the
+  *farthest* candidates and counts `boxes_truncated`.
+* **Image space only** — no pose, no intrinsics, no static map inside the operator. The seam
+  un-projects with the **live** `/fg/depth/camera_info` and annotates against the geofence
+  afterwards (`depth_detect` rules 4 and 9), so each of those has exactly one home.
+* **Median, not mean**, for the depth that ships with a box: a component clipped by an occluding
+  edge carries background-side pixels, and the median is the statistic that ignores them. That
+  choice has a cliff, and it is measured below rather than assumed away.
+* **Every tunable is one frozen dataclass** bound at construction, so the flight log records the
+  *whole* configuration as one object and a reader can see there is nothing else. There is
+  deliberately **no CLI knob** for any scored constant — which is what keeps
+  `params_provisional: false` true.
+
+**The adopted constants, and the pre-registered rule that chose each** (artifact
+`eval/results/depth_segmenter_score_20260907T110000Z.json`, report
+`eval/results/depth_dataset_20260907/REPORT.md`):
+
+| constant | adopted | the rule, written before the render |
+|---|---|---|
+| `bg_window_px` (K) | **15** | smallest K in {15, 17, 21, 25} with FNR 0 over the `FNR_zero` stations |
+| `margin_m` | **1.5** | smallest ladder value with zero unmapped FP on the 8 negatives, floored at 1.5× the measured border residual |
+| `min_area_px` | **10** | largest keeping FNR 0 (12), minus one ladder step |
+| `open_iter` | **0** | scored both ways; identical, so the cheaper one |
+| `max_boxes` | **64** | 2× the worst-case component count over ALL stations (24, at S062), rounded up |
+| `near_m` / `far_m` | **0.1 / 60.0** | the seam's own EXCLUSIVE window, pinned equal by test — one number, not two |
+| `link_break` | **False** | kept only if it moved a bar; it did not, and it can withhold (below) |
+
+### Why
+
+`isfinite` — what gate D3 and the ADR-020 booking gate actually ran on — works only when the bird's
+background is sky. In the mission world the finite class also holds the ground band and the tree
+canopies, so a bird projected into the ground band 8-connects to the ground and **merges**, and the
+merge fails **two** ways: an area ceiling deletes the blob (bird gone, no counter moves), or the blob
+survives carrying the **background's** median depth — a confident detection ~20 m too far, which is
+worse *because it looks like success*. A discontinuity test has an enormous margin where a
+brightness-style test has none: for a level camera at 15 m over 3.8 m trees, every obstacle inside
+the ±6 m threat band is **≥ 11.3 m nearer than whatever is behind it** (minimum in-band step over the
+station set: 16.35 m), against a 1.5 m margin. The margin is free — *in this world, at this altitude,
+with a level camera*, and all three qualifiers are named.
+
+### Alternative(s) rejected — one sentence each
+
+| rejected | why |
+|---|---|
+| **`isfinite` mask** | It cannot separate a bird from the ground or canopy it touches, and the merge either deletes the blob or returns the background's range wearing the bird's pixel. |
+| **Pose/attitude-driven analytic ground model** | Exact only at zero pitch and roll, needs attitude *and* intrinsics pushed through a one-argument locked seam, and fails **dangerous** on a stale pitch — the image already contains its own background. |
+| **Temporal background** (frame differencing, running median) | At 5 m/s the background changes ~1 m per frame, so the model is always stale, and it makes the detector stateful — unscoreable per station and unreproducible in flight. |
+| **Row-wise percentile background** | Iso-depth lines are rows only while roll is zero; a 2-D window does not care which way the ground tilts and costs the same. |
+| **`max_area` filter** (inherited from NDVI) | Deleting the largest thing in the frame is fail-dangerous by construction. |
+| **A learned segmenter** | Nothing has yet beaten a five-line operator whose every failure is explainable on a whiteboard — build the boring one first; it is now the baseline anything learned must beat on this dataset. |
+| **Reusing `ndvi_detect.detect_blobs` for the mask → box step** | It returns boxes only, so the median depth would have to be re-derived from the bbox — a second, worse estimate of the quantity the mask owns. The **convention** is shared and pinned by test; the code is not. |
+| **The parallel prototype's ring test / `link_break` seam cut** | Measured, not argued: under the corrected merge rule it moves **no bar** (0 misses / 0 unmapped FP / 0 merge mislabels on both arms), and it **withholds** — a seam cut can drop two adjacent 12-px objects below `min_area_px` and return **nothing**, which fails the design's own "never withholds a component" condition. Recorded, because it is the honest half: ON is measurably better on two REPORTED quantities — range p95 0.1076 → **0.0775 m** and worst centroid 4.335 → **0.665 px** — and it removes the median-flip fragility at S042/S046. It is **not adopted**, because widening the adoption rule after seeing which way the numbers fell, on the same data, is fitting a threshold to its own dataset. |
+
+### Deciding numbers — the seven gates, each with its denominator
+
+Pre-registered in DESIGN §4.3 before any frame existed; **all PASS**.
+
+| gate | measured | denominator | bar |
+|---|---|---|---|
+| FNR, per background class × range bin | **0 misses**, 12 cells all 0.0 | 49 `FNR_zero` stations | 0 misses |
+| Merge mislabels (bird not separately matched) | **0** | 71 visible-bird stations | 0 |
+| Unmapped FP per frame | **0.0** | 8 level negative-control frames | ≤ 0.05 |
+| Range error p95 (median 0.0566, max 0.1362) | **0.1076 m**, signed **positive at every match** | 63 matches | ≤ 0.5 m |
+| Runtime, host | p95 **6.708 ms**, max **10.786 ms** | n = 425 (5× per station) | 25 / 100 ms |
+| Determinism (3 station-order shuffles) | **0 mismatches** | 79 stations | 0 |
+| Mutation — each mask conjunct deleted in turn | RED on `clip_window`, RED on `step_over_margin`, RED on the pair | 1 canned frame + 85 dataset frames | every independent term red |
+
+Two numbers to quote correctly. The runtime row is **`metrics.runtime`, n = 425** — not the
+`segmenter_counters` trio (p95 6.665 / max 6.914 over the single n = 79 scoring pass), which is
+smaller and is the one a reader reaches for by accident. And the **range-error context**: the
+monocular apparent-size ray this replaces measured **1.65 m median** on the adopted NDVI clip, so
+the estimator improved by more than an order of magnitude — that is the whole point of putting a
+depth sensor on the nose.
+
+**Occlusion (group E) is scored as expected non-detection, never as a miss and never as an FP:**
+S058/S059/S060 rendered **0 bird pixels** and returned **0 detections**, occluder proved first. The
+dataset's own hash count is the proof — **82 distinct frame sha1 over 85 frames**, and the three
+repeats are exactly those stations against their pose's negative control: a hidden bird leaves the
+scene pixel-identical to the empty one.
+
+### The checks the artifact cannot fake — three, deliberately
+
+1. **The negatives contain no target in the world at all** (bird_0 parked at (−200, −200, 50);
+   bird_1 and bird_2 parked out of every frustum, readback-verified). A segmenter that hallucinated
+   a bird to pass the range ladder scores its own FP bar red on the same eight frames. The two bars
+   pull in opposite directions.
+2. **The matcher has a depth clause** (|median − expected| ≤ 0.5 m as well as ≤ 5 px). This is not
+   decoration: the K = 21 and K = 25 arms lose canopy-backed birds **by merging them into a 53.9 m
+   canopy component**, and a pixel-only matcher would have scored those as HITS and adopted K = 21.
+3. **The labeller has no detector in it.** The rendered bird is located by **diffing each frame
+   against its own group's negative control** (max |rendered − recomputed| **0.4415 px** against
+   τ = 5.0), forward and inverse projections are different code (round-trip through the flight
+   primitive `depth_pixel_to_enu` closes to **0.0 m**), and the SDF world model is checked against
+   the render (max |ray-cast − rendered| background depth **0.0344 m**).
+
+### The sweeps, and the two places the pre-registered rules cost something
+
+* **Border residual → margin floor.** K 15 / 17 / 21 / 25 → **0.9805 / 1.1255 / 1.4191 / 1.7179 m**
+  (floors 1.471 / 1.688 / 2.129 / 2.577). The chain is *border artifact → margin → smallest visible
+  stand-off*, which is why K is adopted at its **smallest** passing value and not its most
+  comfortable one. The real render reproduces the 0.981 m residual at row 479, column 0.
+* **The FP term never bound.** Unmapped FP is **0.0 per frame in every cell of the margin × K
+  sweep**, down to a 0.5 m margin — so `margin_m` was chosen **entirely by its floor**. Naming that
+  is the point: the ground band's border artifact un-projects to z ≈ 0, i.e. to *mapped* clutter, so
+  the unmapped-FP metric is structurally blind to the very artifact the floor exists to clear. The
+  prediction that would falsify the floor's sufficiency is foliage with self-depth structure
+  containing pits narrower than K; this world's canopies are smooth spheres.
+* **K ladder:** 15 → 0 misses, 17 → 0, **21 → 6**, **25 → 7**. DESIGN §3.2 argued K ≥ 17 from the
+  fill requirement (2·fx·0.18/13.05 = 14.3 px); the dataset adopted **15**, so that argument was
+  conservative and is recorded as such rather than quietly overridden.
+* **`min_area_px` ladder:** 4–12 → 0 misses, **14 and 16 → 3** (S007, S015, S020, all at 46 m),
+  **20 → 10**. The ladder brackets the smallest accepted component in [12, 14) px and the smallest
+  rendered bird footprint anywhere in the `FNR_zero` set is **12 px** — the render's own antialiasing
+  floor, and the same 12 px PROBE B measured on the commissioning frames. Adopted 10, i.e. 1.2×
+  headroom. **This is the second place a pre-registered rule cost horizon** (see the floor
+  re-measure below), and the cost is on the record rather than tuned away.
+* **`open_iter` 0 and 1 are identical** (0 misses, 0 unmapped FP either way), so the one with fewer
+  moving parts wins.
+* **`max_boxes`:** worst-case component count over ALL stations is **24** (S062, a cluttered lane
+  negative) → cap 64, and `boxes_truncated` is **0 everywhere**. Deliberately not sized on the
+  negatives alone: nearest-first truncation drops the FARTHEST candidate, so a cap below the count
+  of near canopies in a cluttered lane would start discarding real near objects.
+
+### Cluttered acquisition range — it QUALIFIES the booking, and it does not raise it
+
+Under the DESIGN §4.4 rule ratified before the render: cluttered prefix **46.0 m**, clamp
+`far_clip / corner_ray_ratio` = 60.0 / 1.261627 = **47.558 m** on the group's live intrinsics,
+optical prefix (sky arm, never booked) **50.0 m** → **booked = min(46.0, 46.0) = 46.0 m**, against a
+**33.591 m** breakeven at 5 m/s. So the dodge stays bookable at the speed ADR-020 am. 2 authorised.
+
+Three readings that travel with that number, and none of them is optional:
+
+1. **Read it as `≥`, not `=`.** No station in the scored set failed, so 46.0 m is the **last rung of
+   the ladder**, not a measured detector horizon. That is precisely why the rule lets a measurement
+   QUALIFY the booked number and never raise it; raising a booked horizon needs its own gate, on a
+   flown take.
+2. **Read the CLUTTER claim to 28 m, not to 46.** Clutter-backed `FNR_zero` stations exist only to
+   **28.0 m** (canopy), **22.0 m** (ground band) and 14.0 m (ground-band edge); every rung from
+   30 m up is **sky-backed**. That is geometrically forced in this world rather than a sampling gap:
+   an in-band bird at 46 m sitting 6 m below the optical axis has its ground background at ~86 m,
+   past the 60 m Euclidean cull, so there is nothing behind it to *be* clutter.
+3. **The best-case-scene clause (ADR-020 F2) narrows, it does not disappear.** It loses **"no
+   clutter"** (to 28 m) and **"blind `isfinite` mask / no segmenter"**. It **keeps static vehicle,
+   noiseless sensor and level attitude**, because this dataset measures none of them.
+
+### The resolving floor, re-measured — ADR-020 am. 1 open item 3 is CLOSED
+
+`MIN_RESOLVING_RADIUS_PX = 2.0` was calibrated on synthetic discs through the **NDVI** detector's
+3×3-cross morphology, which this segmenter does not use. Re-measured against **this** operator at the
+worst sub-pixel placement: **2.0 px → 46.80 m** for a 0.18 m target at `min_area_px = 10`. The bound
+is **reproduced, not inherited** — arithmetic coincidence, arriving via `min_area_px` where the NDVI
+number arrived via an opening. It sits **just below** the 47.558 m corner clamp, so **on this sensor
+the morphology binds the horizon by 0.76 m** rather than the far cull. The pre-registered `min_area`
+rule cost that headroom and the alternative is on the record: at `min_area_px = 6` the floor is
+**1.6 px → 58.50 m**. Both are above the booked 46.0 m, so the booked number does not move either
+way. This also closes `config/depth_camera.json`'s `min_resolving_radius_source` re-measure item.
+
+### Two numbers that are REPORTED and not barred — and one of them is the safety statement
+
+* **Median-flip margin (first measured in this round, therefore not barred).** The depth that ships
+  with a box is the component's MEDIAN, so a mixed component tells the truth **only while the bird
+  holds a majority of its pixels** — a cliff, not a drift. Over **63 matched stations** (5 mixed, 58
+  pure bird) the minimum bird-pixel fraction is **0.5333** and the closest approach to a flip is
+  **1 pixel**; **3 of 63** sit within 3 px. Read the worst row as what it is: at S042/S046 (30 m,
+  sky_edge, 60-px component, 32 of them bird) losing **one** pixel of silhouette to a different
+  sub-pixel placement, to antialiasing, or to the motion this static dataset does not contain makes
+  the same detection report **54.511 m instead of 29.956 m** — a bird at 30 m published as no threat
+  at all. **The published `range_error_p95` of 0.1076 m cannot see this**, because until the flip the
+  range is right to within 0.1362 m. It is not a bar because a threshold invented in the same pass
+  that first sees the number is a threshold fitted to its own data; it is named here so the next
+  round has to answer it.
+* **Centroid error** p95 **0.93 px**, max **4.335 px** (S037) — **0.665 px of headroom** against the
+  matcher's τ = 5.0 px. That is what keeps the box-midpoint decision (DESIGN §1.3) as it is, rather
+  than a preference.
+
+### The correction this build forces, and the blind spot it names
+
+**MEASURED CORRECTION to DESIGN §2.5 and ALGORITHM §2.4.** Both notes claimed a near object wider
+than K comes back as a **ring** of its own silhouette. It does not: a grey closing preserves a pit
+wider than the structuring element, so such an object produces **ZERO candidates**. Measured on the
+synthetic arm: a **1.3 m canopy sphere is invisible inside ~25 m**, and a flat 300 px wall at 8 m is
+invisible entirely. The 0.18 m bird is unaffected — one component from 46 m down to ~10 m, then four
+rim arcs at its own correct depth down to ~2 m, never invisible.
+
+**Consequence, stated as a named blind spot rather than a footnote: an unplanned LARGE obstacle at
+close range is invisible to this operator, and no bar on this dataset can see it.** It is survivable
+in *this* world only because the large objects here are the mapped, geofenced trees (ADR-001) and the
+unplanned obstacle is a 0.18 m bird. Any world where an unplanned obstacle can be wide re-opens this
+decision — that is the sentence to say out loud, not a size the operator can be tuned to.
+
+### Consequences
+
+* A blind band of `margin_m` (1.5 m) in front of any surface. Measured where it falls: group D
+  detects at a **1.323 m** stand-off and misses at **0.573 m** — and in this world a sub-margin
+  stand-off can only occur **outside** the ±6 m threat band, which the FNR condition confirms by
+  excluding **0 of 49** stations (the 7 it excludes are all diagnostics, ~11.8 m below cruise).
+* **One target per frame is what was measured.** Two touching near objects return **one** component
+  at a median belonging to **neither** (20 m beside 30 m reads **25.0 m**) — while CLAUDE.md's MVP
+  obstacle density is 2–3 birds. The dataset's nearest analogue is the partial fusion at S042/S046,
+  and it reports correctly only because the bird holds 53 % of the pixels.
+* `isfinite` is **measured redundant**: deleting it alone changes nothing on the canned frame or on
+  all 85 dataset frames, because the **exclusive** clip window already rejects every non-finite value
+  (`−inf > near_m`, `+inf < far_m`, and every NaN comparison are all False). Deleting the **pair** is
+  red. So the three pre-registered conjuncts are **two independent terms**, and the "three reds" the
+  design asked for is a recorded **deviation, not a pass**: the term stays in the source because it
+  states the intent the window only implies, and because a window that was ever inclusive at one end
+  would make it load-bearing again — but nobody may count it as a second, independent safeguard.
+* +1 module in `src/`, **0 new dependencies**, **0 changes** to the ADR-020 seam signature or the
+  ADR-009 detection rules.
+* The **pitched arm** (group I, S080–S085; −12.5° nose-down, the flight's worst observed attitude) is
+  scored in **its own block and never folded into a bar**: **5/5 detected**, range p95 **0.0641 m**
+  over 5 matches, and its one negative frame returns **0 unmapped FP / 1 frame**. DESIGN §2.6's
+  level-camera transfer gap is therefore **measured at one attitude** — it is not closed, and roll
+  is not sampled at all.
+
+### Transfer gaps — eight, and the container half of the last one is CLOSED
+
+Static vehicle · noiseless sensor (TG-6; noise enters a `maximum_filter` as a max over K² samples,
+which is biased **upward** — it inflates the background and pushes FP up rather than FN, the safer
+direction, but it is unquantified) · one target radius · **one target per frame** · level attitude
+for every bar · host timing · one world (smooth-sphere foliage, where real foliage has self-depth
+structure with pits narrower than K) · version spread.
+
+**Version spread, half-closed the same night.** The constants were computed on the host stack
+(python 3.9.6 / numpy 1.26.4 / scipy 1.13.1). The **flight container** is now exercised: the 59
+segmenter tests pass inside `fieldguard-sim` (python 3.10.12 / numpy 1.21.5 / scipy 1.8.0),
+including the six fixtures' 3-decimal box/depth assertions, and the full planning discovery ran there
+too (**1232 OK**). The **CI stack** (numpy 2.5.1 / scipy 1.18.0 / python 3.12) is exercised by the
+first push of this branch and remains the one unexecuted target.
+
+**Committed as the regression set** (the frames themselves are ~100 MB and stay out of git; they
+regenerate from the harness + the station file): `REPORT.md`, six compressed fixtures (S015, S026,
+S036, S040, S061, S080 — one per background class plus the two merge cases plus a pitched frame),
+`stations_rendered.json` (the EXACT file the renderer consumed: the 79 design stations v1.0 plus the
+six pitched v1.1), `CAPTURE_LOG.txt`, and the harness `eval/capture_depth_dataset.sh`.
+
+### The wiring (C4) — built, host-tested, never flown
+
+`python3 -m fieldguard_planning.avoidance_node --detect --detection-source depth`. The default is
+`ndvi`, every existing command line is unchanged (the NDVI log block is byte-identical), and
+`--detection-source depth` **without** `--detect` is a parser error — a run that asked for the depth
+detector and silently flew with none would be an observation run wearing a dodge take's command line.
+
+* **The two detectors are EXCLUSIVE BY CONSTRUCTION**, not by care: the node holds exactly one
+  `detection_source` and subscribes only to **that** source's own `(image, camera_info)` pair, keyed
+  by its `SOURCE_TAG`. This is the orchestrator's call on DESIGN §7 Q2 (one detection source per
+  flight; running both costs up to ~50 ms of a 200 ms tick and gives one flight two sources of
+  truth). **A depth run disarms the NDVI detector and says so on stderr — such a take produces no
+  ADR-003 in-air detection evidence**, and that is the price, stated up front.
+* `detection_source_name` now derives from the source's own `SOURCE_TAG`. The old
+  `hasattr(source, "on_frame")` rule is true of **both** frame detectors and would have labelled a
+  depth flight `ndvi_blob` — provenance read from what ran, which is that function's own stated
+  principle.
+* The **depth log block** names both modules that ran, carries the frozen params object with
+  `DEFAULT_PARAMS_PROVENANCE`, `params_provisional: false` **by construction** (no CLI knobs for
+  scored constants), the live intrinsics with provenance
+  `"live /fg/depth/camera_info (not config/depth_camera.json)"`, `range_model: "measured depth
+  (ADR-020); no radius prior, no ground-plane projection"`, and **both** `counters()` dicts.
+* **Decode is derived from the message and then asserted** — `height`/`width`/`step`/`is_bigendian`,
+  refusing a step, payload length or encoding fault by **raising at frame 1**. A fixed sensor does
+  not change its stride mid-flight, so that is a bringup fault and must stop the take loudly rather
+  than reshape into a plausible-looking depth image with every pixel in the wrong place.
+* **NEW, and it is the one that would have cost a whole take: `wait_for_live_intrinsics`.** After the
+  gz-clock gate, with `--detect`, the node spins up to `CAMERA_INFO_WAIT_S = 20 s` for `camera_info`
+  and **exits 4 naming the topic** if the detector never arms. This applies to **both** detectors: a
+  take whose `camera_info` never arrived flew blind for the whole flight, counting and dropping every
+  frame while the 2 s heartbeat printed the normal-looking `nearest_bird=none in view`, and nothing
+  else catches it (`check_render_alive.py` probes the image topics, not their `camera_info`; the
+  flight-log gate reads the artifact after the take is burnt).
+* `set_intrinsics` **refuses fx/fy ≤ 0 or w/h < 2 at arming** (ROS publishes an all-zero K for an
+  uncalibrated camera and un-projection divides by fx), and `on_frame` **counts and drops** a frame
+  whose shape disagrees with the armed intrinsics (`dropped_frame_shape_mismatch`) — a 320×240
+  `camera_info` against a 640×480 image mis-places a measured 20 m target by 19.35 m laterally and
+  3.96 m vertically, silently.
+* `gate_detector_block_matches_source` refuses a block whose **label and fields are different
+  detectors**, in both directions; `gate_booked_speed`'s `is_avoidance` now **includes `depth_blob`**
+  (authorisation is not scoring — the forward aperture is the sensor that booking gate exists for);
+  and `serialise_flight_log` degrades to `default=repr` with a loud `log_serialisation_degraded` note
+  rather than losing a whole flight's evidence to a `TypeError` in a `finally`.
+
+### OPEN — in the order they bind, and the first one is a prerequisite of the take
+
+1. **`DETECTOR_SOURCES` still EXCLUDES `depth_blob`, so a depth flight log is deliberately
+   UNSCOREABLE.** This is a verdict, not an omission: every schema-2 detector gate was written for
+   the **nadir NDVI camera** — the detect-rate floor counts `ndvi_msgs_received`, the estimator check
+   prices an apparent-size ray, the CPA reasoning assumes a downward footprint. Certifying a depth
+   take under another sensor's bars was refused. **A reviewed diff must bring depth-specific gates
+   BEFORE the take, or the take produces an INVALID log by construction.** This is now the first
+   prerequisite before the dodge is booked.
+2. **`link_break`, re-round, pre-registered.** The next step is *not* a flip: it is
+   `link_break=True` **with cut components exempt from `min_area_px`**, which satisfies the
+   never-withholds condition by construction — plus a **two-bird station arm** so multi-object
+   merging stops being unmeasured. Its own round, its own dataset arm.
+3. **Noise and motion.** Both are transfer gaps that only a flown take or a noise model can close.
+4. **Product-lead calls, both unratified** *(escalation rule: product-lead wins for v1)* —
+   (a) whether an avoidance log written **after 2026-09-07 with no booking** is **INVALID** rather
+   than warned (ADR-020 am. 3 open item (a)); (b) ADR-020 am. 1 open item 4 — whether the nadir
+   bird-visibility gate §0b remains a **precondition** of a dodge take. Recommendation unchanged and
+   now sharper for a depth-source take: at the booked 5.0 m/s §0b FAILS 2 of 3 birds, and for a
+   forward-aperture take the **booking gate is the authorising one**, so §0b should be **REPORTED**.
+5. **Declined overnight, and recorded rather than done:** adding a `camera_info` probe to
+   `check_render_alive.py` as an earlier, cheaper net than the exit-4 refusal. It is unverifiable
+   without the renderer, and this run flew nothing.
+
+**The morning's cheapest next measurement, not run tonight by rule:** a scripted
+`fly_pipeline.sh test-flight --booking eval/results/booking_gate_20260907T064136Z.json` with the node
+on `--detection-source depth` and **no birds driven** — it measures D5 and D6 **at the booked
+5.0 m/s** (both are currently 3.50 m/s numbers) and validates the wiring live (`camera_info` arrival,
+decode, in-container runtime counters) on a flight that is not a take. It needs one small devops
+change first: the launcher does not yet pass the node flag.
+
+Owner / roles: tech-lead (the design note this is scored against, its pre-registered rules and bars,
+and this record); perception-ml-engineer (the segmenter, the scorer, the 85-station score run and its
+fix round); qa-safety-reviewer (10 findings, including the merge-rule correction that made a strictly
+better detector look worse and the median-flip margin that no bar could see);
+flight-software-engineer (the `--detection-source` wiring, one QA round, 4 majors + 2 minors fixed);
+orchestrator (decisions of the night: the pitched arm added as a diagnostic group, DESIGN §7 Q2
+answered EXCLUSIVE, and **no flight tonight** — the user is asleep and this project does not fly
+unattended).
+
+### ADR-020 amendment 4 (2026-09-07, the P5 reading RULED): the pre-registered invalidation is evaluated on the pre-registered DEFINITION — cluttered acquisition is 46.0 m, the clause did NOT fire, and "clutter-backed evidence stops at 28 m" is a transfer qualifier that travels with the number, not a second value of it
+
+**The question (raised by qa-safety-reviewer in `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`
+P5).** Amendment 2's clause: *if the segmenter's real, cluttered acquisition range comes in under 33.6 m,
+the 5 m/s gate goes red.* The scored artifact prints `cluttered_acquisition_m: 46.0` AND
+`clutter_backed_max_range_m: 28.0` (canopy) / 22.0 (ground band) / 14.0 (edge), `sky_backed_only_from_range_m:
+30.0`. Read one way the take is bookable; read the other it is not.
+
+**Ruling (orchestrator, product-lead tiebreak rule; the user may overturn it on waking — it is flagged
+first in the morning handoff).** The clause is evaluated on the definition that was **pre-registered
+before a frame was rendered** — `DEPTH_SEGMENTER_DESIGN.md` §4.4: *the longest contiguous prefix of the
+range ladder, taken over the WORST background class PRESENT at each range, for which every `FNR_zero`
+station is matched, then corner-clamped.* On the 85-station render that prefix runs unbroken to the last
+rung, **46.0 m**; the clamp is 47.558 m; 46.0 ≥ 33.591. **The invalidation did not fire.** Changing the
+definition after seeing the numbers — to "the farthest clutter-backed detection" — would be exactly the
+post-hoc redefinition ADR-016's pre-registration doctrine exists to forbid, in whichever direction it cuts.
+
+**Why 28 m is nevertheless load-bearing, and how it travels.** The worst background present above 30 m is
+sky because this world's geometry makes it so (an in-band bird at 46 m and 6 m below the axis has its
+ground background at ~86 m, past the 60 m slant cull; canopies top out at 3.8 m). The segmenter's clutter
+robustness is therefore **demonstrated only to 28 m (canopy) / 22 m (ground band)**; beyond 30 m it is
+**untested, not refuted**, because no clutter can stand behind an in-band bird here. So the best-case-scene
+clause of amendment 2 is narrowed, not deleted: it loses "no segmenter" and "blind `isfinite` mask"
+outright, loses "no clutter" **to 28 m only**, and keeps static vehicle, noiseless sensor, level attitude
+(one pitched arm measured), single target, and — new — **"no clutter behind an in-band target beyond 30 m
+(this world's geometry; a taller canopy, terrain or structure at 30–46 m is UNTESTED)"**. Every quote of
+46.0 m carries that sentence. If a future world puts finite structure behind the band at 30–46 m, the
+number owes a re-score there before it is booked again; if a clutter-backed measurement at ≥ 33.6 m is
+wanted on THIS world, it needs a taller obstacle model, which is a world change with its own ADR.
+
+**Consequences.** The booking artifact (`booking_gate_20260907T064136Z.json`, 46.0 m clamped from 58.0)
+stands. Pre-registration P5 is dispositioned CLOSED-BY-RULING pending the user's confirmation; P1–P4 stand.
+No code, test or artifact changes.
+
+Owner / roles: qa-safety-reviewer (raised it, correctly refused to widen the clause themselves);
+orchestrator (the ruling, on the pre-registration doctrine); user (confirm or overturn on waking).

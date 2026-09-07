@@ -35,10 +35,17 @@ GROUPS: list[tuple[str, str, list[str]]] = [
     ("Living", "Always current. If these disagree with anything else, these win.",
      ["docs/README.md", "docs/SPEC.md", "docs/ROADMAP.md", "docs/DECISIONS.md",
       "docs/BUILD_LOG.md"]),
-    ("Runbooks", "Operational, executed in Docker sessions. Five, and you run all five.",
+    ("Runbooks", "Operational, executed in Docker sessions — five you run, plus one "
+                 "pre-registration for a take that has not flown.",
      ["docs/runbooks/SIM_BRINGUP.md", "docs/runbooks/FULL_PIPELINE_DEMO.md",
       "docs/runbooks/FORWARD_DEPTH_SENSOR.md",
-      "docs/runbooks/AVOIDANCE_REAL_DETECTION.md", "docs/runbooks/AVOIDANCE_DEMO.md"]),
+      "docs/runbooks/AVOIDANCE_REAL_DETECTION.md", "docs/runbooks/AVOIDANCE_DEMO.md",
+      "docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md"]),
+    # `depth_segmenter_stations.json` belongs with these two but cannot be listed: discovery below
+    # only walks docs/**/*.md, so a non-Markdown path here would fail the listed-but-not-on-disk
+    # check. docs/README.md links it instead, and the link checker resolves it to the real tree.
+    ("Design notes", "Written BEFORE the build, kept as the thing the build was scored against.",
+     ["docs/design/DEPTH_SEGMENTER_DESIGN.md", "docs/design/DEPTH_SEGMENTER_ALGORITHM.md"]),
     ("History", "Records, deliberately frozen. Kept because live docs cite them.",
      ["docs/SPIKE_ndvi_vs_rgb.md", "docs/archive/NDVI_VALIDATION.md",
       "docs/archive/SIM_CI.md", "docs/archive/WEEK3_VALIDATION.md",

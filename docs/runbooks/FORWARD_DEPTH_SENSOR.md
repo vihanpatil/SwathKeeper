@@ -649,11 +649,27 @@ never beside the word "cruise".
 
 ## 7. Known gaps — deliberate, named, not blind spots
 
-* **The segmenter does not exist.** `DepthDetectionSource` carries the contract (guards, counters,
-  stamp passthrough, un-projection, the range refusal) and takes the segmenter as a constructor
-  argument; the detector lands next session with perception. Nothing on this list flies a detection.
-* **`avoidance_node` is not wired to it.** Deliberate: that node is flight-software's, and wiring a
-  detection source before its detector exists would be a seam nobody can test.
+*(Updated 2026-09-07 after the segmenter session — ADR-021. Each item now says CLOSED or OPEN and
+names the artifact, because a gaps list nobody dispositions becomes a list nobody reads.)*
+
+* **~~The segmenter does not exist.~~ → CLOSED 2026-09-07 (ADR-021).**
+  `src/fieldguard_planning/depth_segment.py` — a black top-hat on depth
+  (`closing(D, K) − D > margin_m`), **keyed on discontinuity, never on `isfinite`**, scored on an
+  85-station cluttered labelled render. All seven pre-registered bars PASS:
+  `eval/results/depth_segmenter_score_20260907T110000Z.json` +
+  [`eval/results/depth_dataset_20260907/REPORT.md`](../../eval/results/depth_dataset_20260907/REPORT.md).
+  Constants adopted by the pre-registered rules: **K 15, margin 1.5 m, min_area 10 px, open_iter 0,
+  max_boxes 64**, `link_break` OFF.
+* **~~`avoidance_node` is not wired to it.~~ → CLOSED 2026-09-07, and it has NEVER FLOWN.**
+  `--detect --detection-source depth` builds the segmenter behind the seam; default is still `ndvi`
+  and every existing command line is unchanged. **OPEN, and it is the first prerequisite before a
+  depth take is booked:** `DETECTOR_SOURCES` in `scripts/check_live_flight_log.py` deliberately
+  **excludes `depth_blob`**, so a depth flight log is **UNSCOREABLE** — every schema-2 detector gate
+  was written for the nadir NDVI camera (a detect-rate floor over `ndvi_msgs_received`, an
+  apparent-size estimator check, nadir-footprint reasoning). A reviewed diff must bring
+  depth-specific gates **before** the take, or the take produces an INVALID log by construction.
+  (`gate_booked_speed` already treats `depth_blob` as an avoidance take: authorisation is not
+  scoring.)
 * **The depth camera is NOISELESS** — gz-sensors' own default, kept rather than guessed at, and
   recorded as a transfer gap (proposed TG-6) beside `eval/point_mass.py`'s unmodelled dynamics. It
   makes the sensor optimistic in the same direction the plant model already is.
@@ -672,6 +688,33 @@ never beside the word "cruise".
     sweep cannot see this because its scene is deliberately clutter-free and sky-backed. **The
     segmenter must key on depth DISCONTINUITY against the local background, not on `isfinite`**, and
     must be scored against a cluttered scene before any dodge is booked on it.
+    **→ MERGING CLOSED 2026-09-07 (ADR-021):** the adopted operator returns the bird as its own
+    component carrying its **own** median depth — merge mislabels **0 over 71 visible-bird
+    stations**, and the scorer's matcher has a depth clause precisely so a merge cannot pass as a
+    hit (it is what caught K = 21 losing canopy-backed birds into a 53.9 m canopy component).
+    Annotation stays annotate-and-count: 115 of 115 boxes on the 8 negative frames un-projected
+    inside a mapped tree's geofence, **0 unmapped false positives per frame**.
+* **OPEN — an unplanned LARGE obstacle at close range is a blind spot, and no bar here can see it.**
+  A measured correction to the design notes (which predicted a "ring"): an object **wider than K**
+  lets the closing's erosion recover its own depth across the whole silhouette, so it returns
+  **ZERO candidates** — a 1.3 m canopy sphere is invisible inside ~25 m and a flat wall entirely.
+  Survivable in *this* world only because the large objects are the mapped, geofenced trees and the
+  unplanned obstacle is a 0.18 m bird (detectable 46 m → ~2.85 m with no hole). Any world where an
+  unplanned obstacle can be wide re-opens ADR-021.
+* **OPEN — ONE TARGET PER FRAME is what was measured.** All 85 stations have exactly one bird in the
+  world (birds 1 and 2 parked out of every frustum), while the MVP obstacle density is 2–3 birds.
+  Two touching near objects return **one** component at a median belonging to **neither** (20 m
+  beside 30 m reads 25.0 m). The cheap close is one extra teleport per camera pose in whatever
+  renders next, plus the pre-registered `link_break`-with-min_area-exemption round.
+* **OPEN — motion, and what the noiseless bullet above means for the segmenter.** Every dataset
+  frame is a **parked teleport**, so motion blur, rolling shutter and pose/frame pairing error are
+  outside the measurement. On noise: it enters the `maximum_filter` as a max over K² samples, i.e.
+  biased **upward** — it inflates the background and so pushes FP up rather than FN, the safer
+  direction, but it is unquantified.
+* **OPEN — D5 and D6 are still 3.50 m/s numbers.** Delivery ratio and flight pitch **at the booked
+  5.0 m/s** remain unmeasured (§4, §5). The cheapest close is a scripted `test-flight` with the node
+  on `--detection-source depth` and no birds driven — it also validates the wiring live
+  (`camera_info` arrival, decode, in-container runtime counters) without being a take.
 * **`MIN_RESOLVING_RADIUS_PX = 2.0` was calibrated on `ndvi_detect.detect_blobs`** — the *NDVI*
   detector's morphology — because that is the only scored morphology this repo has. The depth
   segmenter is TBD and may not use it. **Re-measuring the floor against whatever the segmenter
@@ -685,7 +728,66 @@ never beside the word "cruise".
   arithmetically, not causally. A floor measured on synthetic discs describes the discs; the
   segmenter's floor must be measured **against this render**, and against a *cluttered* one, where
   the bird is finite-against-finite rather than finite-against-`+inf`.
-* **Whether the nadir bird-visibility gate is still a precondition for a dodge take** is an open
+  **→ CLOSED 2026-09-07 (ADR-021).** Re-measured against the adopted operator at the worst sub-pixel
+  placement: **2.0 px → 46.80 m** for a 0.18 m target at `min_area_px = 10`. The bound is
+  **reproduced, not inherited** — it arrives via `min_area_px` where the NDVI number arrived via a
+  3×3-cross opening, so the agreement is arithmetic coincidence. It sits just **below** the 47.558 m
+  corner clamp, so **on this sensor the morphology binds the horizon by 0.76 m**, not the far cull.
+  The rule's cost is on the record: at `min_area_px = 6` the floor would be **1.6 px → 58.50 m**.
+  Both are above the booked 46.0 m, so the booking does not move either way. Closes
+  `config/depth_camera.json`'s `min_resolving_radius_source` item too.
+* **OPEN — whether the nadir bird-visibility gate is still a precondition for a dodge take** is a
   question for the ADR, not for this runbook: with detection on the forward sensor,
   `predict_bird_visibility.py` gates the NDVI *map*, not the dodge. It is still a real gate for the
-  survey half; do not silently retire it.
+  survey half; do not silently retire it. **Product-lead ratification owed** (ADR-020 am. 1 open
+  item 4): the recommendation is that for a *depth-source* take the forward booking gate is the
+  **authorising** one and §0b is **REPORTED** — measured, §0b FAILS 2 of 3 birds at the booked
+  5.0 m/s.
+
+---
+
+## 8. The segmenter dataset — how to re-score it, and how to regenerate it
+
+The score is a **host** run over frames rendered **in the container**. Nothing here needs a live
+sim unless you are re-rendering.
+
+**Re-score the committed dataset (host, ~1 min):**
+
+```bash
+python3 eval/score_depth_segmenter.py            # defaults: --dataset eval/results/depth_dataset_20260907
+                                                 #           --out-dir eval/results
+```
+
+It re-hashes every frame on load and stops the run on a mismatch; `labels.jsonl` and
+`docs/design/depth_segmenter_stations.json` both carry their sha256 into the artifact. `--no-write`
+scores without emitting one; `--reps N` (default 5, the n = 425 timing row) sets the timing repeats.
+The **frames are not in git** — see below — so a fresh clone must re-render before it can re-score.
+
+**Re-render the dataset (in the container, one gz launch per camera pose; the renderer must be
+idle and no bird driver may be running — the harness refuses on either):**
+
+```bash
+docker cp eval/results/depth_dataset_20260907/stations_rendered.json fieldguard-sim:/tmp/stations.json
+docker exec -it fieldguard-sim bash /workspace/fieldguard/eval/capture_depth_dataset.sh /tmp/stations.json
+# writes /tmp/depthset/{<id>.npy, labels.jsonl, groups.jsonl, camera_info_<world>.json}
+```
+
+Feed it `stations_rendered.json`, **not** `docs/design/depth_segmenter_stations.json`: the committed
+station file is the 79 design stations, and `stations_rendered.json` is that plus the six pitched
+S080–S085 — i.e. it is the exact input the scored artifact belongs to.
+
+Fail-closed the same way the D2/D3 harness is: every vehicle pose within 0.05 m / 0.5° of command
+and every bird teleport within 0.05 m, **readback-verified**; the **committed 125 × 110 m
+`field_ground`** asserted byte-identical (explicitly *not* the 425 m check-world extension — the
+ground's extent is part of what is being measured); `bird_1`/`bird_2` parked out of every frustum;
+zero gravity so nothing drifts. Result on 2026-09-07: **85 frames, 82 distinct sha1** — the three
+repeats are the occlusion stations against their pose's negative control, which is the occlusion
+proof, not a duplicate.
+
+**What is committed and what is not.** `REPORT.md`, six compressed fixtures (S015 sky-46 m,
+S026 ground-band merge, S036 trunk-edge merge, S040 canopy-backed, S061 negative control,
+S080 pitched), `stations_rendered.json` (the exact station file the renderer consumed: the 79 design
+stations plus the six pitched S080–S085), `CAPTURE_LOG.txt`, and `eval/capture_depth_dataset.sh`.
+**Not committed** (~100 MB): `labels.jsonl`, the 85 `.npy` frames, the per-group `camera_info_*.json`
+— they regenerate from the harness plus the station file, which is why the station file is the thing
+under version control.

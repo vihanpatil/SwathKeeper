@@ -1,6 +1,6 @@
 ---
 name: a-gate-is-only-as-true-as-its-scene
-description: The green-tick-over-nothing pattern, four instances (latest 2026-09-07) — a geometry gate passed with its target absent, a correct measurement reasoned about at an unmeasured speed, plus the guard-side twins (an unpinned safety conjunct, and a tolerance that could not tell the defect it was written to reject)
+description: The green-tick-over-nothing pattern, five instances (latest 2026-09-07, ADR-021) — a geometry gate passed with its target absent, a measurement reasoned about at an unmeasured speed, three bars that passed without ever binding, plus the guard-side twins (an unpinned safety conjunct, and a tolerance that could not tell the defect it was written to reject)
 metadata:
   type: project
 ---
@@ -31,6 +31,20 @@ the harness that built the scene the check scores.**
    *(And the retraction itself had to be re-written 2026-09-07: "a lower bound on the booked pitch"
    on a signed quantity where nose-down is negative reads as pitch ≥ −1.18°, which IS the retracted
    claim. On a signed quantity, always say whether the bound is on the value or the magnitude.)*
+
+5. **ADR-021 (2026-09-07) — three bars that PASSED without ever binding, all found by reading the
+   scorer's own denominators.** (a) The `margin_m` selection rule was "smallest with zero unmapped
+   FP, floored at 1.5× the border residual" — and unmapped FP measured **0.0/frame in every cell of
+   the sweep, down to a 0.5 m margin**, so the FP term never bound and the FLOOR chose the constant
+   alone. The metric is structurally blind to the artifact it was meant to clear: the border residual
+   un-projects to z ≈ 0, i.e. to *mapped* clutter. (b) The FNR bar's condition (`standoff > margin`)
+   **excludes 0 of its 49 stations** — vacuous, and correctly so, but only because the geometry says
+   so; it is reported as vacuous rather than quoted as a filter. (c) The pre-registered "three mask
+   conjuncts, three reds" mutation check returned **isfinite GREEN**: the exclusive clip window
+   already rejects every non-finite value, so there were only ever **two independent terms**. All
+   three are recorded as *deviations measured*, not as passes — and the acquisition number carries
+   the same discipline (46.0 m is the LAST RUNG of the ladder, so it reads `≥`, and the clutter claim
+   only reaches 28 m because every rung above is sky-backed).
 
 **So the generalisation is not "values can't catch geometry" — it is: a gate is only as true as the
 scene it thinks it built, and a measurement is only as true as the conditions you MEASURED it

@@ -18,6 +18,18 @@ ground-plane projection).
 > Verified offline is not flown; the first execution of this runbook is the flight it describes.
 > Numbers marked *(offline)* are predictions to compare the flight against, not results.
 
+> **THE DEPTH-SOURCE VARIANT IS UNSCOREABLE TODAY — read this before booking one.** Since ADR-021
+> the same node can fly the **forward depth** detector (`--detect --detection-source depth`, §1a).
+> That take produces a flight log whose `run.detector.source` is `depth_blob`, and
+> `check_live_flight_log.py` **deliberately refuses to score it**: every schema-2 detector gate was
+> written for the nadir NDVI camera (a detect-rate floor over `ndvi_msgs_received`, an
+> apparent-size estimator check, nadir-footprint reasoning), and certifying one sensor's flight with
+> another sensor's bars is exactly the failure this file exists to prevent. **A reviewed diff must
+> add `depth_blob` to `DETECTOR_SOURCES` with its own depth-specific gates BEFORE the take**, or the
+> take produces an INVALID log by construction. Booking (`--booking`) already applies to a depth
+> take — authorisation is not scoring. The take's pre-registration lives in
+> `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`; read it before the flight, not after.
+
 ### Where this sits among the runbooks
 | runbook | what it flies |
 |---|---|
@@ -197,7 +209,12 @@ speed **this** mission will fly.
 >   `budget.required_horizon_m: 33.59` — it is the same quantity, read forwards.
 > * **46.0 m is a best-case-scene UPPER BOUND**: no clutter, a static vehicle, a noiseless sensor,
 >   a sky background, an on-axis target, and a blind `isfinite` mask — **and the depth segmenter
->   does not exist yet.** It must never be quoted without that clause.
+>   does not exist yet.** It must never be quoted without that clause. *(Clause as written at
+>   06:41Z. Since 2026-09-07 evening, ADR-021 + ADR-020 am. 4: the segmenter EXISTS and is scored —
+>   cluttered acquisition 46.0 m by the pre-registered definition, so the invalidation above did not
+>   fire; "no clutter" is removed only to 28 m and "blind `isfinite` mask" is removed outright;
+>   static vehicle, noiseless sensor, level attitude and "no clutter behind the band beyond 30 m in
+>   this world" remain in the clause.)*
 
 This does **not** retire §0b: with detection on the forward sensor, the nadir bird-visibility gate
 now governs the NDVI *map* rather than the dodge, and it is still a real gate for the survey half.
@@ -294,6 +311,43 @@ truth). Overrides exist (`--ndvi-thresh`, `--min-area`, `--max-area`) and passin
 explicitly clears the PROVISIONAL flag in the log; the policy's safety bars are **not** reachable
 from this command line — they have one home in `PolicyParams`, which is also where the gate reads
 them, so a flag here could let the gate and the control law disagree silently.
+
+### 1a. Shell 8, the DEPTH-SOURCE variant *(ADR-021 — built, host-tested, NEVER FLOWN)*
+
+Same shell, one flag, and it changes which sensor the whole take is about:
+
+```bash
+docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.avoidance_node --detect --detection-source depth'
+```
+
+- **The two detectors are EXCLUSIVE by construction, not by care.** The node holds exactly one
+  detection source and subscribes only to *that* source's `(image, camera_info)` pair, so
+  `--detection-source depth` **disarms the NDVI detector** and prints that it has. One flight, one
+  detection source. **This take therefore produces no ADR-003 in-air detection evidence** — if you
+  wanted the NDVI half as detector evidence too, fly the default instead.
+- **`--detection-source depth` without `--detect` is a parser error**, on purpose: a run that asked
+  for the depth detector and silently flew with none would be an observation run wearing a dodge
+  take's command line.
+- **The startup lines change in three places**: `detection source 'depth_blob'`;
+  `subscribing /fg/depth/image + /fg/depth/camera_info`; and instead of the `--ndvi-thresh`
+  PROVISIONAL warning you get the segmenter's frozen params echoed on stderr. There is deliberately
+  **no CLI knob** for any scored segmenter constant, which is what keeps
+  `run.detector.params_provisional: false` honest.
+- **NEW EXIT 4 — the node refuses to fly blind, on BOTH sources.** After the gz-clock gate it spins
+  up to **20 s** for `camera_info`; if the detector never arms it exits 4 **naming the topic**.
+  Before this, a take whose `camera_info` never arrived flew the whole mission counting and dropping
+  every frame while the heartbeat printed the normal-looking `nearest_bird=none in view`, and
+  nothing else caught it (`check_render_alive.py` probes the image topics, not their `camera_info`).
+  If you see it: bring the camera pipeline up **before** this shell and check
+  `ros2 topic echo --once /fg/depth/camera_info`. `/fg/depth/camera_info` is **derived** by
+  gz-sensors from `<topic>`, never declared, so its name is the thing most likely to be wrong.
+- **A malformed depth frame raises at frame 1** (encoding not `32FC1`, a `step` that is not
+  4 bytes × width, a payload length that disagrees). A fixed sensor does not change its stride
+  mid-flight, so that is a bringup fault and must stop the take loudly rather than reshape into a
+  plausible depth image with every pixel in the wrong place.
+- **Then score nothing.** See the banner at the top of this file: today a `depth_blob` log is
+  refused by `check_live_flight_log.py` as UNSCOREABLE. Gate 2 (the NDVI map, §5) is unaffected —
+  the survey camera and the recorder are untouched by this flag.
 
 ## 2. Fly it — human-flown, at the MAVProxy prompt (ADR-013)
 
@@ -411,6 +465,17 @@ on **two** medians: the whole flight, and **each encounter window** (takeover �
 where the booking's lead margin is actually spent. On the 2026-08-25 take those two disagree —
 whole-flight 3.417 m/s passes, encounter 9.012 m/s = 1.80× booked fails — so the whole-flight
 number alone cannot be trusted to catch this.
+
+**On a DEPTH-SOURCE take this gate stops at the door, by design.** `run.detector.source` is
+`depth_blob`, which is **not** in `DETECTOR_SOURCES`, so the gate prints *"the gate cannot know what
+the logged detections are worth"* and the log is **UNSCOREABLE** — not INVALID-because-of-a-finding,
+refused-because-nothing-here-was-written-for-this-sensor. Two things still run and both are worth
+having: `gate_booked_speed` treats `depth_blob` as an avoidance take (so the flown-vs-booked check
+holds), and `gate_detector_block_matches_source` refuses a block whose label and fields are
+different detectors in either direction — a depth take relabelled `ndvi_blob` would otherwise be
+certified with the nadir camera's bars. **The unlock is a reviewed diff adding depth-specific gates,
+before the take.** Until it lands, book the depth variant only as a wiring/lead-time measurement
+(see `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`), never as the Week-6 evidence artifact.
 
 `--truth` and `--booking` each apply to **every** log on the command line, so score one flight at a
 time. Omit it and

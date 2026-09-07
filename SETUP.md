@@ -35,9 +35,9 @@ python3 -m unittest discover -s tests/fieldguard_planning     # planning, safety
 ```
 
 ```
-Ran 57 tests in 6.760s
-OK
-Ran 822 tests in 13.040s
+Ran 277 tests in 38.137s
+FAILED (failures=1)                             # measured 2026-09-07 — the ONE deliberate red, see (b)
+Ran 1232 tests in 28.099s
 OK (skipped=2)
 ```
 
@@ -45,7 +45,11 @@ Two roots because `discover -s tests/fieldguard_planning` never walks `tests/tes
 both for exactly that reason. **The honest caveat, measured on a clean Python 3.12 venv with nothing
 installed:** only the *first* command is truly install-free there. Ten of the second's modules import
 numpy and fail to load with `ModuleNotFoundError: No module named 'numpy'` (the command exits 1); the
-other 614 tests still run green, and step (b) clears the ten — on Python 3.11+, see its floor note.
+rest still run green, and step (b) clears the ten — on Python 3.11+, see its floor note. *(That
+bare-venv split was measured 2026-08-24, as 614 of the 822 tests that existed then; the ten modules
+are the invariant, not the count.)* **The first command's one failure is expected** —
+`tests/test_ci_evidence_gate.py` is red on the committed 2026-08-25 breach take, deliberately; see
+(b) and `tests/README.md`.
 
 **(b) Install the pins, run everything at once.** **Needs Python 3.11+** (read the note below first).
 
@@ -55,7 +59,7 @@ python3 -m pytest tests -q
 ```
 
 ```
-1258 passed, 1 failed, 2 skipped in 68.95s      # measured 2026-09-07
+1506 passed, 1 failed, 2 skipped in 67.24s      # measured 2026-09-07
 ```
 
 **The 1 failure is expected and deliberate** — `tests/test_ci_evidence_gate.py` is red on the
