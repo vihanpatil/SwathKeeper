@@ -979,9 +979,13 @@ class TestDetectorBlockMatchesItsSource(Harness):
         self.assertIn("'counters.depth_msgs_received'", blob)
 
     def test_a_consistent_block_of_either_family_passes_the_rule(self):
-        """The rule must not fire on the two blocks the node actually writes. The depth one is
-        still UNSCOREABLE for a different, deliberate reason (no depth take has been flown, so
-        `depth_blob` is not in DETECTOR_SOURCES) -- and it must fail on THAT, not on a mislabel."""
+        """The rule must not fire on the two blocks the node actually writes.
+
+        The depth block used to land on "refuses to score the flight" (UNSCOREABLE, `depth_blob` was
+        not in DETECTOR_SOURCES). Since P1 landed 2026-09-07 it is SCORED, on its own seven bars --
+        this trimmed fixture fails several of them, which is the point: it must fail on the DEPTH
+        gates, never on the mislabel rule and never on the door. The bars themselves live in
+        tests/fieldguard_planning/test_check_live_flight_log_depth.py."""
         self.assertEqual(checker.gate_detector_block_matches_source(make_run(checker.DET_NDVI_BLOB)),
                          [])
         depth_run = make_run(checker.DET_NDVI_BLOB)
@@ -990,8 +994,9 @@ class TestDetectorBlockMatchesItsSource(Harness):
         status, messages = self.check(make_log(run=depth_run))
         blob = " ".join(messages)
         self.assertEqual(status, checker.INVALID, blob)
-        self.assertIn("refuses to score the flight", blob)              # unscoreable, not mislabelled
-        self.assertNotIn("different detectors", blob)
+        self.assertNotIn("refuses to score the flight", blob)           # scored, not turned away
+        self.assertNotIn("different detectors", blob)                   # and not mislabelled
+        self.assertIn("P1 bar", blob)                                   # it met the depth bars
 
     def test_the_demo_and_none_blocks_are_untouched_by_the_rule(self):
         for src in (checker.DET_DEMO_VIRTUAL, checker.DET_NONE, "yolov8", None):

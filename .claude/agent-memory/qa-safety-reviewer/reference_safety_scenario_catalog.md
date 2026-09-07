@@ -574,6 +574,36 @@ additions to `test_avoidance_node_seam.py` and `test_check_live_flight_log_schem
    **Generalise: whenever a new value joins an enum, the finding is in the branches that did NOT
    get updated, and they are always reachable by grepping the OLD members.**
 
+**THE DEPTH-LOG SCORING LAYER (P1, 2026-09-07) — how to re-break it in 5 minutes**
+- Gates: `scripts/check_live_flight_log.py` `gate_depth_detector_ran` / `gate_depth_range_model` /
+  `depth_range_error` / `gate_depth_frustum` / `gate_depth_acquisition` / `gate_depth_static_map` /
+  `depth_na_notes`, routed from `check_schema2`'s one real-detector branch on
+  `source == DET_DEPTH_BLOB`. Tests: `tests/fieldguard_planning/test_check_live_flight_log_depth.py`.
+- **An INDEPENDENT synthetic depth-log builder is the whole trick.** The committed fixtures call the
+  node's own `_depth_detector_log_block`, which is right for drift but shares the builder's
+  assumptions. A hand-written block + a 5-tick due-east path at 1 m/tick (= the booked 5.0 m/s) +
+  `takeover 2 -> detection 2 -> maneuver 2 -> resume 4` reproduces every bar in isolation. **One
+  truth track per probe dir** — the AMBIGUOUS-TAKE guard is real and will mask the bar under test.
+- **Geometry helper that pays for itself:** a world point at a chosen bearing, course due east, is
+  `(cam_e + d, cam_n - d*tan(az), cam_u - d*tan(el))` with `cam = drone + 0.15 m` forward. 1 deg
+  inside / 1 deg outside the derived half-angle is the whole bar-4 probe.
+- **Mutation, TWO rounds, and put `time.sleep(1.1)` between writes** — successive same-second writes
+  to `scripts/check_live_flight_log.py` are served from `scripts/__pycache__` and a killed mutant
+  reports as SURVIVED (cost me one false "bar 5 breakeven survives"). Round 1 = delete each gate's
+  call site (8/8 killed). Round 2 = weaken the BAR (constants, `problems.append` -> `notes.append`,
+  disable a conjunct): 17 mutants, and the survivors were the findings — `problems -> notes` on both
+  of bar 4's branches, and the bar-7 wording constant.
+- **The confound to look for in ANY red fixture: is the INVALID verdict coming from the gate under
+  test, or from a neighbour?** Bar 4's fixtures were at 20 m, which bar 5 fails independently. Put
+  the fixture where every OTHER bar is green, and assert on the gate function's own `problems` list,
+  not on the joined message blob (notes and problems are joined in both verdict branches).
+- **The pre-diff snapshot is the NDVI-path guard:** `tests/.../fixtures/check_live_flight_log_committed_output.txt`
+  == `git show HEAD:scripts/check_live_flight_log.py` run over the three committed logs (verified
+  byte-identical 2026-09-07). To reproduce the "before", the temp copy must live in `scripts/` —
+  `REPO_ROOT` is derived from `__file__`, so a copy in /tmp cannot import `fieldguard_planning`.
+- Checker is stdlib-only by contract: `/opt/homebrew/bin/python3.12` has no numpy and produces
+  byte-identical output on all three committed logs and on a synthetic depth log. Host is 3.9.6.
+
 *Mutation harness for this layer:* `cp -R src scripts config tests eval <scratch>/qa2`, symlink
 `eval/results` back to the repo (the dataset is 100 MB), and run
 `test_avoidance_node_depth_seam.py test_avoidance_node_seam.py test_check_live_flight_log_schema2.py

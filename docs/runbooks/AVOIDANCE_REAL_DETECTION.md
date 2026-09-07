@@ -18,17 +18,20 @@ ground-plane projection).
 > Verified offline is not flown; the first execution of this runbook is the flight it describes.
 > Numbers marked *(offline)* are predictions to compare the flight against, not results.
 
-> **THE DEPTH-SOURCE VARIANT IS UNSCOREABLE TODAY — read this before booking one.** Since ADR-021
-> the same node can fly the **forward depth** detector (`--detect --detection-source depth`, §1a).
-> That take produces a flight log whose `run.detector.source` is `depth_blob`, and
-> `check_live_flight_log.py` **deliberately refuses to score it**: every schema-2 detector gate was
-> written for the nadir NDVI camera (a detect-rate floor over `ndvi_msgs_received`, an
-> apparent-size estimator check, nadir-footprint reasoning), and certifying one sensor's flight with
-> another sensor's bars is exactly the failure this file exists to prevent. **A reviewed diff must
-> add `depth_blob` to `DETECTOR_SOURCES` with its own depth-specific gates BEFORE the take**, or the
-> take produces an INVALID log by construction. Booking (`--booking`) already applies to a depth
-> take — authorisation is not scoring. The take's pre-registration lives in
-> `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`; read it before the flight, not after.
+> **THE DEPTH-SOURCE VARIANT IS SCOREABLE — on its OWN seven bars, since the P1 diff (2026-09-07,
+> late).** Since ADR-021 the same node can fly the **forward depth** detector (`--detect
+> --detection-source depth`, §1a). That take produces a flight log whose `run.detector.source` is
+> `depth_blob`; `check_live_flight_log.py` scores it on the seven bars pre-registered in
+> `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` §P1 (each gate message quotes its
+> pre-registered text; §5 lists them with their verdict classes) and prints every NDVI-family gate
+> as **`N/A (depth take)`**, never PASS — certifying one sensor's flight with another sensor's bars
+> is the failure this file exists to prevent. **Two bars cannot yet be met by any log this executor
+> writes** (see §5 and the pre-registration's P1 disposition): bar 5 (first-detection range ≥
+> 33.591 m) reads **CENSORED** because a `detection` event is written only inside the 12 m threat
+> radius, and bar 6 (no dodge against the map) reads **UNMEASURED** because `static_map_hint` is not
+> carried into the log — the executor owes one field / one max-range counter **before the take**
+> (P2). Booking (`--booking`) applies to a depth take — authorisation is not scoring. Read the
+> pre-registration before the flight, not after.
 
 ### Where this sits among the runbooks
 | runbook | what it flies |
@@ -345,9 +348,11 @@ docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash 
   4 bytes × width, a payload length that disagrees). A fixed sensor does not change its stride
   mid-flight, so that is a bringup fault and must stop the take loudly rather than reshape into a
   plausible depth image with every pixel in the wrong place.
-- **Then score nothing.** See the banner at the top of this file: today a `depth_blob` log is
-  refused by `check_live_flight_log.py` as UNSCOREABLE. Gate 2 (the NDVI map, §5) is unaffected —
-  the survey camera and the recorder are untouched by this flag.
+- **Then score it with §5's Gate 1** (`check_live_flight_log.py <log> --truth … --booking …`): since
+  the P1 diff (2026-09-07, late) a `depth_blob` log is scored on seven depth-specific bars — see the
+  banner at the top of this file and §5. Expect bar 5 to read **CENSORED** and bar 6 **UNMEASURED**
+  until the executor logs the seam's longest-range detection and the `static_map_hint` (P2). Gate 2
+  (the NDVI map, §5) is unaffected — the survey camera and the recorder are untouched by this flag.
 
 ## 2. Fly it — human-flown, at the MAVProxy prompt (ADR-013)
 
@@ -466,16 +471,53 @@ where the booking's lead margin is actually spent. On the 2026-08-25 take those 
 whole-flight 3.417 m/s passes, encounter 9.012 m/s = 1.80× booked fails — so the whole-flight
 number alone cannot be trusted to catch this.
 
-**On a DEPTH-SOURCE take this gate stops at the door, by design.** `run.detector.source` is
-`depth_blob`, which is **not** in `DETECTOR_SOURCES`, so the gate prints *"the gate cannot know what
-the logged detections are worth"* and the log is **UNSCOREABLE** — not INVALID-because-of-a-finding,
-refused-because-nothing-here-was-written-for-this-sensor. Two things still run and both are worth
-having: `gate_booked_speed` treats `depth_blob` as an avoidance take (so the flown-vs-booked check
-holds), and `gate_detector_block_matches_source` refuses a block whose label and fields are
-different detectors in either direction — a depth take relabelled `ndvi_blob` would otherwise be
-certified with the nadir camera's bars. **The unlock is a reviewed diff adding depth-specific gates,
-before the take.** Until it lands, book the depth variant only as a wiring/lead-time measurement
-(see `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`), never as the Week-6 evidence artifact.
+**A DEPTH-SOURCE take is SCOREABLE since 2026-09-07 — on its own seven bars, not on the NDVI ones.**
+This supersedes the banner at the top of this file, **and §1a's closing "Then score nothing"**, both
+of which still describe the pre-P1 state. **On a depth take, run Gate 1 below — it is step 1 of the
+pre-registration's own analysis plan, and skipping it is skipping the only safety gate that reads
+the flight.** (Stale in the same way, and not this diff's to fix: `docs/ROADMAP.md`,
+`docs/README.md`, ADR-020/ADR-021 in `docs/DECISIONS.md`, and `FORWARD_DEPTH_SENSOR.md` §7.)
+`depth_blob` is now in `DETECTOR_SOURCES`, and it arrived *together with* the bars P1 of
+`docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` pre-registered before any depth take existed
+(the name alone would have converted a refusal-to-score into a green verdict on the other sensor's
+evidence). Two things that already worked are unchanged: `gate_booked_speed` treats `depth_blob` as
+an avoidance take, and `gate_detector_block_matches_source` still refuses a block whose label and
+fields are different detectors in either direction. What runs now, each bar quoting its
+pre-registered text in its own message, and each with the verdict class it produces:
+
+- **Bar 1 — detect rate.** `frames_detected_on / depth_msgs_received ≥ 0.90`, denominator always
+  printed; below the floor, zero frames, or a **zero denominator** (0/0 is not a rate) → **INVALID**.
+- **Bar 2 — `dropped_frame_shape_mismatch == 0`, HARD.** Any non-zero value → **INVALID**: a frame
+  whose shape is not the armed `camera_info`'s places the obstacle tens of metres from where it is.
+- **Bar 3 — range model + range error.** The block must declare `range_model` *"measured depth
+  (ADR-020); no radius prior, no ground-plane projection"*, name `depth_detect` as the un-projection
+  module, and carry intrinsics whose provenance starts `live /fg/depth/camera_info` — anything else
+  → **INVALID**. With a truth track bound, `range_estimate_error_at_cpa_m` (and the p95 over every
+  matched detection) is **GATED at ≤ 0.5 m** → **INVALID** above it. With no `--truth` it prints
+  **UNMEASURED**, never PASS.
+- **Bar 4 — frustum containment.** Every detection behind an ACCEPTED maneuver must un-project
+  inside the frustum derived from *the log's own* `fx/fy/width/height` (±31.607° h / ±24.775° v at
+  today's intrinsics); outside, or behind the camera → **INVALID**. The forward axis is the
+  vehicle's **course over ground** — the flight log records no orientation — and each checked
+  detection prints its own bearing so a marginal failure can be told from a crab angle.
+- **Bar 5 — first-detection range per encounter window ≥ 33.591 m** (ADR-020 am. 2 breakeven) →
+  **INVALID**, class `ACQUISITION BELOW BREAKEVEN`. Read the message: it says whether the number is a
+  **sensor** reading (beyond the threat cylinder → the horizon lever is what that ranks) or
+  **CENSORED** by `threat_radius_m` (12.0 m — the executor logs a `detection` event only for an
+  in-cylinder threat, so **no log today can evidence acquisition at 33.6 m**; that ranks the logging
+  gap, not the optics). Expect the censored form on the first depth take.
+- **Bar 6 — no dodge against the map.** An ACCEPTED maneuver on a detection with a non-null
+  `static_map_hint` → **INVALID**. Today `_log_detection` does not write the hint at all, so the bar
+  prints **UNMEASURED** with the seam's `detections_near_known_obstacle` beside it as the
+  denominator that does exist — never PASS.
+- **Bar 7 — every NDVI-family gate prints `N/A (depth take)` in those words**, never PASS: the
+  detect-rate floor over `ndvi_msgs_received`, the apparent-size estimator check and its
+  `detection_cpa_m`, the nadir-footprint reasoning, and ADR-003's adopted-detector verdict. What is
+  **not** N/A: `gt_cpa_m`, R2/R3/R3.7/R3.8, the clock and the booking — none of them cares which
+  camera saw the bird.
+- **Plus the node's own runtime bars** on its in-container clock: `detect_wall_ms_p95 ≤ 25 ms`,
+  `detect_wall_ms_max ≤ 100 ms`, reported with `detect_wall_ms_n`; a missing counter is a problem,
+  not a fast detector.
 
 `--truth` and `--booking` each apply to **every** log on the command line, so score one flight at a
 time. Omit it and

@@ -1,6 +1,6 @@
 ---
 name: evidence-consumption-seams
-description: How to consume committed flight/NDVI evidence without re-deriving it — the gate functions to call, and the joins that DO NOT exist (flight↔clip has no run id; schema-1 has no time axis)
+description: How to consume committed flight/NDVI evidence without re-deriving it — the gate functions to call, the joins that DO NOT exist (flight↔clip has no run id; schema-1 has no time axis), and the two things a flight log cannot answer (acquisition range, orientation)
 metadata:
   type: project
 ---
@@ -65,6 +65,40 @@ overlaps a fixture makes auto-discovery resolve a truth track that was never mea
 codes/printing run unmodified (`tests/fieldguard_planning/test_check_live_flight_log_schema2.py`
 `TestCli.main`). Verified 2026-09-07 both ways: with a stray overlapping `bird_drive` in
 `eval/results`, the unbound version fails 3/4 and the bound one passes 4/4.
+
+**TWO THINGS A FLIGHT LOG CANNOT ANSWER, both found 2026-09-07 while building the depth-take gates
+(P1) — check before designing any gate on top of them:**
+
+* **Acquisition range is CENSORED at the threat cylinder, not measured.**
+  `AvoidanceExecutor._log_detection` writes a `detection` event only when the maneuver carries a
+  `triggering_detection`, and `AvoidancePolicy.decide` attaches one only for a threat INSIDE
+  `threat_radius_m` (12.0 m; 13.416 m at the cylinder corner with `vertical_threat_m` 6.0). So the
+  earliest range any log can show is ~13.4 m — a PROOF that no current log can evidence the
+  33.591 m acquisition the ADR-020 booking gate is premised on. Out-of-cylinder detections reach the
+  policy and vanish: PROCEED's `debug.n_detections` is only logged when `n_stale_dropped` is set.
+  Closing it = one field on that event, or a max-detection-range counter on `DepthDetectionSource`.
+* **No orientation is recorded anywhere in the log.** `DroneState.heading_rad` is computed in the
+  node (from the pose quaternion) and reaches the executor, which logs positions only. Any bearing /
+  frustum / camera-geometry reasoning off a flight log must substitute COURSE OVER GROUND from
+  `flown_path_enu` and say so — exact while the vehicle translates the way it points, wrong by the
+  crab angle in a GUIDED dodge.
+
+**A `depth_blob` log is SCOREABLE since 2026-09-07** (P1 of the dodge-take pre-registration): seven
+bars in `check_live_flight_log.py`, quoted verbatim from §P1 and pinned as substrings of it. The
+four event-dependent gates (`depth_range_error`, `gate_depth_acquisition`, `gate_depth_frustum`,
+`gate_depth_static_map`) return **`(problems, notes, measured)`** — the third element feeds the
+`DEPTH BARS MEASURED: N of 4` line, because a depth take with no encounter is VALID with every one
+of them UNMEASURED. Two invariants worth not re-deriving:
+
+* **The counter identity is the seam's own arithmetic**, so it can be gated: `on_frame` takes
+  exactly one of five paths per call (4 per-frame drop counters + `frames_detected_on` sum to
+  `depth_msgs_received`) and times every call in a `finally`, so `detect_wall_ms_n ==
+  depth_msgs_received`. `dropped_non_finite_depth` / `dropped_out_of_range` are per-BOX and are NOT
+  in the sum.
+* **A detection's plausible along-axis depth from a position alone**: `(range − 0.15 m) / corner ≤
+  d ≤ range + 0.15 m`, `corner = √(1 + tan²h + tan²v) = 1.2616` at 640×480 / fx = fy = 520.006.
+  That gives an EXACT upper bound of `max_range_m × 1.2616 + 0.15` = **75.848 m** at the seam's
+  60 m clip — no heading substitution needed, so it can never false-fire on a sound log.
 
 **The joins that DO NOT exist — do not invent them:**
 

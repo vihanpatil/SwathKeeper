@@ -70,6 +70,115 @@ avoidance take (:1823), so the booking half works and the safety half does not.
    passes because it measured nothing is the family this repo already paid for (`eval/score.py`,
    2026-08-21).
 
+> **P1 disposition (flight-software, 2026-09-07 ~23:10Z): IMPLEMENTED, red-first, on synthetic
+> schema-2 logs.** `depth_blob` is in `DETECTOR_SOURCES` **together with** all seven bars, each one
+> quoting its pre-registered text above in its own gate message (`P1_BARS` in
+> `scripts/check_live_flight_log.py`; every quote is pinned as a substring of THIS section by test,
+> so a bar cannot be re-aimed after a failure). New tests: 65 in
+> `tests/fieldguard_planning/test_check_live_flight_log_depth.py`, a red **and** a green fixture per
+> bar; the NDVI path is byte-identical on all three committed logs (2 ACKNOWLEDGED, 1 INVALID,
+> exit 1) against a stored snapshot. Runtime bars (`detect_wall_ms_p95 ≤ 25` / `max ≤ 100`) and
+> `gate_booked_speed` are unchanged. **Three deviations, all in the direction of refusing to score
+> rather than passing** — none of them widens a bar:
+> * **Bar 5 cannot be met by any log this executor writes, and that is a P2 blocker, not a sensor
+>   result.** `AvoidanceExecutor._log_detection` writes a `detection` event only when the policy
+>   attached a triggering detection, and the policy only does that INSIDE `threat_radius_m` (12.0 m;
+>   13.416 m at the cylinder corner). So the earliest range the artifact can ever show is ~13.4 m
+>   against a 33.591 m bar. The gate FAILS as pre-registered either way, and the message distinguishes
+>   a genuine late acquisition (beyond the cylinder → ranks the horizon lever) from a **CENSORED**
+>   one (at or inside it → ranks getting the seam's longest-range detection into the log). Closing it
+>   needs one field on that event or a max-detection-range counter on `DepthDetectionSource`.
+> * **Bar 6 is UNMEASURED on a real log for the same shape of reason:** the seam sets
+>   `Detection.static_map_hint` and `_log_detection` does not carry it, so the hint key is absent.
+>   Present-and-non-null still FAILS (fixture proves it); absent prints UNMEASURED with
+>   `detections_near_known_obstacle` as the denominator that does exist, and never PASS.
+> * **Bar 4's forward axis is COURSE OVER GROUND, not yaw** — the flight log records no orientation
+>   at all (`DroneState.heading_rad` reaches the executor and is never written down). Exact while the
+>   vehicle translates the way it points; wrong by the crab angle when it does not, which is why every
+>   checked detection prints its own bearing and the failure message names the substitution before it
+>   names the seam. The half-angles are derived from the log's own intrinsics (±31.607° h / ±24.775° v
+>   today), and the gate's stdlib projection is round-tripped against `depth_detect.depth_pixel_to_enu`
+>   by test.
+
+> **P1 disposition — QA REVIEW (qa-safety, 2026-09-07 ~23:55Z): the seven bars are implemented AS
+> WRITTEN, and three holes are open around them.** Verified independently, on my own synthetic logs
+> rather than the builder's fixtures: each bar violated in isolation produces its pre-registered
+> class with a denominator in the message; a compliant log is VALID; the three committed NDVI logs
+> are byte-identical on stdout and stderr against `git show HEAD:scripts/check_live_flight_log.py`
+> (2 ACKNOWLEDGED, 1 INVALID, exit 1); all seven quotes are substrings of the bar text as it stood
+> BEFORE tonight's diff, so no bar was re-aimed. Two encounters at 40 m and 30 m fail on the second
+> window only, by name. The three disclosed deviations (bar 5 censored, bar 6 unmeasured, bar 4 on
+> course-over-ground) are true of the code and all refuse rather than pass. **What is NOT closed,
+> all found by mutating the gate rather than reading it, and none of it a deviation from a bar --
+> each is a hole IN a bar that the implementation faithfully inherited:**
+> * **Bar 5 credits an acquisition range nothing sanity-checks.** A first detection at 500 m from a
+>   block declaring `max_range_m: 60.0` prints *"at or beyond the breakeven"* and the log is VALID;
+>   so does one 40 m BEHIND the camera, whenever no accepted maneuver sits on its tick (bar 4 is
+>   scoped to accepted maneuvers, as pre-registered, and bar 5 has no geometry conjunct at all).
+>   The bar that decides authorisation is the one bar with no plausibility check, and the P2 work
+>   that closes bar 5's censoring is exactly the work that will start feeding it raw un-projected
+>   ranges. **Fix: refuse a first-detection range outside the block's own declared
+>   `[min_range_m, max_range_m]`, and require min/max_range_m to be present.** Strictly tightening.
+> * **The runtime bars can be skipped by an impossible counter.** `detect_wall_ms_n: 0` prints
+>   *"detect wall time UNMEASURED ... Never a PASS"* as a NOTE and the log is VALID -- measured with
+>   `detect_wall_ms_p95: 125 ms` and `max: 300 ms` in the same block. On a flown log that combination
+>   cannot occur: `DepthDetectionSource.on_frame` increments `_wall_ms_n` in a `finally` on every
+>   call, so `n == depth_msgs_received`. Same family: `frames_detected_on: 5000 of 1200` is a rate of
+>   4.17 and passes bar 1's floor. **Fix: n == 0 with a non-zero denominator is a contradiction, not
+>   an UNMEASURED; and no counter may exceed its own denominator.**
+> * **Bar 4 was enforcing but unpinned.** Rewriting both of its `problems.append(...)` calls as
+>   `notes.append(...)` -- turning the confidently-wrong-perception bar from a FAILURE into a remark
+>   -- left all 65 tests green, because its red fixtures sit at 20 m and are therefore INVALID by bar
+>   5 anyway. Bar 7's *"in those words"* had the same shape: every assertion spelled the requirement
+>   as `checker.NA_DEPTH`, so rewriting that constant left the suite green. Both are now pinned
+>   (`TestBar4EnforcesRatherThanReports`, `TestBar7WordsAreLiteral`; red-first against those exact
+>   mutants). 8/8 call-site mutants and 17/17 enforcement mutants now die.
+>
+> **Docs of record still say the opposite of the code**, and the operational one matters most:
+> `AVOIDANCE_REAL_DETECTION.md` §1a still instructs *"Then score nothing ... a `depth_blob` log is
+> refused as UNSCOREABLE"* -- that is the section an operator executes on a depth take, and following
+> it skips the gates this diff exists to run. Same stale claim at that file's banner (:21),
+> `docs/ROADMAP.md:21` (*"THE BLOCKER"*), `docs/README.md:40`, ADR-021's status line and ADR-020's
+> body in `docs/DECISIONS.md`, and `FORWARD_DEPTH_SENSOR.md:667`. **P1 is landed; six documents have
+> not heard.**
+
+> **P1 disposition — ROUND 2 (flight-software, 2026-09-07 ~01:20Z): the three holes QA found AROUND
+> the bars are closed, red-first, and both code fixes are STRICTLY TIGHTENING — neither can turn a
+> red into a green.** No pre-registered bar was widened, re-aimed or re-worded.
+> * **Bar 5 no longer credits a range nothing sanity-checks.** The first detection of each encounter
+>   is now refused rather than credited when it is a range this sensor could not have measured:
+>   outside the block's OWN `(min_range_m, max_range_m)`, or BEHIND the camera on a tick carrying no
+>   accepted maneuver (bar 4's scope, as pre-registered, does not reach it). Both refusals are
+>   EXACT — the upper bound is `max_range_m x frame-corner factor + mount offset` (75.848 m at
+>   today's 60.0 m / +/-31.607 deg / +/-24.775 deg), so no sound log can trip it; the 500 m case QA
+>   flew is 6.6x it. `min_range_m` / `max_range_m` are now REQUIRED: a block missing them prints
+>   `ACQUISITION RANGE BOUNDED BY NOTHING` and is INVALID. Widening the bar's own consequence is on
+>   the record here, BEFORE any depth data exists.
+> * **No counter may be impossible.** `depth_msgs_received` must equal the five per-frame paths
+>   `on_frame` takes (four drop counters + `frames_detected_on`), `frames_with_detection <=
+>   frames_detected_on <= depth_msgs_received`, `boxes_total >= frames_with_detection`, and
+>   `detect_wall_ms_n == depth_msgs_received` (the seam times every call in a `finally`). Before
+>   this, `frames_detected_on: 5000 of 1200` cleared bar 1's 0.90 floor and `detect_wall_ms_n: 0`
+>   skipped the 25 / 100 ms runtime bars entirely in a block claiming 125 / 300 ms. The relations
+>   are pinned to the seam by a test that drives a real `DepthDetectionSource` down every path.
+> * **Bar 4 and bar 7 are pinned as ENFORCING** (QA's own fix, verified here: 8 call-site mutants
+>   and both wording mutants die). Two of MY round-2 tests had the same confound and were rewritten
+>   to assert on the gate's own `problems` list.
+> * **Also landed:** `DEPTH BARS MEASURED: N of 4` at the end of the depth tail, so "measured
+>   nothing" and "measured and passed" stop sharing a verdict word (a take with no encounter is
+>   still VALID — whether a BOOKED dodge take with no encounter should be AMBIGUOUS is a
+>   safety-vs-scope call and is **open for product-lead**, not decided here). The quote-pin now
+>   stops at the first disposition marker, so prose added under §P1 (including this note) cannot
+>   widen the text the bars are pinned against.
+> * **Still true and still owed:** bar 5 fails as CENSORED on any log today's executor writes (P2),
+>   bar 6 is UNMEASURED until `_log_detection` carries `static_map_hint`, bar 4's forward axis is
+>   course over ground. **§6 step 1 of this file is now stale in the operator's favour**: the gate
+>   no longer exits 1 on `depth_blob` at the door — run it. `AVOIDANCE_REAL_DETECTION.md` §5 says
+>   so; **§1a's "Then score nothing", that file's banner, `docs/ROADMAP.md`, `docs/README.md`,
+>   ADR-020/021 and `FORWARD_DEPTH_SENSOR.md` §7 have not heard** and are a hand-back (out of this
+>   diff's scope). 93 tests in `test_check_live_flight_log_depth.py`; the three committed NDVI logs
+>   are still byte-identical on stdout and stderr.
+
 ### P2 — arm the depth source, and fly step-0 first *(owner: devops-reliability-engineer)*
 - **Not done tonight:** nothing passes `--detection-source depth`. `scripts/fly_pipeline.sh` does
   not launch `avoidance_node` at all (by design — `AVOIDANCE_REAL_DETECTION.md` §1: the log is

@@ -37,7 +37,8 @@ one pre-registration for a take that has not flown):
   teardown, and the post-flight safety gate. It carries a pre-registered expectation, written before
   the flight, that this flight may honestly fail its own gate. Worth reading even if you never run it.
   Since ADR-021 it also carries §1a, the **forward-depth** variant of the detection shell — whose log
-  is deliberately **unscoreable** until the depth gates land.
+  is scored on **seven depth-specific bars** since the P1 diff (two of them read CENSORED /
+  UNMEASURED until the executor logs the seam's longest-range detection and the map hint).
 - [`runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`](runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md)
   — **not a procedure: a pre-registration.** What the forward-depth dodge take is expected to do,
   and what would falsify it, written down *before* the flight so no result can be reinterpreted

@@ -261,18 +261,20 @@ CLOCK_SOURCE = "gz_clock_stream"    # the ONE clock: native gz /clock, absolute 
 DET_NDVI_BLOB = "ndvi_blob"         # the real ADR-003 detector -> CPA measured against truth
 DET_DEMO_VIRTUAL = "demo_virtual"   # a bird we invented -> the logged position IS exact truth
 DET_NONE = "none"                   # no detector armed -> the log may not claim avoidance at all
-DETECTOR_SOURCES = (DET_NDVI_BLOB, DET_DEMO_VIRTUAL, DET_NONE)
-# The ADR-020 forward depth detector (`avoidance_node --detect --detection-source depth`).
-# DELIBERATELY NOT IN `DETECTOR_SOURCES`, and that is the current verdict rather than an omission:
-# no depth take has been flown, and every gate below was written for the NADIR NDVI detector -- the
-# detect-rate floor counts `ndvi_msgs_received`, the estimator check prices an apparent-size ray,
-# and the CPA join assumes a downward footprint. A depth log therefore lands on "the gate cannot
-# know what the logged detections are worth" (UNSCOREABLE) until a reviewed diff brings its own
-# gates, which is the honest reading of a sensor nothing has flown. The name lives here so the
-# mislabel rule below can say it out loud -- and so `gate_booked_speed` can treat a depth take as
-# the AVOIDANCE take it is: not scoreable is not the same as not authorised, and the forward
-# aperture is the sensor that booking gate exists for.
+# The ADR-020/021 forward depth detector (`avoidance_node --detect --detection-source depth`).
+# ADDED TO `DETECTOR_SOURCES` 2026-09-07 (P1 of docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md)
+# TOGETHER WITH ITS OWN GATES, AND ONLY TOGETHER WITH THEM. It was deliberately absent until now
+# because every schema-2 detector gate was written for the NADIR NDVI camera -- the detect-rate
+# floor counts `ndvi_msgs_received`, the estimator check prices an apparent-size ray, and the
+# missed-detection note reasons about a downward footprint -- so a depth log landed on "the gate
+# cannot know what the logged detections are worth" (UNSCOREABLE, INVALID). The unlock is not the
+# name in this tuple; it is the SEVEN PRE-REGISTERED BARS in the depth section below, written before
+# any depth take existed and each one red-first against a synthetic log. Adding the name without
+# them would have converted a refusal-to-score into a false PASS on the other sensor's evidence,
+# which is what the old comment here refused and what `gate_detector_block_matches_source` still
+# refuses in both directions.
 DET_DEPTH_BLOB = "depth_blob"
+DETECTOR_SOURCES = (DET_NDVI_BLOB, DET_DEMO_VIRTUAL, DET_DEPTH_BLOB, DET_NONE)
 # Fields only ONE of the two real detectors can write, from `avoidance_node.detector_log_block`.
 # A block carrying a field from the other family is MISLABELLED, whichever way round it is.
 NDVI_ONLY_DETECTOR_FIELDS = ("thresh", "thresh_provenance", "thresh_provisional",
@@ -1336,6 +1338,980 @@ def gate_detector_ran(log, run) -> Tuple[List[str], List[str]]:
     return problems, [note]
 
 
+# ================================================================================================
+# SCHEMA 2, DEPTH FLAVOUR -- the SEVEN PRE-REGISTERED BARS (P1, 2026-09-07)
+# ================================================================================================
+# WHY A SECOND FAMILY AT ALL. `depth_blob` is a different sensor, not a different threshold: the
+# forward aperture MEASURES range where the nadir one INFERS it from an assumed bird radius, and the
+# counters, the failure modes and the geometry are all different. Every gate above that reads
+# `ndvi_msgs_received`, prices an apparent-size ray, or reasons about a downward footprint is
+# therefore N/A here -- and says so IN THOSE WORDS (bar 7), because a gate that passes on a
+# measurement it never made is the family this repo already paid for (eval/score.py's ADOPT on
+# empty ground truth, 2026-08-21).
+#
+# WHERE THE BARS COME FROM, AND WHY THEY ARE QUOTED. All seven were written by qa-safety in
+# `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` §P1 BEFORE any depth take existed, so no
+# result can be reinterpreted afterwards (ADR-016 doctrine). Each gate's message quotes its bar
+# verbatim from that file, and `tests/fieldguard_planning/test_check_live_flight_log_depth.py` pins
+# every quote as a substring of the pre-registration itself -- so the gate cannot be quietly
+# re-aimed at an easier bar after a flight fails it.
+#
+# TWO THINGS THE LOG DOES NOT CARRY, both found by BUILDING this gate rather than by flying into
+# them, both named in the messages that need them:
+#   * NO ORIENTATION. `flown_path_enu` is positions only; `DroneState.heading_rad` reaches the
+#     executor and is never logged. Bar 4's forward axis is therefore the vehicle's COURSE OVER
+#     GROUND, measured from the flown path either side of the tick -- exact in a noiseless sim while
+#     the vehicle translates the way it points, and wrong by exactly the crab angle when it does not.
+#   * NO OUT-OF-CYLINDER DETECTION. `AvoidanceExecutor._log_detection` writes a `detection` event
+#     only when the policy attached a triggering detection, which happens only for a threat INSIDE
+#     `PolicyParams.threat_radius_m` (12.0 m). So the earliest range any log this executor writes can
+#     show is ~13.4 m, and bar 5's 33.591 m acquisition premise is CENSORED by the policy, not
+#     measured by the sensor. Bar 5 fails as pre-registered and its message says which of the two it
+#     is looking at, because "the sensor acquired late" and "the artifact cannot see the
+#     acquisition" rank completely different work.
+P1_BARS = {
+    1: ("Detect-rate floor over the right denominator. frames_detected_on / depth_msgs_received "
+        ">= 0.90 (MIN_DETECT_RATE, :1197 -- same floor, new denominator). frames_detected_on == 0 "
+        "is a hard failure, not a vacuous pass."),
+    2: ("dropped_frame_shape_mismatch == 0, hard. No NDVI analogue exists. The counter's own note "
+        "(depth_detect.counters): a frame whose shape is not the armed camera_info's \"places the "
+        "obstacle tens of metres from where it is\"."),
+    3: ("Range model. The NDVI gate prices an apparent-size ray; depth must instead assert the "
+        "block names depth_pixel_to_enu un-projection, and range_estimate_error_at_cpa_m becomes a "
+        "GATED number at <= 0.5 m -- the segmenter's own scored bar (measured p95 0.1076 m over 63 "
+        "matches). The monocular ray could never be gated (1.65 m median); this sensor earns it."),
+    4: ("Encounter reasoning -- frustum containment. For every accepted maneuver, the triggering "
+        "detection's bearing from the paired pose must lie inside the forward frustum (+/-31.6 deg "
+        "horizontal, +/-24.775 deg vertical; config/depth_camera.json hfov 1.1033 rad, fy 520.006 "
+        "/ cy 240). A threat \"detected\" outside the frustum is a wrong pose pair or a wrong "
+        "un-projection."),
+    5: ("First-detection range per encounter >= 33.591 m (ADR-020 am. 2), else the take is "
+        "INVALID-for-authorisation"),
+    6: ("No dodge against the map. Any accepted maneuver whose triggering detection carries a "
+        "non-null static_map_hint is a FAIL (confidently-wrong perception). The annotator is "
+        "annotate-and-count only (detections_near_known_obstacle); nothing consumes the hint yet"),
+    7: ("The NDVI-family gates must print N/A (depth take) in those words, never PASS. A gate that "
+        "passes because it measured nothing is the family this repo already paid for (eval/score.py"
+        ", 2026-08-21)."),
+}
+
+
+def _bar(n: int) -> str:
+    """`P1 bar N, pre-registered verbatim: "..."` -- the tag every depth message leads with."""
+    return f'P1 bar {n}, pre-registered verbatim: "{P1_BARS[n]}"'
+
+
+# The words bar 7 requires, spelled once. A test greps every NDVI-family line for exactly this.
+NA_DEPTH = "N/A (depth take)"
+# `DepthDetectionSource.counters()` -- the whole contract, because a counter that is ABSENT is not a
+# counter that is zero, and these are the only evidence the depth detector ran at all.
+DEPTH_DETECTOR_COUNTER_KEYS = (
+    "depth_msgs_received", "frames_detected_on", "frames_with_detection", "boxes_total",
+    "dropped_no_intrinsics", "dropped_no_pose_pair", "dropped_stale_pose_pair",
+    "dropped_frame_shape_mismatch", "dropped_non_finite_depth", "dropped_out_of_range",
+    "detections_near_known_obstacle", "static_map_annotator_errors",
+)
+# The node's OWN in-container wall clock, which is the only one that settles the container question
+# (host measured 6.708 / 10.786 ms over n = 425; container ~1.2x on comparable work).
+DEPTH_WALL_MS_KEYS = ("detect_wall_ms_p95", "detect_wall_ms_max", "detect_wall_ms_n")
+DETECT_WALL_MS_P95_BAR = 25.0
+DETECT_WALL_MS_MAX_BAR = 100.0
+# What `avoidance_node._depth_detector_log_block` must declare, verbatim. Bar 3's first half: the
+# NDVI block's `range_model` prices an apparent-size ray off a RADIUS PRIOR, and ADR-009 rule 2's
+# fail-dangerous alternative is a ground-plane projection (it puts a flying bird at z=0, outside the
+# threat cylinder). A depth block that does not say which model it flew cannot be read as either.
+DEPTH_RANGE_MODEL = "measured depth (ADR-020); no radius prior, no ground-plane projection"
+# The un-projection module bar 3 names. `depth_pixel_to_enu` lives here; the block records the
+# module rather than the function, so this is as close to the pre-registered wording as the artifact
+# gets -- and it is checked rather than assumed.
+DEPTH_SEAM_MODULE = "fieldguard_planning.depth_detect"
+# `_intrinsics_block` writes "live <topic> (not <config>)". The topic half is the load-bearing one:
+# intrinsics taken from config/depth_camera.json are what we ASKED for, not what the sensor GOT, and
+# every number bar 4 computes is divided by them.
+DEPTH_INTRINSICS_PROVENANCE = "live /fg/depth/camera_info"
+# ADR-020 am. 2, read forwards: `--acq-range-m 33.6` still exits 0 at exactly 1.300x and `33.5`
+# exits 1, so this is the acquisition range below which the 5.0 m/s booking is not authorised.
+BREAKEVEN_ACQUISITION_M = 33.591
+# The segmenter's own scored bar (eval/results/depth_segmenter_score_20260907T110000Z.json: p95
+# 0.1076 m over 63 matches). A monocular ray could never be gated at all -- 1.65 m median error on
+# the adopted clip -- which is exactly what this sensor is for.
+DEPTH_RANGE_ERROR_BAR_M = 0.5
+# The forward mount's translation, body FLU, from `depth_detect.FORWARD_MOUNT_OFFSET_BODY_M` /
+# config/depth_camera.json `mount.mount_pose_xyz_rpy`. RESTATED, not imported, for the same reason
+# `AIRBORNE_Z_M` is: `depth_detect` imports `clip_recorder`, which imports numpy, and this gate is
+# stdlib-only by contract. The copies are pinned equal by test. It is applied rather than ignored
+# because ignoring it UNDER-states the off-axis angle (the camera sits 0.15 m nearer the target than
+# the body origin), i.e. it fails in the optimistic direction on the one bar that asks whether the
+# sensor could have seen the thing at all.
+DEPTH_MOUNT_FORWARD_M = 0.15
+
+
+def depth_detector_counters(run) -> Tuple[Optional[dict], Optional[dict], Optional[str]]:
+    """(numeric counters, the raw counters dict, problem). The raw dict comes back too, because the
+    wall-ms trio is legitimately `None` before the first frame and must be told apart from absent."""
+    detector = run.get("detector") if isinstance(run, dict) else None
+    counters = detector.get("counters") if isinstance(detector, dict) else None
+    if not isinstance(counters, dict):
+        return None, None, (
+            "run.detector.counters missing -- `DepthDetectionSource.counters()` writes them on "
+            "every flight, so absence means this log did not come from that seam and the detect "
+            "half of this flight is unmeasured")
+    values = {k: _num(counters.get(k)) for k in DEPTH_DETECTOR_COUNTER_KEYS}
+    missing = sorted(k for k, v in values.items() if v is None)
+    if missing:
+        return None, counters, (
+            f"run.detector.counters is missing or non-numeric for {missing} -- a counter that is "
+            f"absent is not a counter that is zero, and these are the only evidence the depth "
+            f"detector ran at all (`DepthDetectionSource.counters`)")
+    return values, counters, None
+
+
+def depth_counter_contradictions(values) -> List[str]:
+    """Relations that CANNOT be false on a log `DepthDetectionSource` wrote -- one line each.
+
+    A counter that is absent is not a counter that is zero (`depth_detector_counters`); the missing
+    half, found by mutating this gate rather than reading it (QA 2026-09-07), is that a counter
+    LARGER than its own denominator is not a counter at all. `frames_detected_on: 5000` over
+    `depth_msgs_received: 1200` is a detect rate of 4.17 and cleared bar 1's 0.90 floor in silence.
+
+    Each relation is read straight off `depth_detect.on_frame`, which is the only writer:
+      * every call takes EXACTLY ONE of five paths -- no intrinsics, shape mismatch, no pose pair,
+        stale pose pair, or through to the segmenter (`_frame_index += 1`) -- so those five sum to
+        `depth_msgs_received` exactly. `dropped_non_finite_depth` / `dropped_out_of_range` are NOT
+        in the sum: they are per-BOX, not per-frame (the counters' own note says so);
+      * `frames_with_detection` is incremented only inside the segmenter path;
+      * `boxes_total += len(dets)`, and that branch adds 1 to `frames_with_detection` only when
+        `len(dets) >= 1`.
+    A violation is a fabricated, merged or hand-edited counter block, and every bar below divides by
+    these numbers."""
+    per_frame = ("dropped_no_intrinsics", "dropped_frame_shape_mismatch", "dropped_no_pose_pair",
+                 "dropped_stale_pose_pair", "frames_detected_on")
+    paths = sum(values[k] for k in per_frame)
+    broken = []
+    if paths != values["depth_msgs_received"]:
+        broken.append(
+            f"{' + '.join(per_frame)} = {paths:g}, but depth_msgs_received = "
+            f"{values['depth_msgs_received']:g} (every on_frame call takes exactly one of those "
+            f"five paths, so they are EQUAL)")
+    if values["frames_with_detection"] > values["frames_detected_on"]:
+        broken.append(f"frames_with_detection {values['frames_with_detection']:g} > "
+                      f"frames_detected_on {values['frames_detected_on']:g} (a frame cannot carry "
+                      f"a detection without reaching the segmenter)")
+    if values["boxes_total"] < values["frames_with_detection"]:
+        broken.append(f"boxes_total {values['boxes_total']:g} < frames_with_detection "
+                      f"{values['frames_with_detection']:g} (a frame counts as having a detection "
+                      f"only when it contributed at least one box)")
+    if not broken:
+        return []
+    return ["IMPOSSIBLE COUNTERS: " + "; ".join(broken) + ". These relations are "
+            f"`DepthDetectionSource.on_frame`'s own arithmetic, so a log that seam wrote cannot "
+            f"break them -- and every rate below is computed from these numbers, which means a "
+            f"floor could be cleared by arithmetic that never happened. A counter that is absent "
+            f"is not a counter that is zero; a counter larger than its own denominator is not a "
+            f"counter at all."]
+
+
+def gate_depth_detector_ran(log, run) -> Tuple[List[str], List[str]]:
+    """P1 bars 1 and 2, plus the node's own runtime bars.
+
+    Bar 1 is the SAME floor as the NDVI gate over a DIFFERENT denominator: `frames_detected_on /
+    depth_msgs_received`, where `depth_msgs_received` counts every frame handed to `on_frame` BEFORE
+    any guard and `frames_detected_on` is the subset that reached the segmenter. A zero denominator
+    is a problem in its own right and never a pass -- 0/0 is a shrug, not a rate.
+
+    Bar 2 has no NDVI analogue. A frame whose shape is not the armed `camera_info`'s is un-projected
+    with the wrong intrinsics: a 320x240 camera_info against a 640x480 image mis-places a measured
+    20 m target by 19.35 m laterally (measured, QA 2026-09-07). The seam counts and drops those
+    frames rather than raising, so the count is the only place that fault appears.
+
+    The runtime bars are read from the node's OWN counters, in the container, which is the only
+    place that settles the host-vs-container question the segmenter score left open."""
+    problems: List[str] = []
+    notes: List[str] = []
+    values, raw, problem = depth_detector_counters(run)
+    if problem is not None:
+        return [problem], []
+    problems.extend(depth_counter_contradictions(values))
+    received, detected_on = values["depth_msgs_received"], values["frames_detected_on"]
+    rate = (detected_on / received) if received > 0 else None
+    dropped = (f"dropped no_intrinsics={int(values['dropped_no_intrinsics'])} "
+               f"frame_shape_mismatch={int(values['dropped_frame_shape_mismatch'])} "
+               f"no_pose_pair={int(values['dropped_no_pose_pair'])} "
+               f"stale_pose_pair={int(values['dropped_stale_pose_pair'])} "
+               f"non_finite_depth={int(values['dropped_non_finite_depth'])} "
+               f"out_of_range={int(values['dropped_out_of_range'])}")
+    notes.append(
+        f"depth detector counters: depth_msgs_received={int(received)} "
+        f"frames_detected_on={int(detected_on)} "
+        f"frames_with_detection={int(values['frames_with_detection'])} "
+        f"boxes_total={int(values['boxes_total'])} "
+        f"detections_near_known_obstacle={int(values['detections_near_known_obstacle'])} "
+        f"static_map_annotator_errors={int(values['static_map_annotator_errors'])} | {dropped} "
+        f"| detect rate "
+        + ("UNMEASURED (0 depth messages)" if rate is None else
+           f"{_floor_pct(rate)} of {int(received)} (floor {_floor_pct(MIN_DETECT_RATE)}) "
+           f"[{_bar(1)}]"))
+    if received == 0:
+        problems.append(
+            f"DEPTH DETECT RATE HAS NO DENOMINATOR: depth_msgs_received = 0, so "
+            f"frames_detected_on/depth_msgs_received is 0/0 -- not a rate, and never a PASS. The "
+            f"node never received a depth frame at all: `/fg/depth/image` did not arrive, or the "
+            f"subscription was never made. {_bar(1)}")
+    elif detected_on == 0:
+        problems.append(
+            f"DEPTH DETECTOR NEVER RAN: 0 of {int(received)} depth message(s) reached the segmenter "
+            f"({dropped}). A flight that armed the depth detector and detected on nothing did not "
+            f"fly the take it was booked for -- whatever the separation numbers say, there is no "
+            f"detect half to quote. Most likely `/fg/depth/camera_info` never arrived (the node "
+            f"exits 4 if none is usable within CAMERA_INFO_WAIT_S, so a log that exists at all "
+            f"means it did arrive once) or every frame failed the shape check. {_bar(1)}")
+    elif rate is not None and rate < MIN_DETECT_RATE:
+        problems.append(
+            f"DEPTH DETECTOR BARELY RAN: {int(detected_on)} of {int(received)} depth message(s) "
+            f"reached the segmenter = {_floor_pct(rate)}, below the "
+            f"{_floor_pct(MIN_DETECT_RATE)} floor ({dropped}). The detect half of this take is a "
+            f"handful of frames; a bird could cross the whole encounter unlooked-at and the flight "
+            f"would still print R2/R3 PASS (vacuous) and a green separation. {_bar(1)}")
+    # -- bar 2: the shape mismatch, HARD --------------------------------------------------------
+    mismatch = int(values["dropped_frame_shape_mismatch"])
+    if mismatch:
+        problems.append(
+            f"FRAME SHAPE MISMATCH: dropped_frame_shape_mismatch = {mismatch} of "
+            f"{int(received)} depth message(s). The decoded frame's shape was not the armed "
+            f"camera_info's (height_px, width_px), so the two halves of the geometry disagree and "
+            f"the detector was BLIND for that many frames. Un-projecting one of them places the "
+            f"obstacle tens of metres from where it is (measured: a 320x240 camera_info against a "
+            f"640x480 image moves a 20 m target 19.35 m laterally and 3.96 m vertically). This bar "
+            f"is HARD -- there is no acceptable non-zero value. {_bar(2)}")
+    else:
+        notes.append(f"dropped_frame_shape_mismatch 0 of {int(received)} depth message(s) -- the "
+                     f"decoded frames and the armed camera_info agree on the frame size [{_bar(2)}]")
+    # -- the node's own runtime bars ------------------------------------------------------------
+    wall = {k: (raw.get(k, _ABSENT)) for k in DEPTH_WALL_MS_KEYS}
+    absent = sorted(k for k, v in wall.items() if v is _ABSENT)
+    if absent:
+        problems.append(
+            f"run.detector.counters is missing {absent} -- the segmenter score's runtime bars "
+            f"(detect_wall_ms_p95 <= {DETECT_WALL_MS_P95_BAR:g} ms, max <= "
+            f"{DETECT_WALL_MS_MAX_BAR:g} ms) are measured on the node's OWN in-container clock, and "
+            f"a missing counter is not a fast one. The host bench (6.708 / 10.786 ms over n = 425) "
+            f"does not settle the container question; this counter does.")
+    else:
+        n = _num(wall["detect_wall_ms_n"])
+        p95, mx = _num(wall["detect_wall_ms_p95"]), _num(wall["detect_wall_ms_max"])
+        # THE SKIP THAT USED TO BE FREE. `detect_wall_ms_n = 0` printed UNMEASURED and returned a
+        # VALID log -- in a block claiming p95 125 ms and max 300 ms, i.e. 5x and 3x the bars, never
+        # read by anything (QA 2026-09-07). On a flown log that combination cannot occur:
+        # `on_frame` increments `_wall_ms_n` in a `finally` on EVERY call, so the counter equals
+        # `depth_msgs_received` exactly. n = 0 is UNMEASURED only when the denominator is 0 too --
+        # and bar 1 has already failed that take for having no denominator.
+        if n is not None and n != received:
+            problems.append(
+                f"IMPOSSIBLE RUNTIME DENOMINATOR: detect_wall_ms_n = {int(n)} over "
+                f"depth_msgs_received = {int(received)}, which cannot happen -- "
+                f"`DepthDetectionSource.on_frame` times EVERY call in a `finally`, so the two are "
+                f"equal on any log that seam wrote. "
+                + (f"With n = 0 the {DETECT_WALL_MS_P95_BAR:g} / {DETECT_WALL_MS_MAX_BAR:g} ms bars "
+                   f"read as UNMEASURED and are skipped entirely, so this is the exact shape that "
+                   f"hides a slow detector behind a zero (this block claims p95 "
+                   f"{wall['detect_wall_ms_p95']!r} / max {wall['detect_wall_ms_max']!r}). "
+                   if not n else
+                   f"A gap of {int(received - n)} frame(s) means these counters did not come from "
+                   f"one run of one seam. ")
+                + f"The runtime bars are still evaluated below on the numbers as given.")
+        if n is None:
+            problems.append(
+                f"detect_wall_ms_n is {wall['detect_wall_ms_n']!r} -- not a number, so the "
+                f"{DETECT_WALL_MS_P95_BAR:g} / {DETECT_WALL_MS_MAX_BAR:g} ms bars have no "
+                f"denominator at all and a missing denominator is not a fast detector.")
+        elif not n and p95 is None and mx is None:
+            notes.append(f"detect wall time UNMEASURED: detect_wall_ms_n = "
+                         f"{wall['detect_wall_ms_n']!r}, so the {DETECT_WALL_MS_P95_BAR:g} / "
+                         f"{DETECT_WALL_MS_MAX_BAR:g} ms bars have no samples behind them. Never a "
+                         f"PASS -- the detector processed no frame it could time.")
+        elif p95 is None or mx is None:
+            problems.append(
+                f"detect_wall_ms_p95 / detect_wall_ms_max are {wall['detect_wall_ms_p95']!r} / "
+                f"{wall['detect_wall_ms_max']!r} over n = {int(n)} timed frame(s) -- half a "
+                f"runtime statistic is field drift, not a fast detector, and the half that is "
+                f"missing is not the one that was inside its bar")
+        else:
+            notes.append(f"detect wall time p95 {p95:.3f} ms (bar {DETECT_WALL_MS_P95_BAR:g}) max "
+                         f"{mx:.3f} ms (bar {DETECT_WALL_MS_MAX_BAR:g}) over n = {int(n)} timed "
+                         f"frame(s) -- the node's OWN in-container clock, which is what settles the "
+                         f"host-vs-container question")
+            for name, got, bar_ms in (("p95", p95, DETECT_WALL_MS_P95_BAR),
+                                      ("max", mx, DETECT_WALL_MS_MAX_BAR)):
+                if got > bar_ms:
+                    problems.append(
+                        f"DETECT WALL TIME OVER BAR: detect_wall_ms_{name} {got:.3f} ms exceeds "
+                        f"{bar_ms:g} ms over n = {int(n)} timed frame(s). The segmenter is eating "
+                        f"the control tick it shares (0.160 s median), which is lead time the "
+                        f"booking gate has already spent in its latency budget.")
+    # A detector whose output all EXPIRED wears the same clothes as a quiet sky -- the same
+    # combination `gate_detector_ran` fails for the nadir camera, and it is sensor-independent.
+    n_dets, n_stale = n_detection_events(log), stale_dropped_total(log)
+    if n_stale and not n_dets:
+        problems.append(
+            f"AVOIDANCE WAS DEAD: the ADR-009 staleness gate dropped {n_stale} detection(s) and the "
+            f"loop engaged on ZERO ticks -- every detection this flight had expired before the "
+            f"policy could act on it, so no bird was ever avoided and no maneuver was ever vetted.")
+    elif values["boxes_total"] and not n_dets:
+        notes.append(
+            f"the depth detector produced {int(values['boxes_total'])} box(es) and the loop engaged "
+            f"on 0 tick(s), with 0 stale drops: every box fell OUTSIDE the policy's threat cylinder "
+            f"(threat_radius_m {PolicyParams().threat_radius_m:g} m). That is a real flight, not a "
+            f"dead gate -- but any R2/R3 vacuous pass below is vacuous for THAT reason.")
+    return problems, notes
+
+
+def gate_depth_range_model(run) -> Tuple[List[str], List[str]]:
+    """P1 bar 3, first half: the block must SAY which range model it flew, and its intrinsics must
+    have come off the wire.
+
+    Both halves are INVALID rather than a warning, because both are the difference between a number
+    that means metres and a number that means nothing: an apparent-size ray inherits a radius
+    prior's error linearly, a ground-plane projection puts a flying bird at z=0 (outside the threat
+    cylinder -- ADR-009's fail-dangerous case), and intrinsics read from the config are what we
+    ASKED the sensor for rather than what it GAVE us."""
+    problems: List[str] = []
+    notes: List[str] = []
+    detector = run.get("detector") if isinstance(run, dict) else None
+    if not isinstance(detector, dict):
+        return ["run.detector missing -- a depth take must record the block that ranged its "
+                "detections"], []
+    model = detector.get("range_model")
+    if model != DEPTH_RANGE_MODEL:
+        problems.append(
+            f"RANGE MODEL NOT DECLARED: run.detector.range_model is {model!r}, expected "
+            f"{DEPTH_RANGE_MODEL!r}. The whole reason this sensor can be gated at "
+            f"{DEPTH_RANGE_ERROR_BAR_M:g} m is that it MEASURES range; a block that does not say so "
+            f"could have flown an apparent-size ray (error linear in an assumed bird radius) or a "
+            f"ground-plane projection (a flying bird at z=0, outside the threat cylinder -- the "
+            f"fail-dangerous case ADR-009 rule 2 exists for). {_bar(3)}")
+    seam = detector.get("seam_module")
+    if seam != DEPTH_SEAM_MODULE:
+        problems.append(
+            f"UN-PROJECTION MODULE NOT NAMED: run.detector.seam_module is {seam!r}, expected "
+            f"{DEPTH_SEAM_MODULE!r} -- the module `depth_pixel_to_enu` lives in, which is the "
+            f"un-projection the pre-registered bar requires the block to name. {_bar(3)}")
+    intr = detector.get("intrinsics")
+    if not isinstance(intr, dict):
+        problems.append(
+            f"NO INTRINSICS BLOCK: run.detector.intrinsics is {intr!r}. Before the first "
+            f"`/fg/depth/camera_info` the seam drops every frame, so a log with no intrinsics block "
+            f"un-projected nothing -- and bar 4's frustum is computed from fx/fy/width/height, "
+            f"which are then absent too. {_bar(3)}")
+    else:
+        prov = intr.get("provenance")
+        if not (isinstance(prov, str) and prov.startswith(DEPTH_INTRINSICS_PROVENANCE)):
+            problems.append(
+                f"INTRINSICS PROVENANCE: run.detector.intrinsics.provenance is {prov!r}, expected a "
+                f"string starting {DEPTH_INTRINSICS_PROVENANCE!r}. The config is what we ASKED for; "
+                f"the message is what we GOT, and un-projection divides by these numbers. {_bar(3)}")
+        else:
+            notes.append(
+                f"range model {DEPTH_RANGE_MODEL!r} | intrinsics {prov!r} fx="
+                f"{_fmt(_num(intr.get('fx')), 3)} fy={_fmt(_num(intr.get('fy')), 3)} cx="
+                f"{_fmt(_num(intr.get('cx')), 3)} cy={_fmt(_num(intr.get('cy')), 3)} "
+                f"{intr.get('image_width_px')!r}x{intr.get('image_height_px')!r} [{_bar(3)}]")
+    return problems, notes
+
+
+def _flown_point(log, tick) -> Optional[Tuple[float, float, float]]:
+    """`flown_path_enu[tick - 1]` -- that tick's recorded position, or None. The index relation is
+    the executor's own: `step()` records exactly one position per call, on every branch."""
+    path = log.get("flown_path_enu") if isinstance(log, dict) else None
+    if not isinstance(path, list) or not isinstance(tick, int) or isinstance(tick, bool):
+        return None
+    if not (1 <= tick <= len(path)):
+        return None
+    point = path[tick - 1]
+    try:
+        return (float(point[0]), float(point[1]), float(point[2]))
+    except (TypeError, ValueError, IndexError):
+        return None
+
+
+def accepted_maneuver_ticks(log) -> List[int]:
+    """Ticks carrying an ACCEPTED `maneuver` event -- the dodges this flight actually commanded.
+    Bars 4 and 6 are scoped to these: a `gate_reject` is the backstop refusing to fly a point, and
+    a HOLD commands zero displacement, so neither is a dodge taken on a detection."""
+    out = set()
+    for ev in log.get("events") or []:
+        if not isinstance(ev, dict) or ev.get("kind") != "maneuver":
+            continue
+        if ev.get("verdict") not in (None, "accepted"):
+            continue
+        tick = ev.get("tick")
+        if isinstance(tick, int) and not isinstance(tick, bool):
+            out.add(tick)
+    return sorted(out)
+
+
+def depth_detections(log) -> List[dict]:
+    """Every `detection` event, with the range the flight can actually be held to.
+
+    `range_m` is the 3D distance from the detection's estimated world position to the drone's own
+    recorded position at that tick -- the same arithmetic the pre-registration's §6 analysis plan
+    runs (`math.dist(e["position_enu"], fp[e["tick"]-1][:3])`), so the gate and the runbook cannot
+    disagree about what "detection range" means. 3D, not horizontal, because that is what a depth
+    camera measures and what the acquisition budget is expressed in.
+
+    `hint` is `_ABSENT` when the event carries no `static_map_hint` KEY at all -- which is what the
+    executor writes today -- and that is a different fact from a null hint. Bar 6 depends on the
+    distinction."""
+    out: List[dict] = []
+    for ev in log.get("events") or []:
+        if not isinstance(ev, dict) or ev.get("kind") != "detection":
+            continue
+        tick = ev.get("tick")
+        pos = ev.get("position_enu")
+        entry = {"tick": tick, "position_enu": None, "range_m": None,
+                 "hint": ev.get("static_map_hint", _ABSENT),
+                 "track_id": ev.get("track_id"), "drone_enu": None}
+        try:
+            entry["position_enu"] = (float(pos[0]), float(pos[1]), float(pos[2]))
+        except (TypeError, ValueError, IndexError):
+            out.append(entry)
+            continue
+        drone = _flown_point(log, tick)
+        if drone is not None:
+            entry["drone_enu"] = drone
+            entry["range_m"] = math.dist(entry["position_enu"], drone)
+        out.append(entry)
+    return out
+
+
+def _declared_range_window(run) -> Tuple[Optional[float], Optional[float]]:
+    """`(min_range_m, max_range_m)` as the flight's own block declares them.
+
+    This is the seam's EXCLUSIVE refusal window: `DepthDetectionSource.box_to_detection` returns
+    None for `not (min_range_m < d < max_range_m)`, both ends open, because gz stops measuring AT
+    the clip planes and exactly-min/exactly-max is what a clamp looks like."""
+    detector = run.get("detector") if isinstance(run, dict) else None
+    if not isinstance(detector, dict):
+        return None, None
+    return _num(detector.get("min_range_m")), _num(detector.get("max_range_m"))
+
+
+def acquisition_plausibility(log, run, det) -> Optional[str]:
+    """Is the range bar 5 is about to credit one this sensor could have MEASURED? The problem if
+    not, None if it is.
+
+    WHY THIS EXISTS (QA 2026-09-07, on the implementation of the bar rather than its text). Bar 5 is
+    the only bar whose failure class is INVALID-for-authorisation, and as pre-registered it compares
+    ONE number against 33.591 m and nothing else. So a first detection at 500 m from a block whose
+    own `max_range_m` is 60.0 read "at or beyond the breakeven" and the take was VALID -- the bar
+    that decides authorisation was the one bar with no plausibility check, in the direction that
+    reads as success. The P2 work that ends bar 5's censoring (getting the seam's longest-range
+    detection into the artifact) is exactly the work that will start feeding this bar raw
+    un-projected ranges, i.e. the one number a wrong un-projection produces.
+
+    THE TWO REFUSALS, both EXACT -- no crab-angle substitution, so neither can fire on a sound log:
+      * BEHIND THE CAMERA. Needs a course (the same substitution bar 4 makes and names), and is
+        180 deg wide, so a crab angle cannot produce it.
+      * OUTSIDE THE DECLARED WINDOW. Needs no course at all. The camera sits
+        `DEPTH_MOUNT_FORWARD_M` ahead of the body origin, so the range from the CAMERA is within
+        that of the range from the body; and every detection came through a PIXEL, so its off-axis
+        angle is at most the frame corner's, i.e. the along-axis depth `d` the seam actually gated
+        satisfies `(range - mount) / corner <= d <= range + mount`. If that whole interval lies at
+        or outside `(min_range_m, max_range_m)`, no depth the seam would have accepted can be behind
+        this position. Strictly tightening: it can only turn a credited range into a refused one."""
+    lo, hi = _declared_range_window(run)
+    rng, tick = det["range_m"], det["tick"]
+    if lo is None or hi is None or not (0.0 < lo < hi):
+        detector = run.get("detector") if isinstance(run, dict) else None
+        got = (None if not isinstance(detector, dict)
+               else (detector.get("min_range_m"), detector.get("max_range_m")))
+        return (
+            f"ACQUISITION RANGE BOUNDED BY NOTHING at tick {tick}: this bar would credit "
+            f"{rng:.3f} m as the range that authorised the flight, and run.detector's "
+            f"(min_range_m, max_range_m) are {got!r} -- so the artifact does not say what range "
+            f"this sensor can measure, and the number deciding authorisation is bounded by "
+            f"nothing. `avoidance_node._depth_detector_log_block` writes both off the seam that "
+            f"flew; a block missing them did not come from that writer. {_bar(5)}")
+    course = _course_unit(log, tick)
+    if (course is not None and det["position_enu"] is not None and det["drone_enu"] is not None
+            and depth_bearing_deg(det["position_enu"], det["drone_enu"], course) is None):
+        return (
+            f"ACQUISITION BEHIND THE CAMERA at tick {tick}: the {rng:.3f} m this bar would credit "
+            f"is the distance to a point at or BEHIND the forward camera's image plane, on a "
+            f"course of ({course[0]:+.3f}, {course[1]:+.3f}). A forward depth camera cannot "
+            f"measure what is behind it, so this is a wrong pose pair or a wrong un-projection, "
+            f"not an acquisition. "
+            + ("Bar 4 says the same thing about the same detection, from the maneuver side. "
+               if tick in accepted_maneuver_ticks(log) else
+               "Bar 4 does NOT catch it here: that bar is scoped to ACCEPTED maneuvers, as "
+               "pre-registered, and this tick carries none. ")
+            + f"NOTE THE ONE SUBSTITUTION: the log records no orientation, so the forward axis is "
+            f"the vehicle's COURSE over ground -- at 180 deg off it that substitution cannot be "
+            f"what produced this. {_bar(5)}")
+    detector = run.get("detector") if isinstance(run, dict) else None
+    half = _frustum_half_angles_rad(detector.get("intrinsics") if isinstance(detector, dict)
+                                    else None)
+    corner = (None if half is None
+              else math.sqrt(1.0 + math.tan(half[0]) ** 2 + math.tan(half[1]) ** 2))
+    d_hi = rng + DEPTH_MOUNT_FORWARD_M
+    d_lo = None if corner is None else max(0.0, rng - DEPTH_MOUNT_FORWARD_M) / corner
+    frustum = ("the frame corner is UNKNOWN (bar 3 fails this block's intrinsics), so only the "
+               "lower bound on the along-axis depth is checked here"
+               if corner is None else
+               f"every detection came through a pixel inside +/-{math.degrees(half[0]):.3f} deg h "
+               f"/ +/-{math.degrees(half[1]):.3f} deg v, so the along-axis depth behind it is at "
+               f"least {d_lo:.3f} m")
+    end = ("NEARER than min_range_m" if d_hi <= lo
+           else "FURTHER than max_range_m" if d_lo is not None and d_lo >= hi else None)
+    if end is not None:
+        return (
+            f"ACQUISITION RANGE THIS SENSOR CANNOT MEASURE at tick {tick}: {rng:.3f} m is "
+            f"{end}, against the block's OWN declared window (min_range_m {lo:g}, max_range_m "
+            f"{hi:g}, exclusive both ends -- `box_to_detection` returns None outside it). The "
+            f"camera sits {DEPTH_MOUNT_FORWARD_M:g} m ahead of the body origin and {frustum}, so "
+            f"no depth the seam would have accepted can sit behind this position. A range this "
+            f"sensor cannot measure is not an acquisition, it is a bad un-projection -- and this "
+            f"is the bar that decides authorisation. {_bar(5)}")
+    return None
+
+
+def gate_depth_acquisition(log, run) -> Tuple[List[str], List[str], bool]:
+    """P1 bar 5: the first detection of each encounter, against the 33.591 m breakeven.
+
+    THE NUMBER THIS CAN SEE, STATED BEFORE IT IS READ. A `detection` event exists only where the
+    policy attached a triggering detection, and it only does that for a threat already INSIDE
+    `PolicyParams.threat_radius_m` (12.0 m horizontal, +/-6 m vertical -- 13.42 m at the corner of
+    that cylinder). No log this executor writes can therefore report a first detection beyond
+    ~13.4 m,
+    whatever the sensor saw at 46 m. The bar fails as pre-registered either way -- it is a bar about
+    authorisation, and an unevidenced authorisation is not a verified one -- but the message
+    distinguishes the two readings, because they rank completely different work:
+      * range ABOVE the cylinder and BELOW the breakeven -> the sensor really did acquire late, and
+        the horizon lever is what that ranks;
+      * range AT OR BELOW the cylinder -> the artifact cannot see the acquisition at all, and what
+        that ranks is one field on `_log_detection` (or a max-range counter on the seam).
+
+    The third element is whether this bar READ its evidence (a range it could hold to the bar), so
+    the tail can count how many of the four event-dependent bars measured anything at all."""
+    problems: List[str] = []
+    notes: List[str] = []
+    measured = False
+    pp = PolicyParams()
+    cylinder_m = math.hypot(pp.threat_radius_m, pp.vertical_threat_m)
+    windows = encounter_windows(log, len(log.get("flown_path_enu") or []))
+    dets = [d for d in depth_detections(log) if d["range_m"] is not None]
+    if not windows:
+        notes.append(
+            f"ACQUISITION RANGE UNMEASURED: this take logged no encounter window (no takeover "
+            f"event), so there is no first-detection range to hold to the "
+            f"{BREAKEVEN_ACQUISITION_M:.3f} m breakeven. Never a PASS -- an encounter that did not "
+            f"happen proves nothing about the horizon that authorised the flight. [{_bar(5)}]")
+        return problems, notes, measured
+    for lo, hi, label in windows:
+        inside = sorted((d for d in dets if isinstance(d["tick"], int) and lo <= d["tick"] <= hi),
+                        key=lambda d: d["tick"])
+        if not inside:
+            problems.append(
+                f"ACQUISITION RANGE UNMEASURED on {label}: the window carries no `detection` event "
+                f"with a usable position and a recorded drone pose, so the range at which this "
+                f"encounter was acquired cannot be read at all. An encounter the artifact cannot "
+                f"date is not an encounter this booking was verified on. {_bar(5)}")
+            continue
+        first = inside[0]
+        rng = first["range_m"]
+        measured = True
+        line = (f"{label}: first detection at tick {first['tick']}, range {rng:.3f} m "
+                f"(bar {BREAKEVEN_ACQUISITION_M:.3f} m, {len(inside)} detection(s) in window)")
+        # THE SANITY CHECK BEFORE THE COMPARISON. A range the sensor cannot have measured is
+        # refused rather than credited -- and it is refused BEFORE the breakeven comparison, so an
+        # implausible number can never earn the "at or beyond the breakeven" note.
+        implausible = acquisition_plausibility(log, run, first)
+        if implausible is not None:
+            problems.append(implausible)
+        if rng >= BREAKEVEN_ACQUISITION_M:
+            if implausible is None:
+                notes.append(f"acquisition {line} -- at or beyond the breakeven [{_bar(5)}]")
+            continue
+        censored = rng <= cylinder_m
+        problems.append(
+            f"ACQUISITION BELOW BREAKEVEN -- {line}. Restated verbatim from ADR-020 am. 2: "
+            f"\"Breakeven acquisition is 33.591 m: `--acq-range-m 33.6` still exits 0 at exactly "
+            f"1.300x, and `33.5` exits 1. So the booked 46.0 m is not marginal -- but if the "
+            f"segmenter's real, cluttered acquisition range comes in under 33.6 m, this gate goes "
+            f"red and the dodge take is not bookable at 5 m/s.\" "
+            + (f"AND THIS NUMBER IS CENSORED, NOT MEASURED: {rng:.3f} m is at or inside the "
+               f"policy's own threat cylinder ({cylinder_m:.3f} m at the corner of "
+               f"threat_radius_m {pp.threat_radius_m:g} / vertical_threat_m "
+               f"{pp.vertical_threat_m:g}), and `AvoidanceExecutor._log_detection` writes a "
+               f"`detection` event ONLY for an in-cylinder threat. So no log this executor "
+               f"produces can evidence acquisition at 33.591 m, whatever the sensor saw. What "
+               f"this ranks is therefore the LOGGING gap -- the seam's own longest-range "
+               f"detection per frame has to reach the artifact -- NOT the horizon lever. "
+               if censored else
+               f"The detection is beyond the {cylinder_m:.3f} m threat cylinder, so this IS a "
+               f"sensor reading: the encounter was acquired later than the booking's lead budget "
+               f"assumes. THE HORIZON LEVER is what that ranks -- re-derive the corner bound from "
+               f"the THREAT BAND's own worst pixel rather than the frame's (50.8 m at R = 47.6, "
+               f"about +4 m; ADR-020 am. 2 open item 7). Raising `clip_far_m` is refused: it walks "
+               f"finite ground into the band. ")
+            + f"{_bar(5)}")
+    return problems, notes, measured
+
+
+def _frustum_half_angles_rad(intr) -> Optional[Tuple[float, float]]:
+    """(horizontal, vertical) half-angles of the frustum, FROM THE LOG'S OWN INTRINSICS.
+
+    `atan((W/2)/fx)` and `atan((H/2)/fy)` -- the pre-registered +/-31.6 deg / +/-24.775 deg at this
+    sensor's live fx = fy = 520.006 in a 640x480 frame, and whatever the flight really flew if the
+    camera_info ever changes. Derived, never a constant: a gate that carries its own copy of the
+    optics is a gate that keeps passing after the optics move."""
+    if not isinstance(intr, dict):
+        return None
+    fx, fy = _num(intr.get("fx")), _num(intr.get("fy"))
+    w, h = _num(intr.get("image_width_px")), _num(intr.get("image_height_px"))
+    if None in (fx, fy, w, h) or fx <= 0.0 or fy <= 0.0 or w < 2.0 or h < 2.0:
+        return None
+    return (math.atan((w / 2.0) / fx), math.atan((h / 2.0) / fy))
+
+
+def _course_unit(log, tick) -> Optional[Tuple[float, float]]:
+    """The vehicle's horizontal COURSE at `tick`, as a unit (E, N), or None if it did not move.
+
+    THE SUBSTITUTION THIS GATE MAKES, IN ONE PLACE. Bar 4 needs the body-forward axis at the paired
+    pose and the flight log records no orientation at all -- `DroneState.heading_rad` reaches the
+    executor and is never written down. Course over ground is the only heading evidence the artifact
+    carries: exact in a noiseless sim while the vehicle translates the way it points, and wrong by
+    exactly the crab angle when it does not (a GUIDED dodge can translate sideways while holding
+    yaw). Measured over the WIDEST bracket the tick has -- the previous vertex to the next -- so the
+    baseline is a whole tick period rather than half of one."""
+    before, here, after = (_flown_point(log, tick - 1), _flown_point(log, tick),
+                           _flown_point(log, tick + 1))
+    for a, b in ((before, after), (here, after), (before, here)):
+        if a is None or b is None:
+            continue
+        de, dn = b[0] - a[0], b[1] - a[1]
+        norm = math.hypot(de, dn)
+        if norm > 1e-9:
+            return (de / norm, dn / norm)
+    return None
+
+
+def depth_bearing_deg(det_enu, drone_enu, course, mount_forward_m: float = DEPTH_MOUNT_FORWARD_M
+                      ) -> Optional[Tuple[float, float, float]]:
+    """(azimuth deg, elevation deg, along-axis depth m) of a world point in the FORWARD camera's
+    optical frame, or None when it sits at or behind the image plane.
+
+    THE INVERSE OF `depth_detect.depth_pixel_to_enu`, and deliberately a separate implementation:
+    this gate is stdlib-only (`depth_detect` imports `clip_recorder`, which imports numpy), and a
+    gate that re-uses the very code it audits cannot catch that code being wrong. The two are pinned
+    to agree by a round-trip test rather than by shared source.
+
+    Level flight is assumed with the course as yaw (see `_course_unit`), so the optical frame is
+    Gazebo's: optical z = body +X (forward), optical x (u+) = body -Y (the vehicle's right), optical
+    y (v+) = body -Z (down). `atan(x/z)` and `atan(y/z)` are then exactly the angles the half-angles
+    from `_frustum_half_angles_rad` bound, i.e. the pixel lands in the frame iff both are inside."""
+    cam = (drone_enu[0] + mount_forward_m * course[0],
+           drone_enu[1] + mount_forward_m * course[1],
+           drone_enu[2])
+    de, dn, du = det_enu[0] - cam[0], det_enu[1] - cam[1], det_enu[2] - cam[2]
+    forward = de * course[0] + dn * course[1]          # body +X
+    left = -de * course[1] + dn * course[0]            # body +Y
+    if forward <= 1e-9:
+        return None
+    return (math.degrees(math.atan2(-left, forward)),   # optical x = -left
+            math.degrees(math.atan2(-du, forward)),     # optical y = -up
+            forward)
+
+
+def gate_depth_frustum(log, run) -> Tuple[List[str], List[str], bool]:
+    """P1 bar 4: every detection that fed an ACCEPTED maneuver has to be somewhere the sensor could
+    have seen it.
+
+    A detection outside the forward frustum was not made by this sensor at this pose: it is a wrong
+    pose pair (the seam pairs a frame to the pose at its own gz stamp, and a stale pair at cruise is
+    metres of position error), a wrong un-projection, or a detection carried over from a frame that
+    is no longer the latest. The failure modes it catches are tens of metres wide; the substitution
+    it makes (course for yaw) is degrees wide, and every checked detection prints its own margin so
+    a marginal failure is diagnosable rather than mysterious."""
+    problems: List[str] = []
+    notes: List[str] = []
+    detector = run.get("detector") if isinstance(run, dict) else None
+    intr = detector.get("intrinsics") if isinstance(detector, dict) else None
+    half = _frustum_half_angles_rad(intr)
+    accepted = set(accepted_maneuver_ticks(log))
+    feeding = [d for d in depth_detections(log)
+               if isinstance(d["tick"], int) and d["tick"] in accepted]
+    if not feeding:
+        notes.append(
+            f"FRUSTUM CONTAINMENT UNMEASURED: {len(accepted)} accepted maneuver(s) and 0 of them "
+            f"carry a `detection` event on the same tick, so no detection can be placed in the "
+            f"sensor's frustum. Never a PASS -- vacuous here means the artifact lost the join "
+            f"between a dodge and the thing it dodged. [{_bar(4)}]")
+        return problems, notes, False
+    if half is None:
+        problems.append(
+            f"FRUSTUM NOT COMPUTABLE: run.detector.intrinsics carries no usable fx/fy/"
+            f"image_width_px/image_height_px ({intr!r}), so the frustum this flight's own camera "
+            f"had cannot be derived and {len(feeding)} detection(s) behind accepted maneuver(s) "
+            f"cannot be placed inside or outside it. The half-angles are DERIVED from the flight's "
+            f"intrinsics on purpose -- a constant here would keep passing after the optics moved. "
+            f"{_bar(4)}")
+        return problems, notes, False
+    h_deg, v_deg = math.degrees(half[0]), math.degrees(half[1])
+    checked: List[str] = []
+    no_course: List[int] = []
+    for d in feeding:
+        course = _course_unit(log, d["tick"])
+        if course is None or d["position_enu"] is None or d["drone_enu"] is None:
+            no_course.append(d["tick"])
+            continue
+        bearing = depth_bearing_deg(d["position_enu"], d["drone_enu"], course)
+        if bearing is None:
+            problems.append(
+                f"DETECTION BEHIND THE CAMERA at tick {d['tick']}: the detection un-projects to a "
+                f"point at or behind the forward camera's image plane, on a course of "
+                f"({course[0]:+.3f}, {course[1]:+.3f}). A forward depth camera cannot measure "
+                f"something behind it, so this detection was not made by this sensor at this pose "
+                f"-- a wrong pose pair or a wrong un-projection. {_bar(4)}")
+            continue
+        az, el, depth = bearing
+        checked.append(f"tick {d['tick']} az {az:+.2f} deg el {el:+.2f} deg depth {depth:.3f} m")
+        if abs(az) > h_deg or abs(el) > v_deg:
+            problems.append(
+                f"DETECTION OUTSIDE THE FRUSTUM at tick {d['tick']}: bearing az {az:+.3f} deg / el "
+                f"{el:+.3f} deg against the flight's own half-angles +/-{h_deg:.3f} deg h / "
+                f"+/-{v_deg:.3f} deg v (derived from intrinsics fx={_num(intr.get('fx'))!r} "
+                f"fy={_num(intr.get('fy'))!r} {intr.get('image_width_px')!r}x"
+                f"{intr.get('image_height_px')!r}). The sensor could not have made this detection "
+                f"at this pose, and an accepted maneuver was flown on it. NOTE THE ONE "
+                f"SUBSTITUTION before hunting the seam: the log records no orientation, so the "
+                f"forward axis here is the vehicle's COURSE over ground "
+                f"({course[0]:+.3f}, {course[1]:+.3f}) -- if this failure is marginal it may be a "
+                f"crab angle, and the fix for THAT is to log the tick's yaw "
+                f"(`DroneState.heading_rad` reaches the executor and is never written down). "
+                f"{_bar(4)}")
+    if checked:
+        notes.append(
+            f"frustum containment: {len(checked)} of {len(feeding)} detection(s) behind accepted "
+            f"maneuver(s) checked against +/-{h_deg:.3f} deg h / +/-{v_deg:.3f} deg v [" +
+            "; ".join(checked) + f"]. Forward axis = COURSE over ground (the log records no "
+            f"orientation), camera origin offset {DEPTH_MOUNT_FORWARD_M:g} m forward of the body "
+            f"origin. [{_bar(4)}]")
+    if no_course:
+        line = (f"FRUSTUM CONTAINMENT UNMEASURED on {len(no_course)} of {len(feeding)} detection(s) "
+                f"behind accepted maneuver(s) (first tick {no_course[0]}): the vehicle's own path "
+                f"records no movement either side of that tick, so there is no course to use as the "
+                f"forward axis and no orientation was logged. Never a PASS. [{_bar(4)}]")
+        if len(no_course) == len(feeding):
+            # NOTHING was checked. A partly-unmeasured bar is reported; a wholly-unmeasured one is a
+            # problem, or a take that hovered through its encounter would skip bar 4 in silence.
+            problems.append(line + " EVERY detection behind an accepted maneuver is in this state, "
+                                   "so bar 4 measured nothing at all on this take.")
+        else:
+            notes.append(line)
+    return problems, notes, bool(checked)
+
+
+def gate_depth_static_map(log, run) -> Tuple[List[str], List[str], bool]:
+    """P1 bar 6: no dodge against the map.
+
+    The annotator is ANNOTATE-AND-COUNT ONLY by design (`depth_detect` rule 9): filtering mapped
+    detections would delete the bird-beside-a-tree case, and a missed obstacle is a safety bug where
+    a wasted dodge is not. So the policy MAY act on a hinted detection -- and if it did, that is a
+    dodge taken against a tree the mission already knew about, and it is recorded as a failure.
+
+    WHAT THIS BAR CANNOT SEE TODAY, said out loud rather than passed over: the hint is on
+    `Detection.static_map_hint`, and `AvoidanceExecutor._log_detection` writes track_id, frame_id,
+    confidence, position_enu, source and decision -- not the hint. So on a log this executor
+    produced the field is ABSENT, the bar is UNMEASURED, and it is never a PASS. The seam's own
+    `detections_near_known_obstacle` counter is reported beside it as the denominator that exists,
+    because the negatives measured 14.375 mapped false positives per frame: a take with a non-zero
+    count and no hint in the artifact is a take where this bar had something to find."""
+    problems: List[str] = []
+    notes: List[str] = []
+    accepted = set(accepted_maneuver_ticks(log))
+    feeding = [d for d in depth_detections(log)
+               if isinstance(d["tick"], int) and d["tick"] in accepted]
+    values, _raw, _problem = depth_detector_counters(run)
+    annotated = None if values is None else int(values["detections_near_known_obstacle"])
+    hinted = [d for d in feeding if d["hint"] is not _ABSENT and d["hint"] is not None]
+    absent = [d for d in feeding if d["hint"] is _ABSENT]
+    for d in hinted:
+        problems.append(
+            f"DODGE AGAINST THE MAP at tick {d['tick']}: an ACCEPTED maneuver was flown on a "
+            f"detection whose static_map_hint is {d['hint']!r} -- the detection's own estimated "
+            f"position falls inside a MAPPED obstacle's 3D geofence, i.e. the vehicle dodged a tree "
+            f"the mission already knows about. The annotator is annotate-and-count only, so nothing "
+            f"suppressed it and the policy was free to act; that it did is the finding. {_bar(6)}")
+    if absent:
+        notes.append(
+            f"STATIC-MAP BAR UNMEASURED on {len(absent)} of {len(feeding)} detection(s) behind "
+            f"accepted maneuver(s): the events carry no `static_map_hint` key at all. "
+            f"`AvoidanceExecutor._log_detection` does not write it (checked 2026-09-07), so the "
+            f"seam annotates and the artifact loses it. NOT A PASS -- the bar had nothing to read. "
+            f"The seam's own denominator: detections_near_known_obstacle = "
+            + ("UNREADABLE (counters problem above)" if annotated is None else str(annotated))
+            + (f", so this take DID annotate detections near mapped obstacles and this artifact "
+               f"cannot say whether any of them drove a dodge. One field on that event closes it."
+               if annotated else ". Nothing was annotated on this take either.")
+            + f" [{_bar(6)}]")
+    if feeding and not absent and not hinted:
+        notes.append(
+            f"no dodge against the map: {len(feeding)} detection(s) behind accepted maneuver(s), "
+            f"every one carrying an explicit null static_map_hint (seam counter "
+            f"detections_near_known_obstacle = "
+            + ("UNREADABLE" if annotated is None else str(annotated)) + f") [{_bar(6)}]")
+    if not feeding:
+        notes.append(
+            f"STATIC-MAP BAR UNMEASURED: {len(accepted)} accepted maneuver(s) and no `detection` "
+            f"event on any of their ticks, so no triggering detection can be read for a hint at "
+            f"all. Never a PASS. [{_bar(6)}]")
+    # Measured means the hint KEY was there to read on every detection behind an accepted dodge --
+    # null or not. A partly-absent hint is a partly-unmeasured bar, and this count is not the place
+    # to round that up.
+    return problems, notes, bool(feeding) and not absent
+
+
+def depth_range_error(log, truth, report) -> Tuple[List[str], List[str], bool]:
+    """P1 bar 3, second half: the range error this sensor is allowed to have, GATED at 0.5 m.
+
+    THE COMPARISON, stated because it is the whole content of the bar. Each `detection` event gives
+    a MEASURED range (its estimated world position against the drone's own recorded position at that
+    tick). The applied-pose truth track gives, at the same instant, where the birds really were; the
+    detection is associated to the NEAREST truth bird (depth detections carry no `track_id` -- the
+    seam has no tracker, rule 6) and the association distance is printed, so a detection matched to
+    the wrong bird shows up as a large error rather than as a quiet pass. The gated statistic is
+    `range_estimate_error_at_cpa_m` -- the error at the detection nearest in time to the gt-CPA
+    instant, i.e. at the moment that decides the flight -- plus the p95 over every matched
+    detection, because the segmenter's own scored bar (0.1076 m) is a p95 and a single sample has no
+    denominator.
+
+    NO TRUTH, NO NUMBER. The monocular estimator was never gated because it could not be (1.65 m
+    median error); this sensor earns the gate by MEASURING range, and the measurement still needs
+    something to be measured against. With no truth the bar prints UNMEASURED and never PASS."""
+    problems: List[str] = []
+    notes: List[str] = []
+    dets = [d for d in depth_detections(log) if d["range_m"] is not None]
+    if not dets:
+        notes.append(f"RANGE ERROR UNMEASURED: this take logged no `detection` event with a usable "
+                     f"position and drone pose, so the {DEPTH_RANGE_ERROR_BAR_M:g} m range bar has "
+                     f"nothing to score. Never a PASS. [{_bar(3)}]")
+        return problems, notes, False
+    if truth is None:
+        notes.append(f"RANGE ERROR UNMEASURED: no bird ground truth is bound to this flight, so the "
+                     f"{DEPTH_RANGE_ERROR_BAR_M:g} m bar on {len(dets)} detection(s) has nothing to "
+                     f"compare against. Never a PASS -- pass --truth <applied log>. [{_bar(3)}]")
+        return problems, notes, False
+    stamps = (log.get("run") or {}).get("tick_stamp_sim_s") or []
+    matches: List[dict] = []
+    for d in dets:
+        tick = d["tick"]
+        t = _num(stamps[tick - 1]) if isinstance(tick, int) and 1 <= tick <= len(stamps) else None
+        cands = truth.candidates_at(t)
+        if not cands:
+            continue
+        best = None
+        for bird_id, answer in cands.items():
+            for pos in answer.positions:
+                assoc = math.dist(d["position_enu"], pos)
+                if best is None or assoc < best["assoc_m"]:
+                    best = {"bird_id": bird_id, "assoc_m": assoc,
+                            "truth_range_m": math.dist(pos, d["drone_enu"])}
+        if best is None:
+            continue
+        best.update({"tick": tick, "t_sim_s": t, "range_m": d["range_m"],
+                     "err_m": abs(d["range_m"] - best["truth_range_m"])})
+        matches.append(best)
+    if not matches:
+        notes.append(
+            f"RANGE ERROR UNMEASURED: none of this take's {len(dets)} detection(s) falls inside "
+            f"what the truth track {truth.path.name} observed, so no measured range has a true "
+            f"range to be compared with. Never a PASS. [{_bar(3)}]")
+        return problems, notes, False
+    errs = sorted(m["err_m"] for m in matches)
+    # Nearest rank, so the printed p95 is an error this flight really made -- and with n < 20 that
+    # is the MAX, which is the honest reading of a p95 on a handful of samples rather than a
+    # smaller number invented by interpolation.
+    p95 = _nearest_rank(errs, 0.95)
+    cpa_tick = (report or {}).get("tick")
+    at_cpa = (min(matches, key=lambda m: abs(m["tick"] - cpa_tick))
+              if isinstance(cpa_tick, int) else None)
+    notes.append(
+        f"range_estimate_error_m over {len(matches)} of {len(dets)} detection(s) with truth: p95 "
+        f"{p95:.4f} m, max {errs[-1]:.4f} m, min {errs[0]:.4f} m (bar "
+        f"{DEPTH_RANGE_ERROR_BAR_M:g} m; the segmenter's own scored p95 was 0.1076 m over 63 "
+        f"matches). Each detection is associated to the NEAREST truth bird at its own instant -- "
+        f"the seam has no tracker, so there is no id to join on -- and the worst association "
+        f"distance here is {max(m['assoc_m'] for m in matches):.3f} m. [{_bar(3)}]")
+    if at_cpa is not None:
+        notes.append(
+            f"range_estimate_error_at_cpa_m {at_cpa['err_m']:.4f} m (bar "
+            f"{DEPTH_RANGE_ERROR_BAR_M:g} m): detection at tick {at_cpa['tick']} measured "
+            f"{at_cpa['range_m']:.3f} m against {at_cpa['truth_range_m']:.3f} m true to "
+            f"{at_cpa['bird_id']} (association {at_cpa['assoc_m']:.3f} m), the detection nearest "
+            f"the gt-CPA tick {cpa_tick}. GATED -- unlike the monocular estimator, which could "
+            f"never be. [{_bar(3)}]")
+        if at_cpa["err_m"] > DEPTH_RANGE_ERROR_BAR_M:
+            problems.append(
+                f"RANGE ERROR OVER BAR AT CPA: {at_cpa['err_m']:.4f} m at tick {at_cpa['tick']} "
+                f"(measured {at_cpa['range_m']:.3f} m vs {at_cpa['truth_range_m']:.3f} m true to "
+                f"{at_cpa['bird_id']}, association {at_cpa['assoc_m']:.3f} m) against the "
+                f"{DEPTH_RANGE_ERROR_BAR_M:g} m bar. This is the range the dodge geometry was "
+                f"computed from at the moment that decided the flight. A large association "
+                f"distance here means the detection was matched to a bird it is not, which is the "
+                f"same finding wearing a different hat: the artifact cannot say what was ranged. "
+                f"{_bar(3)}")
+    else:
+        notes.append(f"range_estimate_error_at_cpa_m UNMEASURED: this flight has no gt-CPA tick to "
+                     f"anchor the at-CPA sample to. Never a PASS. [{_bar(3)}]")
+    if p95 is not None and p95 > DEPTH_RANGE_ERROR_BAR_M:
+        problems.append(
+            f"RANGE ERROR OVER BAR: p95 {p95:.4f} m over {len(matches)} matched detection(s) "
+            f"exceeds the {DEPTH_RANGE_ERROR_BAR_M:g} m bar -- the statistic the segmenter's score "
+            f"was written in (0.1076 m over 63 matches). A depth camera that cannot hold half a "
+            f"metre is being read as a measurement when it is an estimate. {_bar(3)}")
+    return problems, notes, True
+
+
+def depth_na_notes(report: Optional[dict], seen: Sequence[int]) -> List[str]:
+    """P1 bar 7: every NDVI-family gate prints `N/A (depth take)` IN THOSE WORDS, never PASS.
+
+    Four families, and each one is a real gate above that would otherwise read as green on a
+    measurement it never made: the detect-rate floor over `ndvi_msgs_received` (a counter this
+    detector does not have), the apparent-size estimator check and its
+    `range_estimate_error_at_cpa_m` (there is no ray and no radius prior here -- the depth bar
+    replaces it), the nadir-footprint reasoning behind the missed-detection signal (this camera
+    looks FORWARD, so the scoping argument is the opposite one), and ADR-003's adopted-detector
+    verdict (criterion 3 is about the NDVI-direct detector, which `--detection-source depth`
+    DISARMS)."""
+    notes = [
+        f"NDVI detect-rate floor (frames_detected_on / ndvi_msgs_received): {NA_DEPTH} -- this "
+        f"detector has no `ndvi_msgs_received` counter at all; the depth denominator is "
+        f"`depth_msgs_received` and it is gated above. {_bar(7)}",
+        f"apparent-size estimator check (detection_cpa_m, range_estimate_error_at_cpa_m as the "
+        f"monocular ray's error): {NA_DEPTH} -- there is no radius prior and no ray here (ADR-020: "
+        f"the sensor MEASURES range), so the number that replaces it is the truth-referenced range "
+        f"error, GATED at {DEPTH_RANGE_ERROR_BAR_M:g} m above. {_bar(7)}",
+        f"nadir-footprint reasoning (why the missed-detection signal is not gated): {NA_DEPTH} -- "
+        f"the NDVI camera looks straight DOWN, so a bird inside the threat cylinder is routinely "
+        f"outside its footprint. This aperture looks FORWARD: the equivalent scoping is bar 4's "
+        f"frustum, which is gated. {_bar(7)}",
+        f"ADR-003 evidence (criterion 3, the adopted NDVI-direct detector): {NA_DEPTH} -- "
+        f"`--detection-source depth` DISARMS the NDVI detector, so this flight says nothing about "
+        f"the nadir detector's FNR, threshold or comparison arm. One flight, one detection source. "
+        f"{_bar(7)}",
+    ]
+    if report is not None:
+        n_cyl = len(report.get("cylinder_ticks") or [])
+        hit = len(set(report.get("cylinder_ticks") or []) & set(seen))
+        notes.append(
+            f"bird truly inside the threat cylinder on {n_cyl} tick(s); the loop engaged on {hit} "
+            f"of them (missed-detection signal, NOT gated -- but for the OPPOSITE reason to the "
+            f"nadir camera's: a forward aperture can see a bird at cylinder range, and what it "
+            f"cannot see is one above or beside it outside the frustum. Bar 4 gates the direction "
+            f"that matters: no accepted dodge on a detection the sensor could not have made)")
+    return notes
+
+
 def _min_setpoint_bird_gap_m(setpoint, threat_positions) -> Optional[Tuple[float, int]]:
     """(horizontal distance from `setpoint` to the nearest threat, that threat's index), or None
     when either side is missing/malformed. Horizontal, the axis `min_bird_clearance_m` is stated
@@ -2179,13 +3155,26 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
             cpa_m = det_cpa[0]
             notes.append(f"CPA {cpa_m:.4f} m to {det_cpa[1]} [demo_virtual: the logged bird IS "
                          f"truth] (bar {bar:.2f} m)")
-    else:                                        # DET_NDVI_BLOB -- the real detector
-        problems.extend(gate_staleness(run))
-        det_problems, det_notes = gate_detector_ran(log, run)
-        problems.extend(det_problems)
-        notes.extend(det_notes)
+    else:                    # DET_NDVI_BLOB / DET_DEPTH_BLOB -- a real detector, on real evidence
+        depth = source == DET_DEPTH_BLOB
+        problems.extend(gate_staleness(run))          # ADR-009 rule 1 is sensor-independent
+        if depth:
+            for gate in (gate_depth_detector_ran(log, run),          # P1 bars 1, 2 + runtime
+                         gate_depth_range_model(run)):               # P1 bar 3, first half
+                problems.extend(gate[0])
+                notes.extend(gate[1])
+        else:
+            det_problems, det_notes = gate_detector_ran(log, run)
+            problems.extend(det_problems)
+            notes.extend(det_notes)
+        # THE TRUTH JOIN IS THE SAME MEASUREMENT FOR BOTH APERTURES, and deliberately so: `gt_cpa_m`
+        # is the flown path against the bird's own applied-pose track, which knows nothing about
+        # which camera saw it. What differs is everything DOWNSTREAM of it -- the estimator check
+        # (an apparent-size ray vs a measured range) and the missed-detection scoping (a downward
+        # footprint vs a forward frustum) -- so those live in the two tails below, not in here.
         truth, truth_problems = resolve_truth(path, run, truth_arg, results_dir)
         problems.extend(truth_problems)
+        report: Optional[dict] = None
         if truth is not None:
             pp = PolicyParams()
             report = ground_truth_cpa(log.get("flown_path_enu") or [],
@@ -2262,26 +3251,55 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
                         f"the fastest scripted bird at {max_bird_speed_m_s():.2f} m/s). THIS is the "
                         f"number gated: a frozen truth join can only over-report separation, never "
                         f"under-report it.")
-            if det_cpa is None:
-                notes.append("detection_cpa_m NONE -- the detector logged no positioned detection. "
-                             "ESTIMATOR CHECK, NOT A SAFETY GATE.")
-            else:
-                # The estimator error is measured against the MEASURED join, never the debited one:
-                # the debit prices a clock fault, not the detector's range error.
-                gt_measured = report["gt_cpa_m"]
-                notes.append(
-                    f"detection_cpa_m {det_cpa[0]:.4f} m to {det_cpa[1]} -- monocular "
-                    f"apparent-size estimate; ESTIMATOR CHECK, NOT A SAFETY GATE"
-                    + ("" if gt_measured is None else
-                       f" | range_estimate_error_at_cpa_m {gt_measured - det_cpa[0]:+.4f} "
-                       f"(gt_cpa_m minus detection_cpa_m: the two MINIMA, not one instant)"))
-            n_cyl = len(report["cylinder_ticks"])
-            hit = len(set(report["cylinder_ticks"]) & set(seen))
-            notes.append(f"bird truly inside the threat cylinder on {n_cyl} tick(s); the loop "
-                         f"engaged on {hit} of them (missed-detection signal, NOT gated -- the "
-                         f"camera is NADIR, so a bird inside the cylinder can sit outside the "
-                         f"downward footprint at its own altitude, and one above the drone is "
-                         f"never in frame at all)")
+            if not depth:
+                if det_cpa is None:
+                    notes.append("detection_cpa_m NONE -- the detector logged no positioned "
+                                 "detection. ESTIMATOR CHECK, NOT A SAFETY GATE.")
+                else:
+                    # The estimator error is measured against the MEASURED join, never the debited
+                    # one: the debit prices a clock fault, not the detector's range error.
+                    gt_measured = report["gt_cpa_m"]
+                    notes.append(
+                        f"detection_cpa_m {det_cpa[0]:.4f} m to {det_cpa[1]} -- monocular "
+                        f"apparent-size estimate; ESTIMATOR CHECK, NOT A SAFETY GATE"
+                        + ("" if gt_measured is None else
+                           f" | range_estimate_error_at_cpa_m {gt_measured - det_cpa[0]:+.4f} "
+                           f"(gt_cpa_m minus detection_cpa_m: the two MINIMA, not one instant)"))
+                n_cyl = len(report["cylinder_ticks"])
+                hit = len(set(report["cylinder_ticks"]) & set(seen))
+                notes.append(f"bird truly inside the threat cylinder on {n_cyl} tick(s); the loop "
+                             f"engaged on {hit} of them (missed-detection signal, NOT gated -- the "
+                             f"camera is NADIR, so a bird inside the cylinder can sit outside the "
+                             f"downward footprint at its own altitude, and one above the drone is "
+                             f"never in frame at all)")
+        if depth:
+            # THE DEPTH TAIL -- the four bars that need the flight's own events and, for bar 3's
+            # second half, the truth join above (`truth`/`report` are None when it failed, and the
+            # bar then prints UNMEASURED rather than passing on nothing).
+            scored: List[Tuple[str, bool]] = []
+            for label, gate in (("3b range error", depth_range_error(log, truth, report)),
+                                ("5 acquisition", gate_depth_acquisition(log, run)),
+                                ("4 frustum", gate_depth_frustum(log, run)),
+                                ("6 static map", gate_depth_static_map(log, run))):
+                problems.extend(gate[0])
+                notes.extend(gate[1])
+                scored.append((label, gate[2]))
+            # HOW MUCH OF THIS TAKE WAS ACTUALLY LOOKED AT, in the artifact whatever the verdict.
+            # Each of those four says "Never a PASS" when it measures nothing, but the VERDICT WORD
+            # and the exit code -- which is what CI and the runbook's step 1 read -- do not: a depth
+            # take that logged no encounter at all comes out VALID with all four UNMEASURED. This
+            # count is the honest half of that (QA 2026-09-07). Whether a take flown under a BOOKING
+            # with no encounter in it should be AMBIGUOUS rather than VALID is a safety-vs-scope
+            # call and belongs to product-lead, not to a gate written overnight.
+            notes.append(
+                f"DEPTH BARS MEASURED: {sum(1 for _, ok in scored if ok)} of {len(scored)} -- "
+                + "; ".join(f"bar {label}: {'measured' if ok else 'UNMEASURED'}"
+                            for label, ok in scored)
+                + ". Measured = the bar had the evidence it needs and reached a verdict on it; "
+                  "UNMEASURED is never a PASS. These four need the flight's own encounter events "
+                  "(and, for 3b, a truth track); bars 1, 2, 3a and 7 read counters and "
+                  "declarations, so they always measure.")
+            notes.extend(depth_na_notes(report, seen))               # P1 bar 7
     notes.append(f"n_stale_dropped={stale_dropped_total(log)} over "
                  f"{n_detection_events(log)} detection event(s) -- reported for every flight, and "
                  f"FAILED by gate_detector_ran in exactly one combination: drops > 0 with 0 "
@@ -2294,7 +3312,8 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
         problems.append(f"{CPA_BREACH_TAG}: flew within {cpa_m:.4f} m of a bird, closer than the "
                         f"policy's own min_bird_clearance_m {bar:.2f} m -- the policy refuses to "
                         f"place a SETPOINT that near a threat (ADR-013 amendment 12, S1)."
-                        + ("" if freeze_debit <= 0.0 or source != DET_NDVI_BLOB else
+                        + ("" if freeze_debit <= 0.0
+                                  or source not in (DET_NDVI_BLOB, DET_DEPTH_BLOB) else
                            f" (worst case: the measured join reads "
                            f"{cpa_m + freeze_debit:.4f} m and is debited {freeze_debit:.4f} m for "
                            f"the {adv['frozen_window_s']:.3f} s clock freeze above)"))

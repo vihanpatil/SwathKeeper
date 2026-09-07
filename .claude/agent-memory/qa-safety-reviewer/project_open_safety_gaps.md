@@ -1,9 +1,44 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION; G171-G175 the P1 DEPTH-LOG SCORING GATES -- G168 CLOSED, but the AUTHORISING bar credits a 500 m range from a 60 m sensor and the runtime bars are skippable by an impossible counter -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight)
 metadata:
   type: project
 ---
+
+**G171-G175 (2026-09-07 late) — THE P1 DEPTH-LOG SCORING GATES** (verifying my own seven
+pre-registered bars, `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` §P1, as implemented in
+`scripts/check_live_flight_log.py`). G168 is **CLOSED**: `depth_blob` is in `DETECTOR_SOURCES`
+together with all seven bars, each quoting its pre-registered text; the three committed NDVI logs
+are byte-identical (2 ACKNOWLEDGED, 1 INVALID, exit 1). What is open:
+- **G171 (MAJOR) — bar 5 credits an acquisition range nothing sanity-checks.** A first detection at
+  500 m from a block declaring `max_range_m: 60.0` prints "at or beyond the breakeven" and the log
+  is VALID; so does one 40 m BEHIND the camera when no accepted maneuver sits on its tick (bar 4 is
+  scoped to accepted maneuvers, bar 5 has no geometry conjunct). The bar that decides
+  AUTHORISATION is the one bar with no plausibility check, and P2's fix for bar-5 censoring is
+  exactly what will start feeding it raw un-projected ranges. Fix: refuse a first-detection range
+  outside the block's own declared `[min_range_m, max_range_m]`; require both to be present.
+- **G172 (MAJOR) — the runtime bars are skippable by an impossible counter.** `detect_wall_ms_n: 0`
+  prints "detect wall time UNMEASURED ... Never a PASS" as a NOTE and the log is VALID — measured
+  with `detect_wall_ms_p95: 125 ms` / `max: 300 ms` in the same block. Impossible on a flown log:
+  `DepthDetectionSource.on_frame` increments `_wall_ms_n` in a `finally` on EVERY call, so
+  `n == depth_msgs_received`. Same family: `frames_detected_on: 5000 of 1200` = a rate of 4.17 that
+  clears bar 1's 0.90 floor. **No depth counter is ever cross-checked against its own denominator.**
+- **G173 (CLOSED by me, 2026-09-07) — bar 4 was enforcing but UNPINNED.** Rewriting both of
+  `gate_depth_frustum`'s `problems.append(...)` calls as `notes.append(...)` left all 65 tests
+  green: its red fixtures sit at 20 m and are INVALID by bar 5 anyway, so `assertInvalid` was
+  satisfied by another gate. Pinned by `TestBar4EnforcesRatherThanReports` (detection at 40 m, where
+  bar 5 is silent, asserting on the gate's own `problems` list).
+- **G174 (CLOSED by me) — bar 7's "in those words" was pinned tautologically.** Every assertion
+  spelled the requirement as `checker.NA_DEPTH`, so `NA_DEPTH = "not applicable"` left the suite
+  green. `TestBar7WordsAreLiteral` asserts the literal and its presence in the pre-registration.
+- **G175 (MAJOR, docs) — six documents of record still say a depth log is UNSCOREABLE.** The
+  operational one: `AVOIDANCE_REAL_DETECTION.md` §1a:348 *"Then score nothing"* — the section an
+  operator executes on a depth take, which would have them SKIP the gates P1 just built. Also that
+  file's banner :21, `docs/ROADMAP.md:21` ("THE BLOCKER"), `docs/README.md:40`, ADR-021's status
+  line + ADR-020's body in `docs/DECISIONS.md`, `FORWARD_DEPTH_SENSOR.md:667`.
+- **STILL OPEN from before:** G167 (P5 invalidation, ruled by orchestrator, user to confirm), G169
+  (§0b abort rule forbids the flight until P3 item 1 is ratified), and P3 item 2 — a
+  detector-source log with NO booking is still VALID with a warning (verified again tonight).
 
 **G167-G170 (2026-09-07) — THE DODGE-TAKE PRE-REGISTRATION LENS** (wrote
 `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`; the take is **NOT YET FLYABLE**, five

@@ -662,14 +662,17 @@ names the artifact, because a gaps list nobody dispositions becomes a list nobod
   max_boxes 64**, `link_break` OFF.
 * **~~`avoidance_node` is not wired to it.~~ → CLOSED 2026-09-07, and it has NEVER FLOWN.**
   `--detect --detection-source depth` builds the segmenter behind the seam; default is still `ndvi`
-  and every existing command line is unchanged. **OPEN, and it is the first prerequisite before a
-  depth take is booked:** `DETECTOR_SOURCES` in `scripts/check_live_flight_log.py` deliberately
-  **excludes `depth_blob`**, so a depth flight log is **UNSCOREABLE** — every schema-2 detector gate
-  was written for the nadir NDVI camera (a detect-rate floor over `ndvi_msgs_received`, an
-  apparent-size estimator check, nadir-footprint reasoning). A reviewed diff must bring
-  depth-specific gates **before** the take, or the take produces an INVALID log by construction.
-  (`gate_booked_speed` already treats `depth_blob` as an avoidance take: authorisation is not
-  scoring.)
+  and every existing command line is unchanged. **~~OPEN: a depth flight log is UNSCOREABLE~~ →
+  CLOSED the same night (P1, 2026-09-07 late):** `depth_blob` is in `DETECTOR_SOURCES` **together
+  with seven depth-specific bars** (`P1_BARS` in `scripts/check_live_flight_log.py`, each quoting the
+  text pre-registered in `DODGE_TAKE_PREREGISTRATION_20260907.md` §P1; 65 red-first tests; the three
+  committed NDVI logs byte-identical); every NDVI-family gate prints `N/A (depth take)`, never PASS.
+  **What the first depth take will still show — and what the executor owes before it (P2):** bar 5
+  (first-detection range ≥ 33.591 m) reads **CENSORED** because a `detection` event is written only
+  inside the 12 m threat radius, and bar 6 (no dodge against the map) reads **UNMEASURED** because
+  `static_map_hint` is not carried into the log — one field on that event, or a max-range counter on
+  `DepthDetectionSource`, closes both. (`gate_booked_speed` treats `depth_blob` as an avoidance
+  take: authorisation is not scoring.)
 * **The depth camera is NOISELESS** — gz-sensors' own default, kept rather than guessed at, and
   recorded as a transfer gap (proposed TG-6) beside `eval/point_mass.py`'s unmodelled dynamics. It
   makes the sensor optimistic in the same direction the plant model already is.

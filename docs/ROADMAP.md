@@ -140,8 +140,17 @@ Full narrative: `docs/BUILD_LOG.md`.
 and the sensor is commissioned (ADR-020), so what remains is four things, and the first is a hard
 prerequisite rather than a nicety:
 
-1. **The depth-log scoring gates — a reviewed diff, before the take.** `DETECTOR_SOURCES` in
-   `scripts/check_live_flight_log.py` excludes `depth_blob` on purpose: every schema-2 detector
+1. ~~**The depth-log scoring gates — a reviewed diff, before the take.**~~ → **LANDED the same
+   night (P1, 2026-09-07 late): `depth_blob` is in `DETECTOR_SOURCES` with SEVEN depth-specific
+   bars** (pre-registered in `DODGE_TAKE_PREREGISTRATION_20260907.md` §P1, each gate quoting its
+   text; 65 red-first tests; a second QA round found four majors — an unbounded first-detection
+   range, runtime bars silenced by an impossible counter, unpinned frustum / N-A wording — all
+   fixed; committed verdicts byte-identical). **What remains of this item is on the EXECUTOR, not
+   the gate:** bar 5 (first detection ≥ 33.591 m) reads CENSORED because `detection` events are
+   written only inside the 12 m threat radius, and bar 6 (no dodge against the map) reads UNMEASURED
+   because `static_map_hint` is not written to the log — one field on that event, or a max-range
+   counter on the seam, closes both before the take. *Historical text of the item:* `DETECTOR_SOURCES`
+   in `scripts/check_live_flight_log.py` excluded `depth_blob` on purpose: every schema-2 detector
    gate was written for the nadir NDVI camera (detect-rate floor over `ndvi_msgs_received`,
    apparent-size estimator check, nadir-footprint reasoning), and certifying a forward-aperture take
    under another sensor's bars was refused. **Without this diff the take produces an INVALID log by

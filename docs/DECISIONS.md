@@ -4044,7 +4044,7 @@ user's morning).
 
 ---
 
-## ADR-021: The forward depth segmenter keys on depth DISCONTINUITY against a local far-envelope, never on `isfinite` — and every constant it ships with is the OUTPUT of a sweep on a cluttered labelled render, not a number anyone chose   (2026-09-07, status: ACCEPTED — **confirmation-pending the first depth flight**. All seven pre-registered gates PASS on an 85-station cluttered render (`eval/results/depth_segmenter_score_20260907T110000Z.json`): FNR **0 misses / 49**, merge mislabels **0 / 71**, unmapped FP **0.0 per frame / 8**, range p95 **0.1076 m / 63 matches**, runtime host p95 **6.708 ms / n = 425**, determinism **0 / 79**, mutation red on both independent terms. Cluttered acquisition **46.0 m — QUALIFIES the ADR-020 booking, does not raise it**. The wiring into `avoidance_node` is built and host-tested and **has never flown**; a depth flight log is also **deliberately UNSCOREABLE** until a reviewed diff brings depth-specific gates, so this entry does not flip on evidence, it flips on a take)
+## ADR-021: The forward depth segmenter keys on depth DISCONTINUITY against a local far-envelope, never on `isfinite` — and every constant it ships with is the OUTPUT of a sweep on a cluttered labelled render, not a number anyone chose   (2026-09-07, status: ACCEPTED — **confirmation-pending the first depth flight**. All seven pre-registered gates PASS on an 85-station cluttered render (`eval/results/depth_segmenter_score_20260907T110000Z.json`): FNR **0 misses / 49**, merge mislabels **0 / 71**, unmapped FP **0.0 per frame / 8**, range p95 **0.1076 m / 63 matches**, runtime host p95 **6.708 ms / n = 425**, determinism **0 / 79**, mutation red on both independent terms. Cluttered acquisition **46.0 m — QUALIFIES the ADR-020 booking, does not raise it**. The wiring into `avoidance_node` is built and host-tested and **has never flown**; a depth flight log became **SCOREABLE on seven depth-specific pre-registered bars the same night** (P1 — open item 1 below), so this entry flips on a take, not on more offline evidence)
 
 **The one sentence.** A depth camera cannot tell a tree from a bird — it only knows *nearer* — so the
 segmenter is one boring textbook operator, a **black top-hat on depth**
@@ -4348,8 +4348,26 @@ detector and silently flew with none would be an observation run wearing a dodge
 
 ### OPEN — in the order they bind, and the first one is a prerequisite of the take
 
-1. **`DETECTOR_SOURCES` still EXCLUDES `depth_blob`, so a depth flight log is deliberately
-   UNSCOREABLE.** This is a verdict, not an omission: every schema-2 detector gate was written for
+1. **~~`DETECTOR_SOURCES` still EXCLUDES `depth_blob`, so a depth flight log is deliberately
+   UNSCOREABLE~~ → CLOSED the same night (P1, 2026-09-07 late, flight-software + one QA round with one
+   fix round):** `depth_blob` is in `DETECTOR_SOURCES` **with seven pre-registered depth-specific
+   bars** (`P1_BARS` in `scripts/check_live_flight_log.py`, each gate message quoting the text
+   pre-registered in `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` §P1 and pinned as a
+   substring of it by test; 65 red-first tests; the three committed NDVI logs byte-identical on
+   stdout/stderr/exit; dashboard data unchanged). QA's second look found four majors, all fixed
+   tightening: bar 5 credited any first-detection range (now bounded by the block's own declared
+   window through the corner ray, 75.848 m at the 60 m clip, and refused behind the camera); the
+   runtime bars were silenced by `detect_wall_ms_n: 0` (now every depth counter is checked against
+   the seam's own arithmetic and the bars run regardless); the frustum bar and the `N/A (depth take)`
+   wording were enforcing but unpinned (pinned red-first). **What the first depth take will still
+   show, and what the executor owes before it (P2):** bar 5 reads **CENSORED** because a `detection`
+   event is written only inside the 12 m threat radius (13.4 m at the cylinder corner, against a
+   33.591 m bar), and bar 6 reads **UNMEASURED** because `static_map_hint` is not carried into the
+   log — one field on that event, or a max-range counter on `DepthDetectionSource`, closes both.
+   Bar 4's forward axis is course over ground (no orientation is logged), stated in every message.
+   A depth take with no encounter comes out VALID with all four event-dependent bars UNMEASURED and a
+   `DEPTH BARS MEASURED: 0 of 4` line — making that INVALID is a product-lead call. *Original text:*
+   This was a verdict, not an omission: every schema-2 detector gate was written for
    the **nadir NDVI camera** — the detect-rate floor counts `ndvi_msgs_received`, the estimator check
    prices an apparent-size ray, the CPA reasoning assumes a downward footprint. Certifying a depth
    take under another sensor's bars was refused. **A reviewed diff must bring depth-specific gates
