@@ -143,6 +143,12 @@ def detect_ndvi(ndvi: np.ndarray, thresh: float, min_area: int = DEFAULT_MIN_ARE
 # into a threat estimate, and is what `avoidance_node.py --detect` plugs into `detection_source`.
 # ==================================================================================================
 
+# What this detector calls itself, in the `Detection` and in the flight log. ONE home, and the
+# sibling of `depth_detect.SOURCE_TAG`: `avoidance_node.detection_source_name` reads the tag off the
+# source that RAN rather than inferring it from a duck-type test, because `hasattr(source,
+# "on_frame")` is true of BOTH frame detectors and labelled a depth flight `ndvi_blob`.
+SOURCE_TAG = "ndvi_blob"
+
 # The bird radius the range estimate assumes, in metres. The world's birds are 0.18 m
 # (`config/birds/farm_world_birds.json`), and this is DELIBERATELY smaller, for two reasons:
 #   1. Range scales linearly with the assumed radius, so under-estimating it places the bird NEARER
@@ -190,7 +196,7 @@ def box_to_detection(box: Sequence[float], intr: CameraIntrinsics, drone_pos_enu
     pos = pixel_at_depth_to_enu(0.5 * (x0 + x1), 0.5 * (y0 + y1), depth_m, intr,
                                 drone_pos_enu, drone_quat_xyzw, mount_offset_body_m)
     return Detection(position_enu=pos, frame_id=int(frame_id), stamp_s=float(stamp_s),
-                     source="ndvi_blob", track_id=None, confidence=1.0)
+                     source=SOURCE_TAG, track_id=None, confidence=1.0)
 
 
 class NdviDetectionSource:
@@ -219,6 +225,10 @@ class NdviDetectionSource:
     # ~30 min of frames at 5 Hz; the p95 is over the most recent window, `_n` reports the total so a
     # truncated window is visible rather than implied (same shape as RecorderCounters).
     WALL_MS_WINDOW = 10000
+
+    # What the flight log calls this source. Read off the instance by
+    # `avoidance_node.detection_source_name`, so the log names the detector that actually ran.
+    SOURCE_TAG = SOURCE_TAG
 
     def __init__(self, thresh: float, *, intr: Optional[CameraIntrinsics] = None,
                  min_area: int = DEFAULT_MIN_AREA, max_area: int = DEFAULT_MAX_AREA,

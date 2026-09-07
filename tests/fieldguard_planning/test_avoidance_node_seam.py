@@ -333,7 +333,12 @@ class TestDetectorLogBlock(unittest.TestCase):
 
     class _FakeSource:
         """Duck-typed stand-in for `NdviDetectionSource` -- the block reads values back from the
-        source that RAN, so this test needs no numpy."""
+        source that RAN, so this test needs no numpy.
+
+        `SOURCE_TAG` is part of that duck since the depth wiring landed: the log's name is read off
+        the source's own tag, never from `hasattr(source, "on_frame")`, which is true of both frame
+        detectors and labelled a depth flight `ndvi_blob`."""
+        SOURCE_TAG = avoidance_node.NDVI_SOURCE_TAG
         thresh, min_area, max_area, radius_prior_m = -0.61, 6, 5000, 0.15
 
         def __init__(self, intr=None):
@@ -386,6 +391,37 @@ class TestDetectorLogBlock(unittest.TestCase):
         block = detector_log_block(self._FakeSource(intr=None), None)
         self.assertIsNone(block["intrinsics"])
 
+    def test_the_ndvi_blocks_FIELD_SET_is_unchanged_by_the_depth_wiring(self):
+        """THE 'DEPTH SHIPS OFF' PIN (DESIGN §6 item 1). The default flight's artifact must be the
+        same artifact it was before the depth path existed -- every consumer of `run.detector`
+        (scripts/check_live_flight_log.py's gates, the dashboard, every committed log's re-read)
+        keys on these names. Snapshotted as a SET, so an added key fails here rather than in a
+        gate six weeks later."""
+        block = detector_log_block(self._FakeSource(self._FakeIntr()), None)
+        self.assertEqual(sorted(block), sorted([
+            "source", "module", "thresh", "thresh_provenance", "thresh_provisional",
+            "min_area", "max_area", "radius_prior_m", "range_model", "intrinsics", "counters"]))
+        self.assertEqual(sorted(block["intrinsics"]), sorted([
+            "image_width_px", "image_height_px", "fx", "fy", "cx", "cy", "provenance"]))
+        # ...and none of the depth branch's keys leaked into it.
+        for depth_only in ("params", "params_provenance", "segmenter_counters", "seam_module",
+                           "static_map_annotator", "min_range_m", "max_range_m"):
+            self.assertNotIn(depth_only, block)
+
+    def test_a_frame_detector_with_no_tag_is_unscoreable_rather_than_called_a_demo_bird(self):
+        """The fail-safe direction. A demo bird's logged position IS ground truth to the flight-log
+        gate, so labelling a real (estimating) detector `demo_virtual` would score an estimate
+        against itself -- the exact failure schema 2 exists to stop. An unknown tag is not in the
+        gate's DETECTOR_SOURCES, so such a flight refuses to score at all."""
+        class _Untagged:
+            def on_frame(self, *a, **k):
+                return []
+
+        name = detection_source_name(_Untagged())
+        self.assertEqual(name, avoidance_node.UNTAGGED_FRAME_SOURCE)
+        self.assertNotEqual(name, DEMO_SOURCE_TAG)
+        self.assertIn("cannot be scored", detector_log_block(_Untagged(), None)["note"])
+
 
 class TestCli(unittest.TestCase):
     def test_detect_and_demo_are_mutually_exclusive(self):
@@ -413,6 +449,28 @@ class TestCli(unittest.TestCase):
         self.assertEqual(args.ndvi_thresh, -0.5)
         self.assertEqual(args.min_area, 9)
         self.assertEqual(args.max_area, 1000)
+
+    def test_the_depth_path_ships_OFF(self):
+        """Every run that does not ask for depth gets the NDVI detector, including `--demo` and the
+        bare observation run. This is the one assertion behind 'the default is behaviourally
+        unchanged'."""
+        for argv in ([], ["--detect"], ["--demo"]):
+            self.assertEqual(parse_args(argv).detection_source, avoidance_node.KIND_NDVI, argv)
+        self.assertEqual(parse_args(["--detect", "--detection-source", "depth"]).detection_source,
+                         avoidance_node.KIND_DEPTH)
+
+    def test_detection_source_selects_a_detector_it_does_not_arm_one(self):
+        """`--detection-source depth` without `--detect` used to be readable as 'fly the depth
+        detector'; it would in fact have flown with NO detector at all -- an observation run
+        wearing a dodge take's command line."""
+        for argv in (["--detection-source", "depth"], ["--demo", "--detection-source", "depth"]):
+            with self.assertRaises(SystemExit) as ctx:
+                parse_args(argv)
+            self.assertEqual(ctx.exception.code, 2, argv)
+
+    def test_an_unknown_detection_source_is_refused_by_the_parser(self):
+        with self.assertRaises(SystemExit):
+            parse_args(["--detect", "--detection-source", "lidar"])
 
 
 class TestDemoSourcesAreHonestAboutBeingVirtual(unittest.TestCase):

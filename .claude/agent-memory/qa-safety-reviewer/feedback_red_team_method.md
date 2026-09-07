@@ -94,3 +94,22 @@ owning source file at the CLAUDE.md pinned SHA and quote the `@Param`/`@Units`/`
 grading anything else. Then check the second-order effect: here, correcting the name to `WP_SPD`
 would have silenced `_tuning_override_scan`'s `WPNAV_`-prefixed detector — the fix creates the
 vacuous green unless both land in one diff.
+
+**9. WHEN A NEW VALUE JOINS AN ENUM, THE FINDING IS IN THE BRANCHES THAT DID NOT GET UPDATED — and
+they are reachable by grepping the OLD members.** Added 2026-09-07 (depth-source wiring, G157/G158).
+The build added `DET_DEPTH_BLOB` to `scripts/check_live_flight_log.py` and carefully wired it into
+the new mislabel rule twelve lines below. `grep -n "DET_NDVI_BLOB\|DET_DEMO_VIRTUAL\|
+DETECTOR_SOURCES"` on the same file returned nine hits; asking "what does a `depth_blob` log do
+HERE?" of each one found, in about a minute, that `gate_booked_speed:1813
+is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL)` tells the ONE take type the ADR-020
+booking gate exists to authorise that it is *"not an avoidance take ... and needs none"*, and that
+`gate_detector_ran`'s `DETECTOR NEVER RAN` check — the repo's only net for "camera_info never
+arrived" — is unreachable for the new source.
+**Why:** an added enum member is grep-able; the branches that silently EXCLUDE it are not, because
+they name the old members and read as complete. Both defects here point the same way (a new sensor
+exempted from a check that exists for it), which is the fail-DANGEROUS direction.
+**How to apply:** on any diff that widens a set of named constants, grep the OLD members across the
+whole repo, not the new one, and read every hit as a question. Then ask the second-order version:
+"when the follow-on diff promotes the new member into the main list, what breaks?" — here,
+`gate_detector_ran` would report *"counters missing for ['ndvi_msgs_received']"* on a depth block,
+so the landmine is already laid for the next session.

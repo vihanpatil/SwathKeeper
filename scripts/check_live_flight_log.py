@@ -262,6 +262,26 @@ DET_NDVI_BLOB = "ndvi_blob"         # the real ADR-003 detector -> CPA measured 
 DET_DEMO_VIRTUAL = "demo_virtual"   # a bird we invented -> the logged position IS exact truth
 DET_NONE = "none"                   # no detector armed -> the log may not claim avoidance at all
 DETECTOR_SOURCES = (DET_NDVI_BLOB, DET_DEMO_VIRTUAL, DET_NONE)
+# The ADR-020 forward depth detector (`avoidance_node --detect --detection-source depth`).
+# DELIBERATELY NOT IN `DETECTOR_SOURCES`, and that is the current verdict rather than an omission:
+# no depth take has been flown, and every gate below was written for the NADIR NDVI detector -- the
+# detect-rate floor counts `ndvi_msgs_received`, the estimator check prices an apparent-size ray,
+# and the CPA join assumes a downward footprint. A depth log therefore lands on "the gate cannot
+# know what the logged detections are worth" (UNSCOREABLE) until a reviewed diff brings its own
+# gates, which is the honest reading of a sensor nothing has flown. The name lives here so the
+# mislabel rule below can say it out loud -- and so `gate_booked_speed` can treat a depth take as
+# the AVOIDANCE take it is: not scoreable is not the same as not authorised, and the forward
+# aperture is the sensor that booking gate exists for.
+DET_DEPTH_BLOB = "depth_blob"
+# Fields only ONE of the two real detectors can write, from `avoidance_node.detector_log_block`.
+# A block carrying a field from the other family is MISLABELLED, whichever way round it is.
+NDVI_ONLY_DETECTOR_FIELDS = ("thresh", "thresh_provenance", "thresh_provisional",
+                             "radius_prior_m", "min_area", "max_area")
+DEPTH_ONLY_DETECTOR_FIELDS = ("params", "params_provenance", "params_provisional",
+                              "segmenter_counters", "seam_module", "min_range_m", "max_range_m")
+NDVI_ONLY_COUNTERS = ("ndvi_msgs_received",)
+DEPTH_ONLY_COUNTERS = ("depth_msgs_received", "dropped_non_finite_depth", "dropped_out_of_range",
+                       "detections_near_known_obstacle")
 # Event kinds that only ever occur while the avoidance loop is engaged. Every tick carrying one of
 # these MUST have bird ground truth: a flight cannot certify the encounter it cannot see.
 ENCOUNTER_KINDS = ("detection", "maneuver", "hold", "takeover", "gate_reject")
@@ -1187,6 +1207,52 @@ def _floor_pct(rate: float, places: int = 2) -> str:
     return f"{math.floor(rate * 100.0 * scale) / scale:.{places}f}%"
 
 
+def gate_detector_block_matches_source(run) -> List[str]:
+    """ONE RULE: the name on the detector block and the fields inside it must be the same detector.
+
+    Two apertures now write this block (`ndvi_detect` on the nadir camera, `depth_detect` +
+    `depth_segment` on the forward one) and their field sets do not overlap, so a mismatch is
+    detectable and is never innocent. It matters in the direction that reads as success: a DEPTH
+    take labelled `ndvi_blob` would be routed through the gates below -- the detect-rate floor over
+    `ndvi_msgs_received` (a counter it does not have), the apparent-size estimator check, ADR-003's
+    adopted-detector verdict -- i.e. one sensor's flight certified with another sensor's evidence.
+    The reverse (an NDVI take relabelled `depth_blob`) is the same defect wearing the other hat: it
+    would leave the NDVI gates unrun.
+
+    The block's own `counters` are read too, because that is where the two families are most
+    obviously distinct (`ndvi_msgs_received` vs `depth_msgs_received`) and where a copy-paste
+    between them would land.
+
+    Only the two REAL detector names are checked: `demo_virtual` and `none` carry no detector
+    fields at all, and a source this gate does not recognise is already refused as unscoreable."""
+    detector = run.get("detector")
+    if not isinstance(detector, dict):
+        return []                    # absence is gate_detector_ran's / run_block_problem's business
+    source = detector.get("source")
+    if source not in (DET_NDVI_BLOB, DET_DEPTH_BLOB):
+        return []
+    counters = detector.get("counters")
+    counter_keys = set(counters) if isinstance(counters, dict) else set()
+    if source == DET_NDVI_BLOB:
+        foreign_fields, foreign_counters, other = (DEPTH_ONLY_DETECTOR_FIELDS,
+                                                   DEPTH_ONLY_COUNTERS, DET_DEPTH_BLOB)
+    else:
+        foreign_fields, foreign_counters, other = (NDVI_ONLY_DETECTOR_FIELDS,
+                                                   NDVI_ONLY_COUNTERS, DET_NDVI_BLOB)
+    intruders = ([f for f in foreign_fields if f in detector]
+                 + [f"counters.{k}" for k in foreign_counters if k in counter_keys])
+    if not intruders:
+        return []
+    return [f"run.detector.source is {source!r} but the block carries {other}'s own field(s) "
+            f"{sorted(intruders)} -- the label and the contents are different detectors. One of "
+            f"the two is a lie, and this gate cannot tell which, so the flight is not scoreable "
+            f"as either: a mislabelled take is certified with the OTHER sensor's gates (the "
+            f"detect-rate floor, the range model, the adopted-detector verdict), which is exactly "
+            f"the shape of evidence this file exists to refuse. `avoidance_node.detector_log_block` "
+            f"writes one branch or the other and never mixes them; a block that mixes them was "
+            f"edited or assembled by hand."]
+
+
 def gate_detector_ran(log, run) -> Tuple[List[str], List[str]]:
     """The DETECT half of "detect -> avoid, at a measured separation" -- did the detector ever see
     a frame at all, did it see enough of them, and did anything survive the staleness gate?
@@ -1741,12 +1807,20 @@ def gate_booked_speed(log, run, log_path: Path,
 
     With a booking present the flown median is a HARD gate. Failing it means the flight in front of
     you is not the flight that was booked, which is not a CPA finding and is therefore not something
-    a SAFETY_FINDING marker can acknowledge -- it lands in `problems`, i.e. INVALID."""
+    a SAFETY_FINDING marker can acknowledge -- it lands in `problems`, i.e. INVALID.
+
+    `depth_blob` IS an avoidance take here, even though `check_schema2` refuses to SCORE one
+    (DETECTOR_SOURCES). Authorisation and scoring are different questions and this gate answers the
+    first: the forward depth aperture is the sensor the ADR-019/020 booking gate was built to
+    authorise in the first place, so exempting it would tell the one take that needs a booking that
+    it needs none -- and the exemption would turn from a false LINE into a false PASS on the day a
+    reviewed diff adds `depth_blob` to DETECTOR_SOURCES (QA, 2026-09-07; the same family as G137
+    "printed, not gated" and G138 "the procedure never binds one")."""
     problems: List[str] = []
     notes: List[str] = []
     detector = run.get("detector") if isinstance(run, dict) else None
     source = detector.get("source") if isinstance(detector, dict) else None
-    is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL)
+    is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL, DET_DEPTH_BLOB)
 
     sidecar = booking_path_for(log_path)
     chosen = Path(booking_arg) if booking_arg is not None else (sidecar if sidecar.exists()
@@ -2080,6 +2154,10 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
     det_cpa = closest_approach(log)              # the monocular ESTIMATE -- never a gate under v2
     cpa_m: Optional[float] = None                # the gated number, whatever it is measured against
     seen = encounter_ticks(log)
+
+    # The label and the fields must be the same detector -- checked BEFORE the dispatch below, so a
+    # mislabelled block is named as such whether or not its claimed source is one this gate scores.
+    problems.extend(gate_detector_block_matches_source(run))
 
     if source not in DETECTOR_SOURCES:
         problems.append(f"run.detector.source is {source!r}; expected one of {DETECTOR_SOURCES}. "

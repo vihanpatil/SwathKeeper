@@ -544,3 +544,39 @@ prove clean.* 12 mutants, 10 killed (added max_area 4000; truncation sorted `-r[
 median; inclusive clip window; each of margin/min_area/K/link_break moved one rung; clip_window and
 step_over_margin deleted). Survivors: `isfinite` alone (documented-redundant, correct) and
 `closing(z)` instead of `closing(zb)` = **G150**.
+
+**The DEPTH-SOURCE WIRING layer (2026-09-07, `feat/depth-segmenter` over 0a84ad6).**
+`avoidance_node --detect --detection-source {ndvi,depth}` (default ndvi; depth without `--detect`
+is a parser error). Tests: `tests/fieldguard_planning/test_avoidance_node_depth_seam.py` (41) plus
+additions to `test_avoidance_node_seam.py` and `test_check_live_flight_log_schema2.py`. Findings:
+[[project-open-safety-gaps]] G157-G166.
+
+*The four probes worth re-running, each ~10 s:*
+1. **"Did the DEFAULT move?"** — `git archive HEAD | tar -x -C <scratch>/before`, then run
+   `parse_args`/`detector_config_from_args`/`build_detection_source`/`detector_log_block` for
+   `[]`, `["--detect"]`, `["--demo"]`, `None` in BOTH trees as subprocesses and diff the JSON.
+   This is the cheapest possible "the flag ships OFF" check and it is stronger than any test in
+   the tree, because it compares the ARTIFACT, not an assertion about it.
+2. **Orientation on an OFF-CENTRE patch.** Every committed depth test uses a block centred on the
+   principal point, where u and v are symmetric and a swap is invisible. Put the patch at
+   `[100:106, 500:506]` and hand-derive
+   `body = (1, -(u-cx)/fx, -(v-cy)/fy)`, `ENU = pos + R(q)@(0.15,0,0) + d*R(q)@body`.
+   Matches to 0.0 m; a u/v swap would move it 12.31 m.
+3. **The MISSION-REALISM run.** Feed all 85 `eval/results/depth_dataset_20260907/S*.npy` through
+   `feed_depth_frame` with the station's own `cam_enu`/`cam_yaw_deg` (quat from yaw; `cam_enu` is
+   the VEHICLE, the 0.15 m mount is added by the seam) and then through the REAL
+   `AvoidancePolicy().decide_multi`. Answers "what does the wired detector do on the world it is
+   about to fly" -- median 16 / max 24 detections per frame, 87.5 % static-map-annotated. Run it in
+   the container too: it is the only stack-equivalence evidence that exists for this layer.
+4. **The gate-reachability sweep.** `grep -n "DET_NDVI_BLOB\|DET_DEMO_VIRTUAL\|DETECTOR_SOURCES"
+   scripts/check_live_flight_log.py` and ask of EVERY hit "what does a `depth_blob` log do here?".
+   That one grep found G157 (the booking predicate) and G158's third net in about a minute.
+   **Generalise: whenever a new value joins an enum, the finding is in the branches that did NOT
+   get updated, and they are always reachable by grepping the OLD members.**
+
+*Mutation harness for this layer:* `cp -R src scripts config tests eval <scratch>/qa2`, symlink
+`eval/results` back to the repo (the dataset is 100 MB), and run
+`test_avoidance_node_depth_seam.py test_avoidance_node_seam.py test_check_live_flight_log_schema2.py
+test_depth_detect.py test_depth_segment.py` = 349 tests, ~1.8 s. Baseline in that copy is **4 red**
+(`TestStaticMountGate` needs `sim/worlds/`), so count FAILED names excluding it, not the summary
+line. 22 mutants, 18 killed; the 4 survivors are G160/G161/G162/G163.

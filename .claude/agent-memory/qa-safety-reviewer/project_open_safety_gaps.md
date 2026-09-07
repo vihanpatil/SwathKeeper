@@ -1,9 +1,133 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 opened 2026-09-07 over the DEPTH SEGMENTER -- an FNR bar that passes by 1 pixel and the mitigation rejected on a miscount)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight)
 metadata:
   type: project
 ---
+
+**G167-G170 (2026-09-07) — THE DODGE-TAKE PRE-REGISTRATION LENS** (wrote
+`docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`; the take is **NOT YET FLYABLE**, five
+prerequisites P1-P5 with owners).
+- **G167 (CRITICAL — the pre-registered invalidation may have ALREADY FIRED).** ADR-020 am. 2:
+  *"if the segmenter's real, cluttered acquisition range comes in under 33.6 m, this gate goes red
+  and the dodge take is not bookable at 5 m/s."* Breakeven **33.591 m**;
+  `depth_segmenter_score_20260907T110000Z.json` prints `cluttered_acquisition_m: 46.0` but
+  `clutter_backed_max_range_m` = **28.0 m** (canopy) / 22.0 (ground_band) / 14.0 (ground_band_edge),
+  `sky_backed_only_from_range_m: 30.0` — every rung ≥ 30 m is sky-backed. The clause reads 46.0 one
+  way and 28.0 the other and the two straddle the bar. **product-lead call**, escalated not guessed.
+  Defence on the record (am. 2 probe 5): the whole ±6 m band IS sky-backed at 33.6 m in this world.
+  That is geometry, not a measurement at 33.6 m.
+- **G168 (MAJOR) — a depth flight log is UNSCOREABLE by construction.**
+  `check_live_flight_log.py:264` `DETECTOR_SOURCES` excludes `depth_blob`; :2162 refuses → INVALID
+  exit 1. `gate_booked_speed` (:1823) already counts it as an avoidance take, so authorisation is
+  gated and SAFETY is not. Bars pre-registered in the runbook §0 P1 (detect rate over
+  `depth_msgs_received`, `dropped_frame_shape_mismatch == 0`, range error at CPA GATED ≤ 0.5 m,
+  frustum containment, first-detection range ≥ 33.591 m, no maneuver on a non-null
+  `static_map_hint`, NDVI gates must print `N/A (depth take)` never PASS).
+- **G169 (MAJOR) — the runbook as written FORBIDS this flight.** `AVOIDANCE_REAL_DETECTION.md` §0b's
+  ABORT RULE ("no argument, no exceptions") fires at the booked 5.0 m/s — medians 2/2/6, 2 of 3
+  below the 5-frame floor, exit 1. Its demotion to REPORTED (ADR-020 am. 1 item 4 / am. 2
+  disposition 4) is **still unratified**. Also: nothing passes `--detection-source depth` anywhere —
+  `fly_pipeline.sh` never launches `avoidance_node` (by design), so the flag must land in §1's
+  shell-8 `docker exec`, and §1's contract line still demands `detection source: ndvi_blob`.
+- **G170 (MAJOR) — step-0 cannot be assumed to measure D5/D6 at 5.0 m/s.** `test-flight` flies
+  `test_2lane` (`fly_pipeline.sh:969`), whose 30 s window read a **3.497 m/s** median with `WP_SPD`
+  at ArduCopter's default. Booking CAPS at 5.0; it does not make the vehicle FLY 5.0. Pre-registered
+  bar: the window's own median ≥ 4.5 m/s (0.9 × booked) or D5/D6-at-5.0 stay UNMEASURED. Exactly the
+  defect the D6 retraction was written for.
+- Two source conflicts, both immaterial to verdicts, both recorded: §0f's clause reproduces "the
+  depth segmenter does not exist yet" (false since 2026-09-07 — the other five best-case conjuncts
+  stand); the committed booking artifact carries `band_covered_from_m: 13.0` vs the corrected 13.05
+  (deliberately pinned, not regenerated).
+
+**G157-G166 (2026-09-07) — THE DEPTH-SOURCE WIRING (`feat/depth-segmenter`, uncommitted over
+0a84ad6: `avoidance_node --detection-source {ndvi,depth}` + `decode_depth_frame`/`feed_depth_frame`
++ `gate_detector_block_matches_source`). The build is genuinely good: the DEFAULT path is
+byte-identical before/after (args + cfg gained keys; the ndvi/demo/none LOG BLOCKS are unchanged),
+the three committed `live_flight_log_*.json` verdicts are byte-identical modulo paths, no config
+path reaches the un-projection (the ONE `CameraIntrinsics(` in `src/` is `_on_camera_info` off
+`msg.k`), and 18 of 22 behavioural mutants were killed. The holes are at the EDGES of the new
+source -- what the post-flight gate does with it, and what nothing checks before the flight.**
+
+- **G157 (MAJOR) — `gate_booked_speed`'s `is_avoidance` predicate excludes the ONE take the ADR-020
+  booking gate exists to authorise.** `check_live_flight_log.py:1813
+  `is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL)`. MEASURED: an ndvi_blob and a
+  demo_virtual take with no booking each get the loud `NO BOOKING BOUND -- WARNING`; a `depth_blob`
+  take gets *"no booking bound (detector source 'depth_blob' -- **not an avoidance take**; the NDVI
+  survey is not authorised by the forward-sensor booking gate and **needs none**)"*. Both clauses
+  are false for a forward-depth dodge take. Today it sits inside an already-INVALID verdict
+  (depth is unscoreable), so it is a false LINE, not a false PASS -- but the moment the next
+  reviewed diff adds `depth_blob` to `DETECTOR_SOURCES`, the first depth dodge take is booked-exempt
+  by default. Same family as G137 (printed, not gated) and G138 (the procedure never binds one).
+  ONE-LINE FIX, and it belongs in the diff that added `DET_DEPTH_BLOB` twelve lines away.
+- **G158 (MAJOR) — a depth take can fly BLIND for a whole flight and nothing anywhere says so.**
+  Three nets, all absent on this path: (a) the node's ONLY startup refusal is the gz clock
+  (`main()` :924-939) -- there is no wait-for-intrinsics; (b) `scripts/check_render_alive.py:44`
+  requires `/fg/depth/image` and NEVER `/fg/depth/camera_info`, which the node's own comment says
+  is *derived* by gz-sensors from `<topic>`, not declared; (c) `gate_detector_ran`'s
+  `DETECTOR NEVER RAN: 0 of N message(s) reached the detector ... most likely camera_info never
+  arrived` is unreachable for `depth_blob` (check_schema2:2152 refuses before the dispatch).
+  MEASURED: 1200 frames in -> `depth_msgs_received 1200 / dropped_no_intrinsics 1200 /
+  frames_detected_on 0 / boxes_total 0`, `__call__` returns `[]` every tick, the 2 s heartbeat
+  prints `nearest_bird=none in view`. Also measured: if `depth_blob` were added to
+  `DETECTOR_SOURCES` today, `gate_detector_ran` reports *"counters missing or non-numeric for
+  ['ndvi_msgs_received']"* -- a second landmine for the follow-on gate diff.
+- **G159 (MAJOR) — nothing compares the live camera_info's frame size to the decoded frame's
+  shape, on the one path whose whole job is un-projection.** MEASURED on one detection: matched
+  640x480 info -> ENU (30.150, 12.962, 20.269); a 320x240 info on the same 640x480 image ->
+  (30.150, **-6.384**, **16.308**) = **19.35 m lateral / 3.96 m vertical**, silently, no counter.
+  `decode_depth_frame` asserts `step == width*4` and `payload == height*step` for exactly this
+  reason and then hands the array to an un-projection that never checks the other half.
+  `depth_detect.on_frame`/`box_to_detection` contain no `width`/`height` reference at all.
+- **G160 (MAJOR, test strength) — the EXCLUSION invariant's only node-level pin is a source
+  SUBSTRING, and a second Image subscription spelled with a raw literal SURVIVES.** Mutant: add
+  `self.create_subscription(Image, "/fg/ndvi/image", self._on_ndvi, ...)` inside `build_node` ->
+  0 red, because the pin is `assertNotIn("create_subscription(Image, NDVI_IMAGE_TOPIC")`. Two
+  spelling-independent lines kill it (VERIFIED): `re.findall(r"create_subscription\(\s*Image\s*,\s*
+  ([^,]+),", NODE_SRC) == ["image_topic"]` plus `assertNotIn('create_subscription(Image, "/fg/')`.
+- **G161-G163 (MINOR, all mutation-proven survivors, all with a VERIFIED one-test fix).**
+  (a) `min_range_m=params.near_m, max_range_m=params.far_m` rewritten as the literals `0.1, 60.0`
+  survives -- the "one number, not two" test compares two values that are equal by default; drive
+  a `params_with(DEFAULT_PARAMS, near_m=0.7, far_m=41.0)` through `build_detection_source` and the
+  copy is visible. (b) `_depth_detector_log_block`'s `params = getattr(seg,"params",None)` forced
+  to None survives -- it falls back to `cfg.depth_params`, so "read back from the SOURCE that RAN"
+  (the docstring's own principle, and the COMMANDED-vs-FLOWN family) is unpinned; build the source
+  with `params_with(DEFAULT_PARAMS, margin_m=2.25)` against an adopted cfg. (c) deleting the `step
+  != width*itemsize` check survives, because the test asserts `assertIn("step", exc)` and the
+  PAYLOAD-length message also contains the word "step". Consequence bounded: `reshape(h,w)` refuses
+  every `step != width*4` frame anyway (`height*step/4 == height*width` forces `step == 4*width`),
+  so it is test PRECISION, not a safety hole.
+- **G164-G166 (MINOR/NIT).** (a) `set_intrinsics` validates NOTHING: `k = [0]*9` (the ROS
+  "uncalibrated" convention) arms the detector and then raises `ZeroDivisionError` out of the
+  subscription callback on the first frame carrying a box -- i.e. after takeoff, not at arming.
+  (b) the node does not sanitise `seg.counters()`; a `json.dumps` TypeError lands inside
+  `dump_flight_log` inside `main`'s `finally`, which loses the WHOLE flight log AND masks the
+  original exception (unreachable with the shipped `DepthSegmenter` -- verified no numpy scalars on
+  the real path). (c) mutating `depth_detect.SOURCE_TAG` makes the log block print *"a
+  frame-consuming detector that declares no SOURCE_TAG"* for a source that declares one; bounded,
+  because `build_node` refuses to come up when the tag is not in `FRAME_TOPICS`. (d) the depth
+  ImportError message names ADR-003 am. 7 and "the ADOPTED detector core" -- NDVI wording on a
+  depth failure path.
+- **VERIFIED GOOD, do not re-derive.** Row-major orientation hand-checked on an OFF-CENTRE patch
+  (u 503 / v 103, i.e. 183 px vs 137 px from the principal point, so a u/v swap moves the answer
+  12.31 m): measured ENU == hand-derived to **0.000000000 m**. Decode refuses every case it claims
+  (step +-4 / W*2 / 0, payload short AND long, encoding 16UC1/32FC2/mono8/""/None, degenerate 0xN
+  and Nx0); `is_bigendian` is load-bearing both ways. Annotate-never-suppress and the annotation
+  counter are both genuinely held (suppression mutant -> 2 red; dead counter -> 2 red). Pose
+  pairing is `PoseBuffer.nearest(frame stamp)` on the same clock as NDVI (latest-pose mutant ->
+  9 red; dropped residual -> 1 red). **CONTAINER == HOST on the real render**: the wired path over
+  all 85 `eval/results/depth_dataset_20260907` frames gives IDENTICAL output under numpy 1.21.5 /
+  scipy 1.8.0 / py3.10.12 and numpy 1.26.4 / scipy 1.13.1 / py3.9 -- 1482 detections, 1297 of them
+  static-map-annotated, 0 truncations, 0 range refusals. **That closes G153 for this layer.**
+  Container wired-path wall time p95 **7.60 ms** (segmenter 7.18) against the 25 ms ADR-021 bar and
+  the 200 ms tick. Suites host: pytest 1 pre-registered red / 1487 / 2; unittest 1213 OK
+  (the same two `test_safety_scenarios_pending` skips); container unittest 1213 OK.
+- **NOT TESTED, stated so it is not assumed:** nothing flown; no gz/SITL/node launch; `build_node`'s
+  live behaviour is pinned only by source text plus the pure `FRAME_TOPICS`/`decode`/`feed` layer.
+  The 85-station probe contains ZERO objects inside the 12 m threat cylinder (bird ranges 14-46 m,
+  canopy 11 m below the cruise altitude), so it says NOTHING about in-cylinder behaviour -- it
+  measures clutter LOAD (median 16, max 24 detections/frame, 87.5 % mapped) and the policy's
+  `proceed` on every frame is geometry, not evidence that clutter cannot trigger a dodge.
 
 **G148-G156 (2026-09-07) — THE DEPTH SEGMENTER (`feat/depth-segmenter`, uncommitted over HEAD
 98096e8: `src/fieldguard_planning/depth_segment.py` + `eval/score_depth_segmenter.py` + the

@@ -10,14 +10,29 @@ Wires the confirmed AP_DDS interface (ADR-005) to the tested loop:
                                                                                    │
                                                             /ap/mode_switch + /ap/cmd_gps_pose
 
-DETECTION SOURCE is a seam with exactly two live implementations, chosen at the command line:
+DETECTION SOURCE is a seam with three live implementations, chosen at the command line -- and never
+more than ONE of them per flight:
 
-    --detect   the REAL detector (ADR-003 am. 7, ADOPTED): `/fg/ndvi/image` -> `ndvi_detect`
-               blobs -> world-ENU positions ranged by APPARENT SIZE (ADR-009 rule 2).
+    --detect   the REAL NDVI detector (ADR-003 am. 7, ADOPTED), and the DEFAULT of
+               `--detection-source`: `/fg/ndvi/image` -> `ndvi_detect` blobs -> world-ENU positions
+               ranged by APPARENT SIZE (ADR-009 rule 2).
+    --detect --detection-source depth
+               the FORWARD DEPTH detector: `/fg/depth/image` -> `depth_segment.DepthSegmenter`
+               boxes -> world-ENU positions at the MEASURED depth (ADR-020's seam, no radius prior,
+               no ground plane). SHIPS OFF -- a run without the flag is behaviourally unchanged.
     --demo     the scripted stand-in bird at ENU (30,30,15). Kept, not deleted: it is the
                regression-gate exception (ADR-013 am. 2) and the A/B arm against the real
                detector -- a flight where the demo dodges and the detector does not is a
                perception finding, and that comparison needs both sources to still exist.
+
+THE TWO DETECTORS ARE EXCLUSIVE, BY CONSTRUCTION AND NOT BY CARE: this node holds exactly ONE
+`detection_source` and subscribes only to THAT source's own image + camera_info pair, so
+`--detection-source depth` disarms the NDVI detector for that run (the orchestrator's call on
+DESIGN §7 Q2 -- one detection source per flight; running both would cost up to ~50 ms of a 200 ms
+tick and give one flight two sources of truth, and a combined mode is a product decision and a
+later flag, not a default). Which one ran is read back off the source's own `SOURCE_TAG` into the
+flight log -- never inferred from `hasattr(source, "on_frame")`, which is true of both and labelled
+a depth flight `ndvi_blob`.
 
 ONE CLOCK: GAZEBO SIM SECONDS (binding, 2026-08-24). Three clocks coexist on this stack -- NDVI
 frames carry Gazebo sim time (ADR-007), `/ap/pose/filtered` carries ArduPilot's own clock (SITL runs
@@ -91,11 +106,59 @@ CLOCK_DOMAIN_BOUND_S = 0.5
 # pose, and no gz-time axis for the flight log to be scored against ground truth.
 GZ_CLOCK_WAIT_S = 10.0
 
+# ...and the same refusal for the OTHER input a frame detector cannot work without. Until this was
+# added the clock was the node's only startup gate: a take whose `camera_info` never arrived -- the
+# camera pipeline started after this shell, a topic name that changed, a bridge that did not come
+# up -- flew BLIND for the whole flight, counting and dropping every frame (`dropped_no_intrinsics`)
+# while the 2 s heartbeat printed the normal-looking `nearest_bird=none in view`. Nothing else
+# catches it: `check_render_alive.py` probes the image topics and not their `camera_info`, and the
+# flight-log gate's own DETECTOR NEVER RAN check reads the artifact AFTER the take is burnt.
+# Deliberately generous against the 5 Hz render, and it only ever costs time on a flight that was
+# already going to produce nothing (measured off-sim: 1200 frames in, 1200 dropped, 0 detections).
+CAMERA_INFO_WAIT_S = 20.0
+
 # The fused NDVI band and ITS OWN camera_info pass-through (ndvi_node publishes both). Deliberately
 # not the bridge's rgb camera_info: these intrinsics must describe the frames actually consumed, and
 # subscribing the rgb band would add a third reader to the hop that has starved twice.
 NDVI_IMAGE_TOPIC = "/fg/ndvi/image"
 NDVI_INFO_TOPIC = "/fg/ndvi/camera_info"
+
+# The forward depth aperture (ADR-019/020). `/fg/depth/camera_info` is DERIVED by gz-sensors from
+# `<topic>`, not declared -- `config/depth_camera.json` records why, and the runbook's gate D1
+# checks it live. Both names are the ones the live bridge publishes, and the intrinsics are taken
+# from the message and never from that config (depth_detect rule 4).
+DEPTH_IMAGE_TOPIC = "/fg/depth/image"
+DEPTH_INFO_TOPIC = "/fg/depth/camera_info"
+# 32-bit float, one channel: pinhole Z-depth in METRES, +inf beyond far clip, -inf inside near.
+DEPTH_IMAGE_ENCODING = "32FC1"
+
+# The two frame detectors' own tags, spelled here as literals rather than imported because
+# importing either detector module would pull numpy/scipy into a node that must stay importable on
+# a bare interpreter (`--demo` has to parse its arguments on an image that cannot run `--detect`).
+# Cross-pinned to `ndvi_detect.SOURCE_TAG` / `depth_detect.SOURCE_TAG` by
+# tests/fieldguard_planning/test_avoidance_node_depth_seam.py, so the two spellings cannot drift.
+NDVI_SOURCE_TAG = "ndvi_blob"
+DEPTH_SOURCE_TAG = "depth_blob"
+
+# Which (image, camera_info) pair a frame-consuming source needs, keyed by the source's OWN tag.
+# The node subscribes to exactly ONE entry -- the one belonging to the source that was armed --
+# which is what makes the two detectors exclusive by construction rather than by care.
+FRAME_TOPICS = {
+    NDVI_SOURCE_TAG: (NDVI_IMAGE_TOPIC, NDVI_INFO_TOPIC),
+    DEPTH_SOURCE_TAG: (DEPTH_IMAGE_TOPIC, DEPTH_INFO_TOPIC),
+}
+
+# `--detection-source` choices. The default is the NDVI detector: the depth path ships OFF.
+KIND_NDVI = "ndvi"
+KIND_DEPTH = "depth"
+DETECTION_SOURCE_KINDS = (KIND_NDVI, KIND_DEPTH)
+
+# What `detection_source_name` calls a frame detector that declares no tag. Deliberately NOT
+# `DEMO_SOURCE_TAG` and deliberately not a guess: the flight-log gate treats a demo bird's logged
+# position as exact ground truth, so mislabelling a real detector that way would score an ESTIMATE
+# against itself. An unknown tag is not in the gate's DETECTOR_SOURCES, so such a flight is
+# UNSCOREABLE -- which is the fail-safe direction.
+UNTAGGED_FRAME_SOURCE = "untagged_frame_source"
 
 # `log["run"]` schema. Version 2 is the first flight-log contract that carries a time axis, the
 # clock provenance, the detector provenance and the policy parameters -- i.e. the first that can be
@@ -252,18 +315,37 @@ class AvoidanceLoop:
 # --------------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class DetectorConfig:
-    """What `--detect` was armed with, and WHERE THE THRESHOLD CAME FROM.
+    """What `--detect` was armed with, and WHERE EVERY NUMBER IN IT CAME FROM.
 
-    The threshold is the detector (`mask = ndvi < thresh`), it differs by half a unit between the
-    synthetic and real renders, and -0.61 is still PROVISIONAL -- so the value alone is not evidence.
-    A flight log that records the number without its provenance cannot answer "was this the adopted
-    default or something someone tried?", which is the question every re-reading of the artifact
-    starts with."""
-    thresh: float
-    thresh_provenance: str
-    thresh_provisional: bool
-    min_area: int
-    max_area: int
+    The threshold is the NDVI detector (`mask = ndvi < thresh`), it differs by half a unit between
+    the synthetic and real renders, and -0.61 is still PROVISIONAL -- so the value alone is not
+    evidence. A flight log that records the number without its provenance cannot answer "was this
+    the adopted default or something someone tried?", which is the question every re-reading of the
+    artifact starts with.
+
+    ONE OBJECT, TWO HALVES, and exactly one of them is filled: `detector_config_from_args` resolves
+    the half belonging to the `--detection-source` that was armed and leaves the other at its
+    defaults, so a depth flight's config cannot record an NDVI threshold it never used.
+
+    The depth half is the WHOLE `depth_segment.DepthSegmenterParams` as one frozen object rather
+    than seven scalars copied out of it: the constants have one home (the module that was scored),
+    a copy here would be a second, and the log's reader can then see there is nothing else. Typed
+    `object` only because naming the class would import numpy + scipy at module scope, which
+    `--demo` must not need."""
+    # -- the NDVI half (`--detection-source ndvi`, the default) -----------------------------------
+    thresh: Optional[float] = None
+    thresh_provenance: str = ""
+    thresh_provisional: bool = True
+    min_area: Optional[int] = None
+    max_area: Optional[int] = None
+    # -- the depth half (`--detection-source depth`) ----------------------------------------------
+    depth_params: Optional[object] = None          # a depth_segment.DepthSegmenterParams
+    depth_params_provenance: str = ""
+    # Provisional until something says otherwise, on BOTH halves: an unprovenanced number is a
+    # number someone typed. The adopted defaults set it explicitly -- True for the NDVI threshold
+    # (ADR-003 am. 7 adopted the detector, not the threshold's position), False for the depth
+    # params (every one of them is the output of the recorded sweep named in their provenance).
+    depth_params_provisional: bool = True
 
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
@@ -300,18 +382,41 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     ap.add_argument("--max-area", type=int, default=None, dest="max_area",
                     help="maximum blob area in post-morphology pixels "
                          "(default: ndvi_detect.DEFAULT_MAX_AREA)")
+    ap.add_argument("--detection-source", choices=list(DETECTION_SOURCE_KINDS), default=KIND_NDVI,
+                    dest="detection_source",
+                    help=f"WHICH real detector --detect arms (default: {KIND_NDVI}). "
+                         f"'{KIND_DEPTH}' flies the forward depth aperture instead and DISARMS the "
+                         f"NDVI detector for that run -- one detection source per flight. The "
+                         f"depth segmenter's constants are not reachable from this command line: "
+                         f"they are the adopted set in depth_segment.DEFAULT_PARAMS, and a knob "
+                         f"here would be a second home for numbers a scored dataset chose.")
     args = ap.parse_args(list(argv) if argv is not None else None)
     if args.detect and args.demo:
         ap.error("--detect and --demo are mutually exclusive: a flight has ONE detection source, "
                  "and a log that mixed a virtual bird with real detections could not be scored "
                  "against either kind of ground truth")
+    if args.detection_source != KIND_NDVI and not args.detect:
+        ap.error(f"--detection-source {args.detection_source} selects WHICH real detector --detect "
+                 f"arms; on its own it arms nothing. A run that asked for the depth detector and "
+                 f"silently flew with none would be an observation run wearing a dodge take's "
+                 f"command line. Pass --detect --detection-source {args.detection_source}.")
     return args
 
 
 def detector_config_from_args(args: argparse.Namespace) -> DetectorConfig:
-    """Freeze the CLI intent against `ndvi_detect`'s own defaults. Whether the threshold is still
+    """Freeze the CLI intent against the armed detector's own defaults. Whether a number is still
     PROVISIONAL is decided by whether the operator passed one at all -- not by comparing floats to
-    the default, which would silently re-label an explicit `--ndvi-thresh -0.61` as a default."""
+    the default, which would silently re-label an explicit `--ndvi-thresh -0.61` as a default.
+
+    The DEPTH half takes `depth_segment.DEFAULT_PARAMS` whole, with `DEFAULT_PARAMS_PROVENANCE` as
+    its provenance string: every one of those five constants is the output of the recorded sweep
+    that string names, so the depth config is NOT provisional -- and there is no CLI override for
+    them, which is what keeps that true."""
+    if getattr(args, "detection_source", KIND_NDVI) == KIND_DEPTH:
+        from .depth_segment import DEFAULT_PARAMS, DEFAULT_PARAMS_PROVENANCE
+        return DetectorConfig(depth_params=DEFAULT_PARAMS,
+                              depth_params_provenance=DEFAULT_PARAMS_PROVENANCE,
+                              depth_params_provisional=False)
     from .ndvi_detect import DEFAULT_MAX_AREA, DEFAULT_MIN_AREA, REAL_RENDER_THRESH
     explicit = args.ndvi_thresh is not None
     return DetectorConfig(
@@ -326,47 +431,150 @@ def detector_config_from_args(args: argparse.Namespace) -> DetectorConfig:
 
 
 def detection_source_name(source) -> str:
-    """Provenance tag for the flight log, derived from what the source IS rather than from a flag
-    the node could forget to pass. A frame-consuming source (`on_frame`) is the real detector; any
-    other callable is a scripted stand-in; none is an idle/observation run."""
+    """Provenance tag for the flight log, read off the source's OWN `SOURCE_TAG` rather than
+    inferred -- which is this function's stated principle and was, until the depth wiring landed,
+    not what it did: `hasattr(source, "on_frame")` is true of BOTH frame detectors, so a depth
+    flight would have been logged as `ndvi_blob` (DESIGN §6 item 2).
+
+    Three answers, and the fallback is the interesting one. A frame detector that declares no tag
+    is NOT called a demo bird -- the flight-log gate treats a demo bird's logged position as exact
+    ground truth, and a real estimate scored against itself is the failure schema 2 exists to stop.
+    It gets a name the gate does not know, which makes the flight unscoreable rather than
+    mislabelled. A plain callable is a scripted stand-in; None is an observation run."""
     if source is None:
         return "none"
-    return "ndvi_blob" if hasattr(source, "on_frame") else DEMO_SOURCE_TAG
+    tag = getattr(source, "SOURCE_TAG", None)
+    if isinstance(tag, str) and tag:
+        return tag
+    return UNTAGGED_FRAME_SOURCE if hasattr(source, "on_frame") else DEMO_SOURCE_TAG
+
+
+def _intrinsics_block(intr, info_topic: str, config_name: str) -> Optional[dict]:
+    """The live intrinsics as the log records them, or None before the first `camera_info`.
+
+    Never the config file: the config is what we ASKED for, the message is what we GOT (the rule
+    `clip_recorder` set and `depth_detect` rule 4 repeats), and the provenance string says so on
+    the artifact's face so a reader does not have to trust that it happened."""
+    if intr is None:
+        return None
+    return {"image_width_px": int(intr.width_px), "image_height_px": int(intr.height_px),
+            "fx": float(intr.fx), "fy": float(intr.fy),
+            "cx": float(intr.cx), "cy": float(intr.cy),
+            "provenance": f"live {info_topic} (not {config_name})"}
 
 
 def detector_log_block(source, cfg: Optional[DetectorConfig]) -> dict:
     """`log["run"]["detector"]`. Every number is read back from the SOURCE that actually ran, not
-    from the CLI intent -- the only provenance the config contributes is where the threshold came
-    from and whether it is still provisional, which the source has no way to know."""
+    from the CLI intent -- the only provenance the config contributes is where a constant came from
+    and whether it is still provisional, which the source has no way to know."""
     name = detection_source_name(source)
-    if name != "ndvi_blob":
+    if name == DEPTH_SOURCE_TAG:
+        return _depth_detector_log_block(source, cfg)
+    if name != NDVI_SOURCE_TAG:
         return {
             "source": name,
             "module": "fieldguard_planning.avoidance_node",
+            # The two unknown cases are DIFFERENT and the note must not say the wrong one: a source
+            # that declares a tag this node has no branch for is not a source that declares none,
+            # and a note describing the opposite of what happened is worse than no note.
             "note": ("scripted stand-in bird: its logged position IS exact ground truth (a constant "
                      "we chose), so detection-CPA is the correct safety gate for this flight"
                      if name == DEMO_SOURCE_TAG else
-                     "no detection source armed -- observation run, no avoidance claimed"),
+                     "no detection source armed -- observation run, no avoidance claimed"
+                     if name == "none" else
+                     "a frame-consuming detector that declares no SOURCE_TAG: this flight cannot "
+                     "be scored, because nothing here can say what its detections are worth"
+                     if name == UNTAGGED_FRAME_SOURCE else
+                     f"a detection source declaring SOURCE_TAG {name!r}, which this node has no "
+                     f"log branch for: the tag was read off the source that ran, but nothing here "
+                     f"can say what its detections are worth, so the flight is unscoreable"),
         }
-    intr = getattr(source, "intr", None)
     return {
         "source": name,
         "module": "fieldguard_planning.ndvi_detect",
         "thresh": float(source.thresh),
-        "thresh_provenance": cfg.thresh_provenance if cfg else "unknown (no DetectorConfig)",
+        "thresh_provenance": (cfg.thresh_provenance if cfg and cfg.thresh_provenance
+                              else "unknown (no DetectorConfig)"),
         "thresh_provisional": bool(cfg.thresh_provisional) if cfg else True,
         "min_area": int(source.min_area),
         "max_area": int(source.max_area),
         "radius_prior_m": float(source.radius_prior_m),
         "range_model": ("apparent_size_ray (ADR-009 rule 2); ground-plane projection is never used "
                         "-- it places a flying bird at z=0, outside the threat cylinder"),
-        "intrinsics": (None if intr is None else
-                       {"image_width_px": int(intr.width_px), "image_height_px": int(intr.height_px),
-                        "fx": float(intr.fx), "fy": float(intr.fy),
-                        "cx": float(intr.cx), "cy": float(intr.cy),
-                        "provenance": f"live {NDVI_INFO_TOPIC} (not config/ndvi_camera.json)"}),
+        "intrinsics": _intrinsics_block(getattr(source, "intr", None), NDVI_INFO_TOPIC,
+                                        "config/ndvi_camera.json"),
         "counters": source.counters(),
     }
+
+
+def _depth_detector_log_block(source, cfg: Optional[DetectorConfig]) -> dict:
+    """The depth branch of `detector_log_block` (DESIGN §6 item 3).
+
+    Two modules ran, so both are named and both are read off the objects that ran rather than
+    written down: the SEGMENTER (image space, where the params live) and the SEAM (un-projection,
+    where the range refusals live). Two `counters()` dicts for the same reason -- they measure
+    different things and summing them would hide which half dropped a frame.
+
+    Plain ints and floats only: this dict crosses a `json.dumps` into the flight log, where a numpy
+    scalar raises TypeError."""
+    from dataclasses import asdict, is_dataclass
+
+    seg = getattr(source, "segmenter", None)
+    params = getattr(seg, "params", None)
+    if params is None and cfg is not None:
+        params = cfg.depth_params            # a segmenter that keeps none: fall back to the intent
+    seg_counters = getattr(seg, "counters", None)
+    return {
+        "source": detection_source_name(source),
+        "module": (type(seg).__module__ if seg is not None else "unknown"),
+        "seam_module": type(source).__module__,
+        # The WHOLE frozen configuration as one object -- see DetectorConfig's docstring for why it
+        # is not seven scalars.
+        "params": (asdict(params) if is_dataclass(params) else None),
+        "params_provenance": (cfg.depth_params_provenance if cfg and cfg.depth_params_provenance
+                              else "unknown (no DetectorConfig)"),
+        "params_provisional": bool(cfg.depth_params_provisional) if cfg else True,
+        # The seam's own EXCLUSIVE refusal window, recorded beside the segmenter's clip window so
+        # the artifact itself shows the two agreed rather than leaving it to a test.
+        "min_range_m": float(source.min_range_m),
+        "max_range_m": float(source.max_range_m),
+        "range_model": ("measured depth (ADR-020); no radius prior, no ground-plane projection"),
+        "static_map_annotator": (None if getattr(source, "static_map_annotator", None) is None else
+                                 "geofence 3D volume test -- ANNOTATE + COUNT ONLY, never suppress "
+                                 "(depth_detect rule 9): detections_near_known_obstacle is a "
+                                 "clutter denominator, not a drop count"),
+        "intrinsics": _intrinsics_block(getattr(source, "intr", None), DEPTH_INFO_TOPIC,
+                                        "config/depth_camera.json"),
+        "counters": source.counters(),
+        "segmenter_counters": (seg_counters() if callable(seg_counters) else None),
+    }
+
+
+def serialise_flight_log(log: dict) -> str:
+    """`json.dumps` the flight log, and NEVER lose a flight to a formatting error.
+
+    `dump_flight_log` runs in `main`'s `finally`, so a `TypeError` raised while encoding (a numpy
+    scalar in a counters dict is the live shape of this: `Object of type int64 is not JSON
+    serializable`) writes NO FILE AT ALL and replaces whatever actually ended the flight. Unreachable
+    with the shipped detectors -- both `counters()` methods coerce to plain ints, and that is
+    pinned by test on the real path -- but the cost of being wrong about it is the whole take's
+    evidence, which is not a trade worth taking for three lines.
+
+    The degraded log is deliberately WORSE-LOOKING than a clean one, not quietly equivalent: the
+    offending values become `repr` STRINGS (so any gate reading them as numbers says 'non-numeric'
+    rather than scoring them) and a top-level key says so on the artifact's face."""
+    import json
+
+    try:
+        return json.dumps(log, indent=2)
+    except TypeError as exc:
+        degraded = dict(log)
+        degraded["log_serialisation_degraded"] = (
+            f"json.dumps refused a value in this log ({exc}); it was re-encoded with repr() so the "
+            f"flight's evidence survived. Every value that took that path is now a STRING and is "
+            f"not numeric data -- find it and fix the writer (a numpy scalar in a counters dict is "
+            f"the usual cause) rather than reading through it.")
+        return json.dumps(degraded, indent=2, default=repr)
 
 
 def build_run_block(*, policy_params: dict, clock: dict, tick_stamp_sim_s: Sequence[Optional[float]],
@@ -393,12 +601,128 @@ def default_mission_xy() -> List[Tuple[float, float]]:
     return mission_xy_path(items, home_lat, home_lon)
 
 
-def build_detection_source(cfg: DetectorConfig):
-    """Construct the real detector. Imported HERE and nowhere else at module scope: `ndvi_detect`
-    pulls numpy + scipy, and a missing scipy must fail with the rebuild instruction rather than at
-    the top of a module the stdlib test suite imports."""
+def build_detection_source(cfg: DetectorConfig, kind: str = KIND_NDVI):
+    """Construct THE ONE real detector this flight will fly. Imported HERE and nowhere else at
+    module scope: both detector cores pull numpy + scipy, and a missing scipy must fail with the
+    rebuild instruction rather than at the top of a module the stdlib test suite imports.
+
+    Returns exactly one object, which is the whole of the exclusion: there is no arrangement of
+    flags that leaves two detectors armed, because there is one variable to put one in.
+
+    The depth arm wires three things the NDVI arm has no equivalent of:
+      * the segmenter, constructed from the ADOPTED `DEFAULT_PARAMS` the config carries (never
+        field-by-field: the frozen object IS the configuration);
+      * the seam's refusal window taken FROM those same params, so the segmenter's clip window and
+        the seam's exclusive (min, max) are one number and not two;
+      * the geofence annotator (DESIGN §6 item 5) -- ANNOTATE + COUNT, never suppress. The forward
+        frame is full of mapped canopy from ~24.4 m, and this is what gives the flight log a
+        clutter denominator without a filter that could also delete a bird beside a tree."""
+    if kind == KIND_DEPTH:
+        from .depth_detect import DepthDetectionSource, geofence_annotator
+        from .depth_segment import DEFAULT_PARAMS, DepthSegmenter
+        params = cfg.depth_params if cfg is not None and cfg.depth_params is not None \
+            else DEFAULT_PARAMS
+        return DepthDetectionSource(
+            DepthSegmenter(params),
+            min_range_m=params.near_m, max_range_m=params.far_m,
+            static_map_annotator=geofence_annotator(GeofenceMap.from_file()))
+    if kind != KIND_NDVI:
+        raise ValueError(f"unknown detection source kind {kind!r}; expected one of "
+                         f"{list(DETECTION_SOURCE_KINDS)}")
     from .ndvi_detect import NdviDetectionSource
     return NdviDetectionSource(cfg.thresh, min_area=cfg.min_area, max_area=cfg.max_area)
+
+
+# --------------------------------------------------------------------------------------------------
+# The ROS-facing half of the depth path, as PURE FUNCTIONS. `build_node` cannot be called off-sim
+# (rclpy, ros messages), so decode + pose pairing + the call into the seam live out here where a
+# test can drive them with a duck-typed message and no ROS at all. They are the only place this node
+# touches a depth wire format.
+# --------------------------------------------------------------------------------------------------
+def decode_depth_frame(msg):
+    """A `sensor_msgs/Image` on `/fg/depth/image` -> a float32 (H, W) array of pinhole Z-depth.
+
+    EVERY NUMBER IS DERIVED FROM THE MESSAGE and then asserted, rather than copied from the sensor
+    config: `step` must be exactly 4 bytes per column and the payload must be exactly `height *
+    step` long. A frame that fails either is REFUSED (ValueError) and not reshaped -- a
+    mis-strided buffer reshapes without complaint into a plausible-looking depth image, and the
+    obstacle it invents would be at the wrong pixel, which is the failure family ADR-007 am. 5
+    (a value correct under a geometry nobody checked) cost this project two weeks.
+
+    `is_bigendian` is READ, not assumed. gz publishes little-endian on this host, so the byte order
+    is the one term here that no live test has ever exercised in the other state -- which is
+    precisely why it is taken from the message and converted to native float32 (the segmenter
+    requires `dtype == float32` exactly, and a big-endian '>f4' array is not that).
+
+    NOT caught by the node: a decode failure here is a bringup fault that is true of frame 1 and
+    every frame after it (a fixed sensor does not change its stride mid-flight), so it must stop
+    the take loudly at the start -- the same doctrine as refusing to start without a gz clock. The
+    flight log is still written by `main`'s finally."""
+    import numpy as np
+
+    encoding = getattr(msg, "encoding", None)
+    if encoding != DEPTH_IMAGE_ENCODING:
+        raise ValueError(f"{DEPTH_IMAGE_TOPIC} carried encoding {encoding!r}, expected "
+                         f"{DEPTH_IMAGE_ENCODING!r} (32-bit float metres). Refusing rather than "
+                         f"reinterpreting: a uint16 millimetre encoding read as float32 metres is "
+                         f"a confident obstacle at a fictional range.")
+    height, width, step = int(msg.height), int(msg.width), int(msg.step)
+    itemsize = 4                                    # 32FC1: one float32 channel per pixel
+    if width <= 0 or height <= 0:
+        raise ValueError(f"{DEPTH_IMAGE_TOPIC} carried a degenerate frame {width}x{height}")
+    if step != width * itemsize:
+        raise ValueError(f"{DEPTH_IMAGE_TOPIC} step {step} != width {width} * {itemsize} bytes "
+                         f"({width * itemsize}) -- a padded or mis-strided row would reshape "
+                         f"silently into a plausible depth image with every pixel in the wrong "
+                         f"place")
+    buf = np.frombuffer(msg.data, dtype=np.uint8)
+    if buf.size != height * step:
+        raise ValueError(f"{DEPTH_IMAGE_TOPIC} payload is {buf.size} bytes, expected height "
+                         f"{height} * step {step} = {height * step}")
+    dtype = np.dtype(">f4" if getattr(msg, "is_bigendian", 0) else "<f4")
+    return buf.view(dtype).reshape(height, width).astype(np.float32, copy=False)
+
+
+def feed_depth_frame(source, pose_buf, msg):
+    """One depth message -> the seam, paired to the pose nearest the frame's OWN gz stamp.
+
+    Identical pairing policy to the NDVI path and on the same clock (`PoseBuffer.nearest`, the
+    residual handed on so the seam can refuse a stale pair): the render stalls and bursts, so
+    pairing on ARRIVAL would put an obstacle metres down-track. Frames arriving before the first
+    `camera_info` are not special-cased here -- the seam counts and drops them (rule 5), because a
+    silently discarded pre-`camera_info` window is exactly how the recorder lost most of a flight."""
+    stamp_s = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+    depth = decode_depth_frame(msg)
+    paired = pose_buf.nearest(stamp_s)
+    if paired is None:
+        return source.on_frame(stamp_s, depth, None, None)
+    pos, quat_xyzw, residual = paired
+    return source.on_frame(stamp_s, depth, pos, quat_xyzw, pose_pair_residual_s=residual)
+
+
+def wait_for_live_intrinsics(node, spin_once, timeout_s: float = CAMERA_INFO_WAIT_S,
+                             now=None) -> bool:
+    """Block until the armed frame detector has its LIVE intrinsics, or the window runs out.
+
+    The gz-clock refusal's sibling, for the second input a frame detector cannot work without --
+    and it must SPIN, not sleep: the clock arrives on its own subprocess thread, `camera_info`
+    arrives on a subscription, and a subscription that is never spun delivers nothing. Spinning
+    here means the loop is live during the wait, which is what it would be anyway; with no
+    detections the policy PROCEEDs and the executor commands nothing.
+
+    True when there is nothing to wait for (a scripted `--demo` source, or an observation run):
+    this gate is about a detector that consumes frames, and inventing a requirement for a source
+    that reads none would refuse the regression arm."""
+    import time
+
+    now = time.monotonic if now is None else now
+    detector = getattr(node, "_frame_detector", None)
+    if detector is None:
+        return True
+    deadline = now() + float(timeout_s)
+    while getattr(detector, "intr", None) is None and now() < deadline:
+        spin_once(node, timeout_sec=0.1)
+    return getattr(detector, "intr", None) is not None
 
 
 def build_node(detection_source: Optional[DetectionSource] = None,
@@ -406,8 +730,10 @@ def build_node(detection_source: Optional[DetectionSource] = None,
                detector_cfg: Optional[DetectorConfig] = None):
     """Construct the rclpy node. Kept as a factory so the (untestable-off-sim) rclpy import is lazy.
 
-    A `detection_source` exposing `on_frame` is the real detector: the node then subscribes to the
-    fused NDVI band and feeds it. Any other callable is used as-is and gets no subscriptions."""
+    A `detection_source` exposing `on_frame` is a real detector: the node then subscribes to THAT
+    detector's own image + camera_info pair, chosen by its `SOURCE_TAG` through `FRAME_TOPICS` --
+    one pair, never both, which is where the two detectors' exclusivity is enforced. Any other
+    callable is used as-is and gets no subscriptions."""
     import subprocess
     import threading
 
@@ -442,9 +768,15 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             self.loop = AvoidanceLoop(self.policy, self.geofence, self.avoidance_executor,
                                       detection_source, warn=self.get_logger().warn)
             # A detection source that consumes FRAMES gets frames; anything else is a scripted
-            # source and the node stays out of the image path entirely.
+            # source and the node stays out of the image path entirely. WHICH frames is decided by
+            # the source's own tag, so arming the depth detector cannot leave the NDVI band
+            # subscribed (or vice versa) -- there is one pair, and no flag can select two.
             self._frame_detector = (detection_source
                                     if hasattr(detection_source, "on_frame") else None)
+            self._source_name = detection_source_name(detection_source)
+            self._frame_topics = (FRAME_TOPICS.get(self._source_name)
+                                  if self._frame_detector is not None else None)
+            self._intrinsics_refused = False
             self.mission_xy = list(mission_xy) if mission_xy else []
             self._drone: Optional[DroneState] = None
             self._t0 = self.get_clock().now()
@@ -462,23 +794,36 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             self.create_subscription(PoseStamped, "/ap/pose/filtered", self._on_pose,
                                      qos_profile_sensor_data)
             if self._frame_detector is not None:
+                # A frame detector needs BOTH a topic pair and its own decoder, and the two are
+                # looked up by the same key. A third detector that added one and not the other
+                # would otherwise be handed the wrong decoder in silence -- so this refuses to come
+                # up instead, which is cheaper than a flight decoded as the wrong wire format.
+                decoders = {NDVI_SOURCE_TAG: self._on_ndvi, DEPTH_SOURCE_TAG: self._on_depth}
+                if self._frame_topics is None or self._source_name not in decoders:
+                    raise ValueError(
+                        f"detection source '{self._source_name}' consumes frames but has no "
+                        f"topic pair in FRAME_TOPICS {sorted(FRAME_TOPICS)} and/or no decoder "
+                        f"{sorted(decoders)}. Refusing to come up: a frame detector with nothing "
+                        f"subscribed detects nothing, silently, for a whole flight.")
+                image_topic, info_topic = self._frame_topics
                 # BEST_EFFORT, DEPTH 1 -- deliberately NOT the recorder's RELIABLE depth 10. A
                 # control loop wants the NEWEST frame, not every frame: a queued backlog of stale
-                # NDVI is exactly what the staleness gate would then throw away, one tick late. It
+                # frames is exactly what the staleness gate would then throw away, one tick late. It
                 # also keeps this third subscriber off the RELIABLE NACK-repair path ADR-013 am. 8
                 # priced on the band that has starved twice.
-                self.create_subscription(Image, NDVI_IMAGE_TOPIC, self._on_ndvi,
-                                         QoSProfile(depth=1, history=HistoryPolicy.KEEP_LAST,
-                                                    reliability=ReliabilityPolicy.BEST_EFFORT))
-                self.create_subscription(CameraInfo, NDVI_INFO_TOPIC, self._on_ndvi_info,
+                self.create_subscription(
+                    Image, image_topic, decoders[self._source_name],
+                    QoSProfile(depth=1, history=HistoryPolicy.KEEP_LAST,
+                               reliability=ReliabilityPolicy.BEST_EFFORT))
+                self.create_subscription(CameraInfo, info_topic, self._on_camera_info,
                                          qos_profile_sensor_data)
             self.create_timer(1.0 / CONTROL_HZ, self._on_tick)
             self.get_logger().info(
                 f"fieldguard_avoidance up: /ap/pose/filtered @ {CONTROL_HZ} Hz, coverage swath "
                 f"+/-{swath_half_m:.3f} m (derived from config/ndvi_camera.json at {CRUISE_ALT_M:.0f} m "
-                f"cruise), detection source '{detection_source_name(detection_source)}'"
-                + (f", subscribing {NDVI_IMAGE_TOPIC} + {NDVI_INFO_TOPIC}"
-                   if self._frame_detector is not None else ""))
+                f"cruise), detection source '{self._source_name}'"
+                + (f", subscribing {self._frame_topics[0]} + {self._frame_topics[1]}"
+                   if self._frame_topics is not None else ""))
 
         # -- clock ------------------------------------------------------------------------------
         def _start_clock_stream(self) -> None:
@@ -526,15 +871,34 @@ def build_node(detection_source: Optional[DetectionSource] = None,
                 self.get_logger().info(f"first /ap/pose/filtered received: ENU("
                                        f"{p.x:.1f}, {p.y:.1f}, {p.z:.1f}) — loop is live")
 
-        def _on_ndvi_info(self, msg) -> None:
+        def _on_camera_info(self, msg) -> None:
+            """LIVE intrinsics for whichever detector is armed -- from the message, never from a
+            config file (depth_detect rule 4 / clip_recorder's rule: the config is what we ASKED
+            for). One handler for both bands because the subscription already carries which topic
+            it came from, and a second copy of `k[0]/k[4]/k[2]/k[5]` is a second place to index the
+            wrong element of a 9-vector.
+
+            A `camera_info` the seam REFUSES (ROS publishes an all-zero K for an uncalibrated
+            camera, and un-projection divides by fx) leaves the detector unarmed and is logged
+            ONCE, not per message. The startup wait in `main` then refuses the take by name --
+            the same outcome as no message at all, and the correct one: an unarmed detector
+            cannot fly, and finding that out at arming is cheaper than a ZeroDivisionError out of
+            a subscription callback after takeoff."""
             if self._frame_detector is None or self._frame_detector.intr is not None:
                 return
-            self._frame_detector.set_intrinsics(CameraIntrinsics(
-                width_px=msg.width, height_px=msg.height,
-                fx=msg.k[0], fy=msg.k[4], cx=msg.k[2], cy=msg.k[5]))
+            try:
+                self._frame_detector.set_intrinsics(CameraIntrinsics(
+                    width_px=msg.width, height_px=msg.height,
+                    fx=msg.k[0], fy=msg.k[4], cx=msg.k[2], cy=msg.k[5]))
+            except ValueError as exc:
+                if not self._intrinsics_refused:
+                    self._intrinsics_refused = True
+                    self.get_logger().error(
+                        f"REFUSED the camera_info on {self._frame_topics[1]}: {exc}")
+                return
             self.get_logger().info(
                 f"detector armed with LIVE intrinsics: {msg.width}x{msg.height} fx={msg.k[0]:.1f} "
-                f"cx={msg.k[2]:.1f} cy={msg.k[5]:.1f} (from {NDVI_INFO_TOPIC})")
+                f"cx={msg.k[2]:.1f} cy={msg.k[5]:.1f} (from {self._frame_topics[1]})")
 
         def _on_ndvi(self, msg) -> None:
             """Fused NDVI frame -> detections, paired to the pose nearest the frame's OWN gz stamp.
@@ -548,6 +912,12 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             pos, quat_xyzw, residual = paired
             self._frame_detector.on_frame(stamp_s, ndvi, pos, quat_xyzw,
                                           pose_pair_residual_s=residual)
+
+        def _on_depth(self, msg) -> None:
+            """Forward depth frame -> detections. The decode, the pose pairing and the call are
+            `feed_depth_frame`'s, out at module scope where they are unit-testable without ROS; a
+            malformed frame raises there rather than being reshaped into a plausible obstacle."""
+            feed_depth_frame(self._frame_detector, self._pose_buf, msg)
 
         # -- control tick -----------------------------------------------------------------------
         def _on_tick(self):
@@ -581,12 +951,11 @@ def build_node(detection_source: Optional[DetectionSource] = None,
                 detector=detector_log_block(self.detection_source, self.detector_cfg))
 
         def dump_flight_log(self, out_path: Path) -> None:
-            import json
             self.avoidance_executor.finalize()
             log = self.avoidance_executor.flight_log("live_run", seed=0, cell_size_m=2.5)
             log["run"] = self.run_block()
             out_path.parent.mkdir(parents=True, exist_ok=True)  # eval/results/ is gitignored -- may not exist
-            out_path.write_text(json.dumps(log, indent=2))
+            out_path.write_text(serialise_flight_log(log))
             self.get_logger().info(f"wrote flight log -> {out_path}")
 
     if not rclpy.ok():          # rclpy.init() must run before any Node is constructed
@@ -604,16 +973,28 @@ def main(argv=None) -> int:
     if args.detect:
         try:
             cfg = detector_config_from_args(args)
-            src = build_detection_source(cfg)
+            src = build_detection_source(cfg, args.detection_source)
         except ImportError as exc:
-            print(f"[avoidance_node] --detect needs the ADOPTED detector core and its scipy "
-                  f"morphology, which this image cannot import ({exc}). Rebuild the image "
-                  f"(sim/docker/Dockerfile installs python3-scipy): bash scripts/sim_docker_build.sh "
-                  f"&& bash scripts/sim_docker_run.sh. There is deliberately NO numpy fallback -- a "
-                  f"reimplementation would be a different detector wearing ADR-003 am. 7's verdict.",
-                  file=sys.stderr)
+            # Name the source that was ASKED for and cite the verdict that belongs to IT: the depth
+            # arm imports `depth_segment`, whose constants are ADR-020's scored set, and printing
+            # ADR-003 am. 7 (the NDVI adoption) at it is provenance pointing at the wrong sensor.
+            core = ("fieldguard_planning.depth_segment (the ADR-020 scored segmenter)"
+                    if args.detection_source == KIND_DEPTH else
+                    "fieldguard_planning.ndvi_detect (the ADR-003 am. 7 ADOPTED detector)")
+            print(f"[avoidance_node] --detect --detection-source {args.detection_source} needs "
+                  f"{core} and its scipy morphology, which this image cannot import ({exc}). "
+                  f"Rebuild the image (sim/docker/Dockerfile installs python3-scipy): "
+                  f"bash scripts/sim_docker_build.sh && bash scripts/sim_docker_run.sh. There is "
+                  f"deliberately NO numpy fallback -- a reimplementation would be a different "
+                  f"detector wearing the adopted one's verdict.", file=sys.stderr)
             return 2
-        if cfg.thresh_provisional:
+        if args.detection_source == KIND_DEPTH:
+            print(f"[avoidance_node] the NDVI detector is DISARMED for this run: "
+                  f"--detection-source {KIND_DEPTH} flies the forward aperture "
+                  f"({DEPTH_IMAGE_TOPIC}) and one flight carries ONE detection source. This take "
+                  f"therefore produces no ADR-003 in-air detection evidence. Segmenter params: "
+                  f"{cfg.depth_params}.", file=sys.stderr)
+        elif cfg.thresh_provisional:
             print(f"[avoidance_node] WARNING: --ndvi-thresh {cfg.thresh} is the PROVISIONAL "
                   f"ADR-003 am. 7 default. It was derived from per-class PIXEL means "
                   f"(eval/results/gate2_summary.json); the detection evidence behind ADOPT is "
@@ -647,6 +1028,25 @@ def main(argv=None) -> int:
                 rclpy.shutdown()
             return 3
         node.get_logger().info(f"gz clock live at sim t={node._gz_now:.3f} s — detector armed")
+
+        # REFUSE TO FLY BLIND. The clock was this node's only startup gate, and a frame detector
+        # with no `camera_info` is just as silent: it counts and drops every frame for the whole
+        # take while the heartbeat prints `nearest_bird=none in view`. Same shape as the refusal
+        # above, and it names the topic because that name is the thing most likely to be wrong --
+        # `/fg/depth/camera_info` is DERIVED by gz-sensors, not declared.
+        if not wait_for_live_intrinsics(node, rclpy.spin_once):
+            info_topic = (node._frame_topics[1] if node._frame_topics else "the camera_info topic")
+            node.get_logger().error(
+                f"no usable {info_topic} in {CAMERA_INFO_WAIT_S:.0f} s — the detector is UNARMED "
+                f"and would drop every frame of this flight (dropped_no_intrinsics), silently. "
+                f"Bring the camera pipeline up BEFORE this shell and check the topic really "
+                f"publishes: `ros2 topic echo --once {info_topic}`. Refusing to fly a detector "
+                f"that detects nothing.")
+            node.destroy_node()
+            if rclpy.ok():
+                rclpy.shutdown()
+            return 4
+        node.get_logger().info("live intrinsics present — the detector consumes frames from here")
 
     try:
         rclpy.spin(node)

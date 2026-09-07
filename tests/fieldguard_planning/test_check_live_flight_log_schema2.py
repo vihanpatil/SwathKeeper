@@ -928,6 +928,115 @@ class TestDetectorSource(Harness):
 
 
 # ================================================================================================
+# 7a. The LABEL and the FIELDS must be the same detector (the forward depth aperture, 2026-09-07)
+# ================================================================================================
+class TestDetectorBlockMatchesItsSource(Harness):
+    """Two apertures write `run.detector` now, and their field sets do not overlap. The direction
+    that reads as success is a DEPTH take labelled `ndvi_blob`: it would be scored on the nadir
+    detector's gates -- the detect-rate floor over `ndvi_msgs_received`, the apparent-size estimator
+    check, ADR-003's adopted-detector verdict -- i.e. certified with the other sensor's evidence."""
+
+    def _depth_block(self):
+        """The shape `avoidance_node._depth_detector_log_block` writes, trimmed to the fields this
+        rule keys on. Not imported from the node: this gate reads ARTIFACTS, and a hand-written
+        block is exactly the input under test."""
+        return {
+            "source": checker.DET_DEPTH_BLOB,
+            "module": "fieldguard_planning.depth_segment",
+            "seam_module": "fieldguard_planning.depth_detect",
+            "params": {"bg_window_px": 15, "margin_m": 1.5, "min_area_px": 10, "open_iter": 0,
+                       "max_boxes": 64, "near_m": 0.1, "far_m": 60.0, "link_break": False},
+            "params_provenance": "eval/results/depth_segmenter_score_20260907T110000Z.json",
+            "params_provisional": False,
+            "min_range_m": 0.1, "max_range_m": 60.0,
+            "range_model": "measured depth (ADR-020); no radius prior, no ground-plane projection",
+            "counters": {"depth_msgs_received": 1200, "frames_detected_on": 1199,
+                         "dropped_non_finite_depth": 0, "dropped_out_of_range": 0,
+                         "detections_near_known_obstacle": 7},
+            "segmenter_counters": {"frames": 1199, "boxes_returned": 31},
+        }
+
+    def test_a_depth_block_claiming_to_be_the_ndvi_detector_is_refused(self):
+        run = make_run(checker.DET_NDVI_BLOB)
+        run["detector"] = dict(self._depth_block(), source=checker.DET_NDVI_BLOB)
+        self.assertInvalid(self.check(make_log(run=run)), "the label and the contents are "
+                                                          "different detectors")
+
+    def test_an_ndvi_block_claiming_to_be_the_depth_detector_is_refused(self):
+        run = make_run(checker.DET_NDVI_BLOB)
+        run["detector"]["source"] = checker.DET_DEPTH_BLOB
+        self.assertInvalid(self.check(make_log(run=run)), "the label and the contents are "
+                                                          "different detectors")
+
+    def test_the_rule_names_the_offending_fields_including_the_counters(self):
+        run = make_run(checker.DET_NDVI_BLOB)
+        run["detector"]["params"] = {"bg_window_px": 15}
+        run["detector"]["counters"]["depth_msgs_received"] = 1200
+        status, messages = self.check(make_log(run=run))
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("'params'", blob)
+        self.assertIn("'counters.depth_msgs_received'", blob)
+
+    def test_a_consistent_block_of_either_family_passes_the_rule(self):
+        """The rule must not fire on the two blocks the node actually writes. The depth one is
+        still UNSCOREABLE for a different, deliberate reason (no depth take has been flown, so
+        `depth_blob` is not in DETECTOR_SOURCES) -- and it must fail on THAT, not on a mislabel."""
+        self.assertEqual(checker.gate_detector_block_matches_source(make_run(checker.DET_NDVI_BLOB)),
+                         [])
+        depth_run = make_run(checker.DET_NDVI_BLOB)
+        depth_run["detector"] = self._depth_block()
+        self.assertEqual(checker.gate_detector_block_matches_source(depth_run), [])
+        status, messages = self.check(make_log(run=depth_run))
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("refuses to score the flight", blob)              # unscoreable, not mislabelled
+        self.assertNotIn("different detectors", blob)
+
+    def test_the_demo_and_none_blocks_are_untouched_by_the_rule(self):
+        for src in (checker.DET_DEMO_VIRTUAL, checker.DET_NONE, "yolov8", None):
+            with self.subTest(source=src):
+                self.assertEqual(
+                    checker.gate_detector_block_matches_source(make_run(src)), [])
+
+    def test_a_missing_or_malformed_detector_block_is_left_to_the_gates_that_own_it(self):
+        for detector in (None, "ndvi_blob", 7, []):
+            with self.subTest(detector=detector):
+                run = make_run()
+                run["detector"] = detector
+                self.assertEqual(checker.gate_detector_block_matches_source(run), [])
+
+    def test_the_two_families_field_names_are_the_ones_the_node_writes(self):
+        """A rename on either side would make this rule stop checking and start passing everything,
+        which is the failure mode every gate in this file is built against. Pinned against the
+        node's OWN block writers rather than against this file's fixtures."""
+        from fieldguard_planning import avoidance_node as node
+
+        class _FakeIntr:
+            width_px, height_px, fx, fy, cx, cy = 640, 480, 520.0, 520.0, 320.0, 240.0
+
+        class _FakeNdvi:
+            SOURCE_TAG = node.NDVI_SOURCE_TAG
+            thresh, min_area, max_area, radius_prior_m = -0.61, 6, 5000, 0.15
+            intr = _FakeIntr()
+
+            def on_frame(self, *a, **k):
+                return []
+
+            def counters(self):
+                return {"ndvi_msgs_received": 3}
+
+        ndvi_block = node.detector_log_block(_FakeNdvi(), None)
+        self.assertEqual(ndvi_block["source"], checker.DET_NDVI_BLOB)
+        for field in checker.NDVI_ONLY_DETECTOR_FIELDS:
+            self.assertIn(field, ndvi_block)
+        for field in checker.DEPTH_ONLY_DETECTOR_FIELDS:
+            self.assertNotIn(field, ndvi_block)
+        for key in checker.NDVI_ONLY_COUNTERS:
+            self.assertIn(key, ndvi_block["counters"])
+
+
+# ================================================================================================
 # 7b. The DETECT half -- a detector that never saw a frame did not fly the take
 # ================================================================================================
 class TestDetectorActuallyRan(Harness):

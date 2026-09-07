@@ -655,6 +655,21 @@ class TestBookingBinding(Harness):
         status, messages = self.check(flight_at(5.0, source=checker.DET_DEMO_VIRTUAL))
         self.assertIn("NO BOOKING BOUND -- WARNING", " ".join(messages))
 
+    def test_the_DEPTH_take_is_an_avoidance_take_too_and_it_is_the_one_this_gate_is_FOR(self):
+        """The forward depth aperture is the sensor ADR-019/020 booked in the first place, so
+        exempting it told the ONE take that needs an authorisation that it needs none (QA,
+        2026-09-07). Gated at the FUNCTION, not through `check_file`: a depth log is INVALID today
+        on the unscoreable-source refusal, which would mask both the right and the wrong answer --
+        and would keep masking it until the reviewed diff that adds `depth_blob` to
+        DETECTOR_SOURCES turns this from a false LINE into a false PASS."""
+        log = flight_at(5.0, source=checker.DET_DEPTH_BLOB)
+        problems, notes = checker.gate_booked_speed(log, log["run"],
+                                                    self.dir / "live_flight_log_TEST.json")
+        blob = " ".join(problems + notes)
+        self.assertIn("NO BOOKING BOUND -- WARNING", blob)
+        self.assertIn("depth_blob", blob)
+        self.assertNotIn("not an avoidance take", blob)
+
     def test_the_NDVI_SURVEY_needs_no_booking_and_is_not_warned_at(self):
         """`detector.source == 'none'`: no dodge, nothing the forward-sensor gate authorises."""
         status, messages = self.check(flight_at(5.0, source=checker.DET_NONE))
