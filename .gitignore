@@ -60,6 +60,20 @@ secrets/
 !eval/results/testflight_gate_*.json
 !eval/results/booking_gate_*.json
 !eval/results/depth_delivery_*.json
+# The depth segmenter's evidence (2026-09-07, ADR-021): the scoring artifact whose numbers chose
+# every constant in src/fieldguard_planning/depth_segment.py, the dataset's human-readable REPORT and
+# SIX compressed canonical frames (~20 KB each) that tests/fieldguard_planning/test_depth_segmenter_
+# score_artifact.py re-runs the real segmenter on. The 85 raw float32 frames (~100 MB), labels.jsonl
+# and the per-group camera_info stay OUT of git (contents-exclude + child negation, as for clips/).
+!eval/results/depth_segmenter_score_*.json
+!eval/results/depth_dataset_20260907/
+eval/results/depth_dataset_20260907/*
+!eval/results/depth_dataset_20260907/REPORT.md
+!eval/results/depth_dataset_20260907/fixtures/
+# ...plus the exact station file the renderer consumed and the harness log carrying every readback
+# (the labels are DERIVED from these, the same lesson as the applied-pose logs above).
+!eval/results/depth_dataset_20260907/stations_rendered.json
+!eval/results/depth_dataset_20260907/CAPTURE_LOG.txt
 !eval/results/bird_drive_*.json
 # ...and the applied-pose log beside it (ADR-003 am. 6): a committed clip's bird labels are DERIVED
 # from this file, so without it those labels can never be re-verified — the same lesson as the

@@ -5,3 +5,4 @@
 - [Sensor horizon vs threat cylinder](project_sensor_horizon.md) — the nadir camera images ≤9 % of the 12 m cylinder; 0.175 s of lead on the 2026-08-25 breach; what R4 must be priced against
 - [Bird label timing](project_bird_label_timing.md) — the render lags labels 0.12-0.81 s; only the applied-pose log makes a clip scoreable, and even it leaves ~15 px (IoU 0.51 on the CPA frame)
 - [Eval harness core](reference_eval_harness.md) — eval/ pipeline, score.py's TWO refusal guards, the view-dir trick for scoring a clip without mutating it
+- [Depth segmenter](project_depth_segmenter.md) — BUILT+SCORED+FIX-ROUND 2026-09-07, ADOPT: the constants and their sweep, the median-flip margin, and the findings that correct both design notes
