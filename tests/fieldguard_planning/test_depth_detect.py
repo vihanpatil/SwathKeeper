@@ -40,8 +40,8 @@ import check_depth_mount  # noqa: E402
 from fieldguard_planning.depth_detect import (  # noqa: E402
     DEPTH_OPTICAL_TO_BODY, FORWARD_MOUNT_OFFSET_BODY_M, FORWARD_MOUNT_RPY_RAD,
     MIN_RESOLVING_RADIUS_PX, SOURCE_TAG, DepthDetectionSource, acquisition_range_m,
-    band_covered_from_m, depth_pixel_to_enu, geofence_annotator, mat_vec, optical_axis_body,
-    optical_to_body_matrix,
+    band_covered_from_m, corner_ray_ratio, depth_pixel_to_enu, geofence_annotator, mat_vec,
+    optical_axis_body, optical_to_body_matrix,
 )
 from fieldguard_planning.geofence import GeofenceMap  # noqa: E402
 from fieldguard_planning.ndvi_detect import (  # noqa: E402
@@ -161,12 +161,41 @@ class TestResolvability(unittest.TestCase):
     def test_acquisition_and_band_arithmetic(self):
         fx = (640 / 2) / math.tan(1.1033 / 2)
         self.assertAlmostEqual(acquisition_range_m(fx, 0.18), fx * 0.18 / 2.0, places=9)
-        self.assertAlmostEqual(band_covered_from_m(fx, 240.0, 6.0), 6.0 * fx / 240.0, places=9)
         # A window must exist where a bird is BOTH in frame and resolvable, or the mount is useless.
-        self.assertLess(band_covered_from_m(fx, 240.0, 6.0), acquisition_range_m(fx, 0.18))
+        self.assertLess(band_covered_from_m(fx, 240.0, 480.0, 6.0), acquisition_range_m(fx, 0.18))
         for bad in ((0.0, 0.18), (fx, 0.0), (-1.0, 0.18)):
             with self.assertRaises(ValueError):
                 acquisition_range_m(*bad)
+
+    def test_the_band_is_bound_by_the_SMALLER_half_extent_not_by_cy(self):
+        """The band has to fit ABOVE and BELOW the optical axis, so the binding half-extent is
+        min(cy, H-1-cy) -- and in a 480-row frame with cy=240 those are 240 px up and 239 px down,
+        not 240 and 240. `cy` alone published 13.00 m where the honest answer is 13.05 m: small
+        here (0.4 %, and 33 m of slack below the required horizon), unbounded in general -- at
+        cy=400 the honest range is 5x the one cy would print, and the direction is always
+        optimistic, which is the direction that matters for a coverage claim."""
+        fx = (640 / 2) / math.tan(1.1033 / 2)
+        self.assertAlmostEqual(band_covered_from_m(fx, 240.0, 480.0, 6.0),
+                               6.0 * fx / 239.0, places=9)
+        self.assertGreater(band_covered_from_m(fx, 240.0, 480.0, 6.0), 6.0 * fx / 240.0)
+        # a principal point below frame centre is bound by the rows ABOVE it
+        self.assertAlmostEqual(band_covered_from_m(fx, 400.0, 480.0, 6.0),
+                               6.0 * fx / 79.0, places=9)
+        # ...and one above centre by the rows below it -- symmetric, as the geometry is
+        self.assertAlmostEqual(band_covered_from_m(fx, 80.0, 480.0, 6.0),
+                               band_covered_from_m(fx, 399.0, 480.0, 6.0), places=9)
+        # the published value, at the live intrinsics gate D1 measured
+        self.assertAlmostEqual(band_covered_from_m(520.0058046927553, 240.0, 480.0, 6.0),
+                               13.0545, places=3)
+
+    def test_the_band_refuses_geometry_that_cannot_contain_it(self):
+        """A principal point on the frame's last row leaves zero rows on one side: the band is
+        never covered at any range, and 'never' must not come back as a division by zero or as 0.0
+        (which reads as 'covered from everywhere')."""
+        for bad in ((0.0, 240.0, 480.0, 6.0), (520.0, 0.0, 480.0, 6.0),
+                    (520.0, 479.0, 480.0, 6.0), (520.0, 240.0, 0.0, 6.0)):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                band_covered_from_m(*bad)
 
 
 def _one_box_segmenter(depth_m, box=(300.0, 220.0, 340.0, 260.0)):
@@ -346,6 +375,81 @@ class TestStaticMountGate(unittest.TestCase):
                               capture_output=True, text=True, cwd=str(Path(REPO_ROOT).parent))
         self.assertEqual(proc.returncode, 0, msg=proc.stdout + proc.stderr)
         self.assertIn("VERDICT: PASS", proc.stdout)
+
+    def test_the_published_band_pin_REJECTS_the_cy_alone_spelling(self):
+        """THE TOLERANCE IS PART OF THE PIN (QA, 2026-09-07). The gate's value check was
+        `abs(from_m - 13.05) <= 0.05`, and the `cy`-instead-of-`min(cy, H-1-cy)` spelling this
+        session removed prints 13.000145 -- 0.049855 away, INSIDE the window by 0.15 mm. So
+        `check_depth_mount.py` stayed `VERDICT: PASS -- 23 checks, 0 failed`, exit 0, printing a
+        line whose own text says the value is wrong. Five unit tests killed that mutant; the
+        OPERATOR-FACING gate -- what scripts/README.md and FORWARD_DEPTH_SENSOR.md §0 point at --
+        did not, which is the one that gets run after a mount change.
+
+        Never rest a claim ON a boundary. This test is the boundary's own check."""
+        honest = band_covered_from_m(520.0058046927555, 240.0, 480.0, 6.0)
+        naive = 6.0 * 520.0058046927555 / 240.0
+        self.assertAlmostEqual(honest, 13.0545, places=4)
+        self.assertAlmostEqual(naive, 13.0001, places=4)
+
+        def cy_alone(fy_px, cy_px, height_px, band_half_height_m):
+            return band_half_height_m * float(fy_px) / float(cy_px)
+
+        real = check_depth_mount.band_covered_from_m
+        check_depth_mount.band_covered_from_m = cy_alone
+        try:
+            ok, lines = check_depth_mount.check()
+        finally:
+            check_depth_mount.band_covered_from_m = real
+        self.assertFalse(ok, msg="the value pin cannot tell 13.000 from 13.055 -- tighten it")
+        failed = [ln for ln in lines if ln.startswith("  FAIL") and "PUBLISHED values" in ln]
+        self.assertEqual(len(failed), 1, msg="\n".join(lines))
+
+    def test_the_corner_bound_is_taken_at_the_FARTHEST_corner(self):
+        """QA probe C (2026-09-07). Under ADR-020 am. 1 this bound CLAMPS the acquisition range a
+        flight is booked on, so every asymmetry in it is optimistic in the fail-dangerous
+        direction. With the principal point off-centre the four corners are not equidistant: the
+        formula must take the far one (row 359 for cy=120 in a 480-row frame), which SHORTENS the
+        horizon. Taking cy itself would report 50.14 m where the honest bound is 44.05 m."""
+        fx = fy = 520.0058046927555
+        centred = check_depth_mount.corner_ray_ratio(640.0, 480.0, fx, fy, 320.0, 240.0)
+        self.assertAlmostEqual(60.0 / centred, 47.56, places=2)
+        off_centre = check_depth_mount.corner_ray_ratio(640.0, 480.0, fx, fy, 320.0, 120.0)
+        self.assertLess(60.0 / off_centre, 60.0 / centred)
+        self.assertAlmostEqual(60.0 / off_centre, 44.05, places=2)
+        # ...and the number the naive spelling would have printed, pinned as the thing NOT done.
+        self.assertAlmostEqual(60.0 / math.sqrt(1.0 + (320.0 / fx) ** 2 + (120.0 / fy) ** 2),
+                               50.14, places=2)
+
+    def test_there_is_exactly_ONE_corner_primitive_and_every_gate_calls_IT(self):
+        """The three gates run on three interpreters (host static, host booking, in-render) with
+        three input sources, and each used to carry its own copy of this formula. Two of the three
+        copies were wrong at once (QA probe C: `cy` for the far row, `/fx` for the vertical term),
+        so 'deliberate duplication, pinned equal by test' has been tried and measured: it drifts.
+        All three were converted to import this one symbol in the same pass (2026-09-07). One
+        function, imported. Identity, not equality -- equality cannot tell a shared implementation
+        from two that happen to agree today.
+
+        The in-render gate imports the same symbol as
+        `from fieldguard_planning.depth_detect import corner_ray_ratio` off
+        /workspace/fieldguard/src; if this test moves, that import moves with it."""
+        import predict_forward_lead as pfl
+        self.assertIs(check_depth_mount.corner_ray_ratio, corner_ray_ratio)
+        self.assertIs(pfl.corner_ray_ratio, corner_ray_ratio)
+
+    def test_the_corner_bound_divides_the_vertical_term_by_fy(self):
+        """fy == fx for this square-pixel sensor (the live camera_info agreed to 1 ULP), which is
+        exactly why a formula that used fx for both would never be caught here."""
+        square = check_depth_mount.corner_ray_ratio(640.0, 480.0, 520.0, 520.0, 320.0, 240.0)
+        tall = check_depth_mount.corner_ray_ratio(640.0, 480.0, 520.0, 260.0, 320.0, 240.0)
+        self.assertGreater(tall, square, msg="halving fy must lengthen |ray| at the corner")
+
+    def test_the_report_line_names_the_farthest_corner_and_its_pixel(self):
+        _, lines = check_depth_mount.check()
+        corner = [line for line in lines if "FRAME CORNER" in line]
+        self.assertEqual(len(corner), 1, msg="the corner bound is no longer reported exactly once")
+        self.assertIn("FARTHEST", corner[0])
+        self.assertIn("(320, 240) px", corner[0])   # the farthest corner of the committed config
+        self.assertIn("47.56 m", corner[0])
 
 
 if __name__ == "__main__":  # pragma: no cover

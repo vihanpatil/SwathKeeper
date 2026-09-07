@@ -53,6 +53,8 @@ secrets/
 !eval/results/live_flight_log_*.SAFETY_FINDING.md
 !eval/results/gate2_summary.json
 !eval/results/testflight_gate_*.json
+!eval/results/booking_gate_*.json
+!eval/results/depth_delivery_*.json
 !eval/results/bird_drive_*.json
 # ...and the applied-pose log beside it (ADR-003 am. 6): a committed clip's bird labels are DERIVED
 # from this file, so without it those labels can never be re-verified — the same lesson as the

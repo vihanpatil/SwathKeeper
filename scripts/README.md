@@ -63,10 +63,23 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   reason). Every number is imported from its owner — the bar from `PolicyParams`, the plant from
   `eval/point_mass.GUIDED_DEFAULT`, the bird speed from the birds config, the frame period from
   `config/depth_camera.json` — so the gate cannot drift from the control law. Four exit codes:
-  **0** PASS *and bookable* (live-measured `--fx`/`--acq-range-m`), **1** FAIL, **2** refusal (no
-  speed), **3** PASS but NOT bookable (config-sourced inputs; ADR-019 item 6 wants the horizon from
-  the sensor, not from prose). `--sweep LO:HI:STEP` picks a mission speed. Measured on the committed
-  config: PASS 2.0–9.0 m/s, **FAIL at 10.0** (ArduCopter's `WPNAV_SPD` default), 1.811× at 5.0.
+  **0** PASS *and bookable* (live-measured intrinsics + `--acq-range-m`), **1** FAIL, **2** refusal
+  (no speed, or any unusable/partial input), **3** PASS but NOT bookable — config-sourced inputs,
+  live intrinsics with no `--acq-range-m`, or a `--sweep` in which some row passes (ADR-019 item 6
+  wants the horizon from the sensor, not from prose). A `--sweep` where nothing passes exits **1**;
+  the unconditional property is that a sweep can never exit **0**. The live intrinsics are a **set
+  of six off ONE `camera_info`** — `--fx --fy --cx --cy --width --height` — because the frame-corner
+  far-clip bound needs the FARTHEST corner (`max(cx, W−1−cx)/fx`, `max(cy, H−1−cy)/fy`) and not the
+  principal point; part of a set is a refusal, and live `W×H` that disagrees with the config (which
+  *generates* the world SDF) is a refusal too. `--acq-optical-prefix-m` records the prefix D3's
+  bookable range was clamped from, so the schema-1.2 artifact says whether the horizon it authorised
+  was a clamped one (ADR-020 am. 1). `--sweep LO:HI:STEP` picks a mission speed. Measured on the
+  committed config: PASS 2.0–9.0 m/s, **FAIL at 10.0** (ArduCopter's `WPNAV_SPD` default), 1.811× at
+  5.0; on 2026-09-06's live numbers at 5.0 m/s, **1.780× and exit 0** at `--acq-range-m 46.0` — a
+  **best-case-scene upper bound** (no clutter, sky background, static vehicle, and no depth
+  segmenter yet; ADR-020 am. 2, where the 33.591 m breakeven is pre-registered beside it). The
+  margin is monotone in speed and in horizon; the **verdict is not** — past the 47.56 m
+  frame-corner bound a *longer* horizon FAILs (47.5 → 0, 47.6 → 1), so sweep rather than assume.
 - `check_depth_mount.py` — the HOST-side geometry gate for the ADR-019 forward mount, ~50 ms, no
   container: the SDF really carries the sensor and no dead `<camera_info_topic>`, the SDF pose ==
   the config == `depth_detect`'s importable mirror, the optical axis derived from the SDF rpy is
@@ -79,10 +92,19 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   silent no-op — vehicle parked nose-east in clear sky, `bird_0` teleported to known ranges and
   **verified by a pose readback** (≤ 0.05 m, else exit 4: a gate that cannot place its target does
   not score pixels). Gates aim/range/self-occlusion at 10 m, then sweeps for the range at which the
-  bird stops surviving the adopted morphology. It prints **two** ranges (ADR-020 am. 1): the
+  bird stops surviving the adopted morphology. **The sweep is asserted to be a sweep, twice**: no
+  two captured frames may be byte-identical, *and* every detected station's blob must carry its own
+  range — median finite depth within `TOL_M` of the bird's true Z (measured 0.02–0.16 m on the
+  2026-09-07 frames, against a 0.20 m bound). Distinctness alone cannot catch a mis-teleport, and
+  apparent size cannot either: the footprint plateaus at 4×4 px past 40 m, exactly where the booked
+  number is read. Either failure is exit 4, the harness class, and the booking line is refused. It
+  prints **two** ranges (ADR-020 am. 1): the
   *optical prefix*, which in a sky-backed scene is clip-limited and is a resolvability FLOOR, and
   the **BOOKABLE** range — the longest prefix range inside the frame-corner Z-depth horizon
-  `far/|ray_corner|`, since gz culls on Euclidean slant. Feed the **bookable** one to
+  `far/|ray_corner|`, since gz culls on Euclidean slant — computed by the **one** copy of that
+  formula, `depth_detect.corner_ray_ratio`, imported here as it is by the other two gates. It prints
+  the whole `predict_forward_lead.py` command with the six live `camera_info` values already
+  substituted, so the operator copies a set instead of retyping one. Feed the **bookable** one to
   `predict_forward_lead.py --acq-range-m` — **only from a run that exited 0**: a run that failed a
   mount gate labels the sweep *not a measurement* and refuses to print that command line, because
   the range was read through geometry the same run disproved. Exit 0 and 1 are the only codes that

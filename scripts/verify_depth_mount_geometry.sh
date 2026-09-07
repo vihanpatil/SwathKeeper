@@ -91,6 +91,27 @@
 #       aggregator takes the longest CONTIGUOUS PREFIX of detected ranges, not the maximum: one
 #       lucky far hit after a miss is aliasing, and letting it set the number would promote the
 #       booking gate to exit 0 on noise.
+#       AND THE SWEEP IS ASSERTED TO BE A SWEEP, TWICE OVER:
+#         · G105 DISTINCTNESS. Every captured frame is hashed (sha1 over the base64 image data) and
+#           any two identical frames are a harness failure, exit 4. A wedged renderer that
+#           republishes one frame would score every range off ONE capture and hand back a long,
+#           entirely false prefix -- the same shape as the run that scored a bird that never moved,
+#           with the repetition on the sensor side instead of the pose side. Until 2026-09-07 the
+#           only protection was INCIDENTAL (offaxis and near are captured AFTER the sweep, so a
+#           stuck frame would fail D2 OFFAX / D2 NEAR); incidental is not gated.
+#         · PER-STATION DEPTH EVIDENCE (2026-09-07, QA). Distinctness is necessary and NOT
+#           sufficient: fifteen different frames can still be fifteen frames of a bird that is not
+#           where the sweep thinks it is (sensor noise alone makes two captures of one scene
+#           distinct). So each station's detected component must also CARRY ITS RANGE: the median
+#           finite depth inside the blob's box must match the bird's true Z (R - 0.18 m) within
+#           TOL_M. A component in the right place with the wrong depth is a frame from another
+#           station or a mis-teleport, and `r_apparent` cannot tell either apart -- at these
+#           ranges the footprint has PLATEAUED at 4x4 px, so apparent size stops changing with
+#           range while depth does not. Any station failing this makes the sweep NOT A MEASUREMENT:
+#           the booking line is refused and the run exits 4, the harness class, because a stuck
+#           frame or a mis-teleport is a fact about the harness and not about the mount.
+#           Measured on the run-2 frames (2026-09-07): member depths track true Z to 0.02-0.16 m at
+#           every station 10..58 m, so TOL_M 0.20 m is a real bound and not a formality.
 #       D3 PRINTS TWO NUMBERS, and only one of them books a flight (ADR-020 amendment 1, after the
 #       2026-09-06 run detected at EVERY swept range out to 58 m):
 #         · the OPTICAL PREFIX — the contiguous prefix itself. In this sky-backed scene an analytic
@@ -101,9 +122,17 @@
 #           Z-depth horizon far/|ray_corner| (47.56 m on today's live fx/cy). Past that bound the
 #           SAME target away from the optical axis is culled to +inf, which is the asymmetry D2 CULL
 #           measures two gates up; a horizon has to hold at the worst pixel, not the best one.
-#       Feed the BOOKABLE number to the booking gate — ONLY from a run that exited 0:
-#           python3 scripts/predict_forward_lead.py --speed <mission> --fx <K[0]> --cy <K[5]> \
-#                   --acq-range-m <D3 BOOKABLE>
+#       Feed the BOOKABLE number to the booking gate — ONLY from a run that exited 0. The gate takes
+#       all SIX intrinsics off ONE live camera_info or none (a partial set is exit 2: a live number
+#       beside a config number is an answer assembled from two different cameras), so this script
+#       prints the whole command with the SIX LIVE VALUES already substituted, read from the
+#       camera_info this run captured:
+#           python3 scripts/predict_forward_lead.py --speed <mission> \
+#                   --fx <K[0]> --fy <K[4]> --cx <K[2]> --cy <K[5]> --width <W> --height <H> \
+#                   --acq-range-m <D3 BOOKABLE> --acq-optical-prefix-m <D3 OPTICAL PREFIX>
+#       If camera_info did NOT parse, that command line is REFUSED rather than printed with the
+#       config fallback in it: six config numbers wearing the live flags is the same lie the gate's
+#       own exit 2 exists to prevent, and it would be undetectable downstream.
 #       Host-side arithmetic predicts 46.80 m; THIS is the number ADR-019 item 6 means by "from the
 #       sensor, never from config prose". On a FAILING run the sweep still prints as a diagnostic,
 #       but the number is labelled NOT A MEASUREMENT and the command line above is refused: it was
@@ -125,8 +154,11 @@
 #   3  D1: /<world>/depth/camera_info is not the name gz derived from <topic>. The bridge yaml is
 #      bridging a topic that does not exist and will advertise silence.
 #   4  HARNESS SELF-CHECK FAILED — a stale gz server was already up, the world copy did not get its
-#      two edits, a teleport did not apply, a probe the run depends on did not answer, or the
-#      vehicle is not parked where every D2 prediction assumes.
+#      two edits, a teleport did not apply, TWO SWEEP FRAMES CAME BACK BYTE-IDENTICAL (a repeated
+#      frame is not a sweep), A SWEEP STATION'S BLOB CARRIED THE WRONG DEPTH (its median finite
+#      depth is further than TOL_M from the bird's true Z — a frame from another station, or a bird
+#      that did not go where it was told), a probe the run depends on did not answer, or the vehicle
+#      is not parked where every D2 prediction assumes.
 #      NOTHING PRINTED IS A MEASUREMENT: the scene is not the scene these gates score.
 #   124/130/143  ABORTED, NOT SCORED (a `timeout` expired, Ctrl-C, SIGTERM) — same standing as 4,
 #      but reached WITHOUT a banner, so read the code. Every abort the script can anticipate is
@@ -323,14 +355,23 @@ if ! gz topic -l | grep -qx "/${WORLD}/depth/camera_info"; then
   exit 3
 fi
 gz topic -e -t "/${WORLD}/depth/camera_info" -n 1 --json-output > "$OUT/camera_info.json" 2>/dev/null || true
-echo "[verify_depth_mount] LIVE intrinsics (feed BOTH to the booking gate, K[0] and K[5]):"
+# The booking gate takes the SIX as a SET off ONE message or refuses (exit 2), so all six print
+# here, spelled as the flags they travel on. Full repr, not rounded: fx and fy differ in the last
+# ULP on this sensor and a rounded pair would read as "square pixels, confirmed" when it is only
+# "square to 15 digits". The scoring block below re-reads the same file and prints the whole
+# command line with these values substituted.
+echo "[verify_depth_mount] LIVE intrinsics — the booking gate takes all SIX or none (its exit 2):"
 python3 -c "
-import json,sys
+import json
 try:
-    k=json.load(open('$OUT/camera_info.json'))
-    print('    fx =', k.get('intrinsics',{}).get('k',[None])[0], ' cy =', k.get('intrinsics',{}).get('k',[None]*6)[5])
+    ci=json.load(open('$OUT/camera_info.json'))
+    k=ci['intrinsics']['k']
+    print('    --fx', repr(k[0]), '--fy', repr(k[4]), '--cx', repr(k[2]), '--cy', repr(k[5]))
+    print('    --width', ci['width'], '--height', ci['height'])
 except Exception as exc:
-    print('    (could not parse camera_info:', exc, '- read', '$OUT/camera_info.json', 'by hand)')
+    print('    (could not parse camera_info:', exc, '- read', '$OUT/camera_info.json', 'by hand.')
+    print('     The booking command line will be REFUSED: config numbers wearing the live flags')
+    print('     are exactly what the booking gate refuses a partial set to prevent.)')
 "
 
 # --- pose readback: the only thing that knows whether a teleport happened -------------------------
@@ -406,17 +447,55 @@ capture() {  # $1 = label, $2 = what the bird is doing in this frame
     "the publisher stopped; ${OUT}/frame_$1.json is truncated or empty. Check ${OUT}/gz.log."
 }
 
+distinct_frames() {  # $@ = frame json files. Prints how many are DISTINCT; returns 1, naming the
+                     # colliding pair, if any two carry the same pixels. A repeated frame means the
+                     # renderer wedged and every range after it was scored off one capture.
+                     # The delimiter is PYHASH and not PYEOF on purpose: the host test indexes the
+                     # PYEOF heredocs positionally (0 = pose_check's, 1 = the scoring block's).
+  python3 - "$@" <<'PYHASH'
+import hashlib, json, sys
+seen = {}
+for path in sys.argv[1:]:
+    try:
+        data = json.load(open(path))["data"]
+    except Exception as exc:
+        print(f"{path} is unreadable or carries no image data ({exc})")
+        raise SystemExit(1)
+    digest = hashlib.sha1(data.encode()).hexdigest()
+    if digest in seen:
+        print(f"{path} is byte-identical to {seen[digest]} (sha1 {digest[:12]})")
+        raise SystemExit(1)
+    seen[digest] = path
+print(len(seen))
+PYHASH
+}
+
 # DepthCameraSensor::Update returns early when NOTHING is subscribed (gz-sensors8), so each frame is
 # produced BECAUSE of this subscription. The first sleep also lets ogre2 warm up on llvmpipe.
 sleep 5
 vehicle_check "at world-up"
 
 # --- the sweep (D3) + the 10 m on-axis capture (D2) ----------------------------------------------
+SWEEP_N=0
+SWEEP_FRAMES=""
 for R in $SWEEP_RANGES; do
   E=$(python3 -c "print(f'{${CAM_E} + $R:.4f}')")
   teleport "$E" "${PARK_N}.0" "${PARK_U}.0"
   capture "$R" "Z-depth ${R} m from the camera at x=${CAM_E}"
+  SWEEP_N=$((SWEEP_N + 1))
+  SWEEP_FRAMES="$SWEEP_FRAMES $OUT/frame_$R.json"
 done
+
+# The list is built from the loop that captured it (not from a glob), so "all distinct" also means
+# "all present". Unquoted on purpose: it is a whitespace-separated list of paths under $OUT.
+if ! DISTINCT="$(distinct_frames $SWEEP_FRAMES)"; then
+  harness_fail "the sweep frames are NOT all distinct — ${DISTINCT}. A wedged renderer repeating" \
+               "one frame is not a sweep: every range would be scored off ONE capture, and D3" \
+               "would report a contiguous prefix that measures the stuck frame rather than the" \
+               "target. Check ${OUT}/gz.log."
+fi
+echo "[verify_depth_mount] sweep frames: ${DISTINCT} distinct of ${SWEEP_N} captured (sha1 over" \
+     "each frame's base64 image data) — no frame was repeated"
 
 # --- the off-axis capture (D2-OFFAXIS) ------------------------------------------------------------
 # Placed from the LIVE intrinsics if they parsed, else from the config fx; the python pass recomputes
@@ -443,6 +522,13 @@ python3 - "$OUT" "$D2_RANGE" "$TOL_PX" "$TOL_M" "$SWEEP_RANGES" "$OFFAXIS_Z" "$O
 import base64, json, math, sys
 sys.path.insert(0, "/workspace/fieldguard/src")
 import numpy as np
+# The corner bound is IMPORTED, never re-derived. It was inlined here until 2026-09-07 and was the
+# THIRD copy of the formula and the wrong one: it read the principal point as w/2 and cy, divided
+# both terms by fx, and never touched K[2] or K[4] at all. Each of those fails DANGEROUS -- an
+# off-centre principal point makes the near corner give a LONGER, unmeasurable horizon -- and this
+# bound is what CLAMPS the acquisition range a flight gets booked on (ADR-020 am. 1). The primitive
+# lives beside `depth_pixel_to_enu`, which is the consumer that eats the error.
+from fieldguard_planning.depth_detect import acquisition_range_m, corner_ray_ratio
 from fieldguard_planning.ndvi_detect import DEFAULT_MAX_AREA, DEFAULT_MIN_AREA, detect_blobs
 
 out = sys.argv[1]
@@ -486,17 +572,30 @@ def rec(name, good, detail):
 # ---------------- D2: mount geometry, from the close on-axis capture ------------------------------
 d = load(int(d2_range))
 h, w = d.shape
-# fx AND cy come off the SAME live camera_info or neither does -- the booking gate's own rule
-# (predict_forward_lead refuses a live fx against a config cy), and the corner bound below needs
-# both. The source is carried into the print rather than assumed: a corner bound computed from the
-# config fallback is arithmetic, not a measurement, and the reader has to be able to tell.
+# ALL SIX come off the SAME live camera_info or NONE of them does -- the booking gate's own rule
+# (predict_forward_lead refuses a partial set, exit 2), and the corner bound below needs all six.
+# The source is carried into the print rather than assumed: a corner bound computed from the config
+# fallback is arithmetic, not a measurement, and the reader has to be able to tell. `intr_live` is
+# what decides whether this run is entitled to print a booking command line at all.
 try:
-    k = json.load(open(f"{out}/camera_info.json"))["intrinsics"]["k"]
-    fx, cy_px = float(k[0]), float(k[5])
-    fx_source = "live camera_info"
-except Exception:
-    fx, cy_px = (w / 2.0) / math.tan(1.1033 / 2.0), h / 2.0
-    fx_source = "config hfov fallback -- camera_info did NOT parse"
+    ci = json.load(open(f"{out}/camera_info.json"))
+    kk = ci["intrinsics"]["k"]
+    fx, fy = float(kk[0]), float(kk[4])
+    cx_px, cy_px = float(kk[2]), float(kk[5])
+    ci_w, ci_h = float(ci["width"]), float(ci["height"])
+    # Called for its REFUSAL, here where the fallback is still reachable: a camera_info that parses
+    # but carries a degenerate set (fx 0, a 0-px frame) would otherwise raise out of the corner
+    # bound 200 lines below and abort at exit 1 -- the code the exit table sells as a MOUNT verdict.
+    corner_ray_ratio(ci_w, ci_h, fx, fy, cx_px, cy_px)
+    intr_live = True
+    intr_source = "live camera_info (fx=K[0], fy=K[4], cx=K[2], cy=K[5], width, height)"
+except Exception as exc:
+    fx = fy = (w / 2.0) / math.tan(1.1033 / 2.0)
+    cx_px, cy_px = w / 2.0, h / 2.0
+    ci_w, ci_h = float(w), float(h)
+    intr_live = False
+    intr_source = (f"CONFIG FALLBACK -- camera_info did NOT parse ({exc}): fx=fy from hfov 1.1033 "
+                   f"rad, cx/cy at the frame centre, WxH from the frame itself")
 finite = np.isfinite(d)
 if not finite.any():
     print("[verify_depth_mount] D2 FAIL: every pixel is non-finite -- nothing in the frustum at all")
@@ -525,7 +624,10 @@ rec("D2 AIM  ", err_px <= tol_px,
 # ---------------- D2-OFFAXIS: the reading is Z-DEPTH, not slant range -----------------------------
 doa = load("offaxis")
 fin_oa = np.isfinite(doa)
-ratio = math.sqrt(1.0 + (oa_du / fx) ** 2 + (oa_dv / fx) ** 2)
+# Vertical term over fy, horizontal over fx. They agree to 1 ULP on this sensor (square pixels),
+# and the arithmetic must not silently depend on that staying true -- the same three-way rule
+# `corner_ray_ratio` is written down for.
+ratio = math.sqrt(1.0 + (oa_du / fx) ** 2 + (oa_dv / fy) ** 2)
 expect_z = oa_z - BIRD_R / ratio                 # near surface, expressed as Z-depth
 expect_slant = oa_z * ratio - BIRD_R             # what a slant-range sensor would report
 boxes_oa = blind_boxes(doa)
@@ -561,7 +663,7 @@ rec("D2 FAR  ", inf_frac > 0.0,
 vv, uu = np.nonzero(finite)
 zz = d[finite]
 i = int(np.argmax(zz))
-ray = math.sqrt(1.0 + ((uu[i] - w / 2.0) / fx) ** 2 + ((vv[i] - h / 2.0) / fx) ** 2)
+ray = math.sqrt(1.0 + ((uu[i] - cx_px) / fx) ** 2 + ((vv[i] - cy_px) / fy) ** 2)
 rec("D2 CULL ", abs(float(zz[i]) - FAR_M / ray) <= 1.0,
     f"greatest finite Z-depth {float(zz[i]):.2f} m at pixel ({uu[i]},{vv[i]}) where |ray| = "
     f"{ray:.3f}: matches far/|ray| = {FAR_M / ray:.2f} m, NOT the on-axis {FAR_M:g} m -- the far "
@@ -583,16 +685,57 @@ if not ok:
     print("    !! A MOUNT GATE FAILED ABOVE. What follows is DIAGNOSTIC ONLY -- do not write it")
     print("       down, and do not carry it to the booking gate.")
 detected = []
+depth_bad = []          # stations whose blob is in the right place carrying the WRONG range
 for r in ranges:
     dr = load(int(r))
     bs = blind_boxes(dr)
     hit = [b for b in bs
            if abs(0.5 * (b[0] + b[2]) - w / 2.0) <= 20 and abs(0.5 * (b[1] + b[3]) - h / 2.0) <= 20]
     span = (0.0 if not hit else 0.25 * ((hit[0][2] - hit[0][0]) + (hit[0][3] - hit[0][1])))
+    # PER-STATION DEPTH EVIDENCE. Distinctness (G105, above) proves the frames DIFFER; it cannot
+    # prove each one is of THIS station -- sensor noise alone makes two captures of one scene
+    # distinct. So the component has to carry its range: the median FINITE depth inside its box
+    # (boxes are half-open, and +inf background inside the box is excluded by the mask) against the
+    # bird's true near-surface Z. r_apparent cannot substitute: the footprint has PLATEAUED at
+    # 4x4 px from 40 m out, so apparent size stops discriminating range exactly where the booking
+    # number is read. A MISSED station is not checked -- a miss is the horizon, which is the thing
+    # being measured, not a harness fault.
+    want_z = r - BIRD_R
+    z_med = float("nan")
+    if hit:
+        x0, y0, x1, y1 = (int(v) for v in hit[0])
+        patch = dr[y0:y1, x0:x1]
+        member = patch[np.isfinite(patch)]
+        if member.size:
+            z_med = float(np.median(member))
+    z_ok = bool(hit) and math.isfinite(z_med) and abs(z_med - want_z) <= tol_m
+    if hit and not z_ok:
+        depth_bad.append((r, z_med, want_z))
     print(f"    {r:5.1f} m  {'DETECTED' if hit else 'missed  '}  "
-          f"r_apparent {span:5.2f} px (pinhole predicts {fx * BIRD_R / max(r, 1e-9):5.2f} px)"
+          f"r_app {span:5.2f} px (pinhole {fx * BIRD_R / max(r, 1e-9):5.2f})  "
+          f"z_med {z_med:6.2f} vs {want_z:6.2f} m{'' if not hit or z_ok else '  <<< WRONG DEPTH'}"
           f"   bird read back at ({bird_pose(int(r))})")
     detected.append(bool(hit))
+
+# The sweep is scored ONLY if every detected station carried its own range. This runs before the
+# prefix is computed, so a bad sweep can reach neither the bookable number nor the command line.
+if depth_bad:
+    print("[verify_depth_mount] FAIL (harness self-check): the D3 sweep is NOT A MEASUREMENT --")
+    for r, zm, wz in depth_bad:
+        gap = abs(zm - wz)
+        print(f"    {r:5.1f} m station: blob median depth {zm:.3f} m vs the bird's true Z "
+              f"{wz:.3f} m -- {gap:.3f} m apart (tol {tol_m:.2f} m), bird read back at "
+              f"({bird_pose(int(r))})")
+    print("    A component at the principal point carrying the WRONG depth is a frame from ANOTHER")
+    print("    station, or a bird that did not go where it was told. Frame distinctness cannot see")
+    print("    either (noise makes any two captures differ) and r_apparent cannot either (the")
+    print("    footprint plateaus at 4x4 px past 40 m). A contiguous prefix built from those")
+    print("    stations would be a horizon measured off the wrong scene, and it is the number that")
+    print("    authorises a flight.")
+    print("[verify_depth_mount] exit 4 — NOTHING PRINTED IS A MEASUREMENT. This is the HARNESS")
+    print("                     class, not a mount verdict: a stuck frame or a mis-teleport says")
+    print("                     nothing about the mount. Check /tmp/depthcheck/gz.log, then re-run.")
+    raise SystemExit(4)
 
 # CONTIGUOUS PREFIX, not max(): one lucky hit beyond a miss is aliasing, and letting it set the
 # horizon would promote the booking gate to exit 0 on noise. The reported number is the longest
@@ -619,18 +762,26 @@ if gaps:
 # deliberately taken at a SWEPT value: the bound itself is a computed number at which nothing was
 # ever measured to be detectable, and the quantisation rounds the horizon DOWN, i.e. toward less
 # lead time -- conservative by construction.
-corner_ray = math.sqrt(1.0 + ((w / 2.0) / fx) ** 2 + (cy_px / fx) ** 2)
+corner_ray = corner_ray_ratio(ci_w, ci_h, fx, fy, cx_px, cy_px)
 far_corner = FAR_M / corner_ray
 acq_book = max([r for r, seen in zip(ranges, detected) if seen and r <= acq and r <= far_corner],
                default=0.0)
 above = [r for r in ranges if r > acq_book]
 if ok:
+    # The pinhole x morphology bound is CORROBORATION, not a term in `acq_book` -- see the comment
+    # above and ADR-020 am. 2's four-bound table. Derived from the LIVE fx rather than printed as
+    # the literal 46.80 it was until 2026-09-07: a hardcoded corroborating number goes stale
+    # silently the first time this mount's optics change, and a stale number beside a live one is
+    # the two-cameras-in-one-answer defect in miniature.
     print(f"[verify_depth_mount] D3 OPTICAL PREFIX: {acq:.1f} m -- longest CONTIGUOUS prefix of "
-          f"detected ranges (host-side pinhole bound 46.80 m). Resolvability, NOT a horizon.")
+          f"detected ranges (host pinhole x morphology bound, from this run's fx: "
+          f"{acquisition_range_m(fx, BIRD_R):.2f} m -- corroboration, NOT a term in the bookable "
+          f"number below). Resolvability, NOT a horizon.")
     print(f"[verify_depth_mount] D3 MEASURED acquisition range, BOOKABLE: {acq_book:.1f} m -- the "
           f"longest prefix range inside the {far_corner:.2f} m frame-corner Z-depth horizon "
-          f"({FAR_M:g} m / |ray_corner| {corner_ray:.3f}), fx {fx:.3f} / cy {cy_px:.1f} px from "
-          f"{fx_source}.")
+          f"({FAR_M:g} m / |ray_corner| {corner_ray:.3f} at the corner FARTHEST from the principal "
+          f"point), from fx {fx:.3f} / fy {fy:.3f} / cx {cx_px:.1f} / cy {cy_px:.1f} px over "
+          f"{ci_w:.0f}x{ci_h:.0f}, all from {intr_source}.")
     if above and acq_book > 0.0:      # `0.0 is the last swept value under the bound` is nonsense
         print(f"    SWEEP QUANTUM: the next swept range is {above[0]:.1f} m, so {acq_book:.1f} is "
               f"the last SWEPT value under the bound, not the bound. The true horizon lies in "
@@ -640,9 +791,21 @@ if ok:
         print(f"    NOTE: the optics still resolved the bird at {acq:.1f} m, past the corner "
               f"horizon. That excess is NOT bookable, and raising clip_far_m to chase it walks "
               f"the finite-ground band UP into the +/-6 m threat band -- see ADR-020 am. 1.")
-    if acq_book > 0.0:
-        print(f"    python3 scripts/predict_forward_lead.py --speed <mission> "
-              f"--fx <K[0]> --cy <K[5]> --acq-range-m {acq_book:.1f}")
+    if acq_book > 0.0 and intr_live:
+        # The SIX are substituted from THIS run's camera_info, at full repr: the gate refuses a
+        # partial set (exit 2) and a hand-retyped intrinsic is how a partial set happens. fx and fy
+        # differ in the last ULP on this sensor, so rounding them would print two numbers that are
+        # equal when the sensor's are not. Only --speed stays a placeholder -- it is the one input
+        # that is a decision rather than a measurement.
+        print(f"    python3 scripts/predict_forward_lead.py --speed <mission> \\")
+        print(f"        --fx {fx!r} --fy {fy!r} --cx {cx_px!r} --cy {cy_px!r} \\")
+        print(f"        --width {ci_w:.0f} --height {ci_h:.0f} \\")
+        print(f"        --acq-range-m {acq_book:.1f} --acq-optical-prefix-m {acq:.1f}")
+    elif acq_book > 0.0:
+        print("    REFUSING to print a booking command line: the intrinsics are the CONFIG "
+              "FALLBACK, not this run's camera_info. Six config numbers wearing the live flags "
+              "would pass the gate's set check and answer ADR-019 item 6 with prose. Fix "
+              f"{out}/camera_info.json (it is captured right after the D1 check) and re-run.")
     else:
         print("    REFUSING to print a booking command line: no swept range was both in the "
               "contiguous prefix AND inside the frame-corner horizon, so this run measured no "

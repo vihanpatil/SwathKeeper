@@ -55,8 +55,13 @@ python3 -m pytest tests -q
 ```
 
 ```
-877 passed, 2 skipped in 20.76s
+1258 passed, 1 failed, 2 skipped in 68.95s      # measured 2026-09-07
 ```
+
+**The 1 failure is expected and deliberate** — `tests/test_ci_evidence_gate.py` is red on the
+committed 2026-08-25 breach take, and a run where it is the ONLY failure is this tree's green
+state. `tests/README.md` is the one home for these totals; re-run all three of its commands and
+re-quote all three if you change the suite.
 
 **The floor, measured:** `numpy==2.5.1` publishes nothing for Python < 3.11, so on this host's stock
 `python3` (3.9.6) the install stops at `ERROR: No matching distribution found`. Use a 3.11+

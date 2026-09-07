@@ -21,6 +21,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
@@ -1910,14 +1911,31 @@ class TestMarkerSemantics(Harness):
 # 13. CLI: exit codes, --truth plumbing, and every measured number reaching the operator
 # ================================================================================================
 class TestCli(Harness):
+    """`checker.main` calls `check_file` with its DEFAULT `results_dir`, i.e. the real
+    `eval/results`, so truth auto-discovery here reads whatever flight artefacts happen to be
+    committed. That is right for the shipped CLI and wrong for a unit test: on 2026-09-06 two
+    test-flight `bird_drive_*` files landed in `eval/results` and turned this class red without
+    anything in the gate changing. `self.main` binds the discovery directory to the harness tmp dir
+    and leaves everything these tests are actually about -- argument parsing, exit codes, the
+    stdout/stderr split -- running unmodified."""
+
+    def main(self, argv):
+        real = checker.check_file
+
+        def isolated(path, truth=None, results_dir=None):
+            return real(path, truth=truth, results_dir=self.dir)
+
+        with mock.patch.object(checker, "check_file", isolated):
+            return checker.main(argv)
+
     def test_exit_codes_and_the_truth_flag_end_to_end(self):
         recs = truth_records([(t, {"bird_0": (50.0, 50.05, CRUISE_Z)}) for t in TRUTH_SIM])
         truth = self.write_truth(recs)
         p = self.write_log(make_log(), PINNED_LOG)
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            self.assertEqual(checker.main([str(p), "--truth", str(truth)]), 1)   # pin, no marker
+            self.assertEqual(self.main([str(p), "--truth", str(truth)]), 1)   # pin, no marker
             self.mark(PINNED_LOG)
-            self.assertEqual(checker.main([str(p), "--truth", str(truth)]), 0)   # acknowledged
+            self.assertEqual(self.main([str(p), "--truth", str(truth)]), 0)   # acknowledged
 
     def test_a_valid_schema_2_log_prints_every_measured_number_not_just_the_headline(self):
         recs = truth_records([(t, {"bird_0": (50.0, 58.0, CRUISE_Z)}) for t in TRUTH_SIM])
@@ -1925,7 +1943,7 @@ class TestCli(Harness):
         p = self.write_log(make_log())
         out = io.StringIO()
         with redirect_stdout(out), redirect_stderr(io.StringIO()):
-            self.assertEqual(checker.main([str(p), "--truth", str(truth)]), 0)
+            self.assertEqual(self.main([str(p), "--truth", str(truth)]), 0)
         printed = out.getvalue()
         for needle in ("gt_cpa_m 8.0000", "truth coverage 3/3", "clock gz_clock_stream",
                        "n_stale_dropped=0", "ESTIMATOR CHECK"):
@@ -1935,7 +1953,7 @@ class TestCli(Harness):
         p = self.write_log(make_log())
         err = io.StringIO()
         with redirect_stdout(io.StringIO()), redirect_stderr(err):
-            self.assertEqual(checker.main([str(p)]), 1)
+            self.assertEqual(self.main([str(p)]), 1)
         self.assertIn("no truth track", err.getvalue())
 
     def test_the_gate_stays_stdlib_only(self):

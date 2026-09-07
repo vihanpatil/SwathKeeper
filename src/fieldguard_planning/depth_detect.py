@@ -225,18 +225,63 @@ def acquisition_range_m(fx_px: float, object_radius_m: float,
     return fx_px * object_radius_m / min_radius_px
 
 
-def band_covered_from_m(fy_px: float, cy_px: float, band_half_height_m: float) -> float:
+def band_covered_from_m(fy_px: float, cy_px: float, height_px: float,
+                        band_half_height_m: float) -> float:
     """Nearest range at which the full +/-`band_half_height_m` threat band fits in the frame.
 
-    A level forward camera's vertical half-extent at range R is R * cy / fy, so the band fits for
-    R >= band_half_height * fy / cy. With this mount (fy 520.006, cy 240) and ADR-019's +/-6 m band
-    that is 13.00 m -- comfortably inside the 17.8-38.8 m horizon the replay requires, which is the
-    reason the mount carries no down-tilt (see config/depth_camera.json mount.tilt_rejected_note).
-    Nearer than this the band is wider than the frustum, which is a NEAR-field limit, not a horizon
-    limit: by then the maneuver is already committed."""
-    if fy_px <= 0.0 or cy_px <= 0.0:
-        raise ValueError("band_covered_from_m needs positive fy and cy")
-    return band_half_height_m * fy_px / cy_px
+    The band is SYMMETRIC about the optical axis, so it must fit ABOVE and BELOW it, and the
+    binding half-extent is therefore the SMALLER of the two -- `min(cy, H-1-cy)` px, not `cy`. A
+    level camera's vertical extent at range R is R * (that half-extent) / fy, so the band fits for
+    R >= band_half * fy / min(cy, H-1-cy). With this mount (fy 520.006, cy 240, H 480: 240 rows
+    above the axis, 239 below it) and ADR-019's +/-6 m band that is 13.05 m -- comfortably inside
+    the 17.8-38.8 m horizon the replay requires, which is the reason the mount carries no
+    down-tilt (see config/depth_camera.json mount.tilt_rejected_note). Nearer than this the band
+    is wider than the frustum, which is a NEAR-field limit, not a horizon limit: by then the
+    maneuver is already committed.
+
+    `cy` alone published 13.00 m here -- 0.4 % optimistic against 33 m of slack, i.e. harmless on
+    THIS mount and unbounded in general: at cy=400 in the same frame the honest range is five
+    times the one `cy` prints, and the error always runs the same way (claiming the band is
+    covered nearer than it is). The frame's last row is H-1, not H."""
+    half_px = min(float(cy_px), float(height_px) - 1.0 - float(cy_px))
+    if fy_px <= 0.0 or half_px <= 0.0:
+        raise ValueError(
+            f"band_covered_from_m needs a positive fy and a principal point with rows on BOTH "
+            f"sides of it (fy {fy_px!r}, cy {cy_px!r} in {height_px!r} rows -> smaller half-extent "
+            f"{half_px:g} px). A band that fits on one side only is never covered, at any range.")
+    return band_half_height_m * fy_px / half_px
+
+
+def corner_ray_ratio(width_px: float, height_px: float, fx: float, fy: float,
+                     cx: float, cy: float) -> float:
+    """|ray| / z at the image corner FARTHEST from the principal point.
+
+    gz's far cull is on the EUCLIDEAN length of the camera-space point while the value it stores is
+    the pinhole Z-depth, so the Z-depth horizon at a pixel is far/|ray| there -- shortest at the
+    corner furthest from the principal point. Three things in this formula are deliberate, and each
+    of them fails DANGEROUS the other way (QA probe C, 2026-09-07), because under ADR-020 am. 1 this
+    bound is what CLAMPS the acquisition range a flight gets booked on:
+      * max(cx, W-1-cx) and max(cy, H-1-cy), NOT cx and cy. With an off-centre principal point the
+        four corners are not equidistant and the nearer one gives a LONGER, unmeasurable horizon:
+        at cy=120 in a 480-row frame the honest bound is 44.05 m where cy alone says 50.14 m.
+      * the extents are W-1 and H-1 -- the last column of a 640-wide frame is 639, not 640.
+      * the vertical term divides by fy and the horizontal by fx. They are equal for this sensor
+        (square pixels; the live camera_info agreed with the config fx to 1 ULP on 2026-09-06) and
+        the arithmetic must not silently depend on that staying true.
+
+    THE ONE COPY. Three gates need this number from three different input sources -- the host
+    static gate (config), the host booking gate (live camera_info) and the in-render gate (the
+    frame's own camera_info, inside the container off /workspace/fieldguard/src) -- and it lived as
+    three hand-written copies until two of them were measured wrong at once. It lives here, beside
+    `acquisition_range_m` and `band_covered_from_m`, because those are the other two optics
+    primitives the booking gate is assembled from, and because `src/` is the only tree all three
+    gates can import."""
+    if fx <= 0.0 or fy <= 0.0 or width_px < 2.0 or height_px < 2.0:
+        raise ValueError(f"corner_ray_ratio needs positive fx/fy and a frame at least 2 px on a "
+                         f"side, got fx={fx!r} fy={fy!r} {width_px!r}x{height_px!r}")
+    return math.sqrt(1.0
+                     + (max(cx, width_px - 1.0 - cx) / fx) ** 2
+                     + (max(cy, height_px - 1.0 - cy) / fy) ** 2)
 
 
 # --------------------------------------------------------------------------------------------

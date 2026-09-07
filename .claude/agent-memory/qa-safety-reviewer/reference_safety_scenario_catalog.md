@@ -456,3 +456,60 @@ where render, morphology and the 46.80 m pinhole bound all agree — see G102. R
 match to +/-1 px from 10 to 46 m, then diverge qualitatively; the bird really is a 0.18 m analytic
 `<sphere>` (D2 RANGE 9.821 vs 9.820, 18 px at 10 m both), so the divergence is an unexplained
 AA/rasterisation effect, not a geometry mismatch. **Any claim that rests on that regime is unproven.**
+
+## The booking-gate probe battery + the depth-gate mutation harness (2026-09-07)
+
+**Probe battery** (host, `PYTHONDONTWRITEBYTECODE=1`, no renderer). Full live set is
+`--fx 520.0058046927554 --fy 520.0058046927553 --cx 320 --cy 240 --width 640 --height 480`.
+Expected exits after the probe-C round: probe-C repro (`--cy 120 --acq-range-m 50.0`) **1**;
+partial set **2**; live W/H != config **2**; `--acq-range-m` only **3**; prefix < acq **2**; prefix
+without acq **2**; acq 58 **1** on `acquisition_within_corner_far_clip` ALONE; acq 100 / inf **2**;
+non-integral width **2**; speed 0 / nan **2**; config `--sweep` **3**; live mixed-row sweep **3**;
+live all-pass sweep **0** (G112). The one that still exits **0 wrongly**: `--cy 400
+--acq-range-m 38.0` (G108).
+
+**Mutation harness.** Copy `scripts tests src config sim docs` into the scratch dir (NOT
+`eval/results` — 13 GB) and run
+`tests/fieldguard_planning/test_predict_forward_lead.py tests/test_verify_depth_mount_geometry.py
+tests/fieldguard_planning/test_depth_detect.py` (152 tests, ~8 s). Those three files are the ONLY
+tests in the repo that mention the four depth gates. Results 2026-09-07 — killed: naive `cx/cy`
+corner (5 red), `/fx` vertical term (1), `if False` on the W/H cross-check (3), sweep
+`all_pass`->`any_pass` (1), delete `distinct_frames` guard (2), `corner_ray_ratio` vertical term
+->`/fx` i.e. the two Python copies diverging (1), honest `min(cy,H-1-cy)` band (5 — the 13.00 m pin
+set). **SURVIVED: both mutations of the `.sh` scoring block** (`corner_ray = 1.0`; dropping
+`and r <= far_corner` from `acq_book`) — see G107. Also worth reusing: fuzz the two Python corner
+copies against each other over 20k random (W,H,fx,fy,cx,cy); they agree to 0.0 exactly, the `.sh`
+copy disagrees by up to 65.6 %.
+
+**Suite baselines 2026-09-07 (round 2, the commissioning-close tree — quote these, they moved).**
+`PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests -q` -> **1254 passed, 1 failed, 2 skipped**
+(the only red is the pre-registered `tests/test_ci_evidence_gate.py::TestLiveFlightLogGateHasEvidence
+::test_step_passes_on_the_committed_evidence`, the 2026-08-25 breach take standing INVALID).
+`python3 -m unittest discover -s tests/fieldguard_planning` -> **Ran 1026, OK (skipped=2)**.
+`python3 -m unittest discover -s tests -p 'test_*.py'` -> **Ran 231, FAILED (failures=1)** — the same
+one. `python3 scripts/check_depth_mount.py` -> **PASS 23/23, exit 0**. `bash -n` on the in-render
+gate -> clean.
+
+**Mutation harness, round 2 (2026-09-07).** `rsync -a --exclude='eval/results/clips/' --exclude=.git`
+the repo into scratch (491 MB with clip frames stripped; the full tree is 14 GB, 13 of it clips),
+then re-`rsync` only `poses.jsonl|meta.json|heatmap/**` back under `eval/results/clips/`. The four
+files worth running are `tests/test_verify_depth_mount_geometry.py`,
+`tests/fieldguard_planning/{test_depth_detect,test_predict_forward_lead,test_booking_gate_artifact}.py`
+= **375 tests, ~12 s**. NOTE: in that stripped copy the FULL suite baselines at **39 failed / 1216
+passed** (missing clip frames), so only per-module counts are meaningful there.
+Killed: `.sh` depth tolerance -> 100 m (2 red, incl. the synthetic driver); `depth_bad` refusal block
+deleted (3); `distinct_frames` neutered (2); `.sh` corner back to the inline `(w/2)/fx, cy/fx` (3, all
+STATIC — a behavioural kill is impossible on this symmetric sensor); booking line printed on the
+config fallback (2); band `min()` -> `cy` (5); corner vertical `/fy` -> `/fx` (1); corner `max()` ->
+`cx,cy` (1); sweep returns 0 on live+any_pass (3); row `bookable` left True (1); `validate_report`
+sweep recursion deleted (1). **SURVIVOR: dropping `and acq_range_m is not None` from
+`predict_forward_lead.evaluate`'s `bookable` — zero tests red, whole suite (G116).**
+
+**The synthetic in-render driver is now the model to copy.**
+`tests/test_verify_depth_mount_geometry.py::TestTheScoringBlockOnSyntheticFrames` extracts the real
+scoring heredoc by PYEOF index and drives it host-side on ray-traced spheres (+inf sky, -inf near,
+one painted `far/|ray|` pixel so D2 CULL has ground). It reproduces the live run's own D2 CULL
+58.01 m at (289,374) |ray| 1.034 and the 47.56 m corner bound from first principles, and it is the
+only thing in the repo that turns an in-render mutation red BEHAVIOURALLY. Its red case (station 20
+showing a 30 m frame — centred, one component, distinct, so G105 is blind) is exactly the case
+per-station depth evidence was added for.

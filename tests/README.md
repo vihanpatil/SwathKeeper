@@ -6,13 +6,17 @@ Every bug QA finds (missed detection, silently-skipped coverage cell, geofence b
 
 ## How to run (all three work, from repo root)
 
-This file is the **one home** for the suite totals; `README.md` and `SETUP.md` quote them from here.
-Measured on the verified host 2026-08-26 — re-run all three and re-quote if you change any of them.
+This file is the **one home** for the suite totals. Measured on the verified host **2026-09-07** —
+re-run all three commands and re-quote **every** quoter if you change any of them. The quoters, so
+a re-quote can be complete rather than partial: `README.md` (evidence table),
+`docs/drafts/README_FULL.md` (same row), `SETUP.md` §(b). *(They all went stale together on the
+2026-08-26 figures through the depth-commissioning sessions — four copies of one measured
+invariant, and nothing that fails when they disagree. Re-quote all four or none.)*
 
 ```bash
-python3 -m unittest discover -s tests/fieldguard_planning   # 988 tests, OK (skipped=2) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # 150 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1135 passed, 1 FAILED, 2 skipped, 0 xfail
+python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1029, OK (skipped=2) — the original CI invocation
+python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 232 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1258 passed, 1 FAILED, 2 skipped, 0 xfail
 ```
 
 **The 1 failure is deliberate and load-bearing:** `test_ci_evidence_gate…test_step_passes_on_the_

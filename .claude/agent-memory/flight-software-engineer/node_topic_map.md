@@ -262,6 +262,10 @@ dataclass default that `check_live_flight_log.py` reads as its bar. Unknown knob
   confirm dodge->hold->resume still completes + RTF doesn't collapse — a regression check, not a
   new ADR-007 claim.
 
+## Forward depth camera (ADR-019/020, live 2026-09-06)
+The second aperture — `/fg/depth/image` + `/fg/depth/camera_info`, its clip asymmetry, and the
+booking gate that authorises a dodge flight: see [[forward-depth-booking-gate]].
+
 ## `test-flight` gate parameters (as of 2026-08-19 — verify against `scripts/fly_pipeline.sh` before quoting)
 - The gate's LAST check is an **evidence-yield floor**: `TF_MIN_FRAMES=12`, `TF_MIN_CELLS=40`,
   read from the clip's `meta.json` (`num_frames`) and `heatmap/heatmap.json` (`cells_imaged`).
