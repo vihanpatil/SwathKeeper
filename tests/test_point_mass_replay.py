@@ -837,7 +837,8 @@ class TestTuningScanner(unittest.TestCase):
 
     The scanner is the only thing standing between "these are firmware defaults" and a study that
     is silently void, and this project sets parameters at the MAVProxy prompt -- which the first
-    version did not look at, and which is exactly where ADR-017's `param set WPNAV_SPD` will land."""
+    version did not look at, and which is exactly where ADR-017's speed doctrine landed on
+    2026-09-07, as a booked `WP_SPD` in the fly recipe."""
 
     def test_a_planted_parm_override_is_found(self):
         with tempfile.TemporaryDirectory() as d:
@@ -878,13 +879,59 @@ class TestTuningScanner(unittest.TestCase):
         self.assertEqual(scan["overrides"], [])
         self.assertIn("CHECKED at run time", scan["statement"])
 
-    def test_the_real_repo_is_clean_and_carries_the_sitl_warrant(self):
+    def test_a_planted_UNKNOWN_wp_parameter_is_found_and_is_not_warranted(self):
+        """The `WP_` prefix, and the reason the warrant is on a KEY and never on a path: correcting
+        the launcher's booked line to `param set WP_SPD` (QA G135) would have made a scanner that
+        only knew `WPNAV_` go silent on a live override. Every OTHER WP_ key must still fail."""
+        with tempfile.TemporaryDirectory() as d:
+            scripts = Path(d) / "scripts"
+            scripts.mkdir()
+            (scripts / "fly.sh").write_text("param set WP_SPD 5\nparam set WP_RADIUS_M 9\n")
+            scan = RP._tuning_override_scan(Path(d))
+        self.assertIn("WP_SPD", " ".join(scan["overrides"]))
+        self.assertIn("WP_RADIUS_M", " ".join(scan["overrides"]))
+        self.assertEqual(scan["unwarranted_override_keys"], ["WP_RADIUS_M"])
+        self.assertIn("TUNING OVERRIDE FOUND", scan["statement"])
+
+    def test_the_booked_waypoint_speed_alone_is_a_WARRANTED_override_not_a_void_study(self):
+        """`param set WP_SPD <booked m/s>` is a REAL override of a REAL plant constant -- it lowers
+        v_max_ne_mps for that flight -- so it is reported with its warrant and its consequence
+        rather than scanned away. The statement must not read "no override exists"."""
+        with tempfile.TemporaryDirectory() as d:
+            scripts = Path(d) / "scripts"
+            scripts.mkdir()
+            (scripts / "fly.sh").write_text("param set MIS_RESTART 0\nparam set WP_SPD 5.0\n")
+            scan = RP._tuning_override_scan(Path(d))
+        self.assertTrue(scan["overrides"])
+        self.assertEqual(scan["unwarranted_override_keys"], [])
+        self.assertNotIn("TUNING OVERRIDE FOUND", scan["statement"])
+        self.assertIn("WARRANTED", scan["statement"])
+        self.assertIn("v_max_ne_mps", scan["statement"])       # the consequence, not just the key
+
+    def test_the_real_repos_ONLY_override_is_the_booked_speed_and_it_carries_its_warrant(self):
+        """Was "the repo is clean" until 2026-09-07, when the launcher started booking a speed into
+        the fly recipe. Still a whitelist of ONE KEY, so an unknown parameter typed into any
+        bringup script or runbook still turns this red."""
         scan = RP._tuning_override_scan()
-        self.assertEqual(scan["overrides"], [], f"unexpected override: {scan['overrides']}")
+        self.assertEqual(scan["unwarranted_override_keys"], [],
+                         f"unexpected override: {scan['overrides']}")
+        self.assertEqual(sorted({h.split(" ")[1] for h in scan["overrides"]}), ["WP_SPD"],
+                         f"the only override this repo may carry is the booked waypoint speed: "
+                         f"{scan['overrides']}")
         self.assertIn("default_params", scan["sitl_default_warrant"])
+        self.assertIn("sim_vehicle.py", scan["sitl_default_warrant"])
         self.assertIn("sim_vehicle.py", scan["statement"])
         self.assertNotIn(".claude", scan["statement"],
                          "another agent's worktree is not this vehicle's parameter set")
+
+    def test_the_plant_models_own_provenance_names_the_override_instead_of_denying_it(self):
+        """eval/point_mass.py's provenance string is serialised into every replay artifact as the
+        warrant for the plant constants. It used to end "No WPNAV_*/GUID_*/PSC_* override exists in
+        this repo" -- false the moment the launcher booked a speed."""
+        prov = PM.GUIDED_DEFAULT.provenance
+        self.assertNotIn("No WPNAV_*/GUID_*/PSC_* override exists", prov)
+        self.assertIn("WP_SPD", prov)
+        self.assertIn("flown unbooked", prov)
 
     def test_dot_directories_are_not_scanned(self):
         """`.claude/worktrees/` holds concurrent agents' checkouts of this same repo. A stale
@@ -1074,13 +1121,17 @@ class TestReportShape(unittest.TestCase):
             self.assertTrue(block[key].strip())
 
     def test_the_defaults_assumption_is_checked_against_the_repo_not_asserted(self):
-        """If someone lands a WPNAV_*/GUID_*/PSC_* override, every plant constant in this study
+        """If someone lands a WP_*/WPNAV_*/GUID_*/PSC_* override, every plant constant in this study
         stops being what flies -- so the claim is re-checked on each run and the assumptions block
-        says TUNING OVERRIDE FOUND instead of reassuring the reader."""
+        says TUNING OVERRIDE FOUND instead of reassuring the reader. Three outcomes since
+        2026-09-07: clean, the one WARRANTED booked speed, or the loud statement."""
         scan = RP._tuning_override_scan()
         self.assertIn("overrides", scan)
-        if scan["overrides"]:
+        if scan["unwarranted_override_keys"]:
             self.assertIn("TUNING OVERRIDE FOUND", scan["statement"])
+        elif scan["overrides"]:
+            self.assertIn("CHECKED at run time", scan["statement"])
+            self.assertIn("WARRANTED", scan["statement"])
         else:
             self.assertIn("CHECKED at run time", scan["statement"])
             self.assertIn(".parm", scan["statement"])

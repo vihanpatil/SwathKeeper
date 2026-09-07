@@ -10,7 +10,7 @@ ground-plane projection).
 
 | artifact | claim it supports | its gate |
 |---|---|---|
-| `eval/results/live_flight_log_<UTC>.json` (schema 2) | detect → avoid, at a measured separation | `scripts/check_live_flight_log.py --truth …` |
+| `eval/results/live_flight_log_<UTC>.json` (schema 2) | detect → avoid, at a measured separation, at the speed it was booked at | `scripts/check_live_flight_log.py --truth … --booking …` |
 | `eval/results/clips/real_flight_<UTC>/` + its heatmap | the NDVI map is where it says it is | `scripts/check_tree_positions.py` |
 
 > **Status: this procedure has NEVER BEEN FLOWN.** Every command below is verified offline (host
@@ -61,19 +61,30 @@ both are ~1 s and neither needs Docker (`config/birds/farm_world_birds.json` nam
 must be re-run after ANY edit to that file, `config/missions/boustrophedon.waypoints`,
 `config/field_polygon.json` or `config/ndvi_camera.json`):
 
+**Run it at the speed you BOOK in §0g, never at a literal.** The speed is an input to this gate's
+answer, the answer is not monotone in it, and a number left over from a previous take is a verdict
+about a flight nobody is flying. Take it out of the booking artifact:
+
 ```bash
-# gate 1 — CAMERA: will the birds be IN FRAME? Run it at the cadence AND SPEED you actually expect.
-python3 scripts/predict_bird_visibility.py --fps 5.0 --speed 9.4
+# gate 1 — CAMERA: will the birds be IN FRAME? At the cadence AND the speed §0g will book.
+BOOKING=eval/results/booking_gate_20260907T064136Z.json     # the §0f artifact you will book
+python3 scripts/predict_bird_visibility.py --fps 5.0 --speed "$(python3 -c \
+  'import json,sys; print(json.load(open(sys.argv[1]))["encounter"]["mission_speed_mps"])' \
+  "$BOOKING")"
 
 # gate 2 — AVOIDANCE: does a bird still sit inside the policy's threat cylinder?
 python3 -m pytest tests/fieldguard_planning/test_bird_geometry_contract.py -q
 ```
 
-Measured 2026-08-25 on the committed config: gate 1 **FAIL, exit 1** at `--speed 9.4` — medians
-**2 / 2 / 3** frames in view (bird_0 / bird_1 / bird_2) over the 55-offset driver-start phase sweep,
-all three below the 5-frame floor; gate 2 **17 passed**. **That FAIL is correct and it is the
-current state of the world:** the geometry only clears the floor at 3 m/s (medians 8 / 6 / 11, the
-number ADR-015 published and every doc quoted), and the vehicle does not fly 3 m/s.
+Measured 2026-09-07 on the committed config at the **booked 5.0 m/s**: gate 1 **FAIL, exit 1** —
+medians **2 / 2 / 6** frames in view (bird_0 / bird_1 / bird_2) over the 55-offset driver-start
+phase sweep, **2 of 3** below the 5-frame floor (bird_2 clears it at 5.0 and does not at 9.4).
+*Historical, kept because it is what the 2026-08-25 take actually flew and what this block used to
+hard-code:* at `--speed 9.4`, medians **2 / 2 / 3**, all three below the floor (measured
+2026-08-25). Gate 2: **17 passed**. **The FAIL is correct at both speeds and it is the current
+state of the world:** the geometry only clears the floor at 3 m/s (medians 8 / 6 / 11, the number
+ADR-015 published and every doc quoted), and the vehicle does not fly 3 m/s. Do not reason across
+the two numbers — ADR-016 am. 1 measured this response non-monotone in speed.
 
 **`--fps` and `--speed` are the honest inputs, and together they are the whole gate.**
 - `--speed` is **REQUIRED and has no default** (ADR-016). It used to default to 3.0 m/s from a doc
@@ -95,8 +106,9 @@ below the 5-frame median floor), **do not book the session.** At the old 0.407 H
 committed geometry returns medians **1 / 0 / 1 and exit 1** *(re-measured 2026-08-24 at `--fps 0.41`)*
 — that is the state that produced four unscoreable clips in a row. Fix throughput or geometry first,
 re-run the predictor, then book. Reading `limited_by` tells you which: `STRUCTURAL` means no cadence
-can ever help (move the patrol line, ADR-015), `TIMING` means throughput **or speed** — all three
-birds read TIMING at 9.4 m/s, and slowing the survey is as legitimate a fix as moving a bird.
+can ever help (move the patrol line, ADR-015), `TIMING` means throughput **or speed** — every bird
+below the floor reads TIMING at both 5.0 and 9.4 m/s, and slowing the survey is as legitimate a fix
+as moving a bird.
 **Exit 2 is a refusal, not a pass:** no `--speed`, or an unannotated clip under `--backtest`. It is
 deliberately neither 0 nor 1 so a caller can never read "I had no speed" as "the birds are visible".
 **As of 2026-08-25 this gate FAILs on the committed geometry at any speed the vehicle actually
@@ -192,10 +204,50 @@ now governs the NDVI *map* rather than the dodge, and it is still a real gate fo
 
 ---
 
+### 0g. Book the speed **into the flight** — MANDATORY for a dodge take
+A booking authorises **one** mission speed. Until 2026-09-07 nothing carried that speed into the
+air: the fly recipe set no waypoint speed, so every flight ran ArduCopter's `WP_SPD` default of
+**10.0 m/s** — **10.58 m/s peak on the 2026-09-06 scripted test-flight, a speed at which the
+artifact above exits 1**. A take flown faster than booked is **not the authorised take**, and no
+post-flight gate could tell you so.
+
+So hand the artifact itself — never a number retyped out of it — to the launcher, and bring up with:
+
+```bash
+scripts/fly_pipeline.sh --booking eval/results/booking_gate_20260907T064136Z.json up
+```
+
+*(`--booking` is the **launcher's** flag; the six-intrinsic flags in §0f belong to
+`predict_forward_lead.py`. Env `SWATHKEEPER_BOOKING` does the same; the flag wins.)*
+
+That artifact books **5.0 m/s → `param set WP_SPD 5.0`**. The parameter is `WP_SPD`, **in m/s**,
+not `WPNAV_SPEED` in cm/s: at ADR-004's pinned ArduPilot SHA, ArduCopter registers AC_WPNav under
+the group prefix `WP_` (`Parameters.cpp:370`) and `AC_WPNav.cpp:17` reads `// 0 was SPEED` — the old
+name is retired, and MAVProxy would reject it at the prompt while every artifact claimed the take
+was booked. What the launcher does with it:
+
+| | |
+|---|---|
+| **refuses** | the artifact is not one `check_live_flight_log.load_booking` accepts — the *same* function the post-flight gate uses — i.e. missing/unreadable, malformed, `verdict.bookable` not `true`, a `--sweep`, or a speed outside `WP_SPD`'s documented **0.10–20.00 m/s** range. Nonzero exit, one-line cause, **before** preflight touches the container. |
+| **injects** | `param set WP_SPD <the booked m/s, verbatim>` into the printed recipe, with the other `param set`s — before **both** mode changes, because AUTO reads the speed when it takes the leg. No unit conversion, so no rounding: the number typed is the number booked. |
+| **says so** | the recipe pane's header names the artifact and the speed. Unbooked, that header says *no speed is booked* instead — read it before you arm. |
+| **records it** | `eval/results/live_flight_booking_<UTC>.json` beside the flight logs — the artifact's path, the booked speed, the parameter name, and the exact recipe line — written at bringup. `test-flight` puts the same `booking` block in its own gate record (schema 1.2). |
+
+That sidecar is a **note of what this bringup booked**, not the authorisation itself: it is stamped
+with the *bringup* time because the flight log's stem does not exist yet. Post-flight, §5's gate
+wants the artifact — `check_live_flight_log.py <log> --booking eval/results/booking_gate_<UTC>.json`
+— and the sidecar is how you recover that path without digging through tmux scrollback.
+
+Omit `--booking` and the recipe is unchanged — correct for the NDVI survey and the demo take, which
+book nothing. **Not** correct here.
+
+---
+
 ## 1. Bringup — `fly_pipeline.sh up` (7 panes), then the 8th shell
 
 ```bash
-scripts/fly_pipeline.sh up          # gazebo, bridge, agent, sitl(+recipe pane), ndvi, record, birds
+scripts/fly_pipeline.sh --booking eval/results/booking_gate_20260907T064136Z.json up
+# gazebo, bridge, agent, sitl(+recipe pane), ndvi, record, birds
 ```
 
 That is the whole bringup: the golden order (micro-ROS agent **before** SITL), the four `/fg/sensor`
@@ -255,17 +307,24 @@ In the `sitl` window, **wait for all three** before touching anything:
 `DDS: Initialization passed`, `EKF3 IMU0/IMU1 tilt alignment complete`, `GPS 1: detected u-blox`.
 Arming during the post-boot CPU spike earns `Arm: Accels inconsistent` — wait 30 s, retry.
 
-Then, at the prompt (the recipe pane beside SITL prints these verbatim):
+Then, at the prompt (the recipe pane beside SITL prints these verbatim — this block is byte-diffed
+against the launcher's booked recipe by `tests/test_fly_pipeline.py`):
 
 ```
 wp load /workspace/fieldguard/config/missions/boustrophedon.waypoints
 param set MIS_RESTART 0
 param set AUTO_OPTIONS 3
+param set WP_SPD 5.0
 wp set 1
 mode guided
 mode auto
 arm throttle
 ```
+
+**`WP_SPD 5.0` is §0g's booking, in m/s** — it is here because the bringup was given `--booking`.
+If your recipe pane has no such line, the pane header says `NO SPEED BOOKED` and this is **not** an
+authorised dodge take: tear down, re-run `up` with `--booking`, and do not fly the line by hand — a
+booking typed at the prompt leaves no artifact for the flight-log gate to read.
 
 ## 3. What you should see — and what invalidates the take mid-flight
 
@@ -312,8 +371,13 @@ LOG=$(ls -t eval/results/live_flight_log_*.json | head -1)
 CLIP=$(ls -td eval/results/clips/real_flight_*/ | head -1)
 ls -t eval/results/bird_drive_*_applied.jsonl | head -5     # ONE of these belongs to this take
 TRUTH=$(ls -t eval/results/bird_drive_*_applied.jsonl | head -1)
-printf 'log:   %s\ntruth: %s\nclip:  %s\n' "$LOG" "$TRUTH" "${CLIP%/}"
+BOOKING=eval/results/booking_gate_20260907T064136Z.json     # the §0f artifact you booked in §0g
+printf 'log:   %s\ntruth: %s\nclip:  %s\nbook:  %s\n' "$LOG" "$TRUTH" "${CLIP%/}" "$BOOKING"
 ```
+
+`$BOOKING` is **the same artifact you passed to `--booking` in §0g** — the launcher's
+`eval/results/live_flight_booking_<UTC>.json` sidecar names it if you have lost the path. Do not
+pass that sidecar itself; it is a bringup pointer and the gate refuses it by name.
 
 **`head -1` is a guess, and this take may have produced two applied logs.** An aborted takeoff
 (`Arm: Accels inconsistent` → retry, §2) or the `fly_pipeline.sh birds` override (§1) restarts
@@ -337,9 +401,19 @@ the command above.)*
 
 **Gate 1 — safety, on the flight log (schema 2):**
 ```bash
-python3 scripts/check_live_flight_log.py "$LOG" --truth "$TRUTH"
+python3 scripts/check_live_flight_log.py "$LOG" --truth "$TRUTH" --booking "$BOOKING"
 ```
-`--truth` applies to **every** log on the command line, so score one flight at a time. Omit it and
+**`--booking` is not optional on a dodge take** (§0g called booking the bringup MANDATORY; this is
+the half that checks it happened). Without it the gate prints `NO BOOKING BOUND -- WARNING` and the
+verdict is unaffected — i.e. a take flown at ArduCopter's 10 m/s default against a 5.0 m/s booking
+scores green. With it, the flown speed comes out of the log's own poses and is held to the booking
+on **two** medians: the whole flight, and **each encounter window** (takeover → resume), which is
+where the booking's lead margin is actually spent. On the 2026-08-25 take those two disagree —
+whole-flight 3.417 m/s passes, encounter 9.012 m/s = 1.80× booked fails — so the whole-flight
+number alone cannot be trusted to catch this.
+
+`--truth` and `--booking` each apply to **every** log on the command line, so score one flight at a
+time. Omit it and
 the gate auto-discovers by sim-time overlap, refusing on 0 or >1 candidates — Gazebo sim time
 restarts near 0 every run, so picking the wrong log yields a full flight of confident spawn-pose
 "truth". What it prints, whatever the verdict:

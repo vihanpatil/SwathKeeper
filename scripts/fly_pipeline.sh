@@ -35,6 +35,7 @@
 #
 # Usage (host, repo root):
 #   scripts/fly_pipeline.sh [up|attach|status|birds|down|test-flight] [--dry-run] [--gate-geometry]
+#                           [--booking eval/results/booking_gate_<UTC>.json]
 set -euo pipefail
 
 SESSION="swathkeeper"
@@ -48,6 +49,45 @@ DRY_RUN=0
 GATE_GEOMETRY=0
 TESTFLIGHT=0
 CMD="up"
+
+# --- the booking: the ONE speed a dodge take is authorised to fly (ADR-019 / ADR-020) ------------
+# scripts/predict_forward_lead.py authorises an avoidance take at ONE mission speed, and until
+# 2026-09-07 nothing carried that speed into the flight: the recipe below set no waypoint speed, so
+# ArduCopter flew its own default — 10.58 m/s peak on the 2026-09-06 scripted test-flight, a speed
+# at which the SAME booking gate exits 1. A take flown faster than booked is not the authorised
+# take. So the input here is the ARTIFACT, never a number retyped out of it: the file carries both
+# the verdict and the speed, and this script refuses to fly one without the other.
+# OPTIONAL by design: the NDVI survey and the demo take need no booking and their recipe is
+# unchanged (no --booking, no speed line, ArduCopter's default). MANDATORY for a dodge take —
+# docs/runbooks/AVOIDANCE_REAL_DETECTION.md §0g.
+BOOKING_ARG="${SWATHKEEPER_BOOKING:-}"   # path as given; the flag wins over the env var
+BOOKING_PATH_REL=""      # repo-relative when the artifact is inside the repo, else as given
+BOOKING_SPEED=""         # the booked mission speed in m/s, as a decimal string — and ALSO the exact
+                         # parameter value, because WP_SPD's unit IS m/s. No conversion, one number.
+BOOKING_SIDECAR=""       # eval/results/live_flight_booking_<UTC>.json, written by `up`
+# THE PARAMETER, SOURCED AT THE PINNED SHA RATHER THAN REMEMBERED (QA finding G135, 2026-09-07).
+# The first cut of this feature typed a `WPNAV_SPEED 500` param-set line — a name that does NOT
+# exist at ADR-004's pinned ArduPilot SHA, in units wrong by 100x. MAVProxy resolves a set against
+# the live parameter table, so the line is REJECTED at the prompt and the take flies the 10 m/s
+# default while the recipe header, the gate record, the sidecar and the evidence line all claim it
+# was booked at 5.0 — a commanded value recorded as flown, the 2026-08-18 ledger doctrine.
+# Verbatim at ArduPilot 9895756d874ec9128d50918f6747a83706f4e221 (CLAUDE.md's pin):
+#   ArduCopter/Parameters.cpp:368-370   // @Group: WP_   /  GOBJECTPTR(wp_nav, "WP_", AC_WPNav),
+#   libraries/AC_WPNav/AC_WPNav.cpp:17  // 0 was SPEED          <- WPNAV_SPEED is RETIRED here
+#   libraries/AC_WPNav/AC_WPNav.cpp:49  // @Param: SPD
+#   libraries/AC_WPNav/AC_WPNav.cpp:52  // @Units: m/s
+#   libraries/AC_WPNav/AC_WPNav.cpp:53  // @Range: 0.10 20.00
+#   libraries/AC_WPNav/AC_WPNav.cpp:56  AP_GROUPINFO("SPD", 14, AC_WPNav, _wp_speed_ms, WP_SPD_DEFAULT)
+#   libraries/AC_WPNav/AC_WPNav.cpp:8   #define WP_SPD_DEFAULT 10.0f   <- what flies UNBOOKED
+# Re-read those lines if ADR-004's ArduPilot pin moves; the name is a fact about the firmware, not
+# about this repo. (The `WPNAV_SPD` shorthand in eval/point_mass.py's comments is prose about the
+# same knob, never a typed line.)
+BOOKED_PARAM="WP_SPD"
+# The documented @Range above, read as a refusal band: a booking outside it cannot be flown AS
+# BOOKED — the vehicle would keep its default while the recipe claims the booked speed — so it is a
+# refusal, not a printed line.
+BOOKING_MIN_MPS=0.10
+BOOKING_MAX_MPS=20.00
 
 GATE_GAZEBO_S=180      # world load = 18 thermal-authored trees + ogre2 warmup, software rendered
 GATE_BRIDGE_S=90
@@ -138,7 +178,161 @@ scripts/fly_pipeline.sh [SUBCOMMAND] [FLAGS]      (host side, macOS; needs tmux 
   --dry-run         print every docker/tmux command instead of running it (works with no Docker)
   --gate-geometry   also run scripts/verify_mount_geometry.sh after the bridge (one-time gate
                     after mount/world/georef changes; off by default — it launches its own world)
+  --booking PATH    an eval/results/booking_gate_*.json from scripts/predict_forward_lead.py, whose
+                    verdict.bookable must be true. Its mission speed becomes a 'param set WP_SPD
+                    <m/s>' line in the recipe, so the take FLIES the speed it was
+                    booked at; the path + speed also go into a sidecar the flight-log gate reads.
+                    Env: SWATHKEEPER_BOOKING (the flag wins). Read by up / test-flight / status —
+                    a dodge take REQUIRES it (AVOIDANCE_REAL_DETECTION.md §0g); the NDVI survey and
+                    the demo take do not, and without it the recipe is unchanged.
 EOF
+}
+
+# Read the booked speed out of a predict_forward_lead.py artifact, or REFUSE. Python, not grep: the
+# verdict and the speed live in different nested objects, and a regex that reads the wrong one of
+# them would authorise a flight nobody booked. Every refusal names its own cause on one line.
+#
+# "DOES THIS ARTIFACT AUTHORISE A FLIGHT" HAS ONE DEFINITION, and it is the flight-log gate's
+# `check_live_flight_log.load_booking` — the same function that will score the take afterwards (QA
+# finding G137). The first cut read two fields here and ran `validate_report` there, so
+# `{"verdict":{"bookable":true},"encounter":{"mission_speed_mps":9.0}}` booked a flight the gate
+# then refused as malformed: the unguarded end was the PRE-flight one, i.e. a take could be flown
+# believing it was authorised and only discovered unauthorised after the fact.
+#
+# STDOUT IS THE ONLY PARSED STREAM, and stderr is never merged into it (QA finding G136). It used
+# to be `2>&1`, so any noise on the success path — PYTHONVERBOSE, a sitecustomize print, a .pth
+# banner, a DeprecationWarning — became the "speed": `PYTHONVERBOSE=1 ... --booking <good artifact>`
+# printed a BOOKED banner and injected a param-set line reading `WPNAV_SPEED import _imp` into a
+# recipe a human types verbatim. Now stderr flows to the terminal where a human can see it, only
+# the LAST two lines of stdout are read, and both are hard-validated below before either reaches
+# the vehicle.
+booking_resolve() {
+  local out rc=0
+  # The closing paren sits AFTER the heredoc terminator on purpose: a `$( ... <<'PY' )` that closes
+  # on its own line leaves the body outside the substitution, and bash fails to parse the script.
+  out=$(BOOKING_MIN_MPS="$BOOKING_MIN_MPS" BOOKING_MAX_MPS="$BOOKING_MAX_MPS" \
+        BOOKED_PARAM="$BOOKED_PARAM" python3 - "$BOOKING_ARG" "$REPO_ROOT" <<'PY'
+import json, math, os, sys
+
+path, repo = sys.argv[1], sys.argv[2]
+lo, hi = float(os.environ["BOOKING_MIN_MPS"]), float(os.environ["BOOKING_MAX_MPS"])
+
+
+def refuse(msg):
+    print(msg)                      # STDOUT: the shell reads this back as the one-line cause
+    raise SystemExit(1)
+
+
+# The gate's reader, which is the contract. Imported out of THIS repo, not from wherever the shell
+# happens to be run. There is deliberately NO weaker fallback: a two-field read is exactly the G137
+# defect wearing an ImportError, and "I cannot validate this authorisation" must never resolve to
+# "fly it anyway". Only a dodge take passes --booking, so a broken import can never block the NDVI
+# survey, the demo, or teardown -- it blocks precisely the flight that needs the authorisation.
+for part in ("scripts", "src", "eval"):
+    sys.path.insert(0, os.path.join(repo, part))
+try:
+    from check_live_flight_log import load_booking
+except Exception as exc:            # noqa: BLE001 -- an unimportable gate is still a refusal
+    refuse("cannot import check_live_flight_log.load_booking from %s (%s: %s) -- that function IS "
+           "the definition of an authorising artifact, and a booking nothing can validate does not "
+           "authorise a flight" % (os.path.join(repo, "scripts"), type(exc).__name__, exc))
+
+# EVERY refusal below this line is the GATE'S, word for word -- missing file, malformed JSON,
+# failed schema, a sweep, an unbookable verdict, the launcher's own bringup record. There is no
+# second opinion here to drift from it.
+from pathlib import Path
+rep, problem = load_booking(Path(path))
+if problem is not None:
+    refuse(problem.replace("\n", " "))
+
+encounter = rep.get("encounter") if isinstance(rep.get("encounter"), dict) else {}
+speed = encounter.get("mission_speed_mps")
+# The gate has already rejected a None/string/bool/non-positive speed. This adds the two things it
+# has no reason to care about but a vehicle does: a non-finite number (JSON `Infinity` parses), and
+# the range check below. Kept explicit rather than assumed -- this number is about to be typed at a
+# flight controller.
+if (isinstance(speed, bool) or not isinstance(speed, (int, float))
+        or not math.isfinite(speed) or speed <= 0):
+    refuse("%s carries no readable booked mission speed (encounter.mission_speed_mps=%s)"
+           % (path, json.dumps(speed)))
+if not lo <= speed <= hi:
+    refuse("%s books %s m/s, outside the %g..%g m/s ArduPilot documents for %s -- it would be "
+           "ignored and the flight would keep its default speed"
+           % (path, json.dumps(speed), lo, hi, os.environ["BOOKED_PARAM"]))
+
+shown = ("%.6f" % speed).rstrip("0")
+print(shown + "0" if shown.endswith(".") else shown)   # 5.0 stays "5.0", never "5."
+try:
+    rel = os.path.relpath(os.path.realpath(path), repo)
+except ValueError:                      # different drive/root: no relative form exists
+    rel = path
+print(path if rel.startswith(os.pardir) else rel)
+PY
+  ) || rc=$?
+  if (( rc != 0 )); then
+    die "REFUSING to fly on this booking: ${out:-python3 could not read the artifact: $BOOKING_ARG}
+  A dodge take is authorised at ONE speed by scripts/predict_forward_lead.py, and only an artifact
+  whose verdict.bookable is true authorises anything (exit 0 = PASS and bookable). Re-run the gate
+  at the speed this mission will actually fly — docs/runbooks/AVOIDANCE_REAL_DETECTION.md §0f —
+  or drop --booking to fly the unbooked NDVI/demo recipe at ArduCopter's default speed."
+  fi
+  # The LAST two lines, then hard-validated. Positional reads out of a stream are how noise becomes
+  # a flight parameter (G136); `printf %s` in the recipe would pass anything at all. A speed that is
+  # not a plain decimal, or an empty path, is a reader this launcher does not understand — and the
+  # safe reading of "I do not understand the authorisation" is to refuse it, never to fly it.
+  { read -r BOOKING_SPEED; read -r BOOKING_PATH_REL; } <<<"$(tail -2 <<<"$out")"
+  [[ $BOOKING_SPEED =~ ^[0-9]+(\.[0-9]+)?$ ]] || die \
+    "REFUSING to fly on this booking: the reader returned $(printf %q "${BOOKING_SPEED:-}") where a
+  booked mission speed in m/s was expected, reading $BOOKING_ARG. Something is writing to this
+  script's stdout (a sitecustomize print, a .pth banner) — run
+  \`python3 -c 'pass'\` and check it prints nothing, then re-run."
+  [ -n "$BOOKING_PATH_REL" ] || die \
+    "REFUSING to fly on this booking: the reader returned no artifact path for $BOOKING_ARG."
+  say "booked: $BOOKING_PATH_REL -> $BOOKING_SPEED m/s (param set $BOOKED_PARAM $BOOKING_SPEED)"
+}
+
+# The booking, dropped beside the flight logs at BRINGUP time.
+# `test-flight` records its booking in its own gate record; a HUMAN-flown take has no record here at
+# all — its flight log is written by the avoidance node, inside the container, minutes later — so
+# without this the booked speed would exist only in a tmux pane, and the flight-log gate could never
+# be shown what the flight was authorised to fly. Name and stamp are deliberate: same directory and
+# same UTC format as `live_flight_log_<UTC>.json`, written EARLIER than the log it belongs to (so a
+# reader takes the newest sidecar older than the log). The gate's contract stays the explicit
+# `check_live_flight_log.py --booking <path>`; this file only makes that path findable.
+write_booking_sidecar() {
+  [ -n "$BOOKING_SPEED" ] || return 0
+  BOOKING_SIDECAR="eval/results/live_flight_booking_$(date -u +%Y%m%dT%H%M%SZ).json"
+  mkdir -p "$REPO_ROOT/eval/results"
+  BOOKING_PATH_REL="$BOOKING_PATH_REL" BOOKING_SPEED="$BOOKING_SPEED" \
+  BOOKED_PARAM="$BOOKED_PARAM" BOOKING_WRITTEN="$(now_utc)" BOOKING_CMD="$CMD" \
+  python3 - "$REPO_ROOT/$BOOKING_SIDECAR" <<'PY' || { warn "could not write $BOOKING_SIDECAR"; return 0; }
+import json, os, pathlib, sys
+
+# ONE number, not two. WP_SPD's unit is m/s (AC_WPNav.cpp:52), so the parameter value IS the booked
+# speed and a second `..._cms` field would be a rounded duplicate of it -- the first cut carried
+# one, and it was wrong by 100x for four artifacts (G135).
+booking = {"path": os.environ["BOOKING_PATH_REL"],
+           "booked_speed_mps": float(os.environ["BOOKING_SPEED"]),
+           "parameter": os.environ["BOOKED_PARAM"]}
+pathlib.Path(sys.argv[1]).write_text(json.dumps({
+    "schema_version": "1.1",       # 1.0 carried `wpnav_speed_cms`, a parameter that does not exist
+    "kind": "live_flight_booking",
+    "written_utc": os.environ["BOOKING_WRITTEN"],
+    "written_by": "scripts/fly_pipeline.sh %s" % os.environ["BOOKING_CMD"],
+    "booking": booking,
+    "recipe_line": "param set %s %s" % (os.environ["BOOKED_PARAM"],
+                                        os.environ["BOOKING_SPEED"]),
+    # The flight log's stem is not knowable at bringup (the avoidance node stamps it when it dumps,
+    # minutes later), so this file is stamped with the BRINGUP time and names the artifact instead.
+    # That is all the flight-log gate needs to be pointed at the authorisation.
+    "note": ("the speed this bringup's fly recipe books, written BEFORE the flight; the FLOWN speed "
+             "is the flight log's. Bind them with:  python3 scripts/check_live_flight_log.py "
+             "<eval/results/live_flight_log_<UTC>.json> --booking %s   (or lay the artifact down "
+             "beside the log as <log-stem>.booking.json: cp %s eval/results/<log-stem>.booking.json)"
+             % (booking["path"], booking["path"])),
+}, indent=1) + "\n")
+PY
+  say "booking sidecar: $BOOKING_SIDECAR (the flight-log gate's --booking input)"
 }
 
 # Print args instead of running them under --dry-run. Outer tmux quoting is elided in the printout;
@@ -458,11 +652,19 @@ $(printf '%s\n' "$live" | cut -c1-110 | sed 's/^/      /')
 # `param set MIS_RESTART 0` is belt and braces since 2026-08-25 (ADR-016): the pin now lives in
 # config/sitl_params/dds_udp.parm, which INNER_SITL loads, so a skipped prompt line can no longer
 # change what a flight means. Kept typed because a hand-started SITL may not load the file.
+#
+# The `param set WP_SPD` line exists only when a booking was given (--booking /
+# SWATHKEEPER_BOOKING), and it goes in with the other `param set`s — before BOTH mode changes,
+# because the speed a mission flies is read when AUTO takes the leg, not when it is armed.
+# Unbooked, the recipe is unchanged.
 fly_lines() {
   cat <<EOF
 wp load $CTR_REPO/config/missions/$1.waypoints
 param set MIS_RESTART 0
 param set AUTO_OPTIONS 3
+EOF
+  if [ -n "$BOOKING_SPEED" ]; then printf 'param set %s %s\n' "$BOOKED_PARAM" "$BOOKING_SPEED"; fi
+  cat <<EOF
 wp set 1
 mode guided
 mode auto
@@ -471,8 +673,20 @@ EOF
 }
 
 print_fly_recipe() {
+  printf "======== SwathKeeper — FLY IT (you type these; 'up' never does) ========\n"
+  # The header says which of the two recipes this is, because they differ by one line and the one
+  # that is missing is the one that decides whether the take is the authorised take.
+  if [ -n "$BOOKING_SPEED" ]; then
+    printf 'BOOKED %s m/s from %s -- flown as "param set %s %s" below.\n' \
+      "$BOOKING_SPEED" "$BOOKING_PATH_REL" "$BOOKED_PARAM" "$BOOKING_SPEED"
+  else
+    printf '%s\n' \
+      "NO SPEED BOOKED: this recipe flies ArduCopter's WP_SPD default, 10.0 m/s (AC_WPNav.cpp:8;" \
+      "  10.58 m/s peak measured 2026-09-06) — fine for the NDVI survey and the demo, NOT for a" \
+      "  dodge take, which needs:" \
+      "      scripts/fly_pipeline.sh --booking eval/results/booking_gate_<UTC>.json up"
+  fi
   cat <<'EOF'
-======== SwathKeeper — FLY IT (you type these; 'up' never does) ========
 WAIT for all three in the sitl pane before arming:
     DDS: Initialization passed
     EKF3 IMU0/IMU1 tilt alignment complete
@@ -562,9 +776,19 @@ cmd_up() {
   container. Attach:  scripts/fly_pipeline.sh attach     Tear down:  scripts/fly_pipeline.sh down"
   fi
   preflight
-  # Under --dry-run this is the ONLY thing that would touch the host, so it is guarded too:
-  # a dry run must leave the machine exactly as it found it.
-  if ! (( DRY_RUN )); then print_fly_recipe >"$RECIPE_FILE"; fi
+  # Under --dry-run these are the ONLY things that would touch the host, so they are guarded too:
+  # a dry run must leave the machine exactly as it found it. The DRY lines name the booked recipe
+  # line verbatim WITHOUT printing the recipe — `up` never prints a flying command.
+  if (( DRY_RUN )); then
+    if [ -n "$BOOKING_SPEED" ]; then
+      printf '  DRY  recipe pane: booked line "param set %s %s" goes in ahead of the AUTO entry\n' \
+        "$BOOKED_PARAM" "$BOOKING_SPEED"
+      printf '  DRY  write eval/results/live_flight_booking_<UTC>.json (booking path + speed, for the flight-log gate)\n'
+    fi
+  else
+    print_fly_recipe >"$RECIPE_FILE"
+    write_booking_sidecar
+  fi
 
   say "1/7 Gazebo (the world)"
   run tmux new-session -d -s "$SESSION" -n gazebo "$(exec_line "$INNER_GAZEBO")"
@@ -973,6 +1197,7 @@ tf_write_record() {
   export TF_WORK TF_FAIL TF_PHASE TF_CLIP TF_BIRDS_ALT TF_STITCH_EXIT TF_TEARDOWN
   export TF_RESULT TF_START TF_FINISHED TF_DURATION TF_MISSION_NAME
   export TF_FRAMES TF_CELLS TF_MIN_FRAMES TF_MIN_CELLS
+  export BOOKING_PATH_REL BOOKING_SPEED BOOKED_PARAM
   python3 - "$TF_RECORD" <<'PY' || warn "could not write the gate record to $TF_RECORD"
 import json, os, pathlib, sys
 
@@ -996,10 +1221,20 @@ def opt(key, cast=str):
         return value
 
 
+# The speed this flight was AUTHORISED to fly, or null. Not derived from the record's own numbers
+# on purpose: a booking is an artifact somebody produced before the flight, and `null` here means
+# exactly what it says — nothing booked this flight, it flew ArduCopter's WP_SPD default.
+booking = None
+if os.environ.get("BOOKING_SPEED", "").strip():
+    booking = {"path": os.environ["BOOKING_PATH_REL"],
+               "booked_speed_mps": float(os.environ["BOOKING_SPEED"]),
+               "parameter": os.environ["BOOKED_PARAM"]}
+
 record = {
     # 1.1 added cells_imaged + evidence_floor (2026-08-19); the two committed 1.0 records predate
-    # the floor and carry neither.
-    "schema_version": "1.1",
+    # the floor and carry neither. 1.2 added `booking` (2026-09-07): before it, nothing in the
+    # record said what speed the flight was authorised to fly, and nothing in the launcher set one.
+    "schema_version": "1.2",
     "gate": "scripts/fly_pipeline.sh test-flight (scripted pre-demo regression gate, ADR-013 am. 2)",
     "written_utc": os.environ["TF_FINISHED"],
     "started_utc": os.environ["TF_START"],
@@ -1008,6 +1243,7 @@ record = {
     "failed_phase": os.environ["TF_PHASE"] if failed else None,
     "failure": opt("TF_FAIL"),
     "mission": "config/missions/%s.waypoints" % os.environ["TF_MISSION_NAME"],
+    "booking": booking,
     "evidence": lines(work / "evidence.txt"),
     "frames_recorded": opt("TF_FRAMES", int),
     "cells_imaged": opt("TF_CELLS", int),
@@ -1041,6 +1277,11 @@ cmd_test_flight() {
   EVIDENCE_FILE="$TF_WORK/evidence.txt"; : >"$EVIDENCE_FILE"
   say "TEST-FLIGHT: scripted regression gate, NOT the demo path. Logs: $TF_WORK"
   evidence "test-flight started (mission $TF_MISSION_NAME)"
+  if [ -n "$BOOKING_SPEED" ]; then
+    evidence "booked: $BOOKING_PATH_REL -> $BOOKING_SPEED m/s (param set $BOOKED_PARAM $BOOKING_SPEED)"
+  else
+    evidence "no booking given: this flight runs ArduCopter's $BOOKED_PARAM default (10.0 m/s)"
+  fi
   # Armed only now: before this point a failure means we do NOT own the container, and tearing down
   # would kill someone else's manual bringup.
   trap tf_cleanup EXIT INT TERM
@@ -1092,12 +1333,27 @@ main() {
     case $1 in
       --dry-run)       DRY_RUN=1 ;;
       --gate-geometry) GATE_GEOMETRY=1 ;;
+      --booking)       [ $# -ge 2 ] || die "--booking needs a path to an eval/results/booking_gate_*.json"
+                       BOOKING_ARG=$2; shift ;;
+      --booking=*)     BOOKING_ARG=${1#--booking=} ;;
       -h|--help)       usage; exit 0 ;;
       up|attach|status|birds|down|test-flight) CMD=$1 ;;
       *) usage >&2; die "unknown argument: $1" ;;
     esac
     shift
   done
+
+  # The authorisation is resolved BEFORE anything else happens — before the tmux check, before
+  # preflight touches the container — so an unbookable artifact costs nothing and refuses at once.
+  # Only the three commands that print the recipe read it: teardown must never be blocked by a
+  # booking file, and `birds`/`attach` book nothing.
+  if [ -n "$BOOKING_ARG" ]; then
+    case $CMD in
+      up|test-flight|status) booking_resolve ;;
+      *) warn "--booking / SWATHKEEPER_BOOKING has no effect on '$CMD': it books the fly recipe,
+  which only up / test-flight / status print. Nothing was read, nothing was refused." ;;
+    esac
+  fi
 
   # --dry-run is a paper exercise — it must run anywhere, so tmux is only required for real work.
   if ! command -v tmux >/dev/null 2>&1; then

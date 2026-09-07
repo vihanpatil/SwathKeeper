@@ -3350,7 +3350,7 @@ Owner / roles: user (direction + ratification); exec-council (ruling); five rese
 (sourced findings, recorded in the ruling's amendment block); product-lead (scope guard);
 tech-lead (recorded); robotics-sim-engineer + perception-ml-engineer (sensor-in-sim phase, next).
 
-## ADR-020: The forward obstacle sensor is a gz-sim `depth_camera` on its own level, nose-mounted aperture — and its booking gate refuses to authorise a flight on config prose   (2026-08-26, status: ACCEPTED — **COMMISSIONED: all six D-gates MEASURED live 2026-09-06/07** (amendments 1-2). D2 **8/8 PASS**; D3 optical prefix **58.0 m (a clip-limited FLOOR)** / **BOOKABLE 46.0 m**, user-ratified 2026-09-07; D4 **exit 0 — PASS and BOOKABLE at 5.0 m/s, margin 1.780×** on the live six-number intrinsic set, artifact `eval/results/booking_gate_20260907T064136Z.json`; D5 **132 / 132 = 1.000** and D6 **−1.18° median, −12.50° worst attitude of the flight** — but **D5 and D6 were both measured at a 3.50 m/s median ground speed, not at the booked 5.0 m/s**, so delivery and pitch AT THE BOOKED SPEED remain UNMEASURED and are owed by the dodge flight. The "NOT YET RENDERED" preamble below is SUPERSEDED, not deleted)
+## ADR-020: The forward obstacle sensor is a gz-sim `depth_camera` on its own level, nose-mounted aperture — and its booking gate refuses to authorise a flight on config prose   (2026-08-26, status: ACCEPTED — **COMMISSIONED: all six D-gates MEASURED live 2026-09-06/07** (amendments 1-2). D2 **8/8 PASS**; D3 optical prefix **58.0 m (a clip-limited FLOOR)** / **BOOKABLE 46.0 m**, user-ratified 2026-09-07; D4 **exit 0 — PASS and BOOKABLE at 5.0 m/s, margin 1.780×** on the live six-number intrinsic set, artifact `eval/results/booking_gate_20260907T064136Z.json`; D5 **132 / 132 = 1.000** and D6 **−1.18° median, −12.50° worst attitude of the flight** — but **D5 and D6 were both measured at a 3.50 m/s median ground speed, not at the booked 5.0 m/s**, so delivery and pitch AT THE BOOKED SPEED remain UNMEASURED and are owed by the dodge flight. **Amendment 3 (2026-09-07): the booked speed is ENFORCED — `--booking` types `WP_SPD 5.0` into the recipe (the first build's `WPNAV_SPEED 500` named a parameter that does not exist at the pinned SHA) and the flight-log gate checks the flown speed per ENCOUNTER against booked × 1.10.** The "NOT YET RENDERED" preamble below is SUPERSEDED, not deleted)
 
 **Nothing in this build has ever been rendered.** Every claim below is host-side arithmetic,
 source-reading verified at the pinned SHAs, and offline rehearsal; the commissioning Docker
@@ -3961,3 +3961,83 @@ Owner / roles: user (at the controls for probe 5 and both test-flights; ratified
 robotics-sim-engineer (probe 5 and probe B in-render); flight-software-engineer (the six-number CLI,
 schema 1.2, `corner_ray_ratio`, G105, the `min()` fix); tech-lead (the D6 retraction, the
 dispositions, recorded).
+
+### ADR-020 amendment 3 (2026-09-07, THE BOOKED SPEED IS NOW ENFORCED AT BOTH ENDS — and the first build enforced a parameter that does not exist): `WP_SPD 5.0` typed into the recipe from the artifact, the flown speed gated per ENCOUNTER not per flight, and a tuning scanner that warrants one override by name
+
+**The gap.** Amendment 2 authorised the dodge at **5.0 m/s** and nothing enforced it: the fly recipe
+set no speed, ArduCopter's default flew **10.58 m/s** — a speed at which the same gate exits 1 — and
+`check_live_flight_log.py` never asked what speed a take was flown at. A take flown faster than booked
+would have been scored as the authorised take.
+
+**Decision (one QA round, seven verified findings, all fixed the same night; overnight autonomous run
+under the user's standing mandate, product-lead tiebreak rule applied by the orchestrator).**
+1. **Pre-flight half — `scripts/fly_pipeline.sh --booking <booking_gate_*.json>`** (or
+   `SWATHKEEPER_BOOKING`): the launcher loads the artifact through the flight-log gate's own
+   `load_booking` (`validate_report` + bookable check, refuses its own bringup record by name), and
+   injects **`param set WP_SPD 5.0`** as the recipe's fourth line for `up`, `test-flight` and
+   `status`; writes `eval/results/live_flight_booking_<UTC>.json` (sidecar schema 1.1:
+   `booking = {path, booked_speed_mps, parameter}`) and a `booking` block in gate record 1.2. A
+   non-bookable or malformed artifact **refuses the flight**; `attach|birds|down` ignore a booking
+   with a named warning (teardown is never blocked). Refusal band **0.10–20.00 m/s** = the parameter's
+   own `@Range` at the pinned SHA.
+2. **The first build typed `param set WPNAV_SPEED 500` — a parameter that does not exist at ADR-004's
+   pinned firmware `9895756d`.** QA found it from the upstream source (`ArduCopter/Parameters.cpp:370`
+   `GOBJECTPTR(wp_nav, "WP_", AC_WPNav)`; `AC_WPNav.cpp` `// 0 was SPEED`, `@Param: SPD @Units: m/s
+   @Range: 0.10 20.00`, `WP_SPD_DEFAULT 10.0f` — the ~10 m/s that flew unbooked). Wrong name AND wrong
+   units by 100×: MAVProxy would have rejected the line, the vehicle kept its default, and **four
+   artifacts would have said BOOKED 5.0 — a commanded value recorded as flown.** The repo's own
+   `eval/point_mass.py` prose ("names moved WPNAV_SPEED → WPNAV_SPD") was what misled the build; it is
+   corrected and the `@Param` block is pasted verbatim into the launcher as a sourced citation. **The
+   `wpnav_speed_cms` field and the ×100 conversion are deleted, not renamed** — the parameter's unit is
+   the booked speed's unit, so one source of truth.
+3. **Post-flight half — `check_live_flight_log.py --booking`** gates the **flown median airborne
+   ground speed** (ticks above 1 m) against `booked × 1.10` — **per encounter window, not per
+   flight.** QA reproduced the defect on the committed 2026-08-25 take: whole-flight median
+   **3.417 m/s = 0.683×** a 5.0 booking (would PASS) while the takeover→resume window read
+   **9.012 m/s = 1.802×** (FAILS). `encounter_windows()` takes its bounds from the flight's own
+   takeover/resume events (no padding — a window nobody logged is a window somebody chose), a re-latch
+   inside an open encounter does not open a second one, an unclosed takeover runs to the last tick;
+   every window is owed a verdict (unmeasurable = `problem`, never a silent drop). Pinned by
+   `TestTheCommittedTakeIsTheRegression` on the committed log + committed booking — the test asserts
+   the DISAGREEMENT between the two statistics.
+4. **The tuning-override scanner** (`eval/replay_point_mass.py::_tuning_override_scan`) gained `WP_`
+   in `_TUNING_PREFIXES` (it subsumes `WPNAV_` at this SHA) and **`WARRANTED_OVERRIDES` keyed by
+   parameter name, never by path**: three outcomes — clean; the one warranted `WP_SPD` reported WITH
+   its consequence (a booked flight's `v_max_ne_mps` is its booked speed, not 10.0; all three replayed
+   encounters predate any booking); or the loud statement for any other key. Test plants
+   `WP_RADIUS_M` beside `WP_SPD` and requires the unknown one to fail. Not an allowlist, not a split
+   literal — the guard keeps finding the line.
+5. **Runbook coherence**: `AVOIDANCE_REAL_DETECTION.md` §0g (booking is MANDATORY for a dodge take),
+   §1/§2 carry the booked recipe, §5's Gate 1 command now passes `--booking` (it did not — doc
+   contradicting doc in the one procedure that decides), and **§0b's abort gate derives `--speed`
+   from the booking artifact** instead of 9.4 m/s: measured, the answer moves — 3 of 3 birds fail at
+   9.4, **2 of 3 at 5.0** (medians 2/2/6; bird_2 crosses the floor at the booked speed). §0b stays an
+   abort gate; its demotion is the product-lead ratification the ROADMAP already books as owed.
+6. `predict_forward_lead.py` **schema 1.3** (additive: `config_relpath`, full-precision
+   `fx`/`fy`; the committed 1.2 artifact validates untouched) and the **mission-speed cap is a CHECK**
+   (`escape_survives_mission_speed_cap`), no longer a printed number — with `WP_SPD` set, the GUIDED
+   escape's NE velocity really is capped at the booked speed, so the cap stopped being hypothetical.
+   It does not bind at 5.0 m/s on the 2026-09-07 artifact.
+7. Launcher hardening from QA's majors: the artifact reader no longer merges stderr into the parsed
+   stream (a banner could have booked a garbage recipe line), both values are hard-validated before
+   they reach the recipe, and the pre-flight end now validates as strictly as the post-flight end.
+
+**Consequences.** The injected line is typed at the prompt, i.e. skippable by a human — acceptable
+ONLY because the post-flight flown-vs-booked gate now exists (§0g says so). `dashboard/data/
+verdicts.json` regenerated (+2 lines: the new gate's messages on the committed take, "no booking
+bound — context, not a check"). Suite 1375 / 1 by-design red / 2 skipped at this commit.
+
+**OPEN (recorded, not decided tonight).** (a) An avoidance take with **no** booking is still VALID
+with a loud warning — "MANDATORY" is implemented as a note because the committed 2026-08-25 take
+predates bookings; the safety direction says a detector-source log written after 2026-09-07 without
+a booking should be INVALID-for-authorisation. **Product-lead call**; the dodge pre-registration will
+name the booking sidecar as a required artifact meanwhile. (b) `status` and the live recipe pane can
+disagree mid-session about whether the take is booked (minor). (c) Nit: the committed D4 artifact
+no longer reproduces one verdict-invariant field from the current tool (pre-existing from the
+corner-ray fix, not from this diff).
+
+Owner / roles: devops-reliability-engineer (launcher, sidecar, runbook recipe blocks, 88 launcher
+tests); flight-software-engineer (flight-log gate, encounter windows, schema 1.3, cap check, the
+scanner warrant); qa-safety-reviewer (the seven findings, the WP_SPD source trace, the encounter
+reproduction); orchestrator (this record; product-lead tiebreak on the open items deferred to the
+user's morning).

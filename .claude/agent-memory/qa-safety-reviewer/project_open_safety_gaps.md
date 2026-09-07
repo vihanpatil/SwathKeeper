@@ -1,9 +1,161 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-06 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build -- booking-gate exit contract + what D1-D6 cannot see; G90-G95 the D2/D3 in-render harness after its 2026-09-06 rewrite; G96-G100 the doc/contract lens over the same rewrite; G101-G106 the D3->D4 acquisition-number handover; G105 CLOSED and G107-G114 opened 2026-09-07 over the probe-C/G105 fix round; G115-G122 opened 2026-09-07 over the commissioning-close DOC lens -- every measured number reproduced, every defect was prose; G125-G134 opened 2026-09-07 over the same tree under the HARNESS + GATE-INTEGRITY lens -- 10 of 11 mutants killed, the survivor is the booking gate's own acq_range conjunct)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 opened 2026-09-07 over the DEPTH SEGMENTER -- an FNR bar that passes by 1 pixel and the mitigation rejected on a miscount)
 metadata:
   type: project
 ---
+
+**G148-G156 (2026-09-07) — THE DEPTH SEGMENTER (`feat/depth-segmenter`, uncommitted over HEAD
+98096e8: `src/fieldguard_planning/depth_segment.py` + `eval/score_depth_segmenter.py` + the
+85-frame `eval/results/depth_dataset_20260907`). The measured numbers all reproduced: the labeller
+agrees with an INDEPENDENT world-raycast localisation to 0.35 px / 0.011 m over 13 stations, all
+135 boxes on the 9 negatives re-classify identically when I un-project them myself, the occlusion
+stations really are occluded (an occluder is nearer than the bird along the bird's own ray), the
+analytic 0.9805 m border residual is reproduced on the real render to 0.001 m, and 10 of 12
+SOURCE-level mutants are killed. The holes are in what the METRICS can express.**
+
+- **G148 (CRITICAL) — the FNR bar passes S042/S046 by ONE PIXEL, and nothing reports it.** The
+  reported range is the component's MEDIAN. At S042/S046 the matched component is 60 px: 32 the
+  bird's own rendered pixels at ~29.9 m and 28 canopy pixels at ~54.5 m. The median needs bird > 30
+  of 60; it has 32. Lose 2 bird pixels (different sub-pixel placement, a moving bird, AA) and the
+  same detection reports **54.5 m instead of 29.96 m** — a bird at 30 m declared 24.7 m too far,
+  which is the exact "looks like success" failure the module exists to prevent. S041 is 3 px from
+  the same flip. The artifact's `range_error_p95 = 0.108 m` cannot see this: the failure is a median
+  FLIP, not a drift. Reproduce: label each matched component's pixels against the negative-control
+  diff and print `bird_px / component_px` (0.53, 0.53, 0.56, 0.60, 0.79, then 1.00 for the rest).
+- **G149 (MAJOR) — the merge-mislabel metric counts a CORRECT SPLIT as a merge, and that miscount
+  is the stated reason for an adopted constant.** `score_depth_segmenter.score_station` flags a
+  merge whenever ANY box is within tau of the bird and within eps of the background — even when the
+  bird was separately and correctly matched. Measured at S042/S046 with `link_break=True`: the bird
+  comes back as its OWN 6x5 component at 29.88 m AND the canopy as its own at 54.5 m (both correct),
+  and the scorer calls that 2 merge mislabels. `DEFAULT_PARAMS_PROVENANCE` in `src/` — a receipt
+  pinned by test — therefore states "ON introduced 2 merge mislabels (S042, S046) and fixed
+  nothing"; ON actually moves range p95 0.1076 -> 0.0775, max 0.1362 -> 0.0846 and worst centroid
+  4.335 px -> 0.665 px. Fix the definition (a neighbour is only a mislabel if the bird was NOT
+  separately matched), then re-run the link-break arm. Honest caveat: under the corrected rule the
+  adoption rule still yields OFF, because `better` is only evaluated on misses/unmapped_fp/merge.
+- **G150 (MAJOR) — the NaN sanitisation is load-bearing, untested, and its docstring blames the
+  wrong value.** Mutant `bg = closing(z, K)` instead of `closing(zb, K)` SURVIVES all 49 new tests.
+  Measured: a 61x61 NaN patch beside a 20 m obstacle takes the obstacle's candidate pixels 68 -> 0.
+  Meanwhile the docstring's stated reason (`one -inf would be spread over a KxK window by the
+  erosion half`) is false — the DILATION half runs first, so the -inf zone after the closing is
+  confined to its own footprint; the -inf -> +inf substitution only ever ADDS a small far false
+  component (measured: 10 px on a ramp that otherwise produces none).
+- **G151 (MAJOR, blocker for committing) — `.gitignore:21 eval/results/*` hides the artifact,
+  REPORT.md and all six fixtures, and both new test files hard-assert on them.** CI runs
+  `unittest discover -s tests/fieldguard_planning` (`.github/workflows/ci.yml:64`) on a fresh
+  checkout, so this goes red the moment the branch is pushed. The six-line negation set is
+  VERIFIED (`git ls-files --others --exclude-from=...` yields exactly the 8 wanted paths and keeps
+  the 85 .npy frames ignored).
+- **G152 (MINOR) — "cluttered acquisition 46.0 m" is a SKY-BACKED number above 28 m.** The FNR
+  cells show canopy and ground_band stopping in the 20-30 m bin; the 30-40 and 40-50 bins are 18/18
+  sky. Geometrically unavoidable in this world (an in-band bird beyond ~32 m has its ground
+  background past the 60 m slant cull), so it is a qualifier the verdict owes, not more stations.
+- **G153 (MINOR) — three different numpy/scipy stacks and the constants were measured on none of
+  the two that matter.** Artifact: host numpy 1.26.4 / scipy 1.13.1 (py3.9). CI: numpy 2.5.1 /
+  scipy 1.18.0 (py3.12). The FLIGHT container: numpy 1.21.5 / scipy 1.8.0 (py3.10). The fixture
+  test asserts box counts and depths to 3 dp out of a scipy morphology. Green on a second host
+  stack (py3.11 / 1.26.1 / 1.14.0); never executed under either target.
+- **G154 (MINOR) — `_link_break`'s "SPLITS AND TAGS, NEVER WITHHOLDS" is falsifiable in one line.**
+  Two adjacent 12-px objects at 20 m and 30 m: `link_break=True` returns **[]** (both halves fall
+  under `min_area=10`); OFF returns one box at **25.0 m**, which is neither object's depth. Off by
+  default and pinned, so latent — but the design note made "never withholds" the CONDITION for
+  keeping the rule.
+- **G155 (MINOR) — the multi-object merge is unmeasured.** Every station has exactly one bird
+  (birds 1 and 2 parked at (-200,-190/-180,50)); the mission world has 2-3. Two near objects that
+  touch in image space return ONE component at a median that belongs to neither.
+- **G156 (NIT) — `score_station`'s docstring claims ALGORITHM §7.2's one-to-many matcher;** the
+  code only counts `fragments` and `matched` stays the strict two-clause rule. Safe direction, and
+  never exercised (nearest station 14 m > the 12.48 m arc crossover), but the doc overstates.
+
+**G135-G147 (2026-09-07) — THE BOOKING-ENFORCEMENT LENS (2 builders, uncommitted over HEAD
+98096e8: `fly_pipeline.sh --booking` + `check_live_flight_log.py --booking` + pfl schema 1.3).
+Every host probe reproduced; 11 of 11 behavioural mutants across both builders' code were KILLED,
+so the enforcement is genuinely tested. The holes are at the two ENDS of the chain — what the
+launcher types into the vehicle, and what the gate chooses to measure.**
+
+- **G135 (CRITICAL) — `param set WPNAV_SPEED 500` names a parameter that DOES NOT EXIST at the
+  pinned firmware SHA.** At `9895756d…` `ArduCopter/Parameters.cpp` registers
+  `// @Group: WP_` / `GOBJECTPTR(wp_nav, "WP_", AC_WPNav)`, and `AC_WPNav.cpp`'s block is
+  `@Param: SPD / @Units: m/s / @Range: 0.10 20.00`; `AC_WPNav.h` has `AP_Float _wp_speed_ms`
+  ("default horizontal speed in **m/s**"), `get_default_speed_NE_ms() … Derived from the **WP_SPD**
+  parameter", plus a separate `get_default_speed_NE_cms()` that ×100. So the parameter is
+  **`WP_SPD`, in m/s** — the injected line is a wrong NAME *and* wrong UNITS by 100×; a 5.0 m/s
+  booking is `param set WP_SPD 5`. MAVProxy rejects an unknown name, the take flies the ~10 m/s
+  default, and FOUR artifacts still assert it was booked at 5.0 (recipe header, gate-record
+  `booking`, `live_flight_booking_*.json` sidecar, test-flight evidence line) — a COMMANDED value
+  recorded as FLOWN. The repo's OWN record disagrees with the diff: `test_point_mass_replay.py`
+  :204-208/:840/:857 and `DECISIONS.md:3398` say `WPNAV_SPD`, and **`DECISIONS.md:2911-2912` is a
+  prior QA finding that `WPNAV_SPEED` "appears nowhere in scripts/, docs/runbooks/ or config/"**.
+  **How to apply: a firmware parameter name typed at a prompt is a CITATION. Fetch it at the pinned
+  SHA before it ships.** (`WPNAV_SPD` is also stale for this SHA, but it is prose, not a typed line.)
+- **G136 (CRITICAL) — fixing G135 to `WP_SPD` BLINDS the tuning-override scanner.**
+  `eval/replay_point_mass.py:1584 _TUNING_PREFIXES = ("WPNAV_","GUID_","PSC_","ANGLE_MAX",
+  "ATC_ANGLE_MAX")` — no `WP_`. Today the scanner fires (10 hits) ONLY because the name is wrong;
+  correct it and `params_are_defaults` returns to "CHECKED at run time: no override" with a real
+  override sitting in the recipe. Also `eval/point_mass.py:129`'s provenance already ends "No
+  WPNAV_*/GUID_*/PSC_* override exists in this repo", which is false today and is written into
+  every regenerated replay artifact. The two fixes MUST land together.
+- **G137 (CRITICAL) — the gated speed statistic cannot see the failure it exists for.**
+  `gate_booked_speed` gates the WHOLE-FLIGHT airborne median. MEASURED on the only real avoidance
+  take (`live_flight_log_20260825T210402Z`, flown with NO speed param at all): median **3.417 m/s
+  → 0.683× the committed 5.0 booking → PASSES**, while the encounter itself (takeover tick 991 →
+  resume 995) ran at median **8.386-8.622** and max **10.902 m/s** within ±5 ticks of the gt-CPA =
+  1.72-2.18× booked. Re-running the booking gate there: 8.622 → 1.368× exit 0, **10.902 → exit 1**.
+  The gate PRINTS "the booking's lead margin is spent at the speed flown WHEN a bird appears, not at
+  the median" and then does not check it — the same printed-not-gated defect the same session just
+  closed in `predict_forward_lead` (G127). `encounter_ticks(log)` is already in the module.
+- **G138 (MAJOR) — the dodge runbook's own post-flight command omits `--booking`.**
+  `AVOIDANCE_REAL_DETECTION.md` §0g calls the booking MANDATORY and :221 says "§5's gate wants the
+  artifact", but §5 Gate 1 is still `check_live_flight_log.py "$LOG" --truth "$TRUTH"` (and the
+  :13 evidence table likewise). Follow the runbook verbatim and the enforcement never runs.
+- **G139 (MAJOR) — §0b's abort gate is run at a speed the booked take will not fly.** §0b is
+  `predict_bird_visibility.py --fps 5.0 --speed 9.4`; §0g books 5.0. ADR-016's own motivating
+  finding (`DECISIONS:2905-2912`) is exactly "§0b's abort gate was GREEN at a speed the vehicle has
+  never flown". MEASURED: 9.4 → FAIL 3 of 3 (medians 2/2/3); 5.0 → FAIL **2 of 3** (medians 2/2/**6**
+  — bird_2 CROSSES the floor). The answer moves with the booked speed, and G60 pinned the response
+  non-monotone, so the literal must become the booked speed.
+- **G140 (MAJOR) — `booking_resolve()` parses 3 lines of a stream that MERGES stderr, unvalidated.**
+  REPRODUCED with `PYTHONVERBOSE=1`: the launcher prints `BOOKED import _frozen_importlib # frozen
+  m/s` and injects `param set WPNAV_SPEED import _imp # builtin` into the recipe a human types
+  verbatim. `printf '%s'` passes anything. Fix: keep stderr separate and assert `^[0-9]+$`.
+- **G141 (MAJOR) — asymmetric validation, and the UNGUARDED end is the pre-flight one.** The
+  launcher books a 2-field stub `{"verdict":{"bookable":true},"encounter":{"mission_speed_mps":9.0}}`
+  and prints `booked: … 9.0 m/s`; the flight-log gate refuses the identical file through
+  `predict_forward_lead.validate_report` and its own comment says "would let a two-field JSON book a
+  flight". `booking_resolve` should `sys.path.insert` scripts/ and call the same validator.
+- **G142 (MAJOR, product-lead call, NOT a bug) — "MANDATORY for a dodge take" is a NOTE.** An
+  avoidance take with no booking is VALID with a warning, deliberately and pinned by
+  `test_an_avoidance_take_with_NO_booking_gets_a_loud_warning_and_still_passes`. With G138 unfixed
+  that IS the hole. Either fix G138 (procedure always binds one) or make a missing booking a
+  `problem` for `DET_NDVI_BLOB` logs stamped after 2026-09-07.
+- Smaller, all confirmed: devops' report **misattributes** the `test_ci_evidence_gate` red to the
+  NO-BOOKING check — it is the pre-registered 08-25 breach, unchanged (notes never reach the
+  verdict; mutant M11 proves it); the launcher's band comment cites `WPNAV_WP_SPEED_MIN (10 cm/s)`
+  where the SHA has `WP_SPD_MIN = 0.01f` and a 0.10 @Range floor (G70's dangling-citation family,
+  though 10..2000 cm/s == the documented 0.10..20.00 m/s interval, so the band survives the unit
+  fix); `status` without the flag prints **NO SPEED BOOKED** while the pane's `$RECIPE_FILE` from
+  `up --booking` carries the booked line (two surfaces, opposite claims — `export
+  SWATHKEEPER_BOOKING` closes it); **no ADR entry exists** for schema 1.3, the cap check, the
+  launcher flag, the gate-record 1.2 bump or the flown-vs-booked gate, and ROADMAP:20 ("current
+  truth") still ends the story at the D4 artifact.
+- **VERIFIED GOOD, do not re-derive:** the schema 1.3 bump is genuinely additive (field-by-field
+  diff of a D4 re-run vs the committed artifact: **11 keys added, 0 removed**, only
+  `schema_version` and the PRE-EXISTING `band_covered_from_m` 13.0→13.055 change value);
+  `test_booking_gate_artifact.py` still pins `"1.2"` and stays green; `.gitignore` re-includes BOTH
+  sidecar names (`live_flight_log_*.json` already globs `<stem>.booking.json` — checked with
+  `git check-ignore`); the launcher refuses missing/malformed/not-bookable/unreadable-speed/
+  out-of-band artifacts, all named on one line, before preflight; the gate refuses the launcher's
+  bringup record BY NAME, refuses a sweep, refuses a legacy log, and refuses two disagreeing
+  bookings; the lazy `predict_forward_lead` import works from a foreign cwd; the G127 cap-check
+  numbers reproduce exactly (0.788 → exit 1 / 0.790 → exit 0; peak 2.106× at 2.596 m/s; identical
+  to `lead_margin` above ~3.86 m/s; the ONLY speeds where it adds a failure are 0.02-0.788 m/s).
+  **MUTATION: 11/11 killed** (tolerance 1.10→3.0; overspeed problem→dead; median→min;
+  `AIRBORNE_Z_M`→−1000; booking problems→notes; `is_avoidance`→False; launcher bookable-refusal
+  →dead; WPNAV line moved after `mode auto`; WPNAV line deleted; band 10..2000→1..100000).
+  **NOT TESTED:** anything in the renderer or in the container; whether MAVProxy actually rejects
+  `WPNAV_SPEED` (host-only session — G135 rests on two upstream files at the pinned SHA plus the
+  repo's own record, not on a flight).
 
 **G115-G122 (2026-09-07) — DOCUMENTATION-CONSISTENCY LENS over the uncommitted commissioning-close
 tree (3 builders, over HEAD 63e310f). Every D5/D6 number I could reproduce host-side DID reproduce

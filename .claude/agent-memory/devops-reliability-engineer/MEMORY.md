@@ -5,3 +5,5 @@
 - [Doc claims get measured too](feedback_docs_claims_get_measured.md) — reproduce the reader's env, quote real stdout, re-check handed-down facts against DECISIONS.md
 - [sim image + container state](project_sim_image_state.md) — scipy rebuild DONE (verified 2026-08-25), shm 1 G; what still gates a booked take
 - [Weeks 5-6 headless Docker/Gazebo CI job](project_week5_ci_gazebo.md) — feasibility verdict (no hosted-runner precedent even upstream), what's built vs unverified, manual-dispatch-gated until a human confirms green (2026-08-05)
+- [Booked speed → the air](project_booking_speed_enforcement.md) — `--booking` injects WPNAV_SPEED; why there are TWO booking sidecars and which is the contract (2026-09-07)
+- [The tuning scanner blocks flight params](project_tuning_scanner_blocks_flight_params.md) — any WPNAV_/PSC_/GUID_ token, even in prose, fails the point-mass validity test; no placement avoids it

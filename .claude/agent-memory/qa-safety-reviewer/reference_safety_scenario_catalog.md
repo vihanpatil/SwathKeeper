@@ -513,3 +513,34 @@ one painted `far/|ray|` pixel so D2 CULL has ground). It reproduces the live run
 only thing in the repo that turns an in-render mutation red BEHAVIOURALLY. Its red case (station 20
 showing a 30 m frame — centred, one component, distinct, so G105 is blind) is exactly the case
 per-station depth evidence was added for.
+
+**The DEPTH SEGMENTER layer (2026-09-07, `feat/depth-segmenter`).** Operator:
+`src/fieldguard_planning/depth_segment.py` (`closing(D,K) - D > margin`, K 15 / margin 1.5 /
+min_area 10 / open_iter 0 / max_boxes 64 / link_break False). Evidence:
+`eval/score_depth_segmenter.py` -> `eval/results/depth_segmenter_score_20260907T093000Z.json` +
+`eval/results/depth_dataset_20260907/REPORT.md` + 6 `fixtures/*.npz`. Tests:
+`tests/fieldguard_planning/test_depth_segment.py` (32) + `test_depth_segmenter_score_artifact.py`
+(17). Suite after: **Ran 1150, OK (skipped=2)**.
+
+*The four independent re-derivations that ARE the review (each ~30 s, all reproduced 2026-09-07):*
+1. **Labeller without the scorer's negative-control diff** — ray-cast the committed SDF (ground
+   plane + 18 canopy spheres + 18 trunk cylinders, cull on `Z*|dir|`) and take the pixels the render
+   draws >0.5 m nearer than the model. Camera pose = `vehicle_readback` composed with
+   `depth_link_readback_parent_relative`; `u = cx + fx*(-d_y)/d_x`, `v = cy + fy*(-d_z)/d_x`.
+   Result: 0.35 px / 0.011 m worst over 13 stations incl. 270-deg yaw, off-axis, ground-band, pitched.
+2. **Negatives un-projected by hand** — `world = cam_p + depth * (cam_R @ [1, -(u-cx)/fx,
+   -(v-cy)/fy])`, then "inside 2.0 m of a tree axis AND 0<=z<=4.8" (that IS `unsafe_obstacle_3d`).
+   All 135 boxes on the 9 negative frames reproduce the artifact exactly; the z<=4.8 escape is used
+   once, on the pitched negative.
+3. **Occlusion truth** — a zero-changed-pixel frame is ALSO what a failed teleport looks like.
+   Ray-cast along the bird's own ray and require an occluder nearer: 33.64 vs 37.00, 43.61 vs 47.00,
+   43.61 vs 45.00 m. (S058/S059/S060 are byte-identical to S061, the P1 negative: 4 frames, 1 sha1.)
+4. **Median-flip margin** — for each matched component, `bird_px / component_px` from the
+   negative-control diff. The number the artifact does not print, and the one that found G148.
+
+*Source-level mutation (do this, not just the `_mask_terms` hook): back up
+`depth_segment.py`, `str.replace` one construct, run the two test files, restore, `git diff` to
+prove clean.* 12 mutants, 10 killed (added max_area 4000; truncation sorted `-r[0]`; mean instead of
+median; inclusive clip window; each of margin/min_area/K/link_break moved one rung; clip_window and
+step_over_margin deleted). Survivors: `isfinite` alone (documented-redundant, correct) and
+`closing(z)` instead of `closing(zb)` = **G150**.

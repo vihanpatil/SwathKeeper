@@ -22,7 +22,9 @@ WPNAV_SPD **10 m/s**, WPNAV_ACC **2.5 m/s^2**, WPNAV_SPD_UP 2.5, WPNAV_SPD_DN 1.
 with PosControl's own **PSC_NE_JERK 5 m/s^3** and PSC_NE_POS_P 1.0. ANGLE_MAX 30 deg -> the physical
 ceiling a = g*tan(30) = **5.66 m/s^2**. WPNAV_JERK (1.0, the minimum of its range) is **NOT** on this
 path — it only shapes AC_WPNav's S-curve. Parameter names moved in this firmware:
-WPNAV_SPEED->WPNAV_SPD, WPNAV_ACCEL->WPNAV_ACC, PSC_JERK_XY->PSC_NE_JERK.
+the real names at the pinned SHA are `WP_SPD` (m/s, group prefix `WP_`) and PSC_NE_JERK; the
+`WPNAV_SPD`/`WPNAV_ACC` spellings in this repo's comments are SHORTHAND, not parameters —
+see [[booking-speed-enforcement]] for the sourced citation (QA G135).
 
 **Q1 — THE HEADLINE, after adversarial QA (2026-08-26): "the command path demonstrably MOVED the
 aircraft on 08-23; demonstrably did NOT on 08-18; 08-25's 0.434 s window CANNOT TELL."** Scored as

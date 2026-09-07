@@ -22,7 +22,11 @@ A flight log is VALID iff all of:
      `min_bird_clearance_m` (ADR-013 amendment 12, R1);
   6. and, for a log carrying a `run` block with `schema_version >= 2`, the per-decision gates in
      the SCHEMA-2 section below (clock domain, R2 swept-tree clearance, R3 degenerate re-latch,
-     and CPA measured against the BIRD GROUND-TRUTH TRACK rather than the drone's own detections).
+     and CPA measured against the BIRD GROUND-TRUTH TRACK rather than the drone's own detections);
+  7. and, when a BOOKING is bound to it (`--booking`, or a `<log-stem>.booking.json` sidecar), that
+     the flight was flown at the mission speed that booking authorised -- see THE BOOKING below.
+     Optional, because the NDVI survey needs no booking; mandatory for a dodge take, where its
+     absence prints a WARNING that the authorisation is unverified.
 
 TWO VERSIONS, ON PURPOSE, AND THE OLD ONE IS A CLOSED LIST. Recorded history keeps the verdict it
 was flown under: a log with no `run` block takes the legacy path unchanged (5 above), which is what
@@ -131,7 +135,8 @@ Usage:
     python3 scripts/check_live_flight_log.py                          # all eval/results/*flight_log*.json
     python3 scripts/check_live_flight_log.py eval/results/*flight_log*.json
     python3 scripts/check_live_flight_log.py <log> \
-        --truth eval/results/bird_drive_<stamp>_applied.jsonl
+        --truth eval/results/bird_drive_<stamp>_applied.jsonl \
+        --booking eval/results/booking_gate_<stamp>.json          # a dodge take
 
 STDLIB ONLY, deliberately: this runs as a CI step that needs nothing but `src/` importable, and the
 whole truth-track path (`scripts/drive_birds.py`, `eval/annotate_real_clip.py`) is stdlib too. Do
@@ -140,6 +145,7 @@ not let numpy/scipy leak into the gate.
 import argparse
 import json
 import math
+import statistics
 import sys
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
@@ -1486,6 +1492,423 @@ def gate_r2_r3(log, run) -> Tuple[List[str], List[str]]:
     return problems, notes
 
 
+# ================================================================================================
+# THE BOOKING -- was this take flown at the speed it was AUTHORISED at? (QA finding G128)
+# ================================================================================================
+# WHY THIS EXISTS. `scripts/predict_forward_lead.py` writes `eval/results/booking_gate_<UTC>.json`,
+# and the committed 2026-09-07 one says PASS and BOOKABLE at **5.0 m/s**. Nothing in the repo made
+# the vehicle fly at 5.0: until 2026-09-07 no waypoint-speed parameter was set anywhere in this
+# repo, so ArduCopter's ~10 m/s default flew every mission -- the 2026-09-06 scripted test-flight
+# peaked at 10.576 m/s, a speed at which that same booking gate exits 1 (margin 1.216x against a
+# 1.30x bar). `fly_pipeline.sh --booking` now injects the speed into the fly recipe, but only when
+# it is given one, and nothing it does can be verified from the recipe: the vehicle is what has to
+# have flown it. A dodge take flown faster than it was booked is NOT the authorised take, and until
+# this gate existed the evidence gate could not tell the difference -- it printed a GT-CPA and a
+# green verdict either way.
+#
+# The flown speed is computed from the LOG'S OWN POSES -- the same `flown_path_enu` +
+# `run.tick_stamp_sim_s` pair the GT-CPA join already walks -- so it needs no new instrumentation,
+# no new field on the node, and it cannot be written by whatever was supposed to set the parameter.
+#
+# TWO GATED STATISTICS, ONE BAR. `WP_SPD` (the waypoint speed at ADR-004's pinned SHA -- in m/s;
+# `WPNAV_SPEED` is retired there) is a CAP, not a setpoint, so the gated number is a MEDIAN in both
+# cases and p90/max ride along as context:
+#   * the WHOLE-FLIGHT median -- the speed the mission was flown at; catches the headline failure,
+#     an unbooked take at ArduCopter's 10 m/s default against a 5.0 m/s booking;
+#   * each ENCOUNTER-WINDOW median (`encounter_windows`) -- the speed the vehicle was doing WHEN it
+#     met a bird, which is where the booking's lead margin is actually spent. Added 2026-09-07 after
+#     QA finding G138 measured that the whole-flight median CANNOT see the failure it exists for: on
+#     the 2026-08-25 take it reads 3.417 m/s (0.68x a 5.0 booking, a comfortable pass) while the
+#     encounter itself ran at a median 9.012 m/s = 1.80x booked, a speed at which the booking gate
+#     exits 1. That flip -- whole flight passes, encounter fails -- is regression-pinned.
+# THE TOLERANCE IS 1.10: far tighter than the failure this exists to catch (a 2x default-vs-booked
+# gap) and far looser than a leg-entry transient or the sampling noise of a 5 Hz numerical
+# derivative. A booking flown at 5.0 admits a 5.5 m/s median; the unbooked default is 10.
+BOOKED_SPEED_TOLERANCE = 1.10
+# Altitude above which a tick counts as AIRBORNE. This project already has exactly one definition of
+# airborne -- `fieldguard_planning.clip_recorder.AIRBORNE_Z_M`, the `z_threshold_m` written into
+# every clip's `meta.airborne` block, and the same 1.0 m `build_dashboard_data.airborne_window`
+# trims the replay to. It is restated here rather than imported because `clip_recorder` imports
+# numpy and this gate is stdlib-only by contract (see the module docstring), and because
+# `build_dashboard_data` imports THIS module, so importing it back would be circular. The three
+# copies are pinned equal by test (tests/fieldguard_planning/test_check_live_flight_log_booking.py).
+#
+# WHY THE PROLOGUE HAS TO COME OUT AT ALL: every committed flight log opens with a long stretch of a
+# parked vehicle -- 40-52 % of the ticks on two of the three -- because the node starts logging at
+# bringup and the human arms and takes off at the MAVProxy prompt some seconds later (ADR-013).
+# A median over ALL ticks on those logs is ~0 m/s, i.e. every flight would clear every booking.
+AIRBORNE_Z_M = 1.0
+# The sidecar: `<log-stem>.booking.json` beside the flight log, resolved exactly the way
+# `marker_path_for` resolves the SAFETY_FINDING marker. `--booking` is the contract and this is the
+# convenience -- a copy of the authorising artifact, laid down beside the evidence by whoever
+# assembles the take. Named off the LOG'S STEM rather than its own UTC stamp because the stem is the
+# only join key that exists between a flight and its sidecars, and because `with_name(stem + suffix)`
+# survives the log being copied into a tmp tree with its siblings, which CI's evidence step does.
+BOOKING_SUFFIX = ".booking.json"
+
+
+def booking_path_for(log_path: Path) -> Path:
+    """`<...>/live_flight_log_X.json` -> `<...>/live_flight_log_X.booking.json`."""
+    return Path(log_path).with_name(Path(log_path).stem + BOOKING_SUFFIX)
+
+
+def _nearest_rank(values: Sequence[float], q: float) -> float:
+    """The q-quantile by NEAREST RANK -- an actual observed sample, never an interpolation between
+    two. `values` must be sorted and non-empty. Interpolating would invent a speed the vehicle never
+    flew, which is the wrong thing to print beside a measured median."""
+    k = max(1, math.ceil(q * len(values)))
+    return values[min(k, len(values)) - 1]
+
+
+def airborne_ground_speed(flown_path: Sequence, tick_stamps: Sequence,
+                          tick_range: Optional[Tuple[int, int]] = None) -> dict:
+    """How fast this flight actually flew, from its own telemetry: HORIZONTAL ground speed over the
+    airborne steps, as {median, p90, max} plus every denominator.
+
+    HORIZONTAL, because that is what the waypoint speed parameter caps and what a booking's
+    `mission_speed_mps` means; a climb is not mission speed. Per consecutive tick pair, both ends
+    must have a usable position, a usable stamp, a positive sim-time step, and BOTH ends above
+    `AIRBORNE_Z_M` -- a step that starts or ends parked is not flight, and one that straddles the
+    takeoff would divide a real displacement by a real time and report a speed nobody flew.
+
+    A per-STEP predicate rather than a contiguous window (the shape `build_dashboard_data`'s replay
+    trim needs): a take with two airborne runs -- an aborted first attempt, a touch-and-go -- has a
+    parked gap in the middle, and a window spanning it would fold zero-speed samples into the median
+    in the OPTIMISTIC direction.
+
+    `tick_range` is an INCLUSIVE 1-based (first, last) tick bound -- a step counts only when BOTH of
+    its ticks are inside it. That is what makes ONE function serve both gated statistics: the whole
+    flight (no range) and one encounter window (`encounter_windows`). `flown_path_enu[tick - 1]` is
+    that tick's position by construction -- the executor records exactly one position per `step()`.
+
+    Sim seconds throughout: `run.tick_stamp_sim_s` is the vehicle's own clock, and `gate_clock`
+    already refuses a frozen or backwards one. Returns `median_mps` None when nothing was scoreable
+    -- 'we could not measure it' is not 'it flew slowly'."""
+    pts: List[Optional[Tuple[float, float, float]]] = []
+    for point in flown_path or []:
+        try:
+            pts.append((float(point[0]), float(point[1]), float(point[2])))
+        except (TypeError, ValueError, IndexError):
+            pts.append(None)
+    stamps: List[Optional[float]] = [_num(tick_stamps[i]) if i < len(tick_stamps) else None
+                                     for i in range(len(pts))]
+    airborne = [p is not None and p[2] > AIRBORNE_Z_M for p in pts]
+    lo_tick, hi_tick = tick_range if tick_range is not None else (1, len(pts))
+    window = [i for i in range(len(pts)) if lo_tick <= i + 1 <= hi_tick]
+    speeds: List[float] = []
+    span_s = 0.0
+    for i in range(len(pts) - 1):
+        if not (lo_tick <= i + 1 and i + 2 <= hi_tick):
+            continue                       # a step half outside the window is not in the window
+        a, b = pts[i], pts[i + 1]
+        ta, tb = stamps[i], stamps[i + 1]
+        if a is None or b is None or ta is None or tb is None:
+            continue
+        if not (airborne[i] and airborne[i + 1]):
+            continue
+        dt = tb - ta
+        if dt <= 0.0:
+            continue                       # a frozen or backwards pair measures no speed at all
+        speeds.append(math.hypot(b[0] - a[0], b[1] - a[1]) / dt)
+        span_s += dt
+    speeds.sort()
+    return {
+        "tick_range": None if tick_range is None else [lo_tick, hi_tick],
+        "ticks_total": len(window),
+        "airborne_ticks": sum(1 for i in window if airborne[i]),
+        "steps_scored": len(speeds),
+        "steps_total": max(0, len(window) - 1),
+        "airborne_span_s": round(span_s, 3) if speeds else None,
+        "median_mps": statistics.median(speeds) if speeds else None,
+        "p90_mps": _nearest_rank(speeds, 0.90) if speeds else None,
+        "max_mps": speeds[-1] if speeds else None,
+        "z_threshold_m": AIRBORNE_Z_M,
+        "rule": (f"horizontal |dp|/dt over consecutive ticks with BOTH ends above "
+                 f"{AIRBORNE_Z_M} m and a positive sim-time step; p90 by nearest rank (a real "
+                 f"sample, not an interpolation)"),
+    }
+
+
+def encounter_windows(log, n_ticks: int) -> List[Tuple[int, int, str]]:
+    """The tick spans the EXECUTOR ITSELF delimited: (first_tick, last_tick, label) per
+    takeover -> resume pair, inclusive, 1-based.
+
+    No +/-N padding around anything. A window nobody logged is a window somebody chose, and the
+    number this feeds is gated -- so the bound has to come out of the flight rather than out of a
+    tuning constant. `gate_encounter_closure` pairs the same two event kinds for its unclosed-
+    encounter check; this pairs them positionally so each window has an end.
+
+    A second `takeover` before a `resume` does NOT open a second window (the executor re-latches
+    inside an encounter that never closed): the window runs from the FIRST takeover to the resume
+    that closes it. An UNCLOSED trailing takeover runs to the last tick of the flight -- that log is
+    already INVALID for the unclosed encounter, and the speed it flew into the dodge is still the
+    honest thing to measure."""
+    evs: List[Tuple[int, str]] = []
+    for ev in log.get("events") or []:
+        if isinstance(ev, dict) and ev.get("kind") in ("takeover", "resume"):
+            tick = ev.get("tick")
+            if isinstance(tick, int) and not isinstance(tick, bool):
+                evs.append((tick, ev["kind"]))
+    # A takeover and a resume stamped on the SAME tick: the takeover opens first, or the pair would
+    # be read as a resume with nothing open followed by an encounter that never ends.
+    evs.sort(key=lambda pair: (pair[0], pair[1] != "takeover"))
+    out: List[Tuple[int, int, str]] = []
+    opened: Optional[int] = None
+    for tick, kind in evs:
+        if kind == "takeover":
+            if opened is None:
+                opened = tick
+        elif opened is not None:
+            out.append((opened, tick, f"takeover {opened} -> resume {tick}"))
+            opened = None
+    if opened is not None:
+        out.append((opened, max(opened, n_ticks),
+                    f"takeover {opened} -> UNCLOSED (to last tick {n_ticks})"))
+    return out
+
+
+def load_booking(path: Path) -> Tuple[Optional[dict], Optional[str]]:
+    """(booking-gate artifact, problem). None + a reason unless `path` is a report that AUTHORISES a
+    flight at one speed.
+
+    Validated by `predict_forward_lead.validate_report` -- the SAME function the tool runs before it
+    writes the file -- rather than by a second opinion here. Imported lazily because
+    `predict_forward_lead` imports `max_bird_speed_m_s` from this module at import time; by the time
+    anything calls this, this module is fully loaded, so the cycle cannot bite in either order.
+
+    Three separate refusals, because they mean different things:
+      * unreadable / malformed  -> the artifact is not evidence of anything;
+      * `bookable` false        -> a SWEEP, or a config-sourced exit-3 design check. Those authorise
+        NOTHING by construction (the tool's whole docstring is about that), so binding one to a
+        flight is a claim of authorisation that never existed;
+      * no `encounter.mission_speed_mps` -> nothing to compare the flight against."""
+    path = Path(path)
+    if not path.exists():
+        return None, (f"--booking {path} does not exist. A booking that cannot be read cannot "
+                      f"authorise a flight.")
+    try:
+        rep = json.loads(path.read_text())
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
+        return None, f"booking {path.name} is unreadable / not valid JSON: {e}"
+    # The LAUNCHER'S RECORD IS A POINTER, NOT AN AUTHORISATION. `fly_pipeline.sh --booking` writes
+    # `eval/results/live_flight_booking_<UTC>.json` at bringup ({"kind": "live_flight_booking"}) --
+    # the artifact's path, the booked speed and the recipe line it injected. It is stamped with the
+    # BRINGUP time, sits beside the flight logs, and is the obvious thing to reach for on flight
+    # day. It carries none of the gate's checks, so reading it as an authorisation would let a
+    # two-field JSON book a flight. Refused BY NAME, pointing at the file it names, because
+    # `validate_report`'s "missing top-level key(s)" is a dead end at the MAVProxy prompt.
+    if isinstance(rep, dict) and rep.get("kind") == "live_flight_booking":
+        named = ((rep.get("booking") or {}).get("path") if isinstance(rep.get("booking"), dict)
+                 else None)
+        return None, (
+            f"{path.name} is the LAUNCHER'S bringup record (kind 'live_flight_booking'), not a "
+            f"booking-gate artifact: it says which speed the fly recipe booked, and carries none "
+            f"of the checks that authorised it. Pass the artifact it names instead"
+            + (f": --booking {named}" if named else " (its `booking.path` field)")
+            + ". Reading this file as an authorisation would let a two-field JSON book a flight.")
+    try:
+        from predict_forward_lead import validate_report      # noqa: E402  (see the docstring)
+        validate_report(rep)
+    except (ImportError, ValueError) as e:
+        return None, (f"booking {path.name} is not a well-formed booking-gate artifact: {e}. It is "
+                      f"read with `predict_forward_lead.validate_report`, the same function the "
+                      f"tool runs before it writes one.")
+    verdict = rep.get("verdict") or {}
+    if not verdict.get("bookable"):
+        return None, (f"booking {path.name} does not AUTHORISE anything: verdict.bookable is "
+                      f"{verdict.get('bookable')!r} (exit code {verdict.get('exit_code')!r}, "
+                      f"{verdict.get('why_not_bookable')!r}). A --sweep chooses a mission speed and "
+                      f"a config-sourced run is a design check; only a single --speed run on the "
+                      f"full live input set books a flight (FORWARD_DEPTH_SENSOR.md gate D4). "
+                      f"Binding this file to a take claims an authorisation that was never issued.")
+    speed = _num((rep.get("encounter") or {}).get("mission_speed_mps"))
+    if speed is None or speed <= 0.0:
+        return None, (f"booking {path.name} carries no usable encounter.mission_speed_mps (got "
+                      f"{(rep.get('encounter') or {}).get('mission_speed_mps')!r}) -- there is no "
+                      f"speed to hold the flight to.")
+    return rep, None
+
+
+def gate_booked_speed(log, run, log_path: Path,
+                      booking_arg: Optional[Path] = None) -> Tuple[List[str], List[str]]:
+    """Assertion G128: this take was flown at the speed it was AUTHORISED at.
+
+    Optional by design, and asymmetrically so. The NDVI survey needs no booking -- it carries no
+    dodge and nothing about it is authorised by the forward-sensor gate -- so a log with no booking
+    is not a failure. But an AVOIDANCE take (a log whose `run.detector` names a detector, the same
+    criterion `check_schema2` branches on) with no booking gets a WARNING saying in those words that
+    its authorisation cannot be verified: silence would read as verified.
+
+    With a booking present the flown median is a HARD gate. Failing it means the flight in front of
+    you is not the flight that was booked, which is not a CPA finding and is therefore not something
+    a SAFETY_FINDING marker can acknowledge -- it lands in `problems`, i.e. INVALID."""
+    problems: List[str] = []
+    notes: List[str] = []
+    detector = run.get("detector") if isinstance(run, dict) else None
+    source = detector.get("source") if isinstance(detector, dict) else None
+    is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL)
+
+    sidecar = booking_path_for(log_path)
+    chosen = Path(booking_arg) if booking_arg is not None else (sidecar if sidecar.exists()
+                                                                else None)
+    if chosen is None:
+        notes.append(
+            (f"NO BOOKING BOUND -- WARNING: this is an AVOIDANCE take (detector source {source!r}) "
+             f"and nothing here can verify it was flown at the speed the ADR-019 booking gate "
+             f"authorised. The fly recipe only carries a `param set WP_SPD` line when the launcher "
+             f"was given `--booking`; without one ArduCopter's 10 m/s default flies the mission, and "
+             f"the committed booking is for 5.0 m/s -- a speed at which that gate exits 1. Pass "
+             f"--booking eval/results/booking_gate_<UTC>.json (or drop a copy at {sidecar.name} "
+             f"beside the log). Flown speed measured anyway, below, so the number exists either way."
+             if is_avoidance else
+             f"no booking bound (detector source {source!r} -- not an avoidance take; the NDVI "
+             f"survey is not authorised by the forward-sensor booking gate and needs none)"))
+
+    rep: Optional[dict] = None
+    if chosen is not None:
+        rep, problem = load_booking(chosen)
+        if problem is not None:
+            problems.append(problem)
+        # TWO BOOKINGS FOR ONE TAKE is the `AMBIGUOUS TAKE` shape this file already refuses for
+        # truth tracks: a flag that quietly overrides a sidecar lets the strictest authorisation on
+        # disk be the one nobody reads. They may both be present; they may not disagree.
+        if booking_arg is not None and sidecar.exists() and sidecar.resolve() != chosen.resolve():
+            other, other_problem = load_booking(sidecar)
+            here = None if rep is None else _num((rep.get("encounter") or {}).get(
+                "mission_speed_mps"))
+            there = None if other is None else _num((other.get("encounter") or {}).get(
+                "mission_speed_mps"))
+            if other_problem is not None or here != there:
+                problems.append(
+                    f"TWO BOOKINGS FOR ONE TAKE: --booking {Path(chosen).name} was given and "
+                    f"{sidecar.name} also sits beside the log, and they do not agree "
+                    f"({here!r} m/s vs {there!r} m/s"
+                    + (f"; the sidecar is also unusable: {other_problem}" if other_problem else "")
+                    + "). One take has ONE authorisation. Remove the one that does not belong to "
+                      "this flight rather than letting the command line pick.")
+
+    path_enu = log.get("flown_path_enu") or []
+    stamps = (run.get("tick_stamp_sim_s") or []) if isinstance(run, dict) else []
+    speed = airborne_ground_speed(path_enu, stamps)
+    flown = speed["median_mps"]
+
+    def denom_of(stat) -> str:
+        return (f"{stat['steps_scored']} of {stat['steps_total']} tick step(s) scored, "
+                f"{stat['airborne_ticks']}/{stat['ticks_total']} ticks airborne above "
+                f"{stat['z_threshold_m']:g} m, {_fmt(stat['airborne_span_s'], 3)} s of sim time")
+
+    denom = denom_of(speed)
+    if flown is None:
+        line = (f"flown_ground_speed_mps NOT MEASURABLE ({denom}) -- no airborne tick pair carried "
+                f"two positions, two stamps and a positive sim step")
+        (problems if rep is not None else notes).append(
+            line + (". A booking is bound to this log and nothing here can check it was honoured: "
+                    "an unverifiable authorisation is not a verified one." if rep is not None
+                    else ""))
+        return problems, notes
+
+    line = (f"flown_ground_speed_mps median {flown:.3f} p90 {speed['p90_mps']:.3f} max "
+            f"{speed['max_mps']:.3f} ({denom})")
+
+    # THE SECOND GATED STATISTIC, and the one the failure actually lives in (QA finding G138).
+    # The whole-flight median is a MISSION statistic: on a boustrophedon most ticks are turnarounds
+    # and accel/decel, so the 2026-08-25 take reads median 3.417 m/s -- 0.68x a 5.0 m/s booking,
+    # PASSING with 32 % to spare -- while its one encounter (takeover 991 -> resume 995) was flown
+    # at a median 9.012 m/s, i.e. 1.80x booked. Re-running the booking gate at that speed FAILS it.
+    # So a take whose encounter the booking gate would refuse was being certified as flown at the
+    # booking. The lead margin is spent at the speed flown WHEN the bird appears, not at the mission
+    # median, and that is exactly what an encounter window measures.
+    windows = encounter_windows(log, len(path_enu))
+    window_stats = [(label, airborne_ground_speed(path_enu, stamps, (lo, hi)))
+                    for lo, hi, label in windows]
+    scoreable = [(label, s) for label, s in window_stats if s["median_mps"] is not None]
+
+    if rep is None:
+        notes.append(line + (" -- no booking bound, so this is context, not a check"
+                             if chosen is None else
+                             f" -- the bound booking ({Path(chosen).name}) is unusable (the problem "
+                             f"is above), so this is context, not a check"))
+        if scoreable:
+            notes.append(
+                "...and the ENCOUNTER window(s), which is where a booking's lead margin is spent: "
+                + "; ".join(f"{label} median {s['median_mps']:.3f} m/s ({s['steps_scored']} step(s))"
+                            for label, s in scoreable)
+                + ". CONTEXT here -- with no booking there is nothing to hold it to.")
+        return problems, notes
+
+    booked = float(rep["encounter"]["mission_speed_mps"])
+    ratio = flown / booked
+    bar = booked * BOOKED_SPEED_TOLERANCE
+    notes.append(
+        f"booking {Path(chosen).name}: booked_speed_mps {booked:.3f} | {line} | ratio "
+        f"{ratio:.3f} (bar {BOOKED_SPEED_TOLERANCE:.2f}x = {bar:.3f} m/s, applied to the MEDIAN of "
+        f"the whole flight AND to the median of each encounter window; p90 and max are context -- "
+        f"the waypoint speed is a cap and transients cross it)")
+    # THE TAIL, NAMED RATHER THAN LEFT TO THE READER. Still not gated: a p90 on a mission with
+    # turnarounds is mission geometry, not a violated cap, and gating it would fail honest takes.
+    # It is what pointed at the encounter-window gate above, so it stays printed.
+    over = [name for name, v in (("p90", speed["p90_mps"]), ("max", speed["max_mps"])) if v > bar]
+    if over:
+        notes.append(
+            f"...and the TAIL of that distribution is above the bar: "
+            + ", ".join(f"{n} {speed[n + '_mps']:.3f} m/s = "
+                        f"{speed[n + '_mps'] / booked:.3f}x booked" for n in over)
+            + f". NOT GATED (the medians are), and said out loud because a mission median hides the "
+              f"speed the vehicle was doing when a bird appeared. The encounter windows below are "
+              f"the gated version of this concern.")
+    if flown > bar:
+        problems.append(
+            f"FLOWN FASTER THAN BOOKED: median airborne ground speed {flown:.3f} m/s against a "
+            f"booking for {booked:.3f} m/s ({Path(chosen).name}) = {ratio:.3f}x, past the "
+            f"{BOOKED_SPEED_TOLERANCE:.2f}x tolerance ({bar:.3f} m/s). THIS IS NOT THE AUTHORISED "
+            f"TAKE. The booking gate's lead margin is computed at the booked speed and falls with "
+            f"it -- re-run scripts/predict_forward_lead.py at {flown:.3f} m/s before quoting any "
+            f"separation number from this flight; the 2026-09-07 booking exits 1 by ~10 m/s. The "
+            f"cause is almost always that the launcher was not given `--booking`, so no waypoint "
+            f"speed was set and ArduCopter's 10 m/s default flew the mission (see "
+            f"docs/runbooks/AVOIDANCE_REAL_DETECTION.md section 0g).")
+
+    if not windows:
+        notes.append("no encounter window on this take (no takeover event), so the whole-flight "
+                     "median is the only booked-speed statistic there is to check")
+        return problems, notes
+    # EVERY window is owed a verdict, not just the ones that happened to be scoreable: a booking
+    # bound to an encounter nobody can measure is an authorisation nobody can verify, which is the
+    # same rule the whole-flight NOT MEASURABLE case above already follows. Reported for the subset,
+    # so a take with one good window and one dead one loses neither half.
+    unscoreable = [(label, s) for label, s in window_stats if s["median_mps"] is None]
+    if unscoreable:
+        problems.append(
+            f"ENCOUNTER SPEED NOT MEASURABLE on {len(unscoreable)} of {len(windows)} encounter "
+            f"window(s) ("
+            + "; ".join(f"{label}, {denom_of(s)}" for label, s in unscoreable)
+            + f"): no airborne tick step there carried two positions, two stamps and a positive sim "
+              f"step, so the speed the vehicle was flying WHEN it met a bird -- the speed the "
+              f"{booked:.3f} m/s booking's lead margin is computed at -- cannot be checked. An "
+              f"unverifiable authorisation is not a verified one.")
+    if not scoreable:
+        return problems, notes
+
+    notes.append(
+        f"ENCOUNTER window speed (GATED, same {BOOKED_SPEED_TOLERANCE:.2f}x bar = {bar:.3f} m/s): "
+        + "; ".join(f"{label} median {s['median_mps']:.3f} m/s = {s['median_mps'] / booked:.3f}x "
+                    f"booked ({denom_of(s)})" for label, s in scoreable)
+        + ". This is the speed the booking's lead margin is actually spent at.")
+    for label, s in scoreable:
+        if s["median_mps"] > bar:
+            problems.append(
+                f"ENCOUNTER FLOWN FASTER THAN BOOKED: {label} was flown at a median "
+                f"{s['median_mps']:.3f} m/s against a booking for {booked:.3f} m/s "
+                f"({Path(chosen).name}) = {s['median_mps'] / booked:.3f}x, past the "
+                f"{BOOKED_SPEED_TOLERANCE:.2f}x tolerance ({bar:.3f} m/s) -- while the whole-flight "
+                f"median is {flown:.3f} m/s ({ratio:.3f}x). THIS IS NOT THE AUTHORISED TAKE: the "
+                f"booking authorises a lead time computed at {booked:.3f} m/s of closing speed, and "
+                f"the vehicle spent the encounter at {s['median_mps'] / booked:.3f}x that. Re-run "
+                f"scripts/predict_forward_lead.py --speed {s['median_mps']:.3f} before quoting any "
+                f"separation number from this encounter.")
+    return problems, notes
+
+
 def stale_dropped_total(log) -> int:
     """How many detections the ADR-009 staleness gate threw away, summed over every event that
     carries the policy's debug -- maneuvers, and (since QA round 2, 2026-08-24) proceeds and holds.
@@ -1622,7 +2045,8 @@ def resolve_truth(log_path: Path, run, truth_arg: Optional[Path] = None,
 
 
 def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
-                  results_dir: Path = RESULTS_DIR) -> Tuple[str, List[str]]:
+                  results_dir: Path = RESULTS_DIR,
+                  booking_arg: Optional[Path] = None) -> Tuple[str, List[str]]:
     """The gates a schema-2 (real-flight) log must pass. Returns (verdict, messages).
 
     `problems` is what makes a log INVALID and is NEVER acknowledgeable by a marker file: a marker
@@ -1645,6 +2069,9 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
     r_problems, r_notes = gate_r2_r3(log, run)
     problems.extend(r_problems)
     notes.extend(r_notes)
+    b_problems, b_notes = gate_booked_speed(log, run, path, booking_arg)
+    problems.extend(b_problems)
+    notes.extend(b_notes)
 
     bar = min_bird_clearance_m()
     freeze_debit = freeze_debit_m(adv["frozen_window_s"])      # 0.0 unless the axis stalled
@@ -1855,7 +2282,8 @@ def validate_flight_log(log) -> List[str]:
 
 
 def check_file(path: Path, truth: Optional[Path] = None,
-               results_dir: Path = RESULTS_DIR) -> Tuple[str, List[str]]:
+               results_dir: Path = RESULTS_DIR,
+               booking: Optional[Path] = None) -> Tuple[str, List[str]]:
     """Validate one path -> (SKIP|VALID|INVALID|ACKNOWLEDGED, messages). For VALID the messages are
     the headline numbers (CLAUDE.md: no 'it works' without a metric); for INVALID the numbers come
     first and the problems after -- the metric is printed whatever the verdict."""
@@ -1885,8 +2313,24 @@ def check_file(path: Path, truth: Optional[Path] = None,
                              f"{GATED_SCHEMA_VERSION}. There is no schema-1 flight log: a run "
                              f"block claiming an older version is a downgrade out of the "
                              f"R2/R3/clock/ground-truth-CPA gates, not a legacy artifact."]
-        status, messages = check_schema2(path, log, truth, results_dir)
+        status, messages = check_schema2(path, log, truth, results_dir, booking)
         return status, [f"{headline} | {messages[0]}"] + messages[1:]
+
+    # A BOOKING CANNOT BE BOUND TO A LEGACY LOG. Pre-seam logs carry no `run` block, so they have no
+    # time axis at all -- their only axis is the tick index, and 5 Hz is the node's NOMINAL rate,
+    # not something those flights measured. There is no honest flown speed to hold an authorisation
+    # to, and "we could not check" must not read as "checked". (Nothing automated does this: CI's
+    # glob passes no --booking and lays down no sidecar. It is the hand-run case.)
+    sidecar = booking_path_for(path)
+    bound = booking if booking is not None else (sidecar if sidecar.exists() else None)
+    if bound is not None:
+        return INVALID, [
+            headline,
+            f"a booking ({Path(bound).name}) is bound to a PRE-SEAM log with no `run` block. Those "
+            f"logs carry no `tick_stamp_sim_s`, so their flown ground speed cannot be measured at "
+            f"all and the authorisation cannot be verified -- which is not the same as honoured. "
+            f"Bookings apply to schema-2 takes; drop the flag (or the sidecar) to score this log on "
+            f"the legacy path it was flown under."]
 
     # --- CPA (ADR-013 am. 12 R1). Printed ALWAYS, whatever the verdict. -------------------------
     bar = min_bird_clearance_m()
@@ -1928,6 +2372,16 @@ def main(argv=None) -> int:
                          "named on this command line -- pass one flight at a time. Omitted: a "
                          "flight pinned in TRUTH_BINDINGS uses its bound track; any other "
                          "auto-discovers by sim-time overlap and refuses on 0 or >1 matches.")
+    ap.add_argument("--booking", type=Path, default=None,
+                    help="the booking-gate artifact that AUTHORISED this take "
+                         "(eval/results/booking_gate_<UTC>.json, from scripts/"
+                         "predict_forward_lead.py exiting 0). The flight's own poses are then "
+                         "measured against the speed it books: a take flown faster is not the "
+                         "authorised take (INVALID). MANDATORY for a dodge take, unnecessary for "
+                         "the NDVI survey. Omitted: a `<log-stem>.booking.json` sidecar beside the "
+                         "log is used if present, otherwise an avoidance log gets a WARNING that "
+                         "its authorisation is unverified. Applies to EVERY log on this command "
+                         "line -- pass one flight at a time.")
     args = ap.parse_args(argv)
 
     paths = args.logs or sorted(RESULTS_DIR.glob("*flight_log*.json"))
@@ -1938,7 +2392,7 @@ def main(argv=None) -> int:
 
     n_invalid = n_acknowledged = 0
     for path in paths:
-        status, messages = check_file(path, truth=args.truth)
+        status, messages = check_file(path, truth=args.truth, booking=args.booking)
         if status == INVALID:
             n_invalid += 1
             print(f"[check_live_flight_log] INVALID: {path}", file=sys.stderr)

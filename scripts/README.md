@@ -72,9 +72,15 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   far-clip bound needs the FARTHEST corner (`max(cx, W−1−cx)/fx`, `max(cy, H−1−cy)/fy`) and not the
   principal point; part of a set is a refusal, and live `W×H` that disagrees with the config (which
   *generates* the world SDF) is a refusal too. `--acq-optical-prefix-m` records the prefix D3's
-  bookable range was clamped from, so the schema-1.2 artifact says whether the horizon it authorised
-  was a clamped one (ADR-020 am. 1). `--sweep LO:HI:STEP` picks a mission speed. Measured on the
-  committed config: PASS 2.0–9.0 m/s, **FAIL at 10.0** (ArduCopter's `WPNAV_SPD` default), 1.811× at
+  bookable range was clamped from, so the schema-1.3 artifact says whether the horizon it authorised
+  was a clamped one (ADR-020 am. 1) — 1.3 adds a repo-relative config path beside the absolute one
+  and the four intrinsics at full precision beside the 4-dp ones, purely additively, so the
+  committed 1.2 artifact still validates untouched. The **mission-speed cap is a check**, not a
+  printed note: `escape_survives_mission_speed_cap` re-runs the 1.3× bar against the plant a
+  `WP_SPD` of `--speed` implies, so below **0.788 m/s** on the live set the run exits 1 where it
+  used to print PASS/BOOKABLE beside "Re-derive before booking" (QA G127; 5.0 m/s is unaffected).
+  `--sweep LO:HI:STEP` picks a mission speed. Measured on the
+  committed config: PASS 2.0–9.0 m/s, **FAIL at 10.0** (ArduCopter's `WP_SPD` default), 1.811× at
   5.0; on 2026-09-06's live numbers at 5.0 m/s, **1.780× and exit 0** at `--acq-range-m 46.0` — a
   **best-case-scene upper bound** (no clutter, sky background, static vehicle, and no depth
   segmenter yet; ADR-020 am. 2, where the 33.591 m breakeven is pre-registered beside it). The
@@ -134,7 +140,16 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
 - `check_live_flight_log.py` — evidence gate for `eval/results/*flight_log*.json`: parses the log,
   runs the `check_ledger` partition invariant against the canonical grid, and rejects an empty
   `flown_path_enu`. Exists because the 2026-08-05 demo log was silently clobbered by a later idle
-  run and nothing noticed.
+  run and nothing noticed. **`--booking eval/results/booking_gate_<UTC>.json`** (or a
+  `<log-stem>.booking.json` sidecar beside the log) binds the take to the speed the ADR-019 booking
+  gate authorised: the flown **median / p90 / max** airborne ground speed is measured from the log's
+  own poses, and a median more than **10 %** past the booked speed is INVALID — *not the authorised
+  take* (QA G128; before 2026-09-07 nothing set a waypoint speed, so ArduCopter's 10 m/s `WP_SPD`
+  default flew a 5.0 m/s booking). **Two** medians are gated: the whole flight's and each
+  **encounter window's** (takeover → resume, QA G138) — the mission median cannot see the failure
+  (2026-08-25: whole-flight 3.417 m/s passes, encounter 9.012 m/s = 1.80× booked fails). Optional for the NDVI survey, which needs no booking; on an avoidance take its absence
+  prints a WARNING that the authorisation is unverified. Only an artifact that exited **0** may be
+  bound — a `--sweep` or a config-sourced design check authorises nothing.
 - `check_sim_smoke.py` / `ci_sim_smoke.py` / `ci_sim_smoke.sh` — the headless CI smoke flight and
   its regression gate (ADR-008). **Unverified live** — the job stays `workflow_dispatch` until one
   green run (`docs/archive/SIM_CI.md`).

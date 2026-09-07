@@ -260,6 +260,29 @@ arm throttle
 AUTO entry at item 1 (re-entering AUTO after a finished mission is otherwise a no-op — learned
 live); `AUTO_OPTIONS 3` lets AUTO take off armed.
 *Look for:* `ARMED`, `height 15`, then `Reached command #N` marching through the lanes.
+*Speed:* **this recipe books none** — the mission flies ArduCopter's `WP_SPD` default of 10.0 m/s
+(10.58 m/s peak, measured on the 2026-09-06 scripted test-flight). That is fine for the NDVI survey
+and the demo. It is **not** fine for a dodge take, whose booking gate exits 1 at that speed.
+
+**Booked variant — the one an avoidance take flies.** `scripts/fly_pipeline.sh --booking
+eval/results/booking_gate_20260907T064136Z.json up` prints exactly this instead. One extra line,
+carrying the booked speed **verbatim in m/s** (`WP_SPD`'s unit; there is no conversion and so no
+rounding), with the other `param set`s so it lands before **both** mode changes — AUTO reads the
+speed when it takes the leg:
+
+```
+wp load /workspace/fieldguard/config/missions/boustrophedon.waypoints
+param set MIS_RESTART 0
+param set AUTO_OPTIONS 3
+param set WP_SPD 5.0
+wp set 1
+mode guided
+mode auto
+arm throttle
+```
+Both blocks are byte-diffed against the launcher by `tests/test_fly_pipeline.py`, so what the recipe
+pane prints and what this page prints cannot drift. A take flown faster than booked is not the
+authorised take — see [`AVOIDANCE_REAL_DETECTION.md`](AVOIDANCE_REAL_DETECTION.md) §0g.
 
 ## Shell 5 — the birds (start AFTER `height 15`)
 

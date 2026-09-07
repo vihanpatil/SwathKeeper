@@ -77,3 +77,20 @@ builders' reports — diff prose against the CODE: grep every named identifier, 
 and compare the exit code, and re-run the tool that wrote every committed artifact and diff it
 field-by-field. Two of the four defects above were found by running a command the doc said would do
 something else.
+
+**8. A FIRMWARE identifier typed at a prompt is a CITATION — fetch it at the pinned SHA.** Added
+2026-09-07. The booking-enforcement build injected `param set WPNAV_SPEED 500` into the fly recipe;
+at the pinned ArduPilot SHA the parameter is `WP_SPD`, in **m/s**, `@Range 0.10 20.00`
+(`GOBJECTPTR(wp_nav, "WP_", AC_WPNav)` in `ArduCopter/Parameters.cpp`; `AP_Float _wp_speed_ms` in
+`AC_WPNav.h`). Wrong name AND wrong units by 100×, so the whole pre-flight half of the feature was a
+no-op that printed `BOOKED 5.0 m/s` on four artifacts. The builder's report *named* this as a
+judgment call ("parameter name is WPNAV_SPEED, not the repo's WPNAV_SPD shorthand") and reasoned it
+instead of fetching it — and the repo's own ADR log already contained the counter-evidence.
+**Why:** this project's plant constants are all sourced with pinned-SHA URLs (`eval/point_mass.py`);
+the one identifier that leaves the host and enters the *vehicle* was the one nobody sourced. The
+same family as G70 (a constant cited to a header that does not contain it) and G46.
+**How to apply:** when a diff adds a string that will be typed at a MAVProxy/ROS prompt, WebFetch the
+owning source file at the CLAUDE.md pinned SHA and quote the `@Param`/`@Units`/`@Range` block before
+grading anything else. Then check the second-order effect: here, correcting the name to `WP_SPD`
+would have silenced `_tuning_override_scan`'s `WPNAV_`-prefixed detector — the fix creates the
+vacuous green unless both land in one diff.

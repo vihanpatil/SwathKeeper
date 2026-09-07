@@ -1922,8 +1922,8 @@ class TestCli(Harness):
     def main(self, argv):
         real = checker.check_file
 
-        def isolated(path, truth=None, results_dir=None):
-            return real(path, truth=truth, results_dir=self.dir)
+        def isolated(path, truth=None, results_dir=None, booking=None):
+            return real(path, truth=truth, results_dir=self.dir, booking=booking)
 
         with mock.patch.object(checker, "check_file", isolated):
             return checker.main(argv)

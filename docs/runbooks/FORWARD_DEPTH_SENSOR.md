@@ -48,7 +48,7 @@ python3 -m pytest tests/fieldguard_planning/test_depth_detect.py \
 
 Measured on the committed artifacts *(host, 2026-08-26)*: the static gate passes **23/23**; the
 sweep passes every mission speed from 2.0 to 9.0 m/s and **FAILs at 10.0 m/s** (ArduCopter's own
-`WPNAV_SPD` default), with margin 1.811× and 28.2 % horizon headroom at the recommended **5.0 m/s**.
+`WP_SPD` default), with margin 1.811× and 28.2 % horizon headroom at the recommended **5.0 m/s**.
 
 **The sweep is for CHOOSING a speed, not for authorising a flight.** It runs on
 `config/depth_camera.json` numbers, so it exits **3** — PASS but NOT BOOKABLE — exactly like the
@@ -364,7 +364,7 @@ principal point outside the frame. **Exit 2 is never a statement about the senso
 | exit | meaning | what to do |
 |---|---|---|
 | **0** | PASS **and BOOKABLE** — margin ≥ 1.3× on live-measured inputs | book the dodge flight |
-| **1** | FAIL | **do not book.** Slow the mission or lengthen the horizon; the failing check names which |
+| **1** | FAIL | **do not book.** Read the failing check — **it prescribes no direction, because neither knob is monotone in the verdict**: past 47.56 m a *longer* horizon fails, below ~0.79 m/s a *slower* mission fails |
 | **2** | REFUSAL — no `--speed`, part of the six-number live set, live `W×H` ≠ config, or any unusable number | fix the input; **nothing was decided about the sensor** |
 | **3** | PASS but **NOT BOOKABLE** — config-sourced inputs, live intrinsics **without** `--acq-range-m`, or a `--sweep` in which some row passes | you skipped D3. The design is sound; the sensor is unmeasured |
 
@@ -382,10 +382,16 @@ and was used to justify passing "the safe end" when unsure, where the safe end i
 failing one.)*
 
 * **Margin falls monotonically with mission speed** on the uncapped plant — verified 0.2–14.0 m/s
-  at 0.05 steps on the live set, **zero inversions**. But **below ~3.5 m/s the mission-speed cap
-  lengthens `t_req`, and the verdict does not include that**: at 0.6 m/s the tool prints its own
-  `NOTE: flying at 0.6 m/s caps the plant's speed and MOVES t_req to 5.326 s — the verdict above
-  uses the uncapped 1.792 s. Re-derive before booking.` Slower is not automatically safer.
+  at 0.05 steps on the live set, **zero inversions**. But **below ~3.86 m/s the mission-speed cap
+  lengthens `t_req`**, so the headline margin describes an escape the vehicle cannot make. Since
+  2026-09-07 that is a **check, not a note** — `escape_survives_mission_speed_cap` re-runs the same
+  1.3× bar against the capped plant, and the verdict has to hold under both readings (QA finding
+  G127). Measured on the booked live set: **below 0.788 m/s the run now exits 1** where it used to
+  print PASS/BOOKABLE plus `NOTE: … Re-derive before booking` — an instruction to a human sitting
+  underneath the exit code that says none is needed. At 0.6 m/s: headline **2.810×**, cap-honest
+  **1.064×**. The cap-honest margin is itself **non-monotone** (it peaks near 2.61 m/s at 2.106×
+  and falls both ways), which is why it is gated rather than reasoned about. **5.0 m/s is
+  unaffected** — the cap does not bind there and the check says so rather than passing silently.
 * **A longer `--acq-range-m` is NOT monotone in the verdict.** Margin rises with it, and then the
   frame-corner check fails: on the live set **47.5 → exit 0, 47.6 → exit 1** (headroom −0.1 %), and
   **58.0 → exit 1** at −18.0 %, which is the contrast the table above prints. Past **47.56 m**
@@ -393,6 +399,52 @@ failing one.)*
 
 And `predict_bird_visibility.py` still has to be re-run at whatever speed you pick — its response
 ADR-016 am. 1 measured non-monotone in a third way. The two gates do not substitute for each other.
+
+### Booking a speed is only half of it — the flight has to be FLOWN at it
+
+*(added 2026-09-07, QA finding G128)* The artifact above authorises **one mission speed**. Nothing
+in the sim made the vehicle fly it until 2026-09-07: no waypoint-speed parameter was set anywhere
+in this repo, so ArduCopter's `WP_SPD` default flew every mission at **10.0 m/s** — the
+2026-09-06 scripted test-flight peaked at **10.576 m/s**, a speed at which this same gate exits
+**1** (margin 1.216×). **A dodge take flown faster than it was booked is not the authorised take**,
+and it used to print a green GT-CPA anyway.
+
+Two halves close that, and this runbook owns only the first:
+
+1. **Set the speed before the take.** `scripts/fly_pipeline.sh --booking <this artifact> up` reads
+   the artifact through the flight-log gate's own `load_booking` (so the two ends of the chain
+   accept exactly the same set of artifacts), and injects `param set WP_SPD <booked m/s>` into the
+   fly recipe — see `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` §0g, which owns that step. The
+   parameter is `WP_SPD`, **in m/s**, at ADR-004's pinned SHA (`AC_WPNav.cpp:49-56`; the old
+   `WPNAV_SPEED` slot reads `// 0 was SPEED`). Whatever speed it sets **is** the speed this D4 run
+   must have been given.
+2. **Bind the booking to the evidence afterwards.** The flight-log gate measures the speed the take
+   actually flew, from the log's own poses, and checks it against the booking:
+
+   ```bash
+   python3 scripts/check_live_flight_log.py eval/results/live_flight_log_<UTC>.json \
+       --truth   eval/results/bird_drive_<UTC>_applied.jsonl \
+       --booking eval/results/booking_gate_<UTC>.json
+   ```
+
+   It reports `booked_speed_mps`, the flown **median / p90 / max** airborne ground speed and their
+   ratio, and **fails the log INVALID** when either of TWO medians exceeds the booked speed by more
+   than **10 %**: the whole flight's, and **each encounter window's** (takeover → resume). The
+   second one is the gate that bites — a boustrophedon's mission median is dominated by turnarounds,
+   so the 2026-08-25 take reads **3.417 m/s (0.68× a 5.0 booking, a pass)** while its encounter ran
+   at a median **9.012 m/s = 1.80× booked**, a speed at which this booking gate exits 1. The
+   tolerance exists because the waypoint speed is a *cap* that transients cross; p90 and max are
+   printed as context and are not gated, and when the tail crosses the bar the gate says so by
+   name.
+   Copying the artifact to `<log-stem>.booking.json` beside the log binds it without the flag.
+
+   Only an artifact that **exited 0** may be bound: a `--sweep` or a config-sourced exit-3 design
+   check authorises nothing, and binding one is itself INVALID. **Do not pass the launcher's
+   `eval/results/live_flight_booking_<UTC>.json`** — that is a bringup *pointer* (the artifact's
+   path, the booked speed, the recipe line) and carries none of the gate's checks; the flight-log
+   gate refuses it by name and tells you which artifact it names. Omitting the booking on an
+   avoidance take is allowed — the NDVI survey needs none — but prints a WARNING that the
+   authorisation is unverified.
 
 ---
 

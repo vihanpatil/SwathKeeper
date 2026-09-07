@@ -66,8 +66,13 @@ G_M_S2 = 9.80665
 # DDS_UDP_PORT and nothing else. So these ARE the numbers that flew on all three logged encounters.
 # Doctrine (ADR-016): physical parameters come from the vehicle, never from prose -- hence the URL
 # and the source symbol on every line rather than a remembered parameter name. Note also that the
-# names moved in this firmware (WPNAV_SPEED -> WPNAV_SPD, WPNAV_ACCEL -> WPNAV_ACC,
-# PSC_JERK_XY -> PSC_NE_JERK): a tutorial's parameter list would have edited knobs that do not exist.
+# names moved in this firmware: AC_WPNav is registered under the group prefix `WP_`
+# (ArduCopter/Parameters.cpp:370) and the waypoint speed is `WP_SPD`, in m/s, with `// 0 was SPEED`
+# marking the retired WPNAV_SPEED slot (AC_WPNav.cpp:17). PSC_JERK_XY likewise became PSC_NE_JERK.
+# A tutorial's parameter list would have edited knobs that do not exist -- which is exactly what
+# happened on 2026-09-07 (QA G135). The `WPNAV_*` spellings in the per-line comments below are
+# shorthand for the same knobs and are never typed at a vehicle; the `WP_*_DEFAULT` symbol beside
+# each one is the thing that was actually read.
 # ---------------------------------------------------------------------------------------------
 _AC_WPNAV_CPP = ("https://raw.githubusercontent.com/ArduPilot/ardupilot/"
                  "9895756d874ec9128d50918f6747a83706f4e221/libraries/AC_WPNav/AC_WPNav.cpp")
@@ -126,7 +131,13 @@ GUIDED_DEFAULT = PlantLimits(
                 f"pva_control_start seeds PosControl's NE/D speed+accel FROM AC_WPNav's params "
                 f"({_MODE_GUIDED_CPP} lines 255-260). Speeds/accels: {_AC_WPNAV_CPP} and "
                 f"{_AC_WPNAV_H}. Jerks and position P gain: {_AC_POSCONTROL_H}, "
-                f"{_AC_POSCONTROL_CPP}. No WPNAV_*/GUID_*/PSC_* override exists in this repo."))
+                f"{_AC_POSCONTROL_CPP}. THE ONE OVERRIDE THIS REPO CARRIES is the booked mission "
+                f"speed -- scripts/fly_pipeline.sh --booking types `WP_SPD <booked m/s>` at the "
+                f"prompt (ADR-019/ADR-020), which lowers v_max_ne_mps to the booked value FOR THAT "
+                f"FLIGHT. All three replayed encounters were flown unbooked, before that existed, "
+                f"so 10.0 m/s is what flew on them; a booked flight is a different plant and its "
+                f"replay must be re-run with v_max_ne_mps set to what it booked. Checked at run "
+                f"time, not asserted: replay_point_mass._tuning_override_scan()."))
 
 # THE ALTERNATIVE HYPOTHESIS, kept because it is the one a reader who has NOT traced
 # `pva_control_start` would reach for: AC_PosControl's own constructor defaults, which are what
