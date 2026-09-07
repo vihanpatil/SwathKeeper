@@ -55,6 +55,17 @@ tick whose next 5 telemetry samples read `z > 1.0 m` — the clip recorder's own
 2246/4328 ticks (08-18), 109/984 (08-23), 752/1858 (08-25). The sustain requirement moves no
 boundary on any committed log.
 
+**`check_file`/`resolve_truth`/`truth_candidates` default `results_dir` to the REAL `eval/results`,
+and `check_live_flight_log.main` does not plumb it.** So any test that drives the CLI has its colour
+decided by which flight artefacts happen to be committed: a stray `bird_drive_*.json` whose sim span
+overlaps a fixture makes auto-discovery resolve a truth track that was never meant to exist, and
+`TestCli` goes red with nothing in the gate changed (this is why the two 2026-09-06 test-flight
+`bird_drive_*` files were deleted). **Bind the directory, do not delete the evidence** — tests wrap
+`checker.check_file` so `results_dir` is the harness tmp dir and let `main`'s parsing/exit
+codes/printing run unmodified (`tests/fieldguard_planning/test_check_live_flight_log_schema2.py`
+`TestCli.main`). Verified 2026-09-07 both ways: with a stray overlapping `bird_drive` in
+`eval/results`, the unbound version fails 3/4 and the bound one passes 4/4.
+
 **The joins that DO NOT exist — do not invent them:**
 
 * **flight log ↔ NDVI clip.** No shared run id, no shared field. Sim time restarts near zero every

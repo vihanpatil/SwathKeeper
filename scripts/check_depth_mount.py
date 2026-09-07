@@ -23,7 +23,9 @@ of the config):
      CAMERA_TO_BODY_SIGNS -- the extrinsic that was verified in the real render to 2.2 px against a
      15 px bar. If the formula is wrong, this check fails on known-good geometry.
   E. A bird can be both IN FRAME and RESOLVABLE at the same time: the +/-`vertical_threat_m` band
-     is covered from a range NEARER than the acquisition range.
+     is covered from a range NEARER than the acquisition range -- and that acquisition range sits
+     inside the Z-depth horizon of the FARTHEST frame corner, which is where the far cull bites
+     first (the cull is on Euclidean slant range; the value stored is Z-depth).
   F. The bridge yaml bridges the depth image and the DERIVED camera_info name.
 
 WHAT IT CANNOT PROVE, and what therefore still owes the live gates D1-D6 (docs/runbooks/
@@ -51,8 +53,8 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from fieldguard_planning.avoidance_policy import PolicyParams          # noqa: E402
 from fieldguard_planning.depth_detect import (                          # noqa: E402
     DEPTH_OPTICAL_TO_BODY, FORWARD_MOUNT_OFFSET_BODY_M, FORWARD_MOUNT_RPY_RAD,
-    DepthDetectionSource, acquisition_range_m, band_covered_from_m, mat_vec, optical_axis_body,
-    optical_to_body_matrix,
+    DepthDetectionSource, acquisition_range_m, band_covered_from_m, corner_ray_ratio, mat_vec,
+    optical_axis_body, optical_to_body_matrix,
 )
 from fieldguard_planning.ndvi_georef import CAMERA_TO_BODY_SIGNS        # noqa: E402
 
@@ -203,11 +205,19 @@ def check() -> Tuple[bool, List[str]]:
         "aperture was copied onto the other)")
 
     # ---- E. in-frame AND resolvable overlap -----------------------------------------------------
-    fx = (cam["image_width_px"] / 2.0) / math.tan(cam["horizontal_fov_rad"] / 2.0)
-    cy = cam["image_height_px"] / 2.0
+    # Every intrinsic this section uses, named ONCE and from the config this gate is defined on.
+    # cx/cy are the image centre and fy == fx because the sensor is square-pixel (gz derives the
+    # vertical FOV from the image aspect) -- but each gets its own symbol, so the vertical
+    # arithmetic below divides by a VERTICAL focal length even on the day that stops being true.
+    w_px, h_px = float(cam["image_width_px"]), float(cam["image_height_px"])
+    fx = (w_px / 2.0) / math.tan(cam["horizontal_fov_rad"] / 2.0)
+    fy = fx
+    cx, cy = w_px / 2.0, h_px / 2.0
     band_half = float(PolicyParams().vertical_threat_m)
     r_bird = max(b["physical_radius_m"] for b in json.loads(BIRDS_CONFIG.read_text())["birds"])
-    from_m = band_covered_from_m(fx, cy, band_half)     # fy == fx for this square-pixel model
+    # A VERTICAL extent: fy and the SMALLER half-extent min(cy, H-1-cy), never fx and never cy
+    # alone -- the band has to fit above AND below the axis.
+    from_m = band_covered_from_m(fy, cy, h_px, band_half)
     acq_m = acquisition_range_m(fx, r_bird)
     rec(from_m < acq_m,
         f"the +/-{band_half:g} m threat band is in frame from {from_m:.2f} m, and a {r_bird:g} m "
@@ -215,19 +225,31 @@ def check() -> Tuple[bool, List[str]]:
         f"threat is both visible and detectable")
     # VALUES, not just ordering: an ordering-only assertion stays green while the band-coverage
     # range doubles, and this is the number the no-tilt decision rests on.
-    rec(abs(from_m - 13.00) <= 0.05 and abs(acq_m - 46.80) <= 0.05,
-        f"and they are the PUBLISHED values -- band from {from_m:.2f} m (13.00 expected), "
-        f"acquisition {acq_m:.2f} m (46.80 expected). Moving either re-opens ADR-020's geometry "
-        f"argument and the booking-gate margin")
+    # THE TOLERANCE IS PART OF THE PIN (QA, 2026-09-07). It was +/-0.05 m around 13.05, and the
+    # `cy`-alone spelling this gate exists to reject prints 13.000 -- 0.0499 m away, INSIDE the
+    # tolerance by 0.15 mm. So the operator-facing gate stayed PASS 23/23 while printing a number
+    # its own text calls wrong, and only the unit tests killed the mutant. Pinned at 3 dp on the
+    # honest value with a 1 cm window: the mutant now misses by 4.5 cm, and neither end of the
+    # window rests on anything. Never rest a claim ON a boundary -- that is the whole lesson of
+    # this session, and it applied to the check written to enforce it.
+    rec(abs(from_m - 13.055) <= 0.01 and abs(acq_m - 46.80) <= 0.05,
+        f"and they are the PUBLISHED values -- band from {from_m:.3f} m (13.055 expected, "
+        f"published to 2 dp as 13.05; `cy` alone would print 13.000), acquisition {acq_m:.2f} m "
+        f"(46.80 expected). Moving either re-opens ADR-020's geometry argument and the "
+        f"booking-gate margin")
     # The far cull is on EUCLIDEAN slant range while the stored value is Z-depth, so the effective
     # Z horizon at the frame CORNER is far/|ray|, not far. Comparing against the on-axis 60 m
     # overstates the headroom by an order of magnitude (22 % against the true 1.6 %).
-    corner_ray = math.sqrt(1.0 + (cam["image_width_px"] / 2.0 / fx) ** 2 + (cy / fx) ** 2)
+    # ...and it is the FARTHEST corner, because a horizon has to hold at the worst pixel: see
+    # corner_ray_ratio for the three asymmetries this spelling exists to avoid.
+    du, dv = max(cx, w_px - 1.0 - cx), max(cy, h_px - 1.0 - cy)
+    corner_ray = corner_ray_ratio(w_px, h_px, fx, fy, cx, cy)
     far_corner = cam["clip_far_m"] / corner_ray
     rec(acq_m <= far_corner,
-        f"far clip {cam['clip_far_m']:g} m on-axis = {far_corner:.2f} m of Z-depth at the FRAME "
-        f"CORNER (|ray| {corner_ray:.3f}x; the far cull is on Euclidean slant range, the stored "
-        f"value is Z-depth), which still clears the {acq_m:.2f} m resolution limit -- by "
+        f"far clip {cam['clip_far_m']:g} m on-axis = {far_corner:.2f} m of Z-depth at the FARTHEST "
+        f"FRAME CORNER, ({du:.0f}, {dv:.0f}) px off the principal point (|ray| {corner_ray:.3f}x; "
+        f"the far cull is on Euclidean slant range, the stored value is Z-depth), which still "
+        f"clears the {acq_m:.2f} m resolution limit -- by "
         f"{100.0 * (far_corner - acq_m) / acq_m:.1f} %, NOT the "
         f"{100.0 * (cam['clip_far_m'] - acq_m) / acq_m:.0f} % the on-axis number suggests")
 
@@ -263,9 +285,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"  VERDICT: {'PASS' if ok else 'FAIL'} -- {len(lines)} checks, "
           f"{sum(1 for l in lines if l.strip().startswith('FAIL'))} failed."
           + ("" if ok else "  Do NOT render or fly this mount until they are green."))
-    print("  NOTE: static geometry only. The render still owes docs/runbooks/"
-          "FORWARD_DEPTH_SENSOR.md gates D1-D6 -- ADR-007 am. 5 happened under four green "
-          "value-only gates.")
+    print("  NOTE: static geometry only. Every change to this mount owes docs/runbooks/"
+          "FORWARD_DEPTH_SENSOR.md gates D1-D6 again (all six were green 2026-09-06) -- ADR-007 "
+          "am. 5 happened under four green value-only gates.")
     return 0 if ok else 1
 
 

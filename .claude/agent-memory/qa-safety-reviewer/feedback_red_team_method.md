@@ -61,3 +61,19 @@ pure risk.
 `UNVERIFIED — do not act, confirm first` in the finding itself. Cheapest form: re-score the same
 artifact under the current rule and the proposed rule and diff the verdicts; if nothing moves, the
 finding is cosmetic and should say so.
+
+**7. In a MULTI-BUILDER session the prose desynchronises from the code, and the ADR is where it
+lands.** Added 2026-09-07 (ADR-020 commissioning close, 3 builders on one tree). Every measured
+NUMBER survived my checks; four separate defects were all sentences: the ADR named a residual that
+a sibling builder had already fixed (`corner_ray_ratio`'s third copy), named the wrong home file for
+the new primitive, described three importers as "deliberate duplication", and asserted a `--sweep`
+exit contract the code does not implement — while the tool printed the same wrong contract in its
+own footer on the one run where it is wrong. The runbook meanwhile published a bookable-range RULE
+no ADR contains and the gate does not compute.
+**Why:** each builder writes its report from the tree as it was when it started, and the
+append-only ADR is written last from those reports, not from the tree. Nobody re-greps.
+**How to apply:** for a doc-consistency lens on a multi-builder tree, do not diff prose against the
+builders' reports — diff prose against the CODE: grep every named identifier, run every quoted CLI
+and compare the exit code, and re-run the tool that wrote every committed artifact and diff it
+field-by-field. Two of the four defects above were found by running a command the doc said would do
+something else.

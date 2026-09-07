@@ -1,0 +1,58 @@
+{
+  "schema": "d5d6_measure/1.0",
+  "wall_window_s": 30,
+  "started_utc": "2026-09-06T19:54:00Z",
+  "sim_seconds_elapsed": null,
+  "D5": {
+    "gz_depth_frames": 0,
+    "ros_depth_frames": 132,
+    "ros_camera_info_frames": 132,
+    "gz_camera_info_frames": 68,
+    "delivery_ratio_ros_depth_over_ros_info": 1.0,
+    "delivery_ratio_ros_depth_over_gz_depth": null,
+    "encoding": "32FC1",
+    "header_stamp_sample": "sec: 61 nanosec: 600000000 ---",
+    "sim_clock_sample": "WARNING: topic [/clock] does not appear to be published yet",
+    "shm_segments_count_x_bytes": "8x0 8x8413728"
+  },
+  "D6": {
+    "pitch_deg": {
+      "n": 388,
+      "median_deg": -1.175,
+      "mean_deg": -0.596,
+      "min_deg": -7.706,
+      "max_deg": 8.557
+    },
+    "asin_2(wy-zx)_convention_note": "pitch = asin(2(w*y - z*x)); sign/axes to be confirmed against the frame convention of /ap/pose/filtered; magnitude is the quantity of interest",
+    "speed_note": "MEASURED AT 3.5 m/s MEDIAN GROUND SPEED, NOT at the 5 m/s booking speed and NOT an upper bound on it. Whole-flight (sim 34.2-138.8 s, up to 10.6 m/s) pitch extremes from the clip quaternions: min -12.498 deg, max +11.240 deg (n=524); at -12.5 deg the +/-6 m band's upper edge is R*tan(24.775-12.5 deg) = 0.218R = 7.3 m above axis at the 33.6 m required horizon -- still in frame, with ~1.3 m to spare.",
+    "clip_quaternion_crosscheck": {
+      "window_n": 133,
+      "median_deg": -1.175,
+      "mean_deg": -0.276,
+      "min_deg": -7.718,
+      "max_deg": 8.562,
+      "note": "same median as the /ap/pose/filtered capture (n=388): the two sources agree"
+    }
+  },
+  "measurement_context": {
+    "flight": "scripts/fly_pipeline.sh test-flight #2 (scripted, unattended), mission test_2lane, WPNAV speed at ArduCopter default",
+    "gate_record": "eval/results/testflight_gate_20260906T195708Z.json",
+    "clip": "eval/results/clips/real_flight_20260906T195307Z (poses.jsonl + meta.json + heatmap/ committed; the frames are not)",
+    "trigger": "self-triggered on /ap/pose/filtered z>8 m (z=14.67 m at 19:53:48Z), +12 s settle",
+    "ground_speed_in_window_mps": {
+      "source": "the clip's own poses.jsonl (eval/results/clips/real_flight_20260906T195307Z, sim 61.6-88.0 s = this window)",
+      "basis": "consecutive-pair horizontal (2D) speed on stamp_sim_s, window INCLUSIVE at both ends: 133 poses -> 132 pair speeds. Stated because the five fields below must all come from ONE denominator -- as written 2026-09-06 the median (3.499) was the half-open window's (n=131, mean 3.5405) while n/mean/min/max were the inclusive one's. Corrected 2026-09-07 (QA); nothing downstream moves, every doc quotes 3.50 m/s.",
+      "n": 132,
+      "median": 3.497,
+      "mean": 3.533,
+      "min": 2.288,
+      "max": 4.787,
+      "note": "the 2-lane mission never reaches cruise inside this window; whole-flight max 10.576 m/s"
+    }
+  },
+  "caveats": [
+    "gz_depth_frames (0) and gz_camera_info_frames (68) are INVALID: `timeout` killed `gz topic -e` before its stdout buffer flushed; do not quote them. The runbook \u00a74 metric is the ROS-side pair.",
+    "sim_seconds_elapsed is null because /clock is not bridged; the header stamp (sim sec 61.6) shows the stream is on the gz sim clock.",
+    "D6 pitch is at 3.5 m/s median ground speed (measured from the clip poses), NOT the 5 m/s booking speed; see D6.speed_note. Sign convention asin(2(wy-zx)), negative = nose-down."
+  ]
+}

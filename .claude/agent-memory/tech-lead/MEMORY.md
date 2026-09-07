@@ -2,6 +2,8 @@
 - [Week-6 seam: ANSWERED](project_week6-detection-seam-open-questions.md) — binding calls 2026-08-24: gz clock end-to-end, GT-CPA vs applied-pose log, detector single-sourced to src/ + scipy in the image
 - [Avoidance take: FLOWN + SCORED + BREACHED](project_avoidance-take-blockers.md) — gt_cpa 0.0067 m, pre-registered (ADR-013 am. 18); R2 passed live, R3 vacuous by 15 mm, R4 re-scoped by 0.175 s of LEAD TIME
 - [Swath over-claims the camera](project_swath-vs-camera-footprint.md) — ledger swath 7.5 m vs measured 6.886 m cross-track half-footprint: 8.2 % of every lane pitch is scored covered but never imaged
+- [ADR-020 depth mount COMMISSIONED](project_adr020-depth-commissioning.md) — all 6 D-gates measured 2026-09-06/07; D4 exit 0 at 46.0 m/5 m/s; D5+D6 flown at 3.50 m/s so the booked speed is unmeasured
+- [A gate is only as true as its scene](project_a-gate-is-only-as-true-as-its-scene.md) — 4 instances of green-over-nothing + the guard-side twins: mutate the conjunct, and measure your tolerance's own margin
 - [ADR log must track the gate](project_adr-log-must-track-the-gate.md) — DECISIONS.md went stale on the same gate twice; correct today's uncommitted text in place, append once committed
 - [Moving a doc costs a stub](project_moving-a-doc-costs-a-stub.md) — append-only DECISIONS forces stubs; build_docs_site.py is the only doc gate (run it); a doc test that SKIPs is not a pin
 - [Scenario fixtures are OPEN-LOOP](project_scenario-fixtures-are-open-loop.md) — their CPA is a scenario parameter, not a flown outcome; CPA gate stays scoped to committed live logs (ADR-013 am. 16)

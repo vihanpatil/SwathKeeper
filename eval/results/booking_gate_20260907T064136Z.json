@@ -1,0 +1,103 @@
+{
+ "schema_version": "1.2",
+ "tool": "scripts/predict_forward_lead.py",
+ "gate": "ADR-019 item 6 (Council Ruling 002 tripwire (a)) -- the booking gate",
+ "sensor": {
+  "config": "/Users/vihanpatil/personal/projects/auto-drone-sim/config/depth_camera.json",
+  "fx_px": 520.0058,
+  "fx_source": "live camera_info (--fx/--fy/--cx/--cy/--width/--height, one message)",
+  "fy_px": 520.0058,
+  "fy_source": "live camera_info (--fx/--fy/--cx/--cy/--width/--height, one message)",
+  "cx_px": 320.0,
+  "cx_source": "live camera_info (--fx/--fy/--cx/--cy/--width/--height, one message)",
+  "cy_px": 240.0,
+  "cy_source": "live camera_info (--fx/--fy/--cx/--cy/--width/--height, one message)",
+  "image_width_px": 640,
+  "image_height_px": 480,
+  "image_size_source": "live camera_info (--fx/--fy/--cx/--cy/--width/--height, one message)",
+  "image_size_cross_check": "live 640x480 == config 640x480; a mismatch is a REFUSAL (the world SDF is generated from that config, so it means the wrong camera was read)",
+  "live_intrinsics": true,
+  "update_rate_hz": 5.0,
+  "clip_far_m": 60.0,
+  "clip_far_at_frame_corner_m": 47.558,
+  "clip_far_corner_ray_ratio": 1.261627,
+  "clip_far_corner_pixel_uv": [
+   0.0,
+   0.0
+  ],
+  "clip_far_corner_offset_px": [
+   320.0,
+   240.0
+  ],
+  "clip_far_corner_rule": "|ray| = sqrt(1 + (max(cx, W-1-cx)/fx)^2 + (max(cy, H-1-cy)/fy)^2) -- the FARTHEST corner from the principal point, the first pixel gz culls",
+  "clip_semantics": "value = pinhole Z-depth; the NEAR cull is on Z-depth, the FAR cull on EUCLIDEAN slant range (gz-rendering8 depth_camera_fs.glsl), so the effective Z horizon shrinks by |ray| off-axis",
+  "min_resolving_radius_px": 2.0,
+  "geometric_acquisition_range_m": 46.801,
+  "acquisition_range_m": 46.0,
+  "acquisition_range_source": "live render measurement (--acq-range-m) -- CLAMPED to the 47.56 m frame-corner bound from a 58 m optical prefix (ADR-020 am. 1)",
+  "acquisition_optical_prefix_m": 58.0,
+  "acquisition_clamped_from_optical_prefix": true,
+  "acquisition_clamp_bound_m": 47.558,
+  "acquisition_clamp_note": "D3's optical prefix was 58 m; the BOOKED range is 46 m, the longest swept prefix range inside the 47.56 m frame-corner Z-depth horizon (ADR-020 am. 1). The clamp is applied UPSTREAM, in gate D3; this field records that the number handed to the gate was a clamped one and against which bound",
+  "band_covered_from_m": 13.0
+ },
+ "encounter": {
+  "mission_speed_mps": 5.0,
+  "bird_speed_mps": 7.0043,
+  "bird_speed_source": "max over farm_world_birds.json (check_live_flight_log.max_bird_speed_m_s -- the fastest bird, not today's threat)",
+  "closing_speed_mps": 12.0043,
+  "bird_radius_m": 0.18
+ },
+ "plant": {
+  "name": "guided_default",
+  "a_max_ne_mps2": 2.5,
+  "jerk_ne_mps3": 5.0,
+  "t_req_s": 1.7925,
+  "t_req_s_at_mission_speed_cap": 1.7925,
+  "speed_cap_changes_t_req": false,
+  "context_other_plants": {
+   "guided_default": 1.7925,
+   "poscontrol_bare": 2.5488,
+   "angle_max_ceiling": 1.1677
+  }
+ },
+ "budget": {
+  "bar_m": 3.0,
+  "lead_margin_factor": 1.3,
+  "frame_period_s": 0.2,
+  "control_tick_latency_s": 0.16,
+  "pipeline_latency_s": 0.36,
+  "need_s": 2.1525,
+  "required_lead_s": 2.7982,
+  "available_lead_s": 3.832,
+  "margin": 1.7803,
+  "required_horizon_m": 33.59,
+  "acq_range_headroom_frac": 0.2698,
+  "escape_at_available_lead_m": 13.002,
+  "escape_at_available_lead_note": "the bar restated in metres. ALGEBRAICALLY IMPLIED by `margin` (same plant, same numbers) -- not a check and not a cross-check; see the comment above the checks list.",
+  "unmodelled": "AUTO->GUIDED mode-switch latency (TG-5) is NOT in this budget and is unmeasured; every eval/point_mass omission (attitude lag, motor lag, EKF lag, wind/drag) makes the plant OPTIMISTIC. The margin is an upper bound on safety, never a promise."
+ },
+ "checks": [
+  {
+   "name": "lead_margin",
+   "ok": true,
+   "detail": "3.832 s available vs 2.152 s needed = 1.780x (bar 1.30x)"
+  },
+  {
+   "name": "band_in_frame_at_acquisition",
+   "ok": true,
+   "detail": "the +/-6 m threat band is in frame from 13.00 m, acquisition is at 46.00 m"
+  },
+  {
+   "name": "acquisition_within_corner_far_clip",
+   "ok": true,
+   "detail": "acquisition 46.00 m vs the 47.56 m Z-depth horizon at the FARTHEST FRAME CORNER, pixel (0, 0) = (320, 240) px off the principal point of a 640x480 frame (far clip 60 m culled on Euclidean slant range, |ray| 1.262x on-axis). Headroom 3.4 % -- NOT the 30 % the on-axis clip suggests"
+  }
+ ],
+ "verdict": {
+  "pass": true,
+  "bookable": true,
+  "exit_code": 0,
+  "why_not_bookable": null
+ }
+}

@@ -1,4 +1,4 @@
 # Product-Lead Memory Index
 
-- [Phase](phase.md) — as of 2026-08-25: the take FLEW and breached as pre-registered (gt_cpa 0.0067 m); R4 is now #1 by measurement + the booking bar
-- [Scope guards](scope-guards.md) — standing "DO NOT ADD SCOPE, guard the exits" call + the recorded cuts (no YOLO, no startup narrative, no rename, R4/R5 not v1)
+- [Phase](phase.md) — as of 2026-08-26: ADR-019's ag-avoidance push IS the program; forward depth sensor built but never rendered, commissioning + booking gate D4 next
+- [Scope guards](scope-guards.md) — standing "DO NOT ADD SCOPE, guard the exits" call + the recorded cuts (ADR-019's NDVI freeze, R4 promoted/re-scoped, R5 still out, no booking on a design number)

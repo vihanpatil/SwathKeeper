@@ -147,13 +147,45 @@ finding that convenes Ruling 003 — not another instructive breach. So:
 
 ```bash
 python3 scripts/predict_forward_lead.py --speed <the speed the mission will actually fly> \
-        --fx <K[0]> --cy <K[5]> --acq-range-m <measured, gate D3>   # all three, or exit 3
+        --fx <K[0]> --fy <K[4]> --cx <K[2]> --cy <K[5]> --width <W> --height <H> \
+        --acq-range-m <gate D3, the BOOKABLE range> \
+        --acq-optical-prefix-m <gate D3, the OPTICAL PREFIX it was clamped from>
 ```
 
-**Exit 0 = PASS and bookable. Exit 3 = PASS but NOT bookable** (the horizon came from config prose,
-which ADR-019 item 6 forbids) — that means the commissioning session has not been run. Exit 1 = do
-not book at this speed. The whole procedure, including how to measure the horizon, is
-[`FORWARD_DEPTH_SENSOR.md`](FORWARD_DEPTH_SENSOR.md).
+**The six intrinsics are a SET, off ONE `camera_info` message.** `fx` sets the acquisition range,
+`fy`+`cy` set the threat-band coverage, and all six set the frame-corner far-clip bound — so one
+live number beside one config number is an answer assembled from two different cameras. Do not
+retype them: `verify_depth_mount_geometry.sh` prints this whole command with the six live values
+already substituted, and copying that line is the only way the set is guaranteed to be one set.
+
+| exit | meaning |
+|---|---|
+| **0** | **PASS and bookable** — full live input set, margin ≥ 1.3×. This is the only code that books. |
+| 1 | FAIL — do not book **at this speed**. Try a slower one before you change anything else. |
+| 2 | **REFUSAL, not a verdict** — nothing was decided: no `--speed`, garbage input, or **part** of the six-intrinsic set (a live `W×H` that disagrees with `config/depth_camera.json` counts, since that config *generates* the world). |
+| 3 | PASS but **NOT bookable** — config-sourced inputs, or live intrinsics with no `--acq-range-m`, or a `--sweep` in which some row passes. Config-sourced means the commissioning session has not been run. |
+
+A `--sweep` in which **no** row passes exits **1**, not 3. The unconditional property is that a
+sweep **can never exit 0**: it chooses a speed, it does not authorise one.
+
+The whole procedure, including how to measure the horizon, is
+[`FORWARD_DEPTH_SENSOR.md`](FORWARD_DEPTH_SENSOR.md). A booking-gate report from the 2026-09-07
+commissioning run is at `eval/results/booking_gate_20260907T064136Z.json`; re-run the gate for the
+speed **this** mission will fly.
+
+> **THE TWO PRE-REGISTERED CLAUSES THAT TRAVEL WITH ITS 46.0 m.** They are **not** fields in that
+> file — the tool computes arithmetic and cannot vouch for the scene its `--acq-range-m` was
+> measured in — so they live in `docs/DECISIONS.md` **ADR-020 am. 2**, and they are reproduced here
+> because this is the page an operator books from:
+>
+> * **Breakeven acquisition is 33.591 m.** `--acq-range-m 33.6` still exits 0, at exactly 1.300×;
+>   `33.5` exits 1. The booked 46.0 m is therefore not marginal — but if the segmenter's real,
+>   cluttered acquisition range comes in under 33.6 m, this gate goes red and the dodge take is not
+>   bookable at 5 m/s. The artifact carries this number already, as
+>   `budget.required_horizon_m: 33.59` — it is the same quantity, read forwards.
+> * **46.0 m is a best-case-scene UPPER BOUND**: no clutter, a static vehicle, a noiseless sensor,
+>   a sky background, an on-axis target, and a blind `isfinite` mask — **and the depth segmenter
+>   does not exist yet.** It must never be quoted without that clause.
 
 This does **not** retire §0b: with detection on the forward sensor, the nadir bird-visibility gate
 now governs the NDVI *map* rather than the dodge, and it is still a real gate for the survey half.

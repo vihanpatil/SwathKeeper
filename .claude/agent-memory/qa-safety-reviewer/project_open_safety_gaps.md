@@ -1,9 +1,81 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-08-26 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build -- booking-gate exit contract + what D1-D6 cannot see)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-06 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build -- booking-gate exit contract + what D1-D6 cannot see; G90-G95 the D2/D3 in-render harness after its 2026-09-06 rewrite; G96-G100 the doc/contract lens over the same rewrite; G101-G106 the D3->D4 acquisition-number handover; G105 CLOSED and G107-G114 opened 2026-09-07 over the probe-C/G105 fix round; G115-G122 opened 2026-09-07 over the commissioning-close DOC lens -- every measured number reproduced, every defect was prose; G125-G134 opened 2026-09-07 over the same tree under the HARNESS + GATE-INTEGRITY lens -- 10 of 11 mutants killed, the survivor is the booking gate's own acq_range conjunct)
 metadata:
   type: project
 ---
+
+**G115-G122 (2026-09-07) — DOCUMENTATION-CONSISTENCY LENS over the uncommitted commissioning-close
+tree (3 builders, over HEAD 63e310f). Every D5/D6 number I could reproduce host-side DID reproduce
+exactly from the committed clip `eval/results/clips/real_flight_20260906T195307Z/poses.jsonl`
+(airborne n=524 pitch min −12.498 / max +11.240; window sim 61.6-88.0 n=133 pitch median −1.175,
+mean −0.276, min −7.718, max +8.562; window speeds n=132 mean 3.533 min 2.288 max 4.787; airborne
+speed max 10.576) and the D4 artifact re-runs to a ONE-FIELD diff (`band_covered_from_m` 13.0 →
+13.055). The defects are all in the PROSE around good numbers. Ranked:**
+- **G115 (MAJOR) — ADR-020 am. 2's `corner_ray_ratio` paragraph (`docs/DECISIONS.md:3808-3815`)
+  describes an architecture the tree does not have.** It puts the primitive in
+  `scripts/check_depth_mount.py` (it is in `src/fieldguard_planning/depth_detect.py:250`), says it
+  is "duplicated deliberately into the two other gates" (all three IMPORT it), and names as a
+  standing residual the third copy in `scripts/verify_depth_mount_geometry.sh` — which was repaired
+  in the same uncommitted pass (`:531` imports it, `:765` calls it). Cause: tech-lead read the file
+  before robotics-sim landed the fix. **Lesson: in a 3-builder session, a "residual, named not
+  fixed" claim must be re-grepped at the end, not carried from mid-session.**
+- **G116 (MAJOR) — `FORWARD_DEPTH_SENSOR.md:219-225` publishes a D3-bookable RULE no ADR contains
+  and the gate does not compute.** Runbook: "the MINIMUM of the named bounds [prefix, corner
+  horizon, host pinhole × morphology 46.80], then FLOORED to a station the sweep observed",
+  attributed to "am. 1, ratified 2026-09-07". Am. 1 (`DECISIONS:3526-3529`, dated 09-06) says
+  the two-bound rule; am. 2 never restates it; the code
+  (`verify_depth_mount_geometry.sh:767`) is `max(r for r in ranges if seen and r<=acq and
+  r<=far_corner)` — 46.80 never enters. Coincides at 46.0 today; diverges the day the morphology
+  bound binds.
+- **G117 (MAJOR) — "`--sweep` now exits 3 unconditionally" (`DECISIONS:3829`) is false and the tool
+  prints the same false claim on the path where it is false.** `predict_forward_lead.py:678` is
+  `EXIT_PASS_NOT_BOOKABLE if any_pass else EXIT_FAIL`; MEASURED `--sweep 12:14:1` → **exit 1**
+  while `:713` prints "exits 3 whatever the rows say, and cannot exit 0". No exit table anywhere
+  documents a sweep reaching 1.
+- **G118 (MAJOR) — `AVOIDANCE_REAL_DETECTION.md:169-171` sends the operator to "read the caveats in"
+  `booking_gate_20260907T064136Z.json`, which has no `caveats` key** — while its sibling
+  `depth_delivery_d5d6_*.json` does. The two pre-registered clauses (breakeven acq 33.591 m; 46.0
+  is a best-case-scene UPPER BOUND) live only in am. 2 and the runbook, so the ONE artifact that
+  says `bookable: true` is the one place 46.0 is quoted without the clause am. 2 says it must never
+  travel without.
+- **G119 (MINOR) — three published suite totals went stale in this session** (`README.md:100`
+  "1135 passed" with its own "re-quote if you change the suite"; `tests/README.md:13` "988 tests",
+  `:15` "1135 passed"). MEASURED 2026-09-07: pytest **1 failed / 1254 passed / 2 skipped**;
+  `unittest -s tests/fieldguard_planning` **Ran 1026, OK (skipped=2)**; `unittest -s tests`
+  **Ran 231, FAILED (failures=1)** — the one red in both is the pre-registered
+  `test_ci_evidence_gate::test_step_passes_on_the_committed_evidence`.
+- **G120 (MINOR) — the D5 artifact's speed median is not reproducible from its own n.**
+  `depth_delivery_d5d6_20260906T195400Z.json` records n 132 / median **3.499** / mean 3.533 / min
+  2.288 / max 4.787. On the artifact's own window+clip, inclusive (n=132) gives median **3.4973**
+  and mean 3.5333; half-open gives median 3.4990 but n=131 and mean 3.5405. The median came from a
+  different sample than its own denominator. Verdict-invariant (everything quotes 3.50).
+- **G121 (MINOR) — the D6 retraction restates the retracted claim in signed terms.**
+  `FORWARD_DEPTH_SENSOR.md:508` / `DECISIONS:3786`: "−1.18° median is a **lower** bound on the
+  booked pitch, not an upper one", 15 lines after "negative = nose-down". Signed, that IS "bounded
+  above by −1.18°". The true claim is about MAGNITUDE. **How to apply: whenever a retraction and
+  its replacement share a sign convention, restate the replacement in the unsigned quantity.**
+- **G122 (MINOR) — D5's ratio is blind to a co-drop and the rate denominator is on disk, unused.**
+  `sim_seconds_elapsed: null` (/clock unbridged), so nothing establishes the sensor TICKED at 5 Hz —
+  both streams halving keeps the ratio 1.000. The clip covers the same window: sim 61.6-88.0 =
+  **26.4 sim s**, so 132 depth frames / 26.4 = **5.00 Hz**. One line closes it.
+- Smaller, all confirmed: `config/depth_camera.json tilt_rejected_note` still ends "UNMEASURED and
+  named as such ... a LIVE item (gate D6)" after D6 ran; the D4 artifact rounds fx/fy to 4 dp
+  (**520.0058 == 520.0058**, erasing the ULP the `.sh` refuses to round away, so
+  `test_booking_gate_artifact.py` must reach for hardcoded constants to recompute) and records an
+  absolute `/Users/...` config path; runbook §2's exit list omits the .sh's new exit-4 cause
+  (WRONG DEPTH) and its exits **2** and **3** entirely — and .sh exit 3 means the OPPOSITE of §3's
+  predictor exit 3; probe C is dated 09-06 in `predict_forward_lead.py:84,356` and 09-07 in
+  `depth_detect.py:262` + `DECISIONS:3794`; `README.md:173,264` say 17.8-**38.7** m where every
+  other surface says 38.8, and `README.md:263-268` still lists the (now commissioned) forward depth
+  camera under "What I'd do next".
+- **NOT TESTED this round, stated so it is not assumed:** nothing in the renderer (D2/D3/D5/D6
+  pixel numbers are taken from the session's MEASURED FACTS, not re-measured); the 81-test
+  `test_verify_depth_mount_geometry.py` internals and the .sh scoring block were not mutated.
+
+**G101-G106 (2026-09-06, appended at the end): the D3 -> D4 acquisition handover.** The proposal to
+consume 46.0 m instead of the printed 58.0 m floor — why 46 is the right number for the WRONG stated
+reason, the live-demonstrated off-centre-principal-point false PASS, and why the far clip stays 60.
 
 Standing safety-hunt list. Recheck before any sign-off; close/append as they resolve. Scenario and
 regression locations: [[reference-safety-scenario-catalog]]. Which artifact proves which published
@@ -1058,3 +1130,363 @@ Small, one-sided, worth one line in the ADR beside the prior.
 
 **v1 bar reminder (ADR-002):** coverage debt > 0 is ALLOWED — but every dropped cell must be
 EXPLICIT in the ledger, never absent. `debt_count == 0` is a separate stretch assertion.
+
+---
+
+## G90-G95 — the D2/D3 in-render harness after the 2026-09-06 rewrite (`feat/depth-commissioning`)
+
+Context: the gate `scripts/verify_depth_mount_geometry.sh` ran live for the FIRST time 2026-09-06
+and produced a scoreable-but-empty result (D2 CLEAR + D2 FAR "PASS" while the bird had never moved:
+the script stripped the Physics system, and `set_pose` is applied ONLY by Physics — `data: true`
+from UserCommands means QUEUED, not MOVED). The rewrite keeps physics and zeroes gravity, verifies
+every teleport by a `/world/<w>/pose/info` readback, and adds exit 4 = harness self-check failed.
+**Reviewed host-side only; the renderer belongs to the orchestrator.** The eight `rec()` predicates
+are byte-identical to the committed version — verified by diffing the extracted python blocks, NOT
+by reading. Nothing was loosened.
+
+**G90 — a harness abort surfaces as exit 1 or exit 124, which the published exit table assigns to
+something else.** The table now teaches "1 = a named assertion failed, 4 = nothing printed is a
+measurement". Under `set -euo pipefail`, an unmatched `grep` in the unguarded display pipeline
+(`gz topic -l | grep "^/<world>/depth" | sed ...`) aborts at **exit 1** BEFORE the D1 diagnostic
+prints, and a `timeout 30 gz topic -e` capture failure aborts at **exit 124** with no banner and a
+0-byte `frame_<R>.json` left in `$OUT`. Both host-reproduced. Fail-closed, never a false pass, but
+the operator's decision procedure reads them as verdicts. `test_every_exit_code_it_can_return_is_
+documented` cannot see them — it only scans literal `exit N` / `SystemExit(N)`.
+
+**G91 — one-source-of-truth holes in exactly the constants the runbook's own remedies tell you to
+change.** `FAR_M = 60.0` / `NEAR_M = 0.1` duplicate `config/depth_camera.json` clip_far_m/clip_near_m;
+`BIRD_R = 0.18` duplicates the birds config; `CAM_E=60.15` duplicates `mount_pose_xyz_rpy[0]`; hfov
+`1.1033` is written twice in the shell. The runbook says "raise `clip_far_m`" (→ D2 CULL goes red for
+the wrong reason) and "move `mount_pose_xyz_rpy` forward" (→ every teleport lands at the wrong
+Z-depth). The new test pins `SWEEP_RANGES[-1] < clip_far_m` from the config but pins NOTHING else.
+All fail-closed at plausible magnitudes (a mount move > 0.2 m fails D2 RANGE first, bounding the D3
+bias to ~0.4 %).
+
+**G92 — the D3 floor is printed as a bookable number before its own caveat.** If the contiguous
+prefix reaches the last swept range the script prints the copy-pasteable
+`predict_forward_lead.py ... --acq-range-m 58.0` line FIRST and "this is a floor, not the horizon"
+AFTER. Caught downstream — `acquisition_within_corner_far_clip` refuses anything above the 47.56 m
+corner horizon (exit 1) — but it fails with "slow the mission or lengthen the horizon", which
+misdiagnoses an unbounded sweep. **Note the 2 m sweep quantum straddles the corner clip: 46 books,
+48 cannot.**
+
+**G93 — the stale-server guard's PID half swallows its own failure.** `ps -eo pid=,args= 2>/dev/null
+| awk` returns empty on a missing/failed `ps`, which the guard reads as "no server". `ps` is proven
+present (`fly_pipeline.sh:244` already `docker exec ... ps -eo args=`), so this is hardening — but
+"we could not tell" must not score green. Same shape for the `gz topic -l` half. The awk matcher
+itself is GOOD: probed against 11 ps spellings (`ruby /usr/bin/gz sim`, `/usr/bin/ruby3.0 ... gz
+sim`, bare `gz sim`, the `bash -lc '... gz sim ...'` tmux wrapper, `ros2 launch`) — it matches every
+real server spelling and never self-matches a shell.
+
+**G94 — `vehicle_check` reads back position only, never orientation, and only at the two
+endpoints.** A yaw/pitch drift holding the origin is not named by the harness; it re-surfaces as a
+D2 AIM/RANGE failure blamed on the mount. Also: the vehicle's stability was builder-probed for
+>25 s while a full run is ~3 min; only the endpoints are checked (physically fine in zero-g with a
+`<static>` bird that cannot transmit contact, but it is an inference, not a measurement).
+
+**G95 — the pose-readback parser is the load-bearing half of the fix and has no test.** The repo
+pins it only by `assertIn('name: "{name}"', body)`. I reproduced it host-side against a realistic
+`Pose_V` text dump and it is CORRECT — the quoted-name match distinguishes `iris_with_gimbal_ndvi`
+from the nested `iris_with_gimbal`, links named `link` do not collide, proto3's omitted-zero fields
+read as 0.0, and an absent name / truncated `position {` fails closed. **A ~15-line unit test on
+that fixture is the single highest-value cheap addition to `tests/test_verify_depth_mount_
+geometry.py`** — without it, a future "simplify the regex" edit restores the 2026-09-06 bug class.
+
+## G96-G100 — the DOC/CONTRACT pass over the same 2026-09-06 rewrite (second lens, same day)
+
+**G96 (MAJOR) — D3 and its copy-pasteable booking-gate command print on a FAILED run.** Generalises
+G92 (which is only about the sweep-floor case). The scoring block prints `D3 MEASURED acquisition
+range: <n> m` and `python3 scripts/predict_forward_lead.py ... --acq-range-m <n>` BEFORE the
+PASS/FAIL loop, unconditionally. Reproduced: a synthetic slant-range mount FAILS D2 OFFAX + D2 CULL
+and still prints **46.0 m** and the command. Runbook §2 "**Write the printed number down**" and §6
+item 1 ("the D3 number, in an ADR-020 amendment") carry no "only if it exited 0". Fix = compute `ok`
+before the D3 block and print a refusal in place of the command line, plus the qualifier in both
+runbook places.
+
+**G97 (MAJOR) — `tests/test_verify_depth_mount_geometry.py` pins SHAPE, not ENFORCEMENT.** See the
+two-round mutation note in [[reference-safety-scenario-catalog]]: 11/12 enforcement mutants survive
+31/31 green. Not a live-run blocker (the shipped script is correct) — a *trust* blocker: the file
+reads as the gate's regression net and does not hold the stale-server refusal, exit 4, any of the
+three published tolerances, or the contiguous-prefix rule.
+
+**G98 (MAJOR) — three "never rendered" status lines are false, and §2 mixes render-earned numbers
+into a *(host)* prediction column.** `docs/runbooks/FORWARD_DEPTH_SENSOR.md:11-13` ("Status: NEVER
+RUN… Verified offline is not rendered"), `docs/ROADMAP.md:20` ("NEVER RENDERED… no frame of it has
+ever existed"), `docs/DECISIONS.md:3353` ADR-020 ("NOT YET RENDERED"). §2 now cites 39.70 m, 0.796,
+15.0→0.19 m, "held exactly (60,30,15) over a >25 s probe", "0 fragment components" — all from a
+render — and the D2 FAR row's *(host)* cell says "measured 0.796 on 2026-09-06", so the row predicts
+itself. There is still **no ADR-020 amendment** recording the first run or the two world edits.
+
+**G99 (MINOR) — the runbook's own numbered order forces an undocumented `down`/`up`.** §1 is
+`fly_pipeline.sh up`; §2 refuses (exit 4) while that server lives and says to run `down`; §3/§4/§5
+all need a live bringup again and nobody tells the operator to bring it back. Either renumber D2
+ahead of D1 or add the two lines.
+
+**G100 (MINOR) — the off-axis placement comment claims live intrinsics it never reads.** Script
+~L389-397: "Placed from the LIVE intrinsics if they parsed, else from the config fx" — the placement
+python computes `fx=(640/2)/tan(1.1033/2)` and never opens `camera_info.json` (`import json` unused).
+Harmless today (520.0058 both ways), but the follow-on claim "a mismatch cannot silently pass" holds
+only for D2 OFFAX, which recomputes `ratio` from the live fx; D2 AXES compares against the NOMINAL
+(560,120), so an fx mismatch up to **≈5.6 %** lands inside the 15 px bar. Related: G91.
+
+**Also re-verified this pass (do not redo):** the gz citations are exact at the pinned branch —
+`gz-sim8 src/systems/user_commands/UserCommands.cc` `updatePose()` touches only
+`components::WorldPoseCmd` (L1324-1336) and `PoseCommand::Execute` (L1350) just calls it;
+`src/systems/physics/Physics.cc` L2874-2945 is the `Each<Model, WorldPoseCmd>` consumer + removal.
+The world is byte-reproducible (`gen_farm_world.py --world-out/--obstacles-out` to scratch → both
+identical, tree untouched); `scripts/verify_mount_geometry.sh` is untouched and safe to pin, because
+it never calls `set_pose` (static scene, so stripping physics is correct there); no `fg_`/`/fg/*`
+identifier was renamed (the `fg/`→`depthcheck/` sed is copy-only and is the anti-collision feature).
+Suite after the +31: `pytest tests` **1166 passed / 1 failed / 2 skipped**, `unittest discover -s
+tests -p 'test_*.py'` **181, failures=1**, `-s tests/fieldguard_planning` **988 OK (skipped=2)** —
+the one failure is the pre-registered `test_ci_evidence_gate` red. `tests/README.md:13-15` (the
+declared one home), `README.md:100` and `docs/drafts/README_FULL.md:122` still quote 1135/150, and
+"80 host tests" is stale at `FORWARD_DEPTH_SENSOR.md:12` + `ROADMAP.md:20`.
+
+**Harness properties VERIFIED host-side (do not re-litigate):** exit 4 fires the EXIT trap with the
+status preserved (probe); SIGINT/SIGTERM/SIGHUP all run teardown and exit 130/143/129 — **Ctrl-C can
+never yield exit 0**; `make_check_world` on the committed world puts exactly one `<gravity>0 0 0`
+at world+1, enlarges both ground planes, and leaves `farmguard_field.sdf` byte-identical; the
+contiguous-prefix rule is intact and the sweep is test-pinned ascending; the blind `isfinite` mask
+is sound because `DEFAULT_MAX_AREA = 5000` drops the ~70,000 px ground slab; the only trees east of
+the park (x = 65, canopy top 3.8 m) are out of frame both vertically (frame bottom 12.76 m at that
+4.85 m range) and horizontally (5 m lateral vs a 2.98 m half-width) — the header's "both tree rows"
+is wrong, there are three (x = 15, 40, 65).
+
+## G101-G106 — the D3 -> D4 acquisition-number handover (reviewed 2026-09-06, live run-2 evidence)
+
+Context: run 2 of `verify_depth_mount_geometry.sh` exited 0 and printed **D3 = 58.0 m**, still
+detecting at the longest swept range (a FLOOR). 58.0 fails the booking gate on
+`acquisition_within_corner_far_clip` (bound 47.56 m). The proposal under review was to consume
+**46.0 m** instead — the longest swept station <= the corner bound — giving exit 0, margin 1.780x.
+
+**G101 (MAJOR) — the acquisition number is clamped BY HAND between two gates, and the clamp makes
+the corner check tautological.** `predict_forward_lead.evaluate` L253 is `ok: acq_m <= far_corner_m`.
+If acq is DEFINED as the largest swept station <= far_corner, that check can never fail — the gate
+drops from three live checks to two, and the one that dies is the one ADR-020 built for the
+Z-depth-vs-slant-range asymmetry. The script and `FORWARD_DEPTH_SENSOR.md` §2 both say "write the
+printed number down" and print `--acq-range-m 58.0`; nothing in the repo pins the number in the D4
+artifact to the number D3 printed (G87: no test reads `eval/results/booking_gate_*.json`).
+**How to apply:** if the clamp is adopted it must live IN the script as a min over three named
+bounds (render prefix / morphology bound 46.80 / corner clip 47.56), printed as the copy-paste
+number, with the raw floor reported alongside — never applied by an operator in between.
+
+**G102 (MAJOR) — D3's detection criterion is not the criterion the booking gate's own floor uses,
+and the two disagree by 12 m exactly where the number is taken.** D3 = `detect_blobs(isfinite,
+min_area 6)` + a +/-20 px centre window. The gate's `MIN_RESOLVING_RADIUS_PX = 2.0` was measured on
+IDEAL discs through the SAME `detect_blobs` at the worst sub-pixel placement. I re-ran that study
+host-side at each swept range: an ideal disc survives to **46 m (r_apparent 1.75, bbox 3x4)** and is
+**erased by the opening at 48 m** (r_pinhole 1.950) — while the render DETECTED at 48/50/52/54/56/58
+with a flat 4x4 box. Render vs ideal bbox agree to +/-1 px from 10 m to 46 m and diverge
+QUALITATIVELY beyond. The bird is confirmed a true 0.18 m analytic `<sphere>` (D2 RANGE 9.821 vs
+9.820; 18 px bbox at 10 m in both) so this is a rasterization/AA effect the repo's own morphology
+study does not reproduce or explain. **58.0 rests entirely on the unexplained regime; <=46 m is
+where all three independent lines (render, ideal-disc morphology, pinhole 46.80) agree.**
+
+**G103 (MAJOR) — the sweep tests ONE sub-pixel placement per range.** The bird is teleported to the
+optical axis at every station, so the whole D3 curve is a single, best-aligned placement repeated 15
+times; `MIN_RESOLVING_RADIUS_PX` was defined as the WORST placement over offsets {0, 0.25, 0.5} in
+both axes, where r=1.9 px dies and r=2.0 survives. At 46 m the render sits at r_apparent 2.00 = the
+floor exactly — a boundary safety claim (ADR-015). **Probe: at the 46 m station re-capture at
+(y,z) = (29.9779,15), (29.9558,15), (30,14.9779), (29.9779,14.9779), (29.9558,14.9558)** — 1 px =
+46.0/520.0058 = 0.08846 m. Require DETECTED at all five, else drop to 44.0 (margin 1.703x, exit 0).
+
+**G104 (MAJOR, latent, LIVE-DEMONSTRATED) — the frame-corner far-clip bound is optimistic for any
+off-centre principal point, and takes cx from CONFIG while cy comes from the LIVE camera_info.**
+`corner_ray = sqrt(1 + (cx/fx)^2 + (cy/fx)^2)` (`predict_forward_lead.py:211`, duplicated verbatim
+at `check_depth_mount.py:225`) uses cy, not `max(cy, H-1-cy)`; cx = config `image_width_px/2`, never
+cross-checked against live `camera_info.width`; and the v-term divides by fx, not fy (no `--fy`).
+**Demonstrated false PASS:** `--speed 5.0 --fx 520.0058046927554 --cy 120 --acq-range-m 50.0` →
+**exit 0, PASS and BOOKABLE**, printing "50.14 m at the frame corner" when the true farthest-corner
+bound is **44.05 m** (13.8 % optimistic). cy=100 → 16.2 % optimistic. A config `image_width_px` of
+480 against a live 640 lifts the bound 47.56 → 50.24 m. Harmless today (live cx=320, cy=240, fy=fx)
+but every error is in the fail-dangerous direction. **Fix: max(cx, W-1-cx) / max(cy, H-1-cy), cy/fy,
+assert config width/height == live camera_info width/height, one implementation not two.**
+
+**G105 (MINOR) — CLOSED 2026-09-07 for future runs (`distinct_frames()`, sha1 over each frame's
+base64 `data`, collision -> `harness_fail` exit 4; verified in a sandbox that a repeat with a
+DIFFERENT header stamp is still caught, the message prints before exit 4 and the EXIT trap still
+runs teardown; deleting the guard turns 2 tests red). Original: the 15 sweep frames are never
+asserted DISTINCT.** A wedged renderer would repeat one frame at every station and report a long
+false prefix. Protection was INCIDENTAL: `offaxis`/`near` are captured AFTER the sweep and scored by
+D2. **CORRECTION to what I wrote on 2026-09-06** — "run 2's own data refutes staleness (r_apparent
+falls 9->5->4->3->3->2)" holds only OUT TO ~40 m. From 40 to 58 m the radius is FLAT at 2.00 px,
+which is also exactly what a stuck frame looks like, and 46.0/58.0 both come from that band. See
+G109: the fix that makes the plateau self-evidencing is asserting the blob's DEPTH ~= R.
+
+**G106 (MINOR) — "far clip stays at 60" is the SAFE call, and the reasons should be recorded before
+someone raises it to bound D3 from above.** Raising `clip_far_m` (a) un-clamps G101's rule (at
+far=100 the corner bound is 79.3 m, so the rule would hand the clip-limited 58.0 floor straight to
+the gate), (b) breaks the hard-coded `FAR_M = 60.0` in the scoring block (G91) so D2 CULL goes red
+for the wrong reason, and (c) merges the threat band with the ground return: on the vertical
+centreline the ground appears at v = 374 at far=60, 319 at far=100, and at **far >= 116 m it touches
+the +/-6 m band's lower edge at 46 m** — the `max_area` clutter-merge case in which the bird
+disappears silently (Known gaps). At far=60 the clearance is 66 px (~5.9 m) at 46 m. Bounding D3
+from above does NOT need a longer clip — the ideal-disc study (G102) already bounds it at 48 m.
+
+**G107-G114 (2026-09-07) — ADVERSARIAL REVIEW OF THE TWO-BUILDER PROBE-C / G105 FIX ROUND
+(uncommitted over HEAD 63e310f). The host-side fix is REAL and PINNED: `corner_ray_ratio` in
+`check_depth_mount.py` and the inline copy in `predict_forward_lead.py` are BIT-IDENTICAL over 20k
+random (W,H,fx,fy,cx,cy) — max |diff| 0.0 — and five behavioural mutants (naive cx/cy; /fx for the
+vertical term; drop the live-vs-config W/H cross-check; sweep `all_pass`->`any_pass`; delete the
+distinct-frames guard) each turn 1-5 tests RED. Probe C is dead: `--cy 120 --acq-range-m 50.0` now
+prints 44.05 m and exits 1. D4 reproduces yesterday exactly (margin 1.780x, 47.558 m corner bound,
+33.59 m required horizon, exit 0), the schema-1.2 artifact round-trips through `validate_report`,
+and dropping any 1.2 sensor field is caught. Suites: pytest 1212 / 2 skipped / 4 failed;
+`check_depth_mount.py` 23/23 PASS; `bash -n` clean; `gen_farm_world.py` byte-identical.**
+
+- **G107 (MAJOR) — THE THIRD COPY OF THE CORNER FORMULA IS STILL WRONG AND IS PINNED BY NOTHING, AND
+  IT IS THE ONE THAT COMPUTES THE BOOKABLE NUMBER.** `verify_depth_mount_geometry.sh:672`
+  `corner_ray = sqrt(1 + ((w/2)/fx)^2 + (cy_px/fx)^2)` — never reads `k[2]`/`k[4]`, uses `w/2` not
+  `max(cx, w-1-cx)`, `cy` not `max(cy, h-1-cy)`, `/fx` not `/fy`. It feeds `acq_book`, i.e. the
+  46.0 m that books the flight. Fuzzed against the fixed formula: **up to 65.6 % optimistic**;
+  at cy=120 it says 50.14 m where the truth is 44.05 m. Exact today only because cx=320/cy=240/
+  fy=fx to 1 ULP. **MUTATION PROOF that nothing holds it:** `corner_ray = 1.0` -> 0 tests red;
+  deleting `and r <= far_corner` from `acq_book` (which would have published 58.0 as BOOKABLE
+  yesterday) -> 0 tests red. Right end state is ONE primitive in
+  `src/fieldguard_planning/depth_detect.py` imported by both Python gates and mirrored once, with a
+  cross-file test like the one that already kills the `check_depth_mount` divergence mutant.
+- **G108 (MAJOR, LIVE-DEMONSTRATED FALSE BOOKABLE) — the SAME asymmetry survives in
+  `band_covered_from_m`.** `depth_detect.py:239` returns `half*fy/cy` where the constraint is the
+  SMALLER half-extent `min(cy, H-1-cy)` (the band must fit ABOVE and BELOW the axis). Optimistic
+  whenever cy > (H-1)/2. **Reproduced end to end:** `--cy 400 --acq-range-m 38.0` (all six live,
+  640x480) -> **exit 0 PASS and BOOKABLE**, "threat band in frame from 7.80 m" where the honest
+  figure is **39.49 m** — larger than the 38.0 m acquisition range, i.e. `band_in_frame_at_
+  acquisition` should have FAILED. 5.06x optimistic. Today cy=240 so the only D4-visible effect is
+  the published **13.00 m where the honest number is 13.054 m** (0.4 %, verdict-invariant against
+  33 m of slack). Fixing it moves 13.00 -> 13.05 and turns **5 tests red** (pins in
+  `check_depth_mount.py:~218`, `config/depth_camera.json`, ADR-020, runbook §5) — one bundled
+  4-pin move. A reader who sees probe C fixed will reasonably assume this one was too.
+- **G109 (MAJOR) — D3's `detected` NEVER READS THE DEPTH VALUE, so the 40-58 m plateau is
+  indistinguishable from a stuck frame — and 46.0 sits inside it.** The criterion is
+  `blind_boxes(isfinite)` + a +/-20 px centre window (`verify_depth_mount_geometry.sh:~636`); D2
+  RANGE checks depth ~= R only at the single 10 m station. So "the optics out-resolve any far clip"
+  (runbook §2) is an INTERPRETATION with no measurement under it over exactly the band that produced
+  both published numbers. G105's new hash gate closes the repeat case for FUTURE runs; the 2026-09-06
+  numbers were never distinctness-checked and cannot be, without a re-run. **PRICED, and this is the
+  part to quote: even taking 40.0 m (the last range where r_apparent still tracked pinhole) the
+  booking gate at 5 m/s still exits 0 at margin 1.548x — the D4 verdict is robust across the whole
+  unverified band. It stops being robust at 8 m/s (1.238x, FAIL).** Cheap fix, no re-fly: assert the
+  blob's median Z-depth ~= R per station (data the harness already captures); that subsumes G105 for
+  the sweep, because a stuck frame cannot report a moving depth.
+- **G110 (MAJOR) — three committed tests are RED because a temp-dir test reaches into the REAL
+  `eval/results/`.** `check_live_flight_log.RESULTS_DIR` is a module constant and `main()`'s default,
+  so `test_check_live_flight_log_schema2::TestCli` (x3) scans the repo results dir and now finds the
+  two commissioning applied tracks committed in 63e310f
+  (`bird_drive_20260906T194755Z_applied.jsonl`, `..195345Z..`) -> **AMBIGUOUS TAKE** -> exit 1 where
+  the test wants 0. CI runs `unittest discover -s tests/fieldguard_planning`, so this is CI-red, and
+  it is NOT the pre-registered breach red. **Two consequences beyond the colour:** (a) the next
+  avoidance take's `--truth` resolution is ambiguous by default until those tracks are moved or bound
+  in `TRUTH_BINDINGS` — the flight D4 authorises is unscoreable as things stand; (b) **G55 fires
+  verbatim on that path** — I reproduced "*a stale acknowledgement marker ... is present beside a log
+  that does not breach CPA ... delete the marker*" while CPA was NOT MEASURED. G55 is still open and
+  is now the DEFAULT branch. The committed CI step itself is unaffected (it passes no `--truth`;
+  `check_live_flight_log.py eval/results/*flight_log*.json` still prints gt_cpa 0.0067 and exits 1
+  by design).
+- **G111 (MAJOR) — the artifact that authorises the flight is GITIGNORED.**
+  `eval/results/booking_gate_*.json` matches `.gitignore:21 eval/results/*` with no exception (same
+  for `depth_delivery_d5d6_*.json`, which runbook §4/§5 now link to). The D4 step is incomplete
+  without `git add -f`, or an exception line beside the `live_flight_log_*` ones. Compounds G87:
+  `predict_forward_lead.validate_report`'s docstring claims it is "called ... by the host test that
+  reads `eval/results/booking_gate_*.json`" — **there is no such test**; every test writes to a
+  tempdir. Nothing in `tests/` or `.github/` reads the real artifact.
+- **G112 (MINOR) — an all-pass LIVE `--sweep` still exits 0, and its artifact is schema-exempt.**
+  The mixed-row fix is real (2:10:1 live -> exit 3 with "exit 0 withheld ... a sweep authorises
+  nothing"), but `--sweep 2:4:1` live all-passing -> **exit 0**, and `--json` writes
+  `{"sweep":[...], "verdict":{"bookable":true}}` with NO top-level `sensor`/`encounter` — so
+  `validate_report` skips every 1.2 field check (a sweep artifact with garbage rows and
+  `bookable: true` validates), and the file names no mission speed. Exit 0 from a sweep contradicts
+  the tool's own printed doctrine. Fix: sweeps return 3 always, or validate rows.
+- **G113 (MINOR) — three published command lines / prints that a partial-set REFUSAL now breaks.**
+  `verify_depth_mount_geometry.sh:338` still prints "LIVE intrinsics (feed BOTH to the booking gate,
+  K[0] and K[5])" and echoes only fx and cy — the operator is handed 2 of the 6 numbers they need.
+  `docs/runbooks/AVOIDANCE_REAL_DETECTION.md:147-150` still publishes `--fx <K[0]> --cy <K[5]>
+  --acq-range-m ... # all three, or exit 3` — wrong flag set AND wrong exit code (it is 2, and 2 vs
+  3 carry different meanings in this doctrine). The PASSING-run booking line at :~697 and runbook
+  §3 ARE fixed and cross-file-tested. Fail-safe, flight-day-stopping.
+- **G114 (MINOR) — docs claiming what the render did not earn, and the header disclaiming what it
+  did.** (a) Runbook §4 publishes D5 "132/132 = 1.000 over a 30 s wall window **at cruise**" while
+  its own artifact says the window's median ground speed was **3.499 m/s** (max 4.787) and "the
+  2-lane mission never reaches cruise inside this window" — the booking speed is 5.0. (b) §5's
+  "**the number is an upper bound on the one that matters** ... flown at `test-flight`'s default
+  WPNAV_SPD (~10 m/s class) ... so the 5 m/s pitch is bounded above" is INVERTED: measured at
+  3.5 m/s, the 5 m/s pitch is bounded BELOW, and the quoted extremes -7.71/+8.56 deg are the
+  30 s WINDOW's, not the flight's (**-12.498/+11.240 deg, n=524**, in the same artifact). The
+  conclusion survives — at -12.5 deg the band's upper edge is 7.3 m at 33.6 m vs the +/-6 m band —
+  but the spare falls from 8.7 m to **1.3 m**. (c) The runbook HEADER (L11-16) still says "D5/D6
+  pending ... every §4/§5 number below is still a prediction" and §6 items 3-4 still say "STILL
+  OWED", contradicting §4/§5. (d) `docs/ROADMAP.md:20` ("current truth") still says **NEVER
+  RENDERED / no frame of it has ever existed / margin 1.811x / exit 3 ... needs only D1/D3's live
+  fx/cy** — four stale claims, and the config design check still prints exactly 1.811x, which is
+  what makes the stale line readable as current.
+
+**OPENED 2026-09-07 (round 3, the HARNESS + GATE-INTEGRITY lens over the same uncommitted
+commissioning-close tree; the round-2 lens above was DOC-consistency, so these are the code/gate
+holes it did not look for). G107-G114 MOSTLY CLOSED: the third corner copy IS repaired
+(`verify_depth_mount_geometry.sh:531` imports, `:589`/`:765` call, `:630`/`:666` vertical terms now
+`/fy`); the band takes `min(cy, H-1-cy)`; `--sweep` cannot reach 0 in any mode; `TestCli` is
+isolated; the D4 artifact is committed, un-ignored and read by a new hard test.
+**Round-2's G115 / G116 / G117 RE-CONFIRMED STILL PRESENT** in the tree (the am. 2
+`corner_ray_ratio` paragraph, the runbook's three-bound D3 rule, "`--sweep` exits 3
+unconditionally") — independently reproduced, not carried.
+MUTATION ROUND: 11 mutants, 10 killed — `.sh` depth tolerance -> 100 m (2 red, incl. the synthetic
+driver); `depth_bad` refusal block deleted (3); `distinct_frames` neutered (2); `.sh` corner back to
+the inline `(w/2)/fx, cy/fx` (3, all STATIC — a behavioural kill is impossible on this symmetric
+sensor); booking line printed on the config fallback (2); band `min()` -> `cy` (5); corner vertical
+`/fy` -> `/fx` (1); corner `max()` -> `cx,cy` (1); sweep returns 0 on live+any_pass (3); sweep row
+`bookable` left True (1); `validate_report` recursion deleted (1). THE ONE SURVIVOR IS G125.**
+
+- **G125 (MAJOR, THE SURVIVOR) — `bookable = passed and live_intrinsics and acq_range_m is not
+  None` (`scripts/predict_forward_lead.py:433`): dropping the `acq_range_m` conjunct breaks ZERO
+  tests in the whole suite** (1254 passed / 1 pre-registered red, identical with and without the
+  mutant). Under the mutant, six live intrinsics with NO `--acq-range-m` exits **0 PASS and BOOKABLE
+  at margin 1.811x on the geometric upper bound** — booking on host arithmetic, which is exactly
+  what ADR-019 item 6 exists to forbid. Before this diff `main` enforced it a SECOND time via
+  `live_inputs`; the single-speed refactor (`exit_code = report["verdict"]["exit_code"]`) removed
+  that redundancy and left the only remaining copy unpinned. The module docstring claims the
+  property "is pinned by test". Fix: one test — `evaluate(5.0, **six_live)` -> `bookable False`,
+  exit 3.
+- **G126 (MAJOR) — `check_depth_mount.py:228` cannot separate 13.00 from 13.05: the pin clears by
+  0.15 mm.** `abs(from_m - 13.05) <= 0.05` and `|13.000145 - 13.05| = 0.049855`. Mutating
+  `band_covered_from_m` back to `cy` alone leaves the static gate at **PASS 23/23, exit 0**, printing
+  `band from 13.00 m (13.05 expected)` as a PASS — a gate whose own message contradicts its verdict.
+  Five unit tests catch the mutant; the operator-facing gate does not. The pinned lesson in its
+  purest form: never rest a claim ON a boundary. Fix: tolerance 0.02, or assert against the closed
+  form `6*fy/min(cy, H-1-cy)`.
+- **G127 (MAJOR) — the mission-speed cap is computed, reported and never checked.**
+  `t_req_s_at_mission_speed_cap` / `speed_cap_changes_t_req` feed no entry of `checks`; `need_s`
+  always uses the UNCAPPED `t_req_s`. Measured on the booked live set (acq 46.0): below **0.788 m/s**
+  the gate prints PASS/BOOKABLE while the cap-honest margin is under the 1.30 bar (0.6 m/s: printed
+  **2.810x**, cap-honest **1.064x**), and the cap-honest margin is **NON-MONOTONE** — it peaks at
+  **2.61 m/s (2.106x)** and falls both ways. The booked 5.0 m/s is unaffected (the cap does not bind
+  and the report says so, "checked, not assumed"). G80's family: the one genuinely independent
+  number in the report is not a check.
+- **G128 (MAJOR) — nothing binds the FLOWN speed to the AUTHORISED one.** The D4 artifact authorises
+  5.0 m/s; no `param set WPNAV_SPD` exists anywhere (`scripts/*.sh` set only MIS_RESTART /
+  AUTO_OPTIONS / DISARM_DELAY) and `check_live_flight_log.py` never reads `booking_gate_*.json` nor
+  measures a mission speed. The 2026-09-06 test-flight reached **10.576 m/s**, at which the same
+  gate exits **1** (margin 1.216x < 1.30). G46 in a new place. Close it before the dodge take is
+  booked, or record the tradeoff.
+- **G129 (MAJOR) — "a longer horizon is never worse" is false and the table 20 lines above it proves
+  it.** `FORWARD_DEPTH_SENSOR.md:354`. Measured: acq 47.5 -> exit 0, acq 47.6 -> exit 1, acq 58.0 ->
+  exit 1 on `acquisition_within_corner_far_clip` alone. G60's family, and in the direction that
+  hurts (it invites quoting the longer number when unsure).
+- **G130 (MINOR) — misdescribed provenance in the D5/D6 artefact.**
+  `depth_delivery_d5d6_20260906T195400Z.json` `measurement_context.clip` ends "(untracked)" while the
+  same commit tracks that clip's `poses.jsonl` / `meta.json` / heatmap (8 files, 634 KB, un-ignored
+  at `.gitignore:89`). That clip IS the denominator for the 3.50 m/s median.
+- **G131 (MINOR) — `why_not_bookable` misnames the cause on a real operator path.** Six live
+  intrinsics with no `--acq-range-m` prints "inputs are config-sourced; ... requires the ...
+  intrinsics to come from the sensor's own live camera_info". The intrinsics ARE live; only the
+  horizon is not. Sends the operator back to camera_info instead of to gate D3.
+- **G132 (MINOR) — the .sh prints a HARDCODED "host-side pinhole bound 46.80 m"**
+  (`verify_depth_mount_geometry.sh:772`) beside numbers that all recompute from the live `fx`. On a
+  different camera_info that line goes stale silently, and it is the number the runbook's (wrong)
+  three-bound rule names.
+- **G133 (NIT) — `DECISIONS.md:3679` cites `tests/test_verify_depth_mount_geometry.py::G105`;**
+  pytest reports "no tests ran" for that node id. The class is `TestTheSweepFramesAreAssertedDistinct`.
+  Same family as G70's dangling URL.
+- **G134 (NIT) — stale "deliberate duplication" prose in a test docstring.**
+  `tests/fieldguard_planning/test_predict_forward_lead.py:397-401` still says "the two copies are
+  deliberate ... Deliberate duplication is only honest if something pins the copies equal". There is
+  one copy, imported by all three gates. Same wrong architecture as round-2's G115.
