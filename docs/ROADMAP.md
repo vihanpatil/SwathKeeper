@@ -27,10 +27,10 @@ One table, one date, one state per row. Where a row and any other document disag
 | Week 6 — real detector on the seam | ✅ **flown 2026-08-25**; seam, R2 and the GT-CPA gate all behaved. The take is INVALID and the diagnosis is **geometry, not the detector** | 1302 frames received / 1301 reached the detector / **2 frames with a detection, 2 boxes**; GUIDED window **0.434 s**, lateral **0.018 m** against a 10 m command |
 | Week 7 — dashboard, video, GTM | 🟡 **dashboard BUILT 2026-08-26** (ADR-018): static, client-side, verdicts derived by importing the gate. **Pages + demo video are PENDING THE OWNER**, not engineering | `--check` FRESH 17/17; the 2,887-word script in `docs/drafts/DEMO_VIDEO_SCRIPT.md` is finished and unrecorded |
 | ADR-020 forward depth sensor | ✅ **COMMISSIONED live 2026-09-06/07** — all six D-gates measured, exit 0, and the booked speed is now enforced at both ends (am. 3) | **46.0 m bookable at 5.0 m/s**, margin 1.780×. **Asterisk: D5 and D6 were measured at a 3.50 m/s median ground speed**, so delivery and pitch at the booked 5.0 remain UNMEASURED |
-| ADR-021 depth segmenter | ✅ **SCORED 2026-09-07** and **NEVER FLOWN**; **FROZEN** until a depth flight exists | 7/7 pre-registered bars on **85 parked, noiseless stations**: FNR 0/49, merge 0/71, unmapped FP 0/8, range p95 0.1076 m. Cluttered acquisition **46.0 m** — clutter-backed evidence reads to **28 m** |
-| Scoring a depth flight log | ✅ **SCOREABLE since 2026-09-07** (P1) — `depth_blob` is in `DETECTOR_SOURCES` with seven pre-registered bars. *(The "a depth log is UNSCOREABLE" blocker is CLOSED; any doc still saying it is stale.)* | bar 5 will read **CENSORED** and bar 6 **UNMEASURED** until the executor logs the seam's longest-range detection and `static_map_hint` (P2) |
+| ADR-021 depth segmenter | ✅ **SCORED 2026-09-07**; **FLOWN ONCE 2026-09-11** as a no-target wiring flight (ADR-021 am. 1: 5345/5345 frames, 0 drops, 33,029 boxes 98.7 % mapped, 0 takeovers; runtime p95 12.98 ms PASS, **max 141.16 ms FAILED** the 100 ms bar → log INVALID); **FROZEN** until a flight WITH a target exists | 7/7 pre-registered bars on **85 parked, noiseless stations**: FNR 0/49, merge 0/71, unmapped FP 0/8, range p95 0.1076 m. Cluttered acquisition **46.0 m** — clutter-backed evidence reads to **28 m** |
+| Scoring a depth flight log | ✅ **SCOREABLE since 2026-09-07** (P1), exercised on the 2026-09-11 wiring flight — which exposed a **checker gap: a bird-less flight has no truth track and the checker cannot be told so (reads "ambiguous truth track" → INVALID)**; owed a declared no-truth mode — `depth_blob` is in `DETECTOR_SOURCES` with seven pre-registered bars. *(The "a depth log is UNSCOREABLE" blocker is CLOSED; any doc still saying it is stale.)* | bar 5 will read **CENSORED** and bar 6 **UNMEASURED** until the executor logs the seam's longest-range detection and `static_map_hint` (P2) |
 | Evidence gates + CI | 🟡 `main` is red **by design** on the pre-registered half-acknowledgement — **plus two undeclared Linux-only failures** in `tests/test_build_dashboard_data.py` (a staleness check and a last-digit float compare). An undeclared red is how a real one hides | one declared red; steps 7-12 skipped behind it, including the seed-42 FNR regression |
-| Repo state | 🟡 `origin/main` is **`98096e8` (2026-09-07)**; `feat/depth-segmenter` is **5 commits ahead, unpushed**, tree clean | push + PR is step 0 of *Next up* |
+| Repo state | 🟡 `origin/main` is **`222f562` (2026-09-11, PR #32 merged)**; PR #33 (`chore/adr020-am5-and-video-assets`) open; `evidence/depth-step0-flight-20260911` carries the first depth flight's evidence, unpushed | push + PR after each chunk |
 | Suite totals | one home: **`tests/README.md`** — re-run the three commands there, re-quote every quoter or none | *(deliberately not quoted here; five doc homes with no test enforcing them is how they went stale)* |
 | Open safety findings | 🔴 **R8** — the committed coverage mission violates its own XY geofence by **−1.997 m** on leg 4, waived on altitude, and CI runs the check `\|\| true`. Owed a diff (ADR-022) | `scripts/check_mission_geofence.py` exits 1 today |
 
@@ -157,7 +157,7 @@ quarter.
 **B's terminal event is the pre-registered dodge take** (also the R4 re-fly, and the flight that
 finally measures delivery + pitch at the booked 5.0 m/s): `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`
 §1a for the depth-source shell, `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` for the bars.
-It is **NOT YET FLYABLE** — P2 (two log fields + the launcher flag + a step-0 test-flight), P3 (two
+It is **NOT YET FLYABLE** — P2 (step-0 FLOWN 2026-09-11 and FAILED its own runtime-max bar; still owed: a no-truth checker mode for bird-less flights, the 141 ms stall investigation, the two executor log fields, then a step-0 re-fly), P3 (two
 product-lead ratifications) and P4 (container state) are open. **If it breaches:** write the
 `<log-stem>.SAFETY_FINDING.md` marker and **do NOT add the pin** — acknowledgement takes both halves,
 the marker *and* the stem in `ACKNOWLEDGED_BREACH_STEMS`, a reviewed diff on the safety gate (§6a),
@@ -170,7 +170,8 @@ pinned list is meant to stay two long.
   harder, not just deferred — source-verified, see ADR-006).
 - Scaling from 2-3 birds to a flock / higher obstacle density.
 - Second sensor as a supported operating mode: **the forward depth camera is BUILT (ADR-020/021)
-  and has never flown** — promoting it out of stretch needs a flight, not more offline evidence.
+  and has flown once with no target (2026-09-11)** — promoting it out of stretch needs a flight against a
+  bird that clears its bars, not more offline evidence.
 - Live in-node NDVI stitching (offline is the v1 decision, ADR-010).
 
 ## Cut / deferred log

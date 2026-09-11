@@ -39,7 +39,8 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   3 birds teleported by `drive_birds.py` (no collision geometry — they cannot hit anything).
 - **Sensing**: simulated NDVI camera (dual-band: Red + synthetic NIR), nadir. The NDVI+RGB
   comparison arm was **RETIRED 2026-08-26** (the RGB R channel *is* the Red band). A **forward
-  `depth_camera`** (ADR-020/021) is commissioned + scored and has **NEVER FLOWN**.
+  `depth_camera`** (ADR-020/021) is commissioned + scored and has **flown once (2026-09-11, a no-target wiring flight; log INVALID on the
+  runtime max bar; it has never seen a bird in the air)**.
 - **Perception**: lightweight detector on NDVI frames + a **pre-known static-obstacle map** (trees
   geofenced from a pre-flight boundary survey — a legitimate real ag assumption). This separates
   "known static obstacle" from "genuinely unplanned dynamic obstacle" (the real hard problem).
@@ -77,8 +78,10 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   clearance 1.340 m, 8 candidate rejections); **R3 shipped and has never fired live** (missed by
   15 mm). Birds have no `<collision>` geometry and are teleported, so the offline gate is the
   entire safety system.
-- **Forward depth camera (ADR-020/021): built, commissioned, scored 7/7 — NEVER FLOWN.** Booked to
-  46.0 m at 5.0 m/s on parked, noiseless renders; no committed log carries a `depth_blob` detection.
+- **Forward depth camera (ADR-020/021): built, commissioned, scored 7/7 — FLOWN ONCE as a no-target wiring
+  flight (2026-09-11, ADR-020 am. 6):** delivery 1.000, 5345/5345 frames, 0 drops, runtime p95 12.98 ms PASS /
+  max 141.16 ms FAIL (log INVALID); D5/D6 at the booked 5.0 m/s still UNMEASURED (window median 4.27). Booked to
+  46.0 m at 5.0 m/s on parked, noiseless renders; no committed log carries a `depth_blob` detection of a bird.
 - Real-detector contract = **ADR-009**: detections carry `stamp_s` (policy staleness gate); bird
   position from apparent-size ray, **never** ground-plane projection (fail-dangerous at altitude).
 - Coverage-ledger honesty = commanded setpoints are **never** recorded as flown (regression-pinned
