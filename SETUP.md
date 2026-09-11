@@ -84,15 +84,18 @@ python3 scripts/check_live_flight_log.py eval/results/live_flight_log_*.json
 
 ```
 [check_live_flight_log] ACKNOWLEDGED SAFETY FINDING: eval/results/live_flight_log_20260823T004031Z.json
-    - covered=720 debt=0 path_points=984 | CPA 0.0518 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND.
+    - covered=720 debt=0 path_points=984 | CPA 0.0391 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND.
     - acknowledged by live_flight_log_20260823T004031Z.SAFETY_FINDING.md -- recorded history, kept as evidence, NOT a passing flight
 [check_live_flight_log] PASS WITH 2 ACKNOWLEDGED SAFETY FINDING(S): 0 of 2 log(s) clean.
 ```
 
-*(abridged: the second finding — the 2026-08-18 flight, CPA 0.0597 m, 513 covered / 207 debt — prints
-the same three lines above this tail.)* Both flights passed every gate that existed on their day, and
-a **later** gate measured what none of them had: the distance actually flown past the bird — 0.0518 m
-and 0.0597 m against a 3.00 m bar. Both logs are kept and marked, neither counts as a pass, and the
+*(abridged and re-quoted 2026-09-11: the second finding — the 2026-08-18 flight, CPA 0.0393 m, 513
+covered / 207 debt — prints the same three lines above this tail; the third committed log, the
+2026-08-25 take, is INVALID and is what makes the full glob exit 1 — see (b).)* Both flights passed
+every gate that existed on their day, and a **later** gate measured what none of them had: the
+distance actually flown past the bird — **0.0391 m and 0.0393 m** against a 3.00 m bar (the gate's
+path-segment recompute; the `.SAFETY_FINDING.md` markers filed on the day record 0.0518 m and
+0.0597 m under the older vertex-only geometry, superseded 2026-08-26). Both logs are kept and marked, neither counts as a pass, and the
 fix that matters (escape geometry) is deliberately still open. The exit code is 0 only because each
 finding has a reviewed `.SAFETY_FINDING.md` marker beside it. CI runs this same command and
 **hard-fails if the glob matches zero files** — a gate with no denominator does not score green here.
