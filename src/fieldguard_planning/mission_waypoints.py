@@ -27,6 +27,18 @@ NAV_WAYPOINT = 16
 NAV_TAKEOFF = 22
 NAV_RTL = 20
 
+# The MAV_CMD NAV block: 16 (NAV_WAYPOINT) .. 95 (NAV_LAST). EVERY command in it moves the vehicle,
+# so one this module cannot place is a hole in the flight path, not a detail. DO_* / CONDITION_*
+# commands are >= 112, change no position, and are correctly skipped. See `_flatten`.
+NAV_COMMAND_RANGE = range(16, 96)
+
+# MAV_FRAME 3 = GLOBAL_RELATIVE_ALT: `alt` is metres ABOVE HOME, which is the same z the geofence
+# map, the Gazebo world and the executor's setpoints use. It is the only altitude frame
+# `mission_xyz_path` can convert, and reading any other one as if it were this one is
+# fail-DANGEROUS (a frame-0 waypoint carries AMSL -- ~584 m at this home -- which would float the
+# whole mission far above every obstacle and pass anything), so it raises instead.
+FRAME_GLOBAL_RELATIVE_ALT = 3
+
 
 @dataclass(frozen=True)
 class MissionItem:
@@ -84,7 +96,46 @@ def mission_xy_path(items: List[MissionItem], home_lat: float, home_lon: float) 
     home. Both are therefore mapped to the running "current position" rather than taken literally
     as (0,0) lat/lon, which would otherwise put a bogus point at (home_lat, home_lon) offset by
     the full home lat/lon itself (a real, non-obvious parsing trap if you don't special-case it).
+
+    This is `mission_xyz_path` with the altitude dropped -- one flattening, so a caller that only
+    needs XY (the dashboard's lane overlay, `avoidance_node`'s mission path) cannot disagree with
+    the 3D geofence gate about where the vehicle goes. It never raises -- neither on an altitude
+    frame it cannot read (it never reads one) nor on an unmodelled NAV command (it draws an overlay;
+    `mission_xyz_path` feeds a safety gate, and only the gate's input has to refuse).
     """
+    return [(east, north)
+            for east, north, _alt in _flatten(items, home_lat, home_lon, check_alt_frame=False)]
+
+
+def mission_xyz_path(items: List[MissionItem], home_lat: float, home_lon: float
+                     ) -> List[Tuple[float, float, float]]:
+    """`mission_xy_path` plus the altitude each point is flown at: (east_m, north_m, alt_m_above_home).
+
+    Altitudes are the mission's own `alt` fields, which is what makes a 3D geofence check honest on
+    the legs that are NOT at cruise altitude -- the takeoff climb and the RTL descent. Two readings
+    are deliberate:
+
+      * The **home placeholder row** (item 0) is forced to **0.0 m**: its `alt` field is not a flight
+        altitude (this project's generator writes 0.0; other GCSs write the home AMSL elevation), and
+        the vehicle is on the ground there. Ground is the reading that cannot hide an obstacle.
+      * Every other item keeps its own `alt`, so NAV_TAKEOFF is the climb target and this project's
+        NAV_RTL (alt 0.0) is modelled as returning and landing. A leg is therefore a straight line in
+        3D between consecutive points, and a caller that samples it sees the real climb/descent
+        profile rather than a cruise-altitude fiction.
+
+    It REFUSES what it cannot place, rather than dropping it: ValueError if any non-home item uses
+    an altitude frame other than FRAME_GLOBAL_RELATIVE_ALT (see that constant), or carries a NAV
+    command this module does not model (see NAV_COMMAND_RANGE). Both would otherwise hand a safety
+    check a path with a hole in it, and the gate downstream turns a ValueError into exit 2 -- which
+    is the point: "I could not read this mission" must never come out as PASS.
+    """
+    return _flatten(items, home_lat, home_lon, check_alt_frame=True)
+
+
+def _flatten(items: List[MissionItem], home_lat: float, home_lon: float, check_alt_frame: bool
+             ) -> List[Tuple[float, float, float]]:
+    """The one mission-flattening. `check_alt_frame` is False for the XY-only view, which does not
+    read `alt` at all and so must not reject a mission over how `alt` is expressed."""
     if not items:
         return []
 
@@ -92,13 +143,27 @@ def mission_xy_path(items: List[MissionItem], home_lat: float, home_lon: float) 
     home_item = items[0]
     home_xy = latlon_to_enu(home_item.lat, home_item.lon, home_lat, home_lon)
 
-    path: List[Tuple[float, float]] = [home_xy]
+    path: List[Tuple[float, float, float]] = [(home_xy[0], home_xy[1], 0.0)]
     for item in items[1:]:
         if item.command in (NAV_TAKEOFF, NAV_RTL):
             xy = home_xy  # climbs/returns in place over the home position (ADR: see docstring)
         elif item.command == NAV_WAYPOINT:
             xy = latlon_to_enu(item.lat, item.lon, home_lat, home_lon)
+        elif check_alt_frame and item.command in NAV_COMMAND_RANGE:
+            # A NAV command this module cannot place is DELETED from the path if we `continue`, and
+            # its two neighbours get joined by a straight line the vehicle never flies -- so a
+            # NAV_SPLINE_WAYPOINT sitting in a tree reads as PASS. Absence from the path IS the bug.
+            # (It is also how an item slips past the MAV_FRAME check below.) Refuse, like the frame.
+            raise ValueError(
+                f"mission item seq={item.seq} uses NAV command {item.command}, which this module "
+                f"cannot place: it moves the vehicle somewhere the flattened path would not go. "
+                f"Model it here or the path is a fiction")
         else:
-            continue  # unhandled command type; skip rather than guess
-        path.append(xy)
+            continue  # DO_*/CONDITION_* and friends: they change no position, so nothing is lost
+        if check_alt_frame and item.frame != FRAME_GLOBAL_RELATIVE_ALT:
+            raise ValueError(
+                f"mission item seq={item.seq} (command {item.command}) uses MAV_FRAME "
+                f"{item.frame}, not {FRAME_GLOBAL_RELATIVE_ALT} (GLOBAL_RELATIVE_ALT): its alt "
+                f"{item.alt} is not metres above home and must not be read as if it were")
+        path.append((xy[0], xy[1], float(item.alt)))
     return path

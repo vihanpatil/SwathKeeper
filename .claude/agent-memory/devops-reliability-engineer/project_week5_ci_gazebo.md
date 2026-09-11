@@ -48,7 +48,7 @@ research, not a guess:**
   --no-mavproxy` (reused verbatim from the already-proven interactive recipe, NOT a hand-rolled
   `arducopter` binary invocation — deliberately lower-risk since this session can't test it).
 - `scripts/check_sim_smoke.py` — regression gate, same driver/gate split as
-  [[known_ci_flake_check_mission_geofence]]'s pattern and `check_spike_regression.py`. **Fully
+  [[mission_geofence_gate_is_armed]]'s pattern and `check_spike_regression.py`. **Fully
   unit-verified**: 5 fixture JSONs (pass, missed-waypoint, driver-error, never-disarmed/timeout,
   missing-file) all produced the correct exit code + failure reason. This is the one piece of this
   whole workstream that got the full "bug hunter, run it, don't just write it" treatment — everything
