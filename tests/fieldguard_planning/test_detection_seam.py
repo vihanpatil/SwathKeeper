@@ -30,8 +30,11 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from fieldguard_planning import ndvi_georef as georef  # noqa: E402
 from fieldguard_planning.avoidance_executor import AvoidanceExecutor, SimulatedVehicleSink  # noqa: E402
 from fieldguard_planning.avoidance_node import (  # noqa: E402
+    NDVI_IMAGE_ENCODING,
+    NDVI_IMAGE_TOPIC,
     AvoidanceLoop,
     build_detection_source,
+    decode_ndvi_frame,
     detector_config_from_args,
     parse_args,
 )
@@ -323,6 +326,89 @@ class TestNdviDetectionSource(unittest.TestCase):
         self.assertEqual(src.on_frame(GZ_T0, frame, None, None), [])
         self.assertEqual(src.counters()["dropped_no_pose_pair"], 1)
 
+    # A byte-perfect frame at HALF the armed resolution carrying the SAME physical bird: the disc's
+    # centre and radius scale with the frame. Everything about it is wire-valid; only its geometry
+    # disagrees with the intrinsics it would be ranged with.
+    @staticmethod
+    def _frame_at(shape_hw, u, v, r_px, soil=-0.40, bird=-0.80):
+        h, w = shape_hw
+        frame = np.full((h, w), soil, dtype=np.float32)
+        yy, xx = np.mgrid[0:h, 0:w]
+        frame[((xx - u) ** 2 + (yy - v) ** 2) <= r_px * r_px] = bird
+        return frame
+
+    def _same_bird_full_and_half_res(self):
+        """bird_0's lane, 5 m under a 15 m cruise, half a metre off the optical axis (the
+        `TestGroundPlaneProjectionSuppressesARealThreat` geometry): projected into the armed 640x480
+        frame, and the identical scene rendered at 320x240."""
+        bird = (15.0, 30.5, CRUISE_Z - 5.0)
+        drone_pos = (15.0, 30.0, CRUISE_Z)
+        u, v, depth = georef.project_world_point(bird, drone_pos, LEVEL, INTR)
+        r_px = INTR.fx * TRUE_BIRD_RADIUS_M / depth
+        full = self._frame_at((INTR.height_px, INTR.width_px), u, v, r_px)
+        half = self._frame_at((INTR.height_px // 2, INTR.width_px // 2), u / 2.0, v / 2.0, r_px / 2.0)
+        return bird, drone_pos, full, half
+
+    def test_a_frame_whose_shape_is_not_the_armed_camera_infos_is_dropped_and_counted(self):
+        """2026-09-10 QA (portfolio floor): the depth seam makes frame-shape-vs-intrinsics a HARD
+        `== 0` pre-registered bar; the band that has flown had no analogue. Mirror it: the frame is
+        refused BEFORE the detector, the drop is counted under its own name, and the latest
+        detection set is left alone (a refused frame is 'no frame', not 'the bird left')."""
+        _bird, drone_pos, full, half = self._same_bird_full_and_half_res()
+        src = self._source()
+        seen = src.on_frame(GZ_T0, full, drone_pos, LEVEL)
+        self.assertEqual(len(seen), 1)
+        got = src.on_frame(GZ_T0 + 0.2, half, drone_pos, LEVEL)
+        c = src.counters()
+        self.assertEqual(c["dropped_frame_shape_mismatch"], 1)
+        self.assertEqual(c["ndvi_msgs_received"], 2)
+        self.assertEqual(c["frames_detected_on"], 1)        # the half-res frame never reached it
+        self.assertEqual(got, seen)                          # latest set untouched, not cleared
+        self.assertEqual(c["dropped_no_intrinsics"], 0)
+        self.assertEqual(c["dropped_no_pose_pair"], 0)
+        self.assertEqual(c["dropped_stale_pose_pair"], 0)
+
+    def test_negative_control_the_unguarded_seam_turns_a_threat_bird_into_a_PROCEED(self):
+        """What the guard prevents, driven through the REAL policy so it cannot be argued away.
+        Same scene, two frames: the armed-resolution frame ranges the bird ~4 m under the vehicle
+        (inside the +/-6 m threat band -> DIVERT). Un-project the half-resolution frame with the
+        full-resolution intrinsics -- what `on_frame` did before 2026-09-10 -- and half the pixels
+        read as roughly TWICE the range on a ray tilted ~20 deg off nadir: the same bird lands
+        outside `vertical_threat_m` and the policy PROCEEDS, with every drop counter at zero. (On
+        the 2026-08-25 flight's own intrinsics QA measured the same failure as 20.9 m and an ENU z
+        of -4.58 m -- below the ground plane.)"""
+        bird, drone_pos, full, half = self._same_bird_full_and_half_res()
+        drone = DroneState(position_enu=drone_pos, heading_rad=0.0, current_wp_index=3)
+        policy = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=CRUISE_Z)
+        geofence = GeofenceMap.from_file()
+        p = PolicyParams()
+
+        guarded = self._source()
+        real = guarded.on_frame(GZ_T0, full, drone_pos, LEVEL)
+        self.assertEqual(len(real), 1)
+        self.assertLess(math.dist(real[0].position_enu, bird), 1.5)        # a genuine estimate
+        self.assertLess(abs(real[0].position_enu[2] - CRUISE_Z), p.vertical_threat_m)
+        self.assertIs(policy.decide(real[0], drone, geofence).decision, Decision.DIVERT)
+
+        unguarded = self._source()
+        unguarded._frame_matches_intrinsics = lambda frame: True    # the pre-2026-09-10 behaviour
+        wrong = unguarded.on_frame(GZ_T0, half, drone_pos, LEVEL)
+        self.assertEqual(len(wrong), 1)                      # it "detects" -- confidently, wrongly
+        self.assertEqual(unguarded.counters()["dropped_frame_shape_mismatch"], 0)
+        self.assertGreater(abs(wrong[0].position_enu[2] - CRUISE_Z), p.vertical_threat_m)
+        self.assertIs(policy.decide(wrong[0], drone, geofence).decision, Decision.PROCEED)
+        # ...at roughly twice the slant range: half the pixels, same radius prior, same fx.
+        ratio = math.dist(drone_pos, wrong[0].position_enu) / math.dist(drone_pos, real[0].position_enu)
+        self.assertAlmostEqual(ratio, 2.0, delta=0.2)
+
+    def test_a_frame_object_without_a_2d_shape_is_left_to_the_detectors_own_contract(self):
+        """Same scoping as the depth seam: this guard judges 2-D shapes only."""
+        src = self._source()
+        self.assertTrue(src._frame_matches_intrinsics(object()))
+        self.assertTrue(src._frame_matches_intrinsics(np.zeros((4, 4, 3), dtype=np.float32)))
+        self.assertFalse(src._frame_matches_intrinsics(np.zeros((240, 320), dtype=np.float32)))
+        self.assertTrue(src._frame_matches_intrinsics(np.zeros((480, 640), dtype=np.float32)))
+
     def test_a_pose_pair_too_stale_to_georeference_is_dropped(self):
         """The recorder's measured bound, reused rather than re-invented: beyond it the frame's
         pose is metres away from where the frame was taken, so the bird's world position would be
@@ -424,6 +510,136 @@ class TestTheWholeSeam(unittest.TestCase):
         explicit = detector_config_from_args(parse_args(["--detect", "--ndvi-thresh", "-0.61"]))
         self.assertEqual(explicit.thresh, REAL_RENDER_THRESH)
         self.assertFalse(explicit.thresh_provisional)   # same number, different provenance
+
+
+class _NdviMsg:
+    """A duck-typed `sensor_msgs/Image` on `/fg/ndvi/image`. The decoder is a module-scope pure
+    function precisely so this is enough to drive it -- no rclpy, no renderer, no Docker. Defaults
+    are what `ndvi_node.ndvi_image_fields` actually publishes (32FC1, little-endian, step = 4w)."""
+
+    class _Stamp:
+        def __init__(self, t):
+            self.sec = int(t)
+            self.nanosec = int(round((t - int(t)) * 1e9))
+
+    class _Header:
+        def __init__(self, t):
+            self.stamp = _NdviMsg._Stamp(t)
+            self.frame_id = "fg_ndvi_mount"        # frame_ids lie on this stack; content is truth
+
+    def __init__(self, frame, stamp_s=GZ_T0, encoding=NDVI_IMAGE_ENCODING, is_bigendian=0,
+                 step=None, data=None, height=None, width=None):
+        self.header = _NdviMsg._Header(stamp_s)
+        self.height = int(frame.shape[0]) if height is None else height
+        self.width = int(frame.shape[1]) if width is None else width
+        self.encoding = encoding
+        self.is_bigendian = is_bigendian
+        self.step = (self.width * 4) if step is None else step
+        if data is None:
+            data = (frame.astype(">f4") if is_bigendian else frame.astype("<f4")).tobytes()
+        self.data = data
+
+
+class TestNdviFrameDecode(unittest.TestCase):
+    """G10: the NDVI decoder makes the same four refusals `decode_depth_frame` makes.
+
+    It is the band that has FLOWN -- 1302 frames on the 2026-08-25 take -- and until 2026-09-10 it
+    was `np.frombuffer(...).reshape(h, w)` with nothing checked, while the never-flown depth decoder
+    checked encoding, stride, length and byte order. The asymmetry was the whole finding."""
+
+    def _frame(self):
+        return _ndvi_frame_with_blob(320.0, 200.0, 24.0)
+
+    def test_a_valid_frame_decodes_exactly_as_it_always_did(self):
+        """The refusals are the change; the accepted frame is NOT. Byte-identical to the old
+        expression, and identical to the array the publisher fused -- a decoder refactor that also
+        moved a pixel would be a silent change to the adopted detector."""
+        frame = self._frame()
+        msg = _NdviMsg(frame)
+        old_expression = np.frombuffer(msg.data, dtype=np.float32).reshape(msg.height, msg.width)
+        got = decode_ndvi_frame(msg)
+        np.testing.assert_array_equal(got, old_expression)
+        np.testing.assert_array_equal(got, frame)
+        self.assertEqual(got.dtype, np.dtype("float32"))
+        self.assertEqual(got.shape, frame.shape)
+
+    def test_the_decoded_frame_still_detects_the_bird(self):
+        """End of the seam, not just the array: the decoded frame drives the real detector to the
+        same single detection the in-memory frame does."""
+        src = NdviDetectionSource(REAL_RENDER_THRESH, intr=INTR)
+        dets = src.on_frame(GZ_T0, decode_ndvi_frame(_NdviMsg(self._frame())),
+                            (30.0, 30.0, CRUISE_Z), LEVEL)
+        self.assertEqual(len(dets), 1)
+
+    def test_a_big_endian_frame_is_byte_swapped_not_believed(self):
+        """THE SILENT ONE. A byte-swapped float32 buffer reshapes perfectly into plausible-looking
+        numbers: the old decoder would have read denormal noise as NDVI, found nothing under the
+        -0.61 threshold, and logged a healthy detector that saw no birds."""
+        frame = self._frame()
+        np.testing.assert_array_equal(decode_ndvi_frame(_NdviMsg(frame, is_bigendian=1)), frame)
+        # ...and the flag is load-bearing: read a big-endian payload as little-endian and the frame
+        # is garbage. This is exactly what the node used to do on every frame.
+        mislabelled = _NdviMsg(frame, is_bigendian=1)
+        mislabelled.is_bigendian = 0
+        self.assertFalse(np.array_equal(decode_ndvi_frame(mislabelled), frame))
+
+    def test_the_preview_encoding_is_refused_by_name(self):
+        """`/fg/ndvi/preview` is rgb8 off the same fused array, one word away in a launch line."""
+        for encoding in ("rgb8", "mono16", "32FC2", "", None):
+            with self.subTest(encoding=encoding):
+                with self.assertRaises(ValueError) as cm:
+                    decode_ndvi_frame(_NdviMsg(self._frame(), encoding=encoding))
+                self.assertIn(NDVI_IMAGE_TOPIC, str(cm.exception))
+                self.assertIn(repr(NDVI_IMAGE_ENCODING), str(cm.exception))
+
+    def test_a_padded_or_mis_strided_row_is_refused(self):
+        frame = self._frame()
+        for step in (frame.shape[1] * 4 + 4, frame.shape[1] * 4 - 4, frame.shape[1], 0):
+            with self.subTest(step=step):
+                with self.assertRaisesRegex(ValueError, "step"):
+                    decode_ndvi_frame(_NdviMsg(frame, step=step))
+
+    def test_a_stride_that_would_have_reshaped_silently_is_refused(self):
+        """The case that matters: a padded row whose payload STILL divides evenly. 4 bytes of
+        padding on a 640-wide row makes 641 floats per row; `frombuffer().reshape(480, 640)` on the
+        first 480*640 of them succeeds and puts every pixel one column further left on each
+        successive row -- a detection that then georeferences to the wrong cell."""
+        frame = self._frame()
+        h, w = frame.shape
+        padded = np.zeros((h, w + 1), dtype="<f4")
+        padded[:, :w] = frame
+        msg = _NdviMsg(frame, step=(w + 1) * 4, data=padded.tobytes())
+        with self.assertRaisesRegex(ValueError, "step"):
+            decode_ndvi_frame(msg)
+
+    def test_a_truncated_payload_is_refused_with_both_numbers(self):
+        frame = self._frame()
+        msg = _NdviMsg(frame)
+        truncated = _NdviMsg(frame, data=msg.data[:-8])
+        with self.assertRaisesRegex(ValueError, "payload is"):
+            decode_ndvi_frame(truncated)
+
+    def test_a_degenerate_frame_is_refused(self):
+        frame = self._frame()
+        for height, width in ((0, 640), (480, 0)):
+            with self.subTest(height=height, width=width):
+                with self.assertRaisesRegex(ValueError, "degenerate"):
+                    decode_ndvi_frame(_NdviMsg(frame, height=height, width=width, data=b""))
+
+    def test_the_publishers_own_frame_round_trips_through_this_decoder(self):
+        """The two ends of the wire, in one test. `ndvi_node.assemble_ndvi_msg_fields` builds the
+        message this node consumes; every field the decoder asserts is taken from that builder
+        rather than from a literal here, so a change at either end fails rather than drifting."""
+        from fieldguard_planning import ndvi_node
+        frame = self._frame()
+        fields = ndvi_node.assemble_ndvi_msg_fields(frame, rgb_header=None, nir_header=None)
+        self.assertEqual(NDVI_IMAGE_ENCODING, ndvi_node.NDVI_ENCODING)
+        self.assertEqual(fields.encoding, NDVI_IMAGE_ENCODING)
+        msg = _NdviMsg(frame, encoding=fields.encoding, is_bigendian=fields.is_bigendian,
+                       step=fields.step, data=fields.data,
+                       height=fields.height, width=fields.width)
+        np.testing.assert_array_equal(decode_ndvi_frame(msg), frame)
+
 
 
 if __name__ == "__main__":

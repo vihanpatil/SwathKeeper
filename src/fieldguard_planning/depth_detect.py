@@ -34,7 +34,20 @@ STILL BINDING, every one of them (ADR-009, unchanged by the sensor swap):
      relative to anything here is the inversion the node's clock tripwire exists to catch.
   3. NO SECOND EXPIRY. Staleness is `PolicyParams.max_detection_age_s`'s job and only its job.
   4. Intrinsics arrive LIVE from `/fg/depth/camera_info`, never from `config/depth_camera.json`:
-     the config is what we ASKED for, the message is what we GOT.
+     the config is what we ASKED for, the message is what we GOT. And a LIVE message is not
+     automatically a USABLE one, so this class checks the two things un-projection cannot survive
+     without, in the two places each is cheapest. AT ARMING (`set_intrinsics`): a non-positive fx/fy
+     or a degenerate frame size is REFUSED, because ROS's uncalibrated convention is an all-zero K
+     and `pixel_to_camera_ray` divides by fx -- taking it would arm the detector and then raise
+     ZeroDivisionError out of a subscription callback on the first frame carrying a box, i.e. after
+     takeoff rather than at arming. PER FRAME (`on_frame`): the decoded image's shape must equal the
+     intrinsics' own (height_px, width_px), counted and dropped, never raised. `decode_depth_frame`
+     already refuses a step or a payload length that disagrees with the frame for exactly this
+     reason and then handed the array to an un-projection that checked no other half of the same
+     geometry: a 320x240 camera_info against a 640x480 image mis-places a measured 20 m target by
+     19.35 m laterally and 3.96 m vertically, silently (measured, QA 2026-09-07). Unlikely --
+     gz-sensors derives both from one sensor -- and exactly the ADR-007 am. 5 family this module's
+     docstring is built on: a value correct under a geometry nobody checked.
   5. Every early return is COUNTED before any guard runs, so a silent drop is impossible
      (ADR-013 am. 6a: a silently discarded pre-`camera_info` window is exactly how the recorder
      lost most of a flight).
@@ -308,6 +321,12 @@ class DepthDetectionSource:
 
     WALL_MS_WINDOW = 10000      # ~30 min at 5 Hz; same window as the NDVI source's
 
+    # What the flight log calls this source, read off the INSTANCE by
+    # `avoidance_node.detection_source_name`. The node used to infer the name from
+    # `hasattr(source, "on_frame")`, which is true of both frame detectors -- so a depth flight
+    # would have been logged as `ndvi_blob` (DESIGN §6 item 2).
+    SOURCE_TAG = SOURCE_TAG
+
     def __init__(self, segmenter: DepthSegmenter, *,
                  intr: Optional[CameraIntrinsics] = None,
                  min_range_m: float = 0.1,
@@ -338,6 +357,7 @@ class DepthDetectionSource:
         self.dropped_no_intrinsics = 0
         self.dropped_no_pose_pair = 0
         self.dropped_stale_pose_pair = 0
+        self.dropped_frame_shape_mismatch = 0
         self.dropped_non_finite_depth = 0
         self.dropped_out_of_range = 0
         self.detections_near_known_obstacle = 0
@@ -349,7 +369,19 @@ class DepthDetectionSource:
         self._wall_ms_max: Optional[float] = None
 
     def set_intrinsics(self, intr: CameraIntrinsics) -> None:
-        """Armed from the LIVE `/fg/depth/camera_info`, never from the config file."""
+        """Armed from the LIVE `/fg/depth/camera_info`, never from the config file -- and REFUSED
+        here if it cannot un-project (rule 4). Raised, not counted: this runs once, at arming,
+        where the caller can still decide not to fly. The alternative is arming on a K of zeros
+        (ROS's "uncalibrated" convention) and discovering it as a ZeroDivisionError out of a
+        subscription callback on the first frame that carries a box."""
+        fx, fy = float(intr.fx), float(intr.fy)
+        w, h = float(intr.width_px), float(intr.height_px)
+        if not (fx > 0.0 and fy > 0.0) or not (w >= 2.0 and h >= 2.0):
+            raise ValueError(
+                f"unusable camera_info: fx={intr.fx!r} fy={intr.fy!r} {intr.width_px!r}x"
+                f"{intr.height_px!r}. Un-projection divides by fx and fy, so a zero or negative "
+                f"focal length is not a calibration -- an all-zero K is what ROS publishes for an "
+                f"UNCALIBRATED camera. Refusing at arming rather than dividing by it in the air.")
         self.intr = intr
 
     def box_to_detection(self, box: Sequence[float], depth_m: float, drone_pos_enu: Vec3,
@@ -379,6 +411,18 @@ class DepthDetectionSource:
         return Detection(position_enu=pos, frame_id=int(frame_id), stamp_s=float(stamp_s),
                          source=SOURCE_TAG, track_id=None, confidence=1.0,
                          static_map_hint=hint)
+
+    def _frame_matches_intrinsics(self, depth) -> bool:
+        """Does this frame have the shape the armed `camera_info` describes?
+
+        Only a 2-D `shape` is judged. A frame object without one cannot be checked here and is not
+        refused here either -- the SEGMENTER owns the dtype/rank contract and raises on anything
+        that is not a float32 (H, W), which is also what lets this class be driven by a fake array
+        in a test with no numpy at all."""
+        shape = getattr(depth, "shape", None)
+        if shape is None or len(shape) != 2:
+            return True
+        return (int(shape[0]), int(shape[1])) == (int(self.intr.height_px), int(self.intr.width_px))
 
     def _static_map_hint(self, pos: Vec3) -> Optional[str]:
         """Annotate, never filter (rule 9). A broken map degrades to 'unannotated' and is counted --
@@ -412,6 +456,13 @@ class DepthDetectionSource:
         try:
             if self.intr is None:
                 self.dropped_no_intrinsics += 1
+                return self._latest
+            if not self._frame_matches_intrinsics(depth):
+                # The OTHER half of the geometry `decode_depth_frame` checks (rule 4). Counted and
+                # dropped rather than raised: the wrong answer here is a confident obstacle tens of
+                # metres from where it is, and a detector that drops every frame with a counter
+                # saying why is diagnosable from the artifact.
+                self.dropped_frame_shape_mismatch += 1
                 return self._latest
             if drone_pos_enu is None or drone_quat_xyzw is None:
                 self.dropped_no_pose_pair += 1
@@ -453,6 +504,7 @@ class DepthDetectionSource:
         return {
             "depth_msgs_received": int(self.depth_msgs_received),
             "dropped_no_intrinsics": int(self.dropped_no_intrinsics),
+            "dropped_frame_shape_mismatch": int(self.dropped_frame_shape_mismatch),
             "dropped_no_pose_pair": int(self.dropped_no_pose_pair),
             "dropped_stale_pose_pair": int(self.dropped_stale_pose_pair),
             "dropped_non_finite_depth": int(self.dropped_non_finite_depth),
@@ -468,6 +520,10 @@ class DepthDetectionSource:
             "detect_wall_ms_n": int(self._wall_ms_n),
             "note": ("depth_msgs_received counts every frame handed to on_frame BEFORE any guard; "
                      "frames_detected_on is the subset that reached the segmenter. "
+                     "dropped_frame_shape_mismatch counts frames whose shape is not the armed "
+                     "camera_info's (height_px, width_px) -- un-projecting one places the obstacle "
+                     "tens of metres from where it is; a non-zero count means the two halves of "
+                     "the geometry disagree and the detector was blind for that many frames. "
                      "dropped_non_finite_depth counts gz's +/-inf no-return pixels reaching a box "
                      "(never clamped to a clip plane); dropped_out_of_range counts finite depths "
                      "outside the EXCLUSIVE (min_range_m, max_range_m) window. Both are per-BOX, "

@@ -14,11 +14,11 @@ be added without code changes — see [Regenerating the world](#regenerating-the
   (ADR-007), and deliberately only those: Gazebo's `/clock` runs at ~350 msg/s and bridging it
   starved the image pipeline, so the recorder reads the sim clock natively over gz-transport
   instead. See `docs/runbooks/NDVI_VALIDATION.md` Gate 1.
-- `models/` — reserved for future mesh/model assets. Still empty: the farm world (including the
-  Week 5-6 NDVI sensor mount) uses only inline SDF primitives + first-class Gazebo sensor types, no
-  external meshes, so it has no dependency on this directory or on `GZ_SIM_RESOURCE_PATH` beyond
-  what `ardupilot_gazebo` already requires (see docs/runbooks/SIM_BRINGUP.md §5) — a deliberate choice to
-  avoid adding new resource-path risk.
+- No `models/` directory exists. The farm world (including the NDVI mount and the depth-camera
+  mount) uses only inline SDF primitives + first-class Gazebo sensor types, no external meshes, so
+  it has no dependency on `GZ_SIM_RESOURCE_PATH` beyond what `ardupilot_gazebo` already requires
+  (see `docs/runbooks/SIM_BRINGUP.md` §5) — a deliberate choice to avoid adding new resource-path
+  risk. Add `models/` only if a future world needs an actual mesh.
 - `spike/` — the ADR-003 NDVI-vs-RGB spike clip generator (separate concern, see `spike/README.md`).
 - `docker/` — the Week 1 starter container (see `docs/runbooks/SIM_BRINGUP.md`).
 

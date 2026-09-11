@@ -52,6 +52,7 @@ from typing import Callable, Optional, Tuple
 import numpy as np
 
 from .dds_env import dds_env_snapshot
+from .geom import AIRBORNE_Z_M  # the one home; see geom.py for why it lives there
 from .ndvi_fusion import FUSER_STATS_PATH, read_fuser_stats
 
 Vec3 = Tuple[float, float, float]
@@ -78,7 +79,8 @@ SCHEMA_VERSION = "1.4"
 # it would change what `TF_MIN_FRAMES` means and restate published ADR-003 denominators). 1.0 m
 # separates the 2026-08-21 demo take perfectly -- 53 airborne / 401 parked at (0,0,-0.0), zero
 # straddlers -- and sits well under the lowest frame that ever painted a cell there (z = 2.87 m).
-AIRBORNE_Z_M = 1.0
+# The value has ONE home, `geom.AIRBORNE_Z_M` (stdlib-only, so the flight-log gate can import it
+# too); this module re-exports it under the name every clip's `meta.airborne` was written from.
 
 # A frame whose best pose-pair residual exceeds this (in SIM seconds) is recorded but flagged
 # pose_pair_stale -- at ~3 m/s sim ground speed, 0.35 s is ~1 m of georef error, under half a cell.

@@ -17,7 +17,7 @@ able to (a) carry its own private copy of a number somebody else owns, (b) pass 
     the "cross-check" stayed green. One implementation, pinned to closed forms, is the honest
     statement.
   * `TestTeeth` -- the gate must FAIL something. It fails at 10.0 m/s, which is ArduCopter's own
-    WPNAV_SPD default, and it fails when the measured horizon comes in short.
+    WP_SPD default, and it fails when the measured horizon comes in short.
   * `TestInputValidation` -- an out-of-clip horizon, a non-finite or non-positive speed, and any
     PART of the six-number live intrinsic set are all REFUSALS (exit 2), never verdicts.
     `--acq-range-m inf` used to exit 0 BOOKABLE.
@@ -529,11 +529,10 @@ class TestSchema12Clamp(unittest.TestCase):
                     "--acq-optical-prefix-m", "100")
         self.assertEqual(proc.returncode, pfl.EXIT_REFUSED)
 
-    def test_the_artifact_says_1_2_and_validate_report_demands_1_2s_fields(self):
+    def test_the_artifact_carries_1_2s_fields_and_validate_report_demands_them(self):
         rep = pfl.evaluate(RECOMMENDED_SPEED_MPS,
                            **dict(D3_KW, acq_range_m=D3_BOOKABLE_M,
                                   acq_optical_prefix_m=D3_OPTICAL_PREFIX_M))
-        self.assertEqual(rep["schema_version"], "1.2")
         pfl.validate_report(rep)
         for dropped in ("acquisition_clamped_from_optical_prefix", "fy_px", "image_width_px",
                         "clip_far_corner_ray_ratio"):
@@ -555,6 +554,158 @@ class TestSchema12Clamp(unittest.TestCase):
         rep["schema_version"] = "2.0"
         with self.assertRaises(ValueError):
             pfl.validate_report(rep)
+
+
+class TestSchema13Provenance(unittest.TestCase):
+    """1.3 (QA, 2026-09-07): the artifact records an ABSOLUTE config path carrying a home directory
+    that means nothing on another machine, and rounds `fx`/`fy` to 4 dp -- a rounding that cannot
+    show the 13th-digit difference between this mount's live fx and fy. Both are additive: every
+    1.2 field is still written, and the committed 1.2 artifact is still read AS a 1.2 artifact
+    rather than being retroactively malformed."""
+
+    def setUp(self):
+        self.rep = pfl.evaluate(RECOMMENDED_SPEED_MPS,
+                                **dict(D3_KW, acq_range_m=D3_BOOKABLE_M,
+                                       acq_optical_prefix_m=D3_OPTICAL_PREFIX_M))
+
+    def test_the_artifact_says_1_3(self):
+        self.assertEqual(self.rep["schema_version"], "1.3")
+        self.assertEqual(pfl.SCHEMA_VERSION, "1.3")
+
+    def test_the_config_is_named_the_way_the_repo_names_it_as_well(self):
+        s = self.rep["sensor"]
+        self.assertEqual(s["config_relpath"], "config/depth_camera.json")
+        self.assertTrue(s["config"].endswith(s["config_relpath"]))
+
+    def test_a_config_outside_the_repo_has_no_repo_relative_name_and_says_so(self):
+        """None, not a fabricated path and not a crash: a test fixture or an out-of-tree copy has
+        no name in this repo, and the absolute field is then the only locator."""
+        with tempfile.TemporaryDirectory() as td:
+            copy = Path(td) / "depth_camera.json"
+            copy.write_text(DEPTH_CONFIG.read_text())
+            rep = pfl.evaluate(RECOMMENDED_SPEED_MPS, depth_config=copy)
+        self.assertIsNone(rep["sensor"]["config_relpath"])
+        pfl.validate_report(rep)                       # the KEY is required, the value may be null
+
+    def test_the_intrinsics_survive_at_full_precision_beside_the_readable_ones(self):
+        """As strings, so that no reader or re-writer can round them a second time -- and the live
+        fx/fy differ in the 13th digit, which 4 dp cannot show."""
+        s = self.rep["sensor"]
+        self.assertEqual(float(s["fx_px_exact"]), D3_FX)
+        self.assertEqual(float(s["fy_px_exact"]), D3_FY)
+        self.assertEqual(float(s["cx_px_exact"]), 320.0)
+        self.assertEqual(float(s["cy_px_exact"]), 240.0)
+        self.assertNotEqual(s["fx_px_exact"], s["fy_px_exact"])
+        self.assertEqual(s["fx_px"], s["fy_px"])       # ...which the 4-dp pair cannot distinguish
+        self.assertEqual((s["fx_px"], s["fy_px"]), (round(D3_FX, 4), round(D3_FY, 4)))
+
+    def test_validate_report_demands_the_1_3_fields_ONLY_of_a_1_3_artifact(self):
+        pfl.validate_report(self.rep)
+        for dropped in pfl.SENSOR_FIELDS_1_3:
+            maimed = json.loads(json.dumps(self.rep))
+            del maimed["sensor"][dropped]
+            with self.assertRaises(ValueError, msg=dropped):
+                pfl.validate_report(maimed)
+            maimed["schema_version"] = "1.2"           # ...and a 1.2 artifact never promised them
+            pfl.validate_report(maimed)
+
+    def test_THE_COMMITTED_1_2_ARTIFACT_still_validates_untouched(self):
+        """The file that authorised the 2026-09-07 dodge booking. A schema bump may not make a
+        ratified authorisation retroactively malformed; `tests/fieldguard_planning/
+        test_booking_gate_artifact.py` reads it with this same function."""
+        committed = REPO_ROOT / "eval" / "results" / "booking_gate_20260907T064136Z.json"
+        rep = json.loads(committed.read_text())
+        self.assertEqual(rep["schema_version"], "1.2")
+        self.assertNotIn("config_relpath", rep["sensor"])
+        pfl.validate_report(rep)
+
+    def test_every_sweep_ROW_owes_the_same_fields_as_a_standalone_report(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "sweep.json"
+            _run("--sweep", "2:6:2", *LIVE, "--json", str(out))
+            rep = pfl.validate_report(json.loads(out.read_text()))
+        for row in rep["sweep"]:
+            for key in pfl.SENSOR_FIELDS_1_3:
+                self.assertIn(key, row["sensor"])
+
+
+class TestMissionSpeedCapIsAChecK(unittest.TestCase):
+    """QA finding G127. `t_req_s_at_mission_speed_cap` was computed, printed and gated on nothing:
+    below 0.788 m/s on the booked live set the tool printed PASS/BOOKABLE and a NOTE reading
+    'Re-derive before booking' -- an instruction to a human, sitting underneath the exit code that
+    says no action is needed. It is now the same margin bar re-run against the plant the mission
+    speed implies."""
+
+    KW = dict(D3_KW, acq_range_m=D3_BOOKABLE_M)
+    CHECK = "escape_survives_mission_speed_cap"
+
+    def _check(self, rep):
+        return next(c for c in rep["checks"] if c["name"] == self.CHECK)
+
+    def test_a_half_metre_per_second_mission_FAILS_although_the_headline_margin_is_2_8x(self):
+        rep = pfl.evaluate(0.5, **self.KW)
+        self.assertGreater(rep["budget"]["margin"], 2.8)            # the optimistic reading
+        self.assertLess(rep["budget"]["margin_at_mission_speed_cap"], 1.3)
+        self.assertFalse(self._check(rep)["ok"])
+        self.assertFalse(rep["verdict"]["pass"])
+        proc = _run("--speed", "0.5", *D3_LIVE, "--acq-range-m", str(D3_BOOKABLE_M))
+        self.assertEqual(proc.returncode, pfl.EXIT_FAIL, msg=proc.stdout)
+        self.assertIn(self.CHECK, proc.stdout)
+
+    def test_the_booked_5_metre_speed_is_untouched_and_the_check_says_the_cap_does_not_bind(self):
+        """The authorisation this repo actually rests on must not move. The cap does not bind at
+        5.0 m/s, so the check restates `lead_margin` -- and says so rather than passing silently."""
+        rep = pfl.evaluate(RECOMMENDED_SPEED_MPS, **self.KW)
+        self.assertTrue(rep["verdict"]["bookable"])
+        self.assertAlmostEqual(rep["budget"]["margin"], 1.780, places=3)
+        self.assertAlmostEqual(rep["budget"]["margin_at_mission_speed_cap"], 1.780, places=3)
+        self.assertTrue(self._check(rep)["ok"])
+        self.assertIn("does not bind", self._check(rep)["detail"])
+
+    def test_the_crossover_is_where_the_measurement_says_it_is_in_both_directions(self):
+        """0.788 m/s on the booked live set. Tested either side, never ON it."""
+        self.assertTrue(self._check(pfl.evaluate(0.80, **self.KW))["ok"])
+        self.assertFalse(self._check(pfl.evaluate(0.77, **self.KW))["ok"])
+
+    def test_the_check_can_never_fail_a_speed_the_uncapped_reading_would_not(self):
+        """Above the cap the two readings are identical, so the new check adds no false failures --
+        pinned across the whole range the runbook sweeps."""
+        for v in [x / 10.0 for x in range(10, 141)]:
+            rep = pfl.evaluate(v, **self.KW)
+            lead = next(c for c in rep["checks"] if c["name"] == "lead_margin")
+            if not self._check(rep)["ok"]:
+                self.assertFalse(lead["ok"] or v < 3.9,
+                                 msg=f"{v} m/s: the cap check failed where lead_margin passed "
+                                     f"above the plant's cap")
+
+    def test_a_speed_so_low_the_escape_is_UNREACHABLE_fails_rather_than_reading_as_fine(self):
+        """`time_to_displace_s` returns None past its 60 s horizon. Before this check that printed
+        `speed_cap_changes_t_req: false` and the line '(a 0.04 m/s speed cap does not change
+        t_req -- checked, not assumed)', which is false in the most dangerous direction."""
+        rep = pfl.evaluate(0.04, **self.KW)
+        self.assertIsNone(rep["plant"]["t_req_s_at_mission_speed_cap"])
+        self.assertIsNone(rep["budget"]["margin_at_mission_speed_cap"])
+        self.assertFalse(self._check(rep)["ok"])
+        self.assertIn("UNREACHABLE", self._check(rep)["detail"])
+        self.assertFalse(rep["verdict"]["pass"])
+
+    def test_the_report_prints_ONE_value_for_the_cap_honest_margin_not_two(self):
+        """The check detail and the NOTE both read `budget.margin_at_mission_speed_cap`; formatting
+        the raw float in one and its own 4-dp rounding in the other printed 0.922x beside 0.921x."""
+        rep = pfl.evaluate(0.5, **self.KW)
+        shown = f"{rep['budget']['margin_at_mission_speed_cap']:.3f}x"
+        text = pfl.format_report(rep)
+        self.assertIn(shown, self._check(rep)["detail"])
+        self.assertEqual(text.count("0.921x"), 2)
+        self.assertNotIn("0.922x", text)
+
+    def test_the_FAIL_line_names_the_failing_checks_and_prescribes_no_direction(self):
+        """It used to say 'slow the mission, or measure a longer horizon' -- and BOTH of those can
+        be the failing direction (past 47.56 m a longer horizon fails; below 0.79 m/s a slower
+        mission fails). G60's family, in prose, on the line an operator acts on."""
+        text = pfl.format_report(pfl.evaluate(0.5, **self.KW))
+        self.assertIn(f"Failing: {self.CHECK}", text)
+        self.assertNotIn("Slow the mission, or measure a longer horizon", text)
 
 
 class TestBookability(unittest.TestCase):
@@ -612,6 +763,16 @@ class TestBookability(unittest.TestCase):
         self.assertFalse(rep["verdict"]["bookable"])
         self.assertEqual(rep["verdict"]["exit_code"], pfl.EXIT_PASS_NOT_BOOKABLE)
         self.assertIn("measured render horizon", rep["verdict"]["why_not_bookable"])
+        # ...and it names THE cause, not A cause (QA finding G131). This path used to print
+        # "inputs are config-sourced", which sends the operator back to `ros2 topic echo
+        # camera_info` -- the one input they already have -- instead of to gate D3.
+        why = rep["verdict"]["why_not_bookable"]
+        self.assertIn("live intrinsics given but no --acq-range-m (D3)", why)
+        self.assertNotIn("config-sourced", why)
+        self.assertIn("D3", _run("--speed", str(RECOMMENDED_SPEED_MPS), *LIVE_INTRINSICS).stdout)
+        # The genuinely config-sourced run keeps the sentence that is true of IT.
+        config_why = pfl.evaluate(RECOMMENDED_SPEED_MPS)["verdict"]["why_not_bookable"]
+        self.assertIn("config-sourced", config_why)
         # ...and the range it would have booked on is the geometric bound, named as one.
         self.assertAlmostEqual(rep["sensor"]["acquisition_range_m"],
                                rep["sensor"]["geometric_acquisition_range_m"], places=6)
@@ -740,7 +901,7 @@ class TestArtifact(unittest.TestCase):
                         "--acq-optical-prefix-m", str(D3_OPTICAL_PREFIX_M), "--json", str(out))
             self.assertEqual(proc.returncode, pfl.EXIT_PASS_BOOKABLE, msg=proc.stdout + proc.stderr)
             rep = pfl.validate_report(json.loads(out.read_text()))
-            self.assertEqual(rep["schema_version"], "1.2")
+            self.assertEqual(rep["schema_version"], "1.3")
             self.assertIs(rep["verdict"]["bookable"], True)
             s = rep["sensor"]
             self.assertIs(s["acquisition_clamped_from_optical_prefix"], True)

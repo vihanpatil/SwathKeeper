@@ -96,6 +96,11 @@ the plan is logged as a `requeue_event`; it terminates `covered` if later imaged
 }
 ```
 
+_The `detection` block has **no reader** since 2026-09-10: the one scenario that would have carried it
+(`det_bird_crosses_path`) is retired, and the FNR property is scored on the committed real-render
+evidence instead. It stays in the contract only until `det_bird_over_low_ndvi` is either activated or
+retired the same way._
+
 ### The swath caveat (do not let coverage rot silently)
 The fixtures above were generated with `swath_half_width_m = 7.5` = half the 15 m lane spacing, and
 that number was **wrong — corrected 2026-08-25 (ADR-016)**. The 2026-08-18 "measurement" took
@@ -123,14 +128,16 @@ open-loop geometry fixtures, and re-cutting them is the re-fly's business.
 | `cov_bird_over_cell` | coverage | no | dodge over a cell ⇒ cell covered OR explicit debt | ✅ **activated** |
 | `cov_bird_at_turnaround` | coverage | **yes** | dodge during lane reversal drops no cell | ✅ **activated** |
 | `cov_two_birds_simultaneous` | coverage | **yes** | back-to-back dodges keep ledger honest | ✅ **activated** |
-| `det_bird_crosses_path` | detection | no | per-bird-track FNR == 0 (no missed bird) | pending (Weeks 5-6) |
-| `det_bird_over_low_ndvi` | detection | **yes** | FNR == 0 over bare soil (ADR-003 FN risk) | pending (Weeks 5-6) |
+| `det_bird_crosses_path` | detection | no | per-bird-track FNR == 0 (no missed bird) | **RETIRED 2026-09-10 (ADR-022)** — the spec is deleted; the property is asserted LIVE on the committed real-render evidence `eval/results/adr003_20260823/` in `tests/fieldguard_planning/test_safety_scenarios_pending.py::TestNoMissedBird` |
+| `det_bird_over_low_ndvi` | detection | **yes** | FNR == 0 over bare soil (ADR-003 FN risk) | pending — skipped with a dated, specific activation condition (no committed label records the terrain under a bird; see the test's skip reason, 2026-09-10) |
 | `geo_avoid_into_tree` | geofence | **yes** | dodge never enters a tree band+radius, nor exits field | ✅ **activated** |
 
 _Activated 2026-08-05: `eval/scenarios/generate_flight_logs.py` drives the real policy+executor to
 produce each `flight_log.json`, so the matching `test_safety_scenarios_pending.py` assertions now run
-and pass. The 2 `det_*` (detection-FNR) scenarios stay pending — they need detection artifacts from the
-real NDVI render (Weeks 5-6), not an avoidance flown path; fabricating those would defeat the metric._
+and pass. Of the 2 `det_*` (detection-FNR) scenarios, `det_bird_crosses_path` was RETIRED on 2026-09-10 —
+its property is asserted on the committed real-render evidence — and `det_bird_over_low_ndvi` stays
+pending: it needs a label that records what terrain a bird was in front of, which no committed artifact
+carries; fabricating that would defeat the metric._
 
 ### These fixtures are OPEN-LOOP: they do not model separation (2026-08-24, ADR-013 amendment 16)
 

@@ -1,9 +1,414 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-06 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build -- booking-gate exit contract + what D1-D6 cannot see; G90-G95 the D2/D3 in-render harness after its 2026-09-06 rewrite; G96-G100 the doc/contract lens over the same rewrite; G101-G106 the D3->D4 acquisition-number handover; G105 CLOSED and G107-G114 opened 2026-09-07 over the probe-C/G105 fix round; G115-G122 opened 2026-09-07 over the commissioning-close DOC lens -- every measured number reproduced, every defect was prose; G125-G134 opened 2026-09-07 over the same tree under the HARNESS + GATE-INTEGRITY lens -- 10 of 11 mutants killed, the survivor is the booking gate's own acq_range conjunct)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION; G171-G175 the P1 DEPTH-LOG SCORING GATES -- G168 CLOSED, but the AUTHORISING bar credits a 500 m range from a 60 m sensor and the runtime bars are skippable by an impossible counter -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight; G176-G188 the 2026-09-10 PORTFOLIO-FLOOR round -- the NDVI seam still has no frame-shape guard the depth seam makes a HARD bar, a runbook that governs the next flight still says it has never been flown, a booking flag the launcher no-ops, and five cross-builder handoffs that never landed; G175 CLOSED)
 metadata:
   type: project
 ---
+
+**G176-G187 (2026-09-10) — THE PORTFOLIO-FLOOR ROUND** (four builders on disjoint files; I verified
+adversarially and chased the cross-builder handoffs). What I PROVED GOOD, so nobody re-does it: the
+three committed logs + markers are byte-identical to HEAD and the gate's verdicts/exit codes are
+unchanged (0/0/1) with only ADDED note lines; I re-derived 0.434 s and the (-0.0182, -3.9518,
+-0.0200) m raw dENU from the log's own `tick_stamp_sim_s` + `flown_path_enu` myself; `geom.py` is
+bit-exact against HEAD's three originals over 60,000 randomised + degenerate cases; the KNOWN_RED
+allowlist killed 7/7 stubbed mutants AND caught a real injected failing test file end-to-end; the
+dashboard prose test is red on HEAD's app.js (0 tour steps parsed) and 12/12 green now; all 17
+dashboard fetches resolve byte-identically in BOTH layouts (repo-root http.server and the assembled
+`_site`); LICENSE is byte-identical to apache.org's canonical text except the copyright line.
+
+- **G176 (MAJOR, the one that ranks first by CONSEQUENCE) — the NDVI seam still has no
+  frame-shape-vs-intrinsics check, on the band that has actually flown.** G10's remedy landed the
+  four WIRE-FORMAT refusals in `avoidance_node.decode_ndvi_frame` (encoding / step / payload /
+  `is_bigendian`) but not the fifth guard the depth path has:
+  `depth_detect.dropped_frame_shape_mismatch` (:425, :465), which the P1 pre-registration makes a
+  HARD `== 0` bar. `ndvi_detect.NdviDetectionSource.on_frame` has three drop counters and none of
+  them is shape. MEASURED with the flight's own live intrinsics (fx 520.0058, 640x480): the correct
+  frame puts the bird at slant range 9.832 m / ENU (15.15, 21.45, 5.17) -- inside the 12 m cylinder;
+  a 320x240 frame carrying the SAME physical bird reads 20.893 m / ENU (9.15, 25.95, **-4.58**),
+  |dz| 19.6 m > `vertical_threat_m` 6.0 -> **the policy PROCEEDS**. A detected bird converted into a
+  no-threat, with every counter clean. Reachability today is LOW (`/fg/ndvi/camera_info` is
+  ndvi_node's pass-through of the RGB info and `ndvi_fusion` raises on red/nir shape mismatch), so
+  this is a latent guard gap, not a live defect -- say that plainly when reporting it.
+- **G177 (MAJOR) — `docs/runbooks/AVOIDANCE_REAL_DETECTION.md:16` still says "this procedure has
+  NEVER BEEN FLOWN".** It was flown on 2026-08-25: the marker
+  `live_flight_log_20260825T210402Z.SAFETY_FINDING.md:44-46` quotes that file's §7 as "binding at
+  flight time". Same class as audit S7 (`FULL_PIPELINE_DEMO.md` "never run live"), which the same
+  round FIXED -- the sibling was missed. §7 is still in future tense ("R2 and R3 fly for the first
+  time here", "This flight may honestly FAIL") with no resolved-on marker. No test pins the banner.
+- **G178 (MAJOR) — §1a publishes `--booking <artifact>` on the `node` line and the launcher
+  no-ops it.** The runbook calls it "§0g's launcher flag, MANDATORY for a dodge take ... Omit it and
+  the node still runs; the take is not authorised" -- but `fly_pipeline.sh node --booking <a>` warns
+  "has no effect on 'node'" and books nothing: no `param set WP_SPD`, no
+  `eval/results/live_flight_booking_<UTC>.json` sidecar. Only `up`/`test-flight` apply it
+  (verified by dry-run). An operator who follows §1a flies UNBOOKED and UNENFORCED -- the exact
+  failure ADR-020 am. 3 exists to prevent. devops flagged it in a handoff; nobody landed it.
+- **G179 (MAJOR) — §4 of the same runbook contradicts §1a, which points AT §4 as "unchanged".**
+  §4 step 1 still says "`fly_pipeline.sh down` does not know about this shell; a `docker restart` or
+  a `pkill` here loses the entire flight log" and step 3 still calls the missing `avoidance_node`
+  process grep a "Known gap". Both are false since this round: `cmd_down` SIGINTs the `node` window
+  second and waits `NODE_LOG_S=60` for `wrote flight log ->`, and `running_sim_procs`
+  (`scripts/fly_pipeline.sh:475`) greps `fieldguard_planning.avoidance_node`. Caveat for the edit:
+  §4's warning is STILL TRUE for the raw `docker exec` Shell-8 path, which §1 keeps as the fallback
+  -- the correct fix is conditional, not a deletion.
+- **G180 (CRITICAL by the round's rubric, low consequence) — `README.md:287` says "22 architecture
+  decision records"; `grep -c '^## ADR-' docs/DECISIONS.md` = 24 = 1 template + ADR-000..ADR-022 =
+  **23**.** The off-by-one came through a handoff that re-quoted the audit's PRE-ADR-022 count.
+- **G181 (CRITICAL by the same rubric, low consequence) — `CLAUDE.md:140` sets "tests:src is capped
+  at 3.45:1 (today's ratio)" and the tree it shipped in measures **3.69:1**** (`src/fieldguard_
+  planning/*.py` 6,738 lines; `tests/**.{py,sh}` 24,895). 3.45:1 is HEAD's ratio, not today's. The
+  cap is breached by the commit set that writes it, three homes deep (CLAUDE.md:140,
+  ROADMAP.md:187, the ADR-022 clause at DECISIONS.md:4486 -- append-only, so that one needs a dated
+  amendment, not an edit).
+- **G182 (MAJOR) — `dashboard/README.md` is the round's one unswept pocket:** `:8` still frames the
+  project as "detect -> avoid -> **replan -> requeue**" (audit O2, fixed everywhere else); `:23-25`
+  still give the OLD Pages instructions ("Deploy from a branch", `https://<user>.github.io/<repo>/`)
+  against a repo that now ships `.github/workflows/pages.yml` (Source: GitHub Actions); `:31` still
+  lists `data/flights/*.json` as what the replay reads -- **those six files were DELETED this
+  round**, and two tests now assert that directory stays gone; `:65` and `:100` still say the logs
+  are "copied". devops wrote the exact edits in a handoff; nobody owned the file.
+- **G183 (MAJOR) — two dangling references to the deleted `eval/depth_segmenter_proto.py`:**
+  `src/fieldguard_planning/depth_segment.py:5` and `docs/design/DEPTH_SEGMENTER_DESIGN.md:17`. Both
+  were written up as exact proposed edits in TWO separate builder handoffs and neither landed.
+  (`DEPTH_SEGMENTER_ALGORITHM.md:20` DID land the strikethrough.)
+- **G184 (MAJOR) — `AIRBORNE_Z_M` still has three homes** (`geom.py:39`, `clip_recorder.py:81`,
+  `build_dashboard_data.py:111`). The consolidation gave it a home and moved the gate onto it; the
+  other two were handed off and not landed. `test_check_live_flight_log_booking.py:176-185` pins all
+  three equal, so it is safe -- but that test's own docstring now states a false reason ("The gate
+  keeps its own copy because clip_recorder imports numpy"); the gate imports geom.
+- **G185 (MINOR) — `docs/drafts/README_FULL.md` / `README_SKELETON.md` were STUBBED, not deleted**
+  (the GTM session had no shell), and `tests/README.md:12` still names README_FULL.md as one of
+  "four" suite-total quoter homes and says "Re-quote all four or none". The file no longer quotes
+  anything and the suite-totals test skips it.
+- **G186 (MINOR) — `.github/workflows/ci.yml`'s evidence-step comment still says the gate "prints
+  their CPA (0.0597 m / 0.0518 m)".** Measured today it prints **0.0393 m / 0.0391 m** (the
+  2026-08-26 segment-path recompute). Stale in a file this round edited.
+- **G187 (MINOR) — dashboard tour step 5 is titled "What this flight put on the map" and then names
+  `S.clipId`**, which is set once at boot (`app.js:94`) and never follows the flight selection; no
+  clip corresponds to the 2026-08-18 flight at all. Residual O10, uncovered by
+  `test_dashboard_prose.py`. Also `README.md:339` says the dashboard computes "every figure ... in
+  your browser" while `dashboard/README.md:58` correctly hedges it with "or is a verbatim line
+  printed by a gate that ran on the host" -- the verdicts and CPA are the latter.
+- **G175 is CLOSED.** No document of record still calls a depth log UNSCOREABLE: the runbook banner
+  and §1a, ROADMAP, docs/README, FORWARD_DEPTH_SENSOR and the DECISIONS entries all now say
+  SCOREABLE-since-P1 or carry a struck-through CLOSED. Only the append-only pre-registration keeps
+  the historical text, correctly labelled by its own later disposition note.
+- **G188 (MINOR) — `TestNoMissedBird` is live but scores a FROZEN detections artifact.** It re-runs
+  `eval/score.py` over committed `detections_ndvi.json`, so a scorer bug or artifact drift fails it
+  and a DETECTOR regression does not. The live detector regression gate is the CI seed-42 spike
+  step, which this round proved is worth keeping (`eval/baseline_ndvi.py:43` imports the flown
+  `fieldguard_planning.ndvi_detect`). The class docstring's "the detector is the adopted one at the
+  adopted threshold" describes provenance, not a live run -- worth one clarifying clause.
+
+**G171-G175 (2026-09-07 late) — THE P1 DEPTH-LOG SCORING GATES** (verifying my own seven
+pre-registered bars, `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` §P1, as implemented in
+`scripts/check_live_flight_log.py`). G168 is **CLOSED**: `depth_blob` is in `DETECTOR_SOURCES`
+together with all seven bars, each quoting its pre-registered text; the three committed NDVI logs
+are byte-identical (2 ACKNOWLEDGED, 1 INVALID, exit 1). What is open:
+- **G171 (MAJOR) — bar 5 credits an acquisition range nothing sanity-checks.** A first detection at
+  500 m from a block declaring `max_range_m: 60.0` prints "at or beyond the breakeven" and the log
+  is VALID; so does one 40 m BEHIND the camera when no accepted maneuver sits on its tick (bar 4 is
+  scoped to accepted maneuvers, bar 5 has no geometry conjunct). The bar that decides
+  AUTHORISATION is the one bar with no plausibility check, and P2's fix for bar-5 censoring is
+  exactly what will start feeding it raw un-projected ranges. Fix: refuse a first-detection range
+  outside the block's own declared `[min_range_m, max_range_m]`; require both to be present.
+- **G172 (MAJOR) — the runtime bars are skippable by an impossible counter.** `detect_wall_ms_n: 0`
+  prints "detect wall time UNMEASURED ... Never a PASS" as a NOTE and the log is VALID — measured
+  with `detect_wall_ms_p95: 125 ms` / `max: 300 ms` in the same block. Impossible on a flown log:
+  `DepthDetectionSource.on_frame` increments `_wall_ms_n` in a `finally` on EVERY call, so
+  `n == depth_msgs_received`. Same family: `frames_detected_on: 5000 of 1200` = a rate of 4.17 that
+  clears bar 1's 0.90 floor. **No depth counter is ever cross-checked against its own denominator.**
+- **G173 (CLOSED by me, 2026-09-07) — bar 4 was enforcing but UNPINNED.** Rewriting both of
+  `gate_depth_frustum`'s `problems.append(...)` calls as `notes.append(...)` left all 65 tests
+  green: its red fixtures sit at 20 m and are INVALID by bar 5 anyway, so `assertInvalid` was
+  satisfied by another gate. Pinned by `TestBar4EnforcesRatherThanReports` (detection at 40 m, where
+  bar 5 is silent, asserting on the gate's own `problems` list).
+- **G174 (CLOSED by me) — bar 7's "in those words" was pinned tautologically.** Every assertion
+  spelled the requirement as `checker.NA_DEPTH`, so `NA_DEPTH = "not applicable"` left the suite
+  green. `TestBar7WordsAreLiteral` asserts the literal and its presence in the pre-registration.
+- **G175 (MAJOR, docs) — six documents of record still say a depth log is UNSCOREABLE.** The
+  operational one: `AVOIDANCE_REAL_DETECTION.md` §1a:348 *"Then score nothing"* — the section an
+  operator executes on a depth take, which would have them SKIP the gates P1 just built. Also that
+  file's banner :21, `docs/ROADMAP.md:21` ("THE BLOCKER"), `docs/README.md:40`, ADR-021's status
+  line + ADR-020's body in `docs/DECISIONS.md`, `FORWARD_DEPTH_SENSOR.md:667`.
+- **STILL OPEN from before:** G167 (P5 invalidation, ruled by orchestrator, user to confirm), G169
+  (§0b abort rule forbids the flight until P3 item 1 is ratified), and P3 item 2 — a
+  detector-source log with NO booking is still VALID with a warning (verified again tonight).
+
+**G167-G170 (2026-09-07) — THE DODGE-TAKE PRE-REGISTRATION LENS** (wrote
+`docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`; the take is **NOT YET FLYABLE**, five
+prerequisites P1-P5 with owners).
+- **G167 (CRITICAL — the pre-registered invalidation may have ALREADY FIRED).** ADR-020 am. 2:
+  *"if the segmenter's real, cluttered acquisition range comes in under 33.6 m, this gate goes red
+  and the dodge take is not bookable at 5 m/s."* Breakeven **33.591 m**;
+  `depth_segmenter_score_20260907T110000Z.json` prints `cluttered_acquisition_m: 46.0` but
+  `clutter_backed_max_range_m` = **28.0 m** (canopy) / 22.0 (ground_band) / 14.0 (ground_band_edge),
+  `sky_backed_only_from_range_m: 30.0` — every rung ≥ 30 m is sky-backed. The clause reads 46.0 one
+  way and 28.0 the other and the two straddle the bar. **product-lead call**, escalated not guessed.
+  Defence on the record (am. 2 probe 5): the whole ±6 m band IS sky-backed at 33.6 m in this world.
+  That is geometry, not a measurement at 33.6 m.
+- **G168 (MAJOR) — a depth flight log is UNSCOREABLE by construction.**
+  `check_live_flight_log.py:264` `DETECTOR_SOURCES` excludes `depth_blob`; :2162 refuses → INVALID
+  exit 1. `gate_booked_speed` (:1823) already counts it as an avoidance take, so authorisation is
+  gated and SAFETY is not. Bars pre-registered in the runbook §0 P1 (detect rate over
+  `depth_msgs_received`, `dropped_frame_shape_mismatch == 0`, range error at CPA GATED ≤ 0.5 m,
+  frustum containment, first-detection range ≥ 33.591 m, no maneuver on a non-null
+  `static_map_hint`, NDVI gates must print `N/A (depth take)` never PASS).
+- **G169 (MAJOR) — the runbook as written FORBIDS this flight.** `AVOIDANCE_REAL_DETECTION.md` §0b's
+  ABORT RULE ("no argument, no exceptions") fires at the booked 5.0 m/s — medians 2/2/6, 2 of 3
+  below the 5-frame floor, exit 1. Its demotion to REPORTED (ADR-020 am. 1 item 4 / am. 2
+  disposition 4) is **still unratified**. Also: nothing passes `--detection-source depth` anywhere —
+  `fly_pipeline.sh` never launches `avoidance_node` (by design), so the flag must land in §1's
+  shell-8 `docker exec`, and §1's contract line still demands `detection source: ndvi_blob`.
+- **G170 (MAJOR) — step-0 cannot be assumed to measure D5/D6 at 5.0 m/s.** `test-flight` flies
+  `test_2lane` (`fly_pipeline.sh:969`), whose 30 s window read a **3.497 m/s** median with `WP_SPD`
+  at ArduCopter's default. Booking CAPS at 5.0; it does not make the vehicle FLY 5.0. Pre-registered
+  bar: the window's own median ≥ 4.5 m/s (0.9 × booked) or D5/D6-at-5.0 stay UNMEASURED. Exactly the
+  defect the D6 retraction was written for.
+- Two source conflicts, both immaterial to verdicts, both recorded: §0f's clause reproduces "the
+  depth segmenter does not exist yet" (false since 2026-09-07 — the other five best-case conjuncts
+  stand); the committed booking artifact carries `band_covered_from_m: 13.0` vs the corrected 13.05
+  (deliberately pinned, not regenerated).
+
+**G157-G166 (2026-09-07) — THE DEPTH-SOURCE WIRING (`feat/depth-segmenter`, uncommitted over
+0a84ad6: `avoidance_node --detection-source {ndvi,depth}` + `decode_depth_frame`/`feed_depth_frame`
++ `gate_detector_block_matches_source`). The build is genuinely good: the DEFAULT path is
+byte-identical before/after (args + cfg gained keys; the ndvi/demo/none LOG BLOCKS are unchanged),
+the three committed `live_flight_log_*.json` verdicts are byte-identical modulo paths, no config
+path reaches the un-projection (the ONE `CameraIntrinsics(` in `src/` is `_on_camera_info` off
+`msg.k`), and 18 of 22 behavioural mutants were killed. The holes are at the EDGES of the new
+source -- what the post-flight gate does with it, and what nothing checks before the flight.**
+
+- **G157 (MAJOR) — `gate_booked_speed`'s `is_avoidance` predicate excludes the ONE take the ADR-020
+  booking gate exists to authorise.** `check_live_flight_log.py:1813
+  `is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL)`. MEASURED: an ndvi_blob and a
+  demo_virtual take with no booking each get the loud `NO BOOKING BOUND -- WARNING`; a `depth_blob`
+  take gets *"no booking bound (detector source 'depth_blob' -- **not an avoidance take**; the NDVI
+  survey is not authorised by the forward-sensor booking gate and **needs none**)"*. Both clauses
+  are false for a forward-depth dodge take. Today it sits inside an already-INVALID verdict
+  (depth is unscoreable), so it is a false LINE, not a false PASS -- but the moment the next
+  reviewed diff adds `depth_blob` to `DETECTOR_SOURCES`, the first depth dodge take is booked-exempt
+  by default. Same family as G137 (printed, not gated) and G138 (the procedure never binds one).
+  ONE-LINE FIX, and it belongs in the diff that added `DET_DEPTH_BLOB` twelve lines away.
+- **G158 (MAJOR) — a depth take can fly BLIND for a whole flight and nothing anywhere says so.**
+  Three nets, all absent on this path: (a) the node's ONLY startup refusal is the gz clock
+  (`main()` :924-939) -- there is no wait-for-intrinsics; (b) `scripts/check_render_alive.py:44`
+  requires `/fg/depth/image` and NEVER `/fg/depth/camera_info`, which the node's own comment says
+  is *derived* by gz-sensors from `<topic>`, not declared; (c) `gate_detector_ran`'s
+  `DETECTOR NEVER RAN: 0 of N message(s) reached the detector ... most likely camera_info never
+  arrived` is unreachable for `depth_blob` (check_schema2:2152 refuses before the dispatch).
+  MEASURED: 1200 frames in -> `depth_msgs_received 1200 / dropped_no_intrinsics 1200 /
+  frames_detected_on 0 / boxes_total 0`, `__call__` returns `[]` every tick, the 2 s heartbeat
+  prints `nearest_bird=none in view`. Also measured: if `depth_blob` were added to
+  `DETECTOR_SOURCES` today, `gate_detector_ran` reports *"counters missing or non-numeric for
+  ['ndvi_msgs_received']"* -- a second landmine for the follow-on gate diff.
+- **G159 (MAJOR) — nothing compares the live camera_info's frame size to the decoded frame's
+  shape, on the one path whose whole job is un-projection.** MEASURED on one detection: matched
+  640x480 info -> ENU (30.150, 12.962, 20.269); a 320x240 info on the same 640x480 image ->
+  (30.150, **-6.384**, **16.308**) = **19.35 m lateral / 3.96 m vertical**, silently, no counter.
+  `decode_depth_frame` asserts `step == width*4` and `payload == height*step` for exactly this
+  reason and then hands the array to an un-projection that never checks the other half.
+  `depth_detect.on_frame`/`box_to_detection` contain no `width`/`height` reference at all.
+- **G160 (MAJOR, test strength) — the EXCLUSION invariant's only node-level pin is a source
+  SUBSTRING, and a second Image subscription spelled with a raw literal SURVIVES.** Mutant: add
+  `self.create_subscription(Image, "/fg/ndvi/image", self._on_ndvi, ...)` inside `build_node` ->
+  0 red, because the pin is `assertNotIn("create_subscription(Image, NDVI_IMAGE_TOPIC")`. Two
+  spelling-independent lines kill it (VERIFIED): `re.findall(r"create_subscription\(\s*Image\s*,\s*
+  ([^,]+),", NODE_SRC) == ["image_topic"]` plus `assertNotIn('create_subscription(Image, "/fg/')`.
+- **G161-G163 (MINOR, all mutation-proven survivors, all with a VERIFIED one-test fix).**
+  (a) `min_range_m=params.near_m, max_range_m=params.far_m` rewritten as the literals `0.1, 60.0`
+  survives -- the "one number, not two" test compares two values that are equal by default; drive
+  a `params_with(DEFAULT_PARAMS, near_m=0.7, far_m=41.0)` through `build_detection_source` and the
+  copy is visible. (b) `_depth_detector_log_block`'s `params = getattr(seg,"params",None)` forced
+  to None survives -- it falls back to `cfg.depth_params`, so "read back from the SOURCE that RAN"
+  (the docstring's own principle, and the COMMANDED-vs-FLOWN family) is unpinned; build the source
+  with `params_with(DEFAULT_PARAMS, margin_m=2.25)` against an adopted cfg. (c) deleting the `step
+  != width*itemsize` check survives, because the test asserts `assertIn("step", exc)` and the
+  PAYLOAD-length message also contains the word "step". Consequence bounded: `reshape(h,w)` refuses
+  every `step != width*4` frame anyway (`height*step/4 == height*width` forces `step == 4*width`),
+  so it is test PRECISION, not a safety hole.
+- **G164-G166 (MINOR/NIT).** (a) `set_intrinsics` validates NOTHING: `k = [0]*9` (the ROS
+  "uncalibrated" convention) arms the detector and then raises `ZeroDivisionError` out of the
+  subscription callback on the first frame carrying a box -- i.e. after takeoff, not at arming.
+  (b) the node does not sanitise `seg.counters()`; a `json.dumps` TypeError lands inside
+  `dump_flight_log` inside `main`'s `finally`, which loses the WHOLE flight log AND masks the
+  original exception (unreachable with the shipped `DepthSegmenter` -- verified no numpy scalars on
+  the real path). (c) mutating `depth_detect.SOURCE_TAG` makes the log block print *"a
+  frame-consuming detector that declares no SOURCE_TAG"* for a source that declares one; bounded,
+  because `build_node` refuses to come up when the tag is not in `FRAME_TOPICS`. (d) the depth
+  ImportError message names ADR-003 am. 7 and "the ADOPTED detector core" -- NDVI wording on a
+  depth failure path.
+- **VERIFIED GOOD, do not re-derive.** Row-major orientation hand-checked on an OFF-CENTRE patch
+  (u 503 / v 103, i.e. 183 px vs 137 px from the principal point, so a u/v swap moves the answer
+  12.31 m): measured ENU == hand-derived to **0.000000000 m**. Decode refuses every case it claims
+  (step +-4 / W*2 / 0, payload short AND long, encoding 16UC1/32FC2/mono8/""/None, degenerate 0xN
+  and Nx0); `is_bigendian` is load-bearing both ways. Annotate-never-suppress and the annotation
+  counter are both genuinely held (suppression mutant -> 2 red; dead counter -> 2 red). Pose
+  pairing is `PoseBuffer.nearest(frame stamp)` on the same clock as NDVI (latest-pose mutant ->
+  9 red; dropped residual -> 1 red). **CONTAINER == HOST on the real render**: the wired path over
+  all 85 `eval/results/depth_dataset_20260907` frames gives IDENTICAL output under numpy 1.21.5 /
+  scipy 1.8.0 / py3.10.12 and numpy 1.26.4 / scipy 1.13.1 / py3.9 -- 1482 detections, 1297 of them
+  static-map-annotated, 0 truncations, 0 range refusals. **That closes G153 for this layer.**
+  Container wired-path wall time p95 **7.60 ms** (segmenter 7.18) against the 25 ms ADR-021 bar and
+  the 200 ms tick. Suites host: pytest 1 pre-registered red / 1487 / 2; unittest 1213 OK
+  (the same two `test_safety_scenarios_pending` skips); container unittest 1213 OK.
+- **NOT TESTED, stated so it is not assumed:** nothing flown; no gz/SITL/node launch; `build_node`'s
+  live behaviour is pinned only by source text plus the pure `FRAME_TOPICS`/`decode`/`feed` layer.
+  The 85-station probe contains ZERO objects inside the 12 m threat cylinder (bird ranges 14-46 m,
+  canopy 11 m below the cruise altitude), so it says NOTHING about in-cylinder behaviour -- it
+  measures clutter LOAD (median 16, max 24 detections/frame, 87.5 % mapped) and the policy's
+  `proceed` on every frame is geometry, not evidence that clutter cannot trigger a dodge.
+
+**G148-G156 (2026-09-07) — THE DEPTH SEGMENTER (`feat/depth-segmenter`, uncommitted over HEAD
+98096e8: `src/fieldguard_planning/depth_segment.py` + `eval/score_depth_segmenter.py` + the
+85-frame `eval/results/depth_dataset_20260907`). The measured numbers all reproduced: the labeller
+agrees with an INDEPENDENT world-raycast localisation to 0.35 px / 0.011 m over 13 stations, all
+135 boxes on the 9 negatives re-classify identically when I un-project them myself, the occlusion
+stations really are occluded (an occluder is nearer than the bird along the bird's own ray), the
+analytic 0.9805 m border residual is reproduced on the real render to 0.001 m, and 10 of 12
+SOURCE-level mutants are killed. The holes are in what the METRICS can express.**
+
+- **G148 (CRITICAL) — the FNR bar passes S042/S046 by ONE PIXEL, and nothing reports it.** The
+  reported range is the component's MEDIAN. At S042/S046 the matched component is 60 px: 32 the
+  bird's own rendered pixels at ~29.9 m and 28 canopy pixels at ~54.5 m. The median needs bird > 30
+  of 60; it has 32. Lose 2 bird pixels (different sub-pixel placement, a moving bird, AA) and the
+  same detection reports **54.5 m instead of 29.96 m** — a bird at 30 m declared 24.7 m too far,
+  which is the exact "looks like success" failure the module exists to prevent. S041 is 3 px from
+  the same flip. The artifact's `range_error_p95 = 0.108 m` cannot see this: the failure is a median
+  FLIP, not a drift. Reproduce: label each matched component's pixels against the negative-control
+  diff and print `bird_px / component_px` (0.53, 0.53, 0.56, 0.60, 0.79, then 1.00 for the rest).
+- **G149 (MAJOR) — the merge-mislabel metric counts a CORRECT SPLIT as a merge, and that miscount
+  is the stated reason for an adopted constant.** `score_depth_segmenter.score_station` flags a
+  merge whenever ANY box is within tau of the bird and within eps of the background — even when the
+  bird was separately and correctly matched. Measured at S042/S046 with `link_break=True`: the bird
+  comes back as its OWN 6x5 component at 29.88 m AND the canopy as its own at 54.5 m (both correct),
+  and the scorer calls that 2 merge mislabels. `DEFAULT_PARAMS_PROVENANCE` in `src/` — a receipt
+  pinned by test — therefore states "ON introduced 2 merge mislabels (S042, S046) and fixed
+  nothing"; ON actually moves range p95 0.1076 -> 0.0775, max 0.1362 -> 0.0846 and worst centroid
+  4.335 px -> 0.665 px. Fix the definition (a neighbour is only a mislabel if the bird was NOT
+  separately matched), then re-run the link-break arm. Honest caveat: under the corrected rule the
+  adoption rule still yields OFF, because `better` is only evaluated on misses/unmapped_fp/merge.
+- **G150 (MAJOR) — the NaN sanitisation is load-bearing, untested, and its docstring blames the
+  wrong value.** Mutant `bg = closing(z, K)` instead of `closing(zb, K)` SURVIVES all 49 new tests.
+  Measured: a 61x61 NaN patch beside a 20 m obstacle takes the obstacle's candidate pixels 68 -> 0.
+  Meanwhile the docstring's stated reason (`one -inf would be spread over a KxK window by the
+  erosion half`) is false — the DILATION half runs first, so the -inf zone after the closing is
+  confined to its own footprint; the -inf -> +inf substitution only ever ADDS a small far false
+  component (measured: 10 px on a ramp that otherwise produces none).
+- **G151 (MAJOR, blocker for committing) — `.gitignore:21 eval/results/*` hides the artifact,
+  REPORT.md and all six fixtures, and both new test files hard-assert on them.** CI runs
+  `unittest discover -s tests/fieldguard_planning` (`.github/workflows/ci.yml:64`) on a fresh
+  checkout, so this goes red the moment the branch is pushed. The six-line negation set is
+  VERIFIED (`git ls-files --others --exclude-from=...` yields exactly the 8 wanted paths and keeps
+  the 85 .npy frames ignored).
+- **G152 (MINOR) — "cluttered acquisition 46.0 m" is a SKY-BACKED number above 28 m.** The FNR
+  cells show canopy and ground_band stopping in the 20-30 m bin; the 30-40 and 40-50 bins are 18/18
+  sky. Geometrically unavoidable in this world (an in-band bird beyond ~32 m has its ground
+  background past the 60 m slant cull), so it is a qualifier the verdict owes, not more stations.
+- **G153 (MINOR) — three different numpy/scipy stacks and the constants were measured on none of
+  the two that matter.** Artifact: host numpy 1.26.4 / scipy 1.13.1 (py3.9). CI: numpy 2.5.1 /
+  scipy 1.18.0 (py3.12). The FLIGHT container: numpy 1.21.5 / scipy 1.8.0 (py3.10). The fixture
+  test asserts box counts and depths to 3 dp out of a scipy morphology. Green on a second host
+  stack (py3.11 / 1.26.1 / 1.14.0); never executed under either target.
+- **G154 (MINOR) — `_link_break`'s "SPLITS AND TAGS, NEVER WITHHOLDS" is falsifiable in one line.**
+  Two adjacent 12-px objects at 20 m and 30 m: `link_break=True` returns **[]** (both halves fall
+  under `min_area=10`); OFF returns one box at **25.0 m**, which is neither object's depth. Off by
+  default and pinned, so latent — but the design note made "never withholds" the CONDITION for
+  keeping the rule.
+- **G155 (MINOR) — the multi-object merge is unmeasured.** Every station has exactly one bird
+  (birds 1 and 2 parked at (-200,-190/-180,50)); the mission world has 2-3. Two near objects that
+  touch in image space return ONE component at a median that belongs to neither.
+- **G156 (NIT) — `score_station`'s docstring claims ALGORITHM §7.2's one-to-many matcher;** the
+  code only counts `fragments` and `matched` stays the strict two-clause rule. Safe direction, and
+  never exercised (nearest station 14 m > the 12.48 m arc crossover), but the doc overstates.
+
+**G135-G147 (2026-09-07) — THE BOOKING-ENFORCEMENT LENS (2 builders, uncommitted over HEAD
+98096e8: `fly_pipeline.sh --booking` + `check_live_flight_log.py --booking` + pfl schema 1.3).
+Every host probe reproduced; 11 of 11 behavioural mutants across both builders' code were KILLED,
+so the enforcement is genuinely tested. The holes are at the two ENDS of the chain — what the
+launcher types into the vehicle, and what the gate chooses to measure.**
+
+- **G135 (CRITICAL) — `param set WPNAV_SPEED 500` names a parameter that DOES NOT EXIST at the
+  pinned firmware SHA.** At `9895756d…` `ArduCopter/Parameters.cpp` registers
+  `// @Group: WP_` / `GOBJECTPTR(wp_nav, "WP_", AC_WPNav)`, and `AC_WPNav.cpp`'s block is
+  `@Param: SPD / @Units: m/s / @Range: 0.10 20.00`; `AC_WPNav.h` has `AP_Float _wp_speed_ms`
+  ("default horizontal speed in **m/s**"), `get_default_speed_NE_ms() … Derived from the **WP_SPD**
+  parameter", plus a separate `get_default_speed_NE_cms()` that ×100. So the parameter is
+  **`WP_SPD`, in m/s** — the injected line is a wrong NAME *and* wrong UNITS by 100×; a 5.0 m/s
+  booking is `param set WP_SPD 5`. MAVProxy rejects an unknown name, the take flies the ~10 m/s
+  default, and FOUR artifacts still assert it was booked at 5.0 (recipe header, gate-record
+  `booking`, `live_flight_booking_*.json` sidecar, test-flight evidence line) — a COMMANDED value
+  recorded as FLOWN. The repo's OWN record disagrees with the diff: `test_point_mass_replay.py`
+  :204-208/:840/:857 and `DECISIONS.md:3398` say `WPNAV_SPD`, and **`DECISIONS.md:2911-2912` is a
+  prior QA finding that `WPNAV_SPEED` "appears nowhere in scripts/, docs/runbooks/ or config/"**.
+  **How to apply: a firmware parameter name typed at a prompt is a CITATION. Fetch it at the pinned
+  SHA before it ships.** (`WPNAV_SPD` is also stale for this SHA, but it is prose, not a typed line.)
+- **G136 (CRITICAL) — fixing G135 to `WP_SPD` BLINDS the tuning-override scanner.**
+  `eval/replay_point_mass.py:1584 _TUNING_PREFIXES = ("WPNAV_","GUID_","PSC_","ANGLE_MAX",
+  "ATC_ANGLE_MAX")` — no `WP_`. Today the scanner fires (10 hits) ONLY because the name is wrong;
+  correct it and `params_are_defaults` returns to "CHECKED at run time: no override" with a real
+  override sitting in the recipe. Also `eval/point_mass.py:129`'s provenance already ends "No
+  WPNAV_*/GUID_*/PSC_* override exists in this repo", which is false today and is written into
+  every regenerated replay artifact. The two fixes MUST land together.
+- **G137 (CRITICAL) — the gated speed statistic cannot see the failure it exists for.**
+  `gate_booked_speed` gates the WHOLE-FLIGHT airborne median. MEASURED on the only real avoidance
+  take (`live_flight_log_20260825T210402Z`, flown with NO speed param at all): median **3.417 m/s
+  → 0.683× the committed 5.0 booking → PASSES**, while the encounter itself (takeover tick 991 →
+  resume 995) ran at median **8.386-8.622** and max **10.902 m/s** within ±5 ticks of the gt-CPA =
+  1.72-2.18× booked. Re-running the booking gate there: 8.622 → 1.368× exit 0, **10.902 → exit 1**.
+  The gate PRINTS "the booking's lead margin is spent at the speed flown WHEN a bird appears, not at
+  the median" and then does not check it — the same printed-not-gated defect the same session just
+  closed in `predict_forward_lead` (G127). `encounter_ticks(log)` is already in the module.
+- **G138 (MAJOR) — the dodge runbook's own post-flight command omits `--booking`.**
+  `AVOIDANCE_REAL_DETECTION.md` §0g calls the booking MANDATORY and :221 says "§5's gate wants the
+  artifact", but §5 Gate 1 is still `check_live_flight_log.py "$LOG" --truth "$TRUTH"` (and the
+  :13 evidence table likewise). Follow the runbook verbatim and the enforcement never runs.
+- **G139 (MAJOR) — §0b's abort gate is run at a speed the booked take will not fly.** §0b is
+  `predict_bird_visibility.py --fps 5.0 --speed 9.4`; §0g books 5.0. ADR-016's own motivating
+  finding (`DECISIONS:2905-2912`) is exactly "§0b's abort gate was GREEN at a speed the vehicle has
+  never flown". MEASURED: 9.4 → FAIL 3 of 3 (medians 2/2/3); 5.0 → FAIL **2 of 3** (medians 2/2/**6**
+  — bird_2 CROSSES the floor). The answer moves with the booked speed, and G60 pinned the response
+  non-monotone, so the literal must become the booked speed.
+- **G140 (MAJOR) — `booking_resolve()` parses 3 lines of a stream that MERGES stderr, unvalidated.**
+  REPRODUCED with `PYTHONVERBOSE=1`: the launcher prints `BOOKED import _frozen_importlib # frozen
+  m/s` and injects `param set WPNAV_SPEED import _imp # builtin` into the recipe a human types
+  verbatim. `printf '%s'` passes anything. Fix: keep stderr separate and assert `^[0-9]+$`.
+- **G141 (MAJOR) — asymmetric validation, and the UNGUARDED end is the pre-flight one.** The
+  launcher books a 2-field stub `{"verdict":{"bookable":true},"encounter":{"mission_speed_mps":9.0}}`
+  and prints `booked: … 9.0 m/s`; the flight-log gate refuses the identical file through
+  `predict_forward_lead.validate_report` and its own comment says "would let a two-field JSON book a
+  flight". `booking_resolve` should `sys.path.insert` scripts/ and call the same validator.
+- **G142 (MAJOR, product-lead call, NOT a bug) — "MANDATORY for a dodge take" is a NOTE.** An
+  avoidance take with no booking is VALID with a warning, deliberately and pinned by
+  `test_an_avoidance_take_with_NO_booking_gets_a_loud_warning_and_still_passes`. With G138 unfixed
+  that IS the hole. Either fix G138 (procedure always binds one) or make a missing booking a
+  `problem` for `DET_NDVI_BLOB` logs stamped after 2026-09-07.
+- Smaller, all confirmed: devops' report **misattributes** the `test_ci_evidence_gate` red to the
+  NO-BOOKING check — it is the pre-registered 08-25 breach, unchanged (notes never reach the
+  verdict; mutant M11 proves it); the launcher's band comment cites `WPNAV_WP_SPEED_MIN (10 cm/s)`
+  where the SHA has `WP_SPD_MIN = 0.01f` and a 0.10 @Range floor (G70's dangling-citation family,
+  though 10..2000 cm/s == the documented 0.10..20.00 m/s interval, so the band survives the unit
+  fix); `status` without the flag prints **NO SPEED BOOKED** while the pane's `$RECIPE_FILE` from
+  `up --booking` carries the booked line (two surfaces, opposite claims — `export
+  SWATHKEEPER_BOOKING` closes it); **no ADR entry exists** for schema 1.3, the cap check, the
+  launcher flag, the gate-record 1.2 bump or the flown-vs-booked gate, and ROADMAP:20 ("current
+  truth") still ends the story at the D4 artifact.
+- **VERIFIED GOOD, do not re-derive:** the schema 1.3 bump is genuinely additive (field-by-field
+  diff of a D4 re-run vs the committed artifact: **11 keys added, 0 removed**, only
+  `schema_version` and the PRE-EXISTING `band_covered_from_m` 13.0→13.055 change value);
+  `test_booking_gate_artifact.py` still pins `"1.2"` and stays green; `.gitignore` re-includes BOTH
+  sidecar names (`live_flight_log_*.json` already globs `<stem>.booking.json` — checked with
+  `git check-ignore`); the launcher refuses missing/malformed/not-bookable/unreadable-speed/
+  out-of-band artifacts, all named on one line, before preflight; the gate refuses the launcher's
+  bringup record BY NAME, refuses a sweep, refuses a legacy log, and refuses two disagreeing
+  bookings; the lazy `predict_forward_lead` import works from a foreign cwd; the G127 cap-check
+  numbers reproduce exactly (0.788 → exit 1 / 0.790 → exit 0; peak 2.106× at 2.596 m/s; identical
+  to `lead_margin` above ~3.86 m/s; the ONLY speeds where it adds a failure are 0.02-0.788 m/s).
+  **MUTATION: 11/11 killed** (tolerance 1.10→3.0; overspeed problem→dead; median→min;
+  `AIRBORNE_Z_M`→−1000; booking problems→notes; `is_avoidance`→False; launcher bookable-refusal
+  →dead; WPNAV line moved after `mode auto`; WPNAV line deleted; band 10..2000→1..100000).
+  **NOT TESTED:** anything in the renderer or in the container; whether MAVProxy actually rejects
+  `WPNAV_SPEED` (host-only session — G135 rests on two upstream files at the pinned SHA plus the
+  repo's own record, not on a flight).
 
 **G115-G122 (2026-09-07) — DOCUMENTATION-CONSISTENCY LENS over the uncommitted commissioning-close
 tree (3 builders, over HEAD 63e310f). Every D5/D6 number I could reproduce host-side DID reproduce

@@ -50,6 +50,12 @@ Headline sentence: **"the system found its own sensor's limit and refused to fly
 pass."** Framing constraints that travel with it: no startup narrative (sim-only, solo,
 portfolio-honest); "small dynamic intruder, exercised on scripted birds" (birds have no commercial
 referent); the NDVI detector is scaffolding, the seam is the product surface; one honest line about
-the SwathKeeper/`fieldguard` code-identifier split (ADR-011).
-</content>
-</invoke>
+the SwathKeeper/`fieldguard` code-identifier split (ADR-011). This spine still holds and is the
+backbone of the 2026-09-10 README rewrite — see [[portfolio-decision-2026-09-10]].
+
+**SUPERSEDED 2026-09-10, recorded so it isn't re-read as current:** Ruling 002 / ADR-019's
+ag-avoidance product push (forward depth camera → bar-clearing dodge → mapped-wire corridor demo) is
+**cut back to the depth camera only** — the mapped-wire corridor item is explicitly cut from scope,
+not deferred. `docs/drafts/README_FULL.md` and `README_SKELETON.md` were applied to `README.md` and
+then deleted (well, stubbed — see that memory file's file-deletion caveat). Do not draft into them
+again; edit `README.md` directly, still never without the user's review per the rule above.

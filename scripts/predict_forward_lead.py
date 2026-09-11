@@ -31,6 +31,21 @@ WHAT IT COMPUTES -- and every number is IMPORTED from whoever owns it, never res
     lead_s     = acq_range_m / (mission_speed + bird_speed)      what the geometry actually gives
     margin     = lead_s / need_s          PASS iff margin >= 1.3
 
+THE MISSION-SPEED CAP IS A CHECK, NOT A NOTE (QA finding G127, closed 2026-09-07). A mission flown
+at `v` is flown with WP_SPD = v (the waypoint speed at ADR-004's pinned SHA, in m/s), i.e. a plant
+whose velocity limit is `v` -- and below ~3.86 m/s
+the 3.00 m escape RUNS INTO that limit, so `t_req` lengthens and the headline margin (computed on the
+uncapped plant) overstates the escape it describes. Until this check existed the tool printed
+`NOTE: ... MOVES t_req to 5.326 s ... Re-derive before booking` and then exited **0 BOOKABLE** on the
+same run: an instruction to a human sitting on the exit code that says the human need not act.
+Measured on the booked live set (acq 46.0 m): below **0.788 m/s** the printed margin clears 1.3x
+while the cap-honest one does not (0.6 m/s: printed 2.810x, cap-honest 1.064x). `checks` now carries
+`escape_survives_mission_speed_cap` -- the SAME margin bar re-run against the capped plant -- so the
+verdict has to hold under both readings. Above the cap the two are identical and the check restates
+`lead_margin`; it can never fail a speed the uncapped reading would not. Note the cap-honest margin
+is NON-MONOTONE in speed (it peaks near 2.61 m/s at 2.106x and falls both ways), which is why it is
+gated rather than reasoned about.
+
 THE CONSERVATIVE READING OF "1.3x", stated because the other one is defensible and gives a
 different answer: pipeline latency is inside the multiplied quantity (`1.3 * (t_req + latency)`),
 not subtracted from the available lead before multiplying (`lead - latency >= 1.3 * t_req`). The
@@ -139,11 +154,24 @@ SWEEP_AUTHORISES_NOTHING = ("a sweep CHOOSES a mission speed and authorises noth
                             "bookable:true come only from a single --speed run on the full live "
                             "input set (FORWARD_DEPTH_SENSOR.md gate D4)")
 
-SCHEMA_VERSION = "1.2"          # 1.0 -> 1.1: top-level verdict on sweeps, corner far-clip, cx/cy
+SCHEMA_VERSION = "1.3"          # 1.0 -> 1.1: top-level verdict on sweeps, corner far-clip, cx/cy
                                 # 1.1 -> 1.2: fy/W/H + their sources, the farthest-corner bound it
                                 #             actually used, and whether the booked acquisition
                                 #             range was CLAMPED from a longer optical prefix
-READABLE_SCHEMA_VERSIONS = ("1.0", "1.1", "1.2")
+                                # 1.2 -> 1.3: a REPO-RELATIVE config path beside the absolute one,
+                                #             and the four intrinsics at FULL precision beside the
+                                #             4-dp ones (QA 2026-09-07). Purely additive: every 1.2
+                                #             field is still written, so a 1.2 reader loses nothing.
+READABLE_SCHEMA_VERSIONS = ("1.0", "1.1", "1.2", "1.3")
+
+# The sensor fields each schema level PROMISES. Cumulative: a 1.3 artifact owes 1.2's as well.
+# Checked by `validate_report` per version, so the committed 2026-09-07 artifact -- written before
+# these existed -- stays readable AS a 1.2 artifact rather than being retroactively malformed.
+SENSOR_FIELDS_1_2 = ("fy_px", "fy_source", "image_width_px", "image_height_px", "image_size_source",
+                     "clip_far_at_frame_corner_m", "clip_far_corner_ray_ratio",
+                     "clip_far_corner_pixel_uv", "acquisition_optical_prefix_m",
+                     "acquisition_clamped_from_optical_prefix")
+SENSOR_FIELDS_1_3 = ("config_relpath", "fx_px_exact", "fy_px_exact", "cx_px_exact", "cy_px_exact")
 
 # Sane bounds for a live intrinsic. Not tuning knobs -- a rejection window wide enough that no real
 # camera_info falls outside it and narrow enough that a transcription slip (a pasted `0`, a negative,
@@ -156,6 +184,17 @@ WH_RANGE_PX = (2.0, 1.0e5)
 # it is read from. Order is the order they are quoted in refusals.
 LIVE_INTRINSIC_FIELDS = (("fx", "K[0]"), ("fy", "K[4]"), ("cx", "K[2]"), ("cy", "K[5]"),
                          ("width", "width"), ("height", "height"))
+
+
+def _repo_relpath(path: Path) -> Optional[str]:
+    """`<repo>/config/depth_camera.json` -> `config/depth_camera.json`; None for anything outside
+    this repo. Schema 1.3: the artifact's `config` field is an absolute path carrying a home
+    directory that is meaningless on any other machine, and a reader cannot tell from it whether
+    the gate read THIS repo's config or a copy."""
+    try:
+        return str(Path(path).resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        return None
 
 
 def _fx_from(cam: dict) -> float:
@@ -230,16 +269,15 @@ def validate_report(rep: dict) -> dict:
                 raise ValueError(f"booking-gate artifact is missing '{k}'")
         # 1.2's whole point is that the CLAMP and the bound it was clamped against are on the
         # record; an artifact that calls itself 1.2 without them is worse than a 1.1 one, because a
-        # reader would take the absence of `..._clamped_from_optical_prefix` for `false`.
-        if ver == "1.2":
-            need = ("fy_px", "fy_source", "image_width_px", "image_height_px", "image_size_source",
-                    "clip_far_at_frame_corner_m", "clip_far_corner_ray_ratio",
-                    "clip_far_corner_pixel_uv", "acquisition_optical_prefix_m",
-                    "acquisition_clamped_from_optical_prefix")
-            absent = [k for k in need if k not in rep["sensor"]]
-            if absent:
-                raise ValueError(f"schema 1.2 booking-gate artifact is missing sensor field(s): "
-                                 f"{absent}")
+        # reader would take the absence of `..._clamped_from_optical_prefix` for `false`. 1.3 adds
+        # the repo-relative config path and the full-precision intrinsics ON TOP -- required only
+        # OF a 1.3 artifact, so the committed 1.2 one is not made malformed in hindsight.
+        need = (SENSOR_FIELDS_1_2 if ver in ("1.2", "1.3") else ()) \
+            + (SENSOR_FIELDS_1_3 if ver == "1.3" else ())
+        absent = [k for k in need if k not in rep["sensor"]]
+        if absent:
+            raise ValueError(f"schema {ver} booking-gate artifact is missing sensor field(s): "
+                             f"{absent}")
     return rep
 
 
@@ -395,11 +433,20 @@ def evaluate(mission_speed_mps: float, *, fx_px: Optional[float] = None,
     margin = lead_s / need_s
 
     # The ADR-016 am. 2 tuning-override concern, priced instead of assumed: a mission flown slower
-    # than WPNAV_SPD's 10 m/s default is flown with a LOWER speed cap, which is a different plant.
-    # The 3.00 m escape never reaches that cap, so t_req is invariant -- shown, not claimed.
+    # than WP_SPD's 10 m/s default is flown with a LOWER speed cap, which is a different plant.
+    # At the booked 5.0 m/s the 3.00 m escape never reaches that cap, so t_req is invariant -- but
+    # below ~3.86 m/s it does, and this is a CHECK rather than a note (G127; see the docstring).
     capped_plant = replace(GUIDED_DEFAULT, name=f"guided_default@v_max={mission_speed_mps:g}",
                            v_max_ne_mps=min(GUIDED_DEFAULT.v_max_ne_mps, float(mission_speed_mps)))
     t_req_capped_s = time_to_displace_s(bar_m, capped_plant)
+    need_capped_s = None if t_req_capped_s is None else t_req_capped_s + latency_s
+    margin_capped = None if need_capped_s is None else lead_s / need_capped_s
+    # ONE printed value for one quantity. The check detail and the NOTE in `format_report` both
+    # read this, so the report can never carry 0.922x in one line and 0.921x in another (the
+    # `.3f` of a raw float vs the `.3f` of its own 4-dp rounding). The `ok` below compares the
+    # UNROUNDED number: rounding before a bar is how a 1.29996x reads as a pass.
+    margin_capped_shown = None if margin_capped is None else round(margin_capped, 4)
+    cap_binds = t_req_capped_s is not None and t_req_capped_s > t_req_s + 1e-9
 
     # fy, not fx: the band is a VERTICAL extent. They are equal to 1 ULP on this mount, which is a
     # fact about the mount and not a licence to pass the horizontal focal length to a vertical one.
@@ -426,6 +473,25 @@ def evaluate(mission_speed_mps: float, *, fx_px: Optional[float] = None,
                     f"|ray| {corner_ray:.3f}x on-axis). Headroom "
                     f"{100.0 * (far_corner_m - acq_m) / acq_m:.1f} % -- NOT the "
                     f"{100.0 * (far_m - acq_m) / acq_m:.0f} % the on-axis clip suggests")},
+        # G127. The same margin bar, re-run against the plant the MISSION SPEED implies. Flying at
+        # v means WP_SPD = v, and below ~3.86 m/s the 3.00 m escape runs into that limit, so
+        # the headline margin describes an escape the vehicle cannot make. This used to be a NOTE
+        # printed on an exit-0 line ("Re-derive before booking") -- an instruction to a human,
+        # underneath the exit code that says no action is needed.
+        {"name": "escape_survives_mission_speed_cap",
+         "ok": margin_capped is not None and margin_capped >= margin_factor,
+         "detail": (
+             (f"flying at {mission_speed_mps:g} m/s means WP_SPD = {mission_speed_mps:g} m/s, "
+              f"and the {bar_m:.2f} m escape is UNREACHABLE under that cap within point_mass's 60 s "
+              f"horizon: there is no escape to book at this speed") if t_req_capped_s is None else
+             (f"the {mission_speed_mps:g} m/s mission cap lengthens the escape: t_req "
+              f"{t_req_s:.3f} -> {t_req_capped_s:.3f} s, so the cap-honest margin is "
+              f"{margin_capped_shown:.3f}x against the {margin_factor:.2f}x bar (the headline "
+              f"{margin:.3f}x is computed on the UNCAPPED plant)") if cap_binds else
+             (f"a {mission_speed_mps:g} m/s cap does not bind: the {bar_m:.2f} m escape never "
+              f"reaches the velocity limit, t_req is {t_req_s:.3f} s either way and the cap-honest "
+              f"margin {margin_capped_shown:.3f}x IS the headline margin -- checked, not "
+              f"assumed"))},
     ]
     # NOT a check. `escape_at_available_lead_m` is algebraically implied by `margin` -- an earlier
     # version listed it as a gate and claimed it cross-checked the plant model in the forward
@@ -443,6 +509,19 @@ def evaluate(mission_speed_mps: float, *, fx_px: Optional[float] = None,
         "gate": "ADR-019 item 6 (Council Ruling 002 tripwire (a)) -- the booking gate",
         "sensor": {
             "config": str(depth_config),
+            # SCHEMA 1.3. `config` is an ABSOLUTE path, so the artifact records a home directory
+            # that means nothing on any other machine; this is the same file named the way the
+            # repo names it. None when the config is not inside this repo (a test fixture, an
+            # out-of-tree copy) -- there is no repo-relative name for it, and inventing one would
+            # be worse than saying so.
+            "config_relpath": _repo_relpath(depth_config),
+            # SCHEMA 1.3. `fx_px`/`fy_px` are rounded to 4 dp for reading; these are the numbers
+            # the gate actually computed with, as STRINGS so that no reader or re-writer can round
+            # them a second time (`float(s)` recovers them exactly). The live fx/fy differ in the
+            # 13th digit on this mount -- a difference 4 dp cannot show -- and an operator
+            # cross-checking the artifact against a live camera_info needs to match digit for digit.
+            "fx_px_exact": repr(fx), "fy_px_exact": repr(fy),
+            "cx_px_exact": repr(cx), "cy_px_exact": repr(cy),
             "fx_px": round(fx, 4), "fx_source": src,
             "fy_px": round(fy, 4), "fy_source": src,
             "cx_px": cx, "cx_source": src,
@@ -500,6 +579,9 @@ def evaluate(mission_speed_mps: float, *, fx_px: Optional[float] = None,
                                              else round(t_req_capped_s, 4)),
             "speed_cap_changes_t_req": (t_req_capped_s is not None
                                         and abs(t_req_capped_s - t_req_s) > 1e-6),
+            "mission_speed_cap_is_checked": ("escape_survives_mission_speed_cap in `checks` -- the "
+                                             "margin bar re-run against the capped plant (G127); "
+                                             "these two numbers are no longer decoration"),
             "context_other_plants": {p.name: round(time_to_displace_s(bar_m, p) or float("nan"), 4)
                                      for p in PLANTS},
         },
@@ -510,9 +592,12 @@ def evaluate(mission_speed_mps: float, *, fx_px: Optional[float] = None,
             "control_tick_latency_s": tick_s,
             "pipeline_latency_s": round(latency_s, 4),
             "need_s": round(need_s, 4),
+            "need_s_at_mission_speed_cap": (None if need_capped_s is None
+                                            else round(need_capped_s, 4)),
             "required_lead_s": round(required_lead_s, 4),
             "available_lead_s": round(lead_s, 4),
             "margin": round(margin, 4),
+            "margin_at_mission_speed_cap": margin_capped_shown,
             "required_horizon_m": round(required_lead_s * closing_mps, 3),
             "acq_range_headroom_frac": round(1.0 - (required_lead_s * closing_mps) / acq_m, 4),
             "escape_at_available_lead_m": round(escape_at_lead_m, 3),
@@ -531,13 +616,31 @@ def evaluate(mission_speed_mps: float, *, fx_px: Optional[float] = None,
             "bookable": bookable,
             "exit_code": (EXIT_PASS_BOOKABLE if bookable else
                           EXIT_FAIL if not passed else EXIT_PASS_NOT_BOOKABLE),
-            "why_not_bookable": (None if bookable else
-                                 ("one or more checks failed" if not passed else
-                                  "inputs are config-sourced; ADR-019 item 6 requires the forward "
-                                  "horizon and intrinsics to come from the sensor's own live "
-                                  "camera_info and a measured render horizon")),
+            # THE CAUSE, NOT A CAUSE (QA finding G131, 2026-09-07). Live intrinsics with no
+            # --acq-range-m used to print "inputs are config-sourced", which sends the operator
+            # back to `ros2 topic echo camera_info` -- the one input they already have -- instead
+            # of to gate D3, the render measurement they are actually missing. Two different
+            # missing halves, two different sentences.
+            "why_not_bookable": (
+                None if bookable else
+                "one or more checks failed" if not passed else
+                ("live intrinsics given but no --acq-range-m (D3): the six live camera_info "
+                 "numbers are NECESSARY and NOT SUFFICIENT -- the forward horizon is a separate "
+                 "measured render horizon (docs/runbooks/FORWARD_DEPTH_SENSOR.md gate D3), and "
+                 "without it this run used the geometric upper bound computed on the host from "
+                 "config/depth_camera.json, which is booking on config prose"
+                 if live_intrinsics else
+                 "inputs are config-sourced; ADR-019 item 6 requires the forward horizon and "
+                 "intrinsics to come from the sensor's own live camera_info and a measured render "
+                 "horizon")),
         },
     }
+
+
+def _fmt_x(v: Optional[float]) -> str:
+    """A margin, or the honest word for one that does not exist (the capped plant cannot make the
+    escape at all)."""
+    return "UNREACHABLE" if v is None else f"{v:.3f}x"
 
 
 def format_report(rep: dict) -> str:
@@ -574,16 +677,26 @@ def format_report(rep: dict) -> str:
         f"{100.0 * b['acq_range_headroom_frac']:.1f} % headroom)",
     ]
     if p["speed_cap_changes_t_req"]:
+        # No longer an instruction to the operator: `escape_survives_mission_speed_cap` above has
+        # already gated this reading, so the line reports what the gate did rather than asking for
+        # a re-derivation underneath an exit code that says none is needed (G127).
         L.append(f"  NOTE: flying at {e['mission_speed_mps']:g} m/s caps the plant's speed and "
-                 f"MOVES t_req to {p['t_req_s_at_mission_speed_cap']:.3f} s -- the verdict above "
-                 f"uses the uncapped {p['t_req_s']:.3f} s. Re-derive before booking.")
+                 f"MOVES t_req to {p['t_req_s_at_mission_speed_cap']:.3f} s -- the headline margin "
+                 f"above uses the uncapped {p['t_req_s']:.3f} s. The cap-honest margin is "
+                 f"{_fmt_x(b['margin_at_mission_speed_cap'])} and is GATED by "
+                 f"escape_survives_mission_speed_cap.")
     else:
         L.append(f"  (a {e['mission_speed_mps']:g} m/s speed cap does not change t_req: the 3 m "
                  f"escape never reaches the velocity limit -- checked, not assumed)")
     if not v["pass"]:
-        L.append(f"  VERDICT: FAIL -- DO NOT BOOK at {e['mission_speed_mps']:g} m/s. Slow the "
-                 f"mission, or measure a longer horizon, and re-run. Reading the failing check "
-                 f"tells you which.")
+        # NO DIRECTION IS PRESCRIBED HERE. This line used to say "slow the mission, or measure a
+        # longer horizon" -- and both of those can be the FAILING direction: past 47.56 m a longer
+        # horizon fails the corner check, and below ~0.79 m/s a slower mission fails the speed cap.
+        # G60's family. Name the failing checks; let the operator read them.
+        L.append(f"  VERDICT: FAIL -- DO NOT BOOK at {e['mission_speed_mps']:g} m/s. Failing: "
+                 f"{', '.join(c['name'] for c in rep['checks'] if not c['ok'])}. Read those "
+                 f"detail lines: neither knob is monotone in the VERDICT, so a slower mission or a "
+                 f"longer horizon can each be the direction that fails.")
     elif v["bookable"]:
         L.append(f"  VERDICT: PASS and BOOKABLE at {e['mission_speed_mps']:g} m/s -- margin "
                  f"{b['margin']:.3f}x on live-measured inputs.")

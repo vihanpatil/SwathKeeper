@@ -53,17 +53,22 @@ force-kills any surviving sim process even on Ctrl-C. **First live run PASSED: 2
 as recording one: the 2 Hz throughput measurement that night flew an identical mission, recorded
 **3 frames and 1 of 720 cells — and this gate said PASS**, which is useless as the
 throughput-collapse regression it exists to be. The last gate is now on the yield, read from the
-clip's own `meta.json` and `heatmap/heatmap.json`: **`frames_recorded ≥ 12` and `cells_imaged ≥ 40`**,
-or FAIL. Both numbers are **floors derived from n=2** — the only two test-flights that exist (the
-48-frame / 291-cell baseline clears them by 4.0× / 7.3×; the 3-frame / 1-cell collapse fails both
-decisively) — low enough that ordinary variance on a busy laptop cannot flake them, high enough to
-catch any collapse within 4× of the measured one. They are floors, not targets, and they should rise
-once more than one healthy run exists. A flight that fails *only* the floor still tears down
-recorder-first, stitches, and writes the full record — `result: FAIL`, `failed_phase:
-evidence-yield`, the failure naming the floor, plus the new `cells_imaged` and `evidence_floor`
-fields (record schema 1.1). The floor logic is exercised offline against both committed gate records
-in `tests/test_fly_pipeline.py`; **it has never run live — the next `test-flight` is its first live
-exercise.** The same pass fixed the pane capture that made the 2 Hz run so hard to diagnose:
+clip's own `meta.json` and `heatmap/heatmap.json`, against `TF_MIN_FRAMES` / `TF_MIN_CELLS` in
+`scripts/fly_pipeline.sh` — **today `frames_recorded ≥ 300` and `cells_imaged ≥ 200`**, raised from
+the original 12 / 40 once healthy runs existed. They are floors, not targets. A flight that fails
+*only* the floor still tears down recorder-first, stitches, and writes the full record —
+`result: FAIL`, `failed_phase: evidence-yield`, the failure naming the floor, plus `cells_imaged` and
+`evidence_floor` (record schema 1.1).
+
+**The floor has run live, and it has FAILED live twice** — which is the whole point of it, and the
+reason to stop describing it as untried. The measured record, from the 14 committed
+`eval/results/testflight_gate_*.json` records (2026-08-18 .. 2026-09-06): **12 PASS / 2 FAIL**, every
+run 233-303 s. Both failures are `failed_phase: evidence-yield` on 2026-08-22 — **7 frames / 37
+cells** and **7 frames / 15 cells** against the then-12 / 40 bar, in the window the Fast DDS SHM
+defect was live. The two most recent runs (2026-09-06) passed the **raised** 300 / 200 floor with
+**681 / 415** and **673 / 415**. The floor logic is also exercised offline in
+`tests/test_fly_pipeline.py`, which reads the two constants out of the script so the tests pin the
+logic rather than the numbers. The same pass fixed the pane capture that made the 2 Hz run so hard to diagnose:
 `capture-pane` renders the whole 80×24 pane grid, so a quiet pane's output sits at the *top* and a
 plain `tail` returned the blank rows underneath it — which is why `pane_tails["ndvi"]` is empty in
 both committed records. Tails now drop blank rows before tailing, so the ndvi node's
@@ -76,10 +81,13 @@ session in other tabs, or a tmux session that was killed without `down`. Every g
 second micro-ROS agent quietly loses the bind on UDP 2019. `status` says so explicitly when it sees
 green gates with no session; `docker restart fieldguard-sim` clears the container.
 
-> **Verification status: the launcher has flown.** `test-flight` completed a live unattended run on
-> 2026-08-18 in 253 s, result PASS — gate record `eval/results/testflight_gate_20260818T222031Z.json`,
-> clip `eval/results/clips/real_flight_20260818T221641Z` (48 frames, 42 with RGB, **0 stale-pose
-> pairs**), stitch exit 0. Proven in that one run, with the record's own evidence lines as the
+> **Verification status: the launcher has flown 14 times** (`eval/results/testflight_gate_*.json`,
+> 2026-08-18 .. 2026-09-06: **12 PASS / 2 FAIL**, both failures on the evidence-yield floor, 233-303 s
+> each). The first live unattended run was 2026-08-18, 253 s, result PASS — gate record
+> `eval/results/testflight_gate_20260818T222031Z.json`, clip
+> `eval/results/clips/real_flight_20260818T221641Z` (48 frames, 42 with RGB, **0 stale-pose pairs**),
+> stitch exit 0. Everything below is what **that first run** proved, with the record's own evidence
+> lines as the
 > receipt: all four bringup gates firing against a real container (Gazebo advertisements 8 s,
 > ROS 2 crossover 12 s, **render-alive probe 19 s, passed on attempt 1**, UDP 2019 at 22 s); the
 > DDS + EKF3 + GPS readiness wait completing at 38 s before a single key was sent; the recipe typed
@@ -89,14 +97,15 @@ green gates with no session; `docker restart fieldguard-sim` clears the containe
 > in the script now has a measured margin: readiness 38 s of 240, arm ~0 s of 90, first waypoint
 > 15 s of 300, whole flight 192 s of the 1500 s budget.
 >
-> Still unproven, and worth watching on the first real demo flight: the **render-alive DEGRADED
-> restart path** (the probe has never yet failed, so `restart_world` has never run), the
-> already-running **refusal** actually refusing (its trigger was observed — `status` showed three
-> green gates against a live manual bringup with no session — but `up` has not been made to refuse),
-> the `NOTHING RECORDED` and finalize-timeout branches of `down`, and the accels-inconsistent arm
-> retry. Also unproven at scale: this gate flew the 2-lane mission for 192 s and recorded 48 frames;
-> the demo flight is ~5 sim-minutes and the runbook budgets 35-45 min end to end, which is where the
-> known recording-throughput limit bites and where a long-lived Gazebo has degraded before.
+> Still unproven after 14 runs, and worth watching: the **render-alive DEGRADED restart path** (the
+> probe has never failed, so `restart_world` has never run), the already-running **refusal** actually
+> refusing (its trigger was observed — `status` showed three green gates against a live manual
+> bringup with no session — but `up` has not been made to refuse), the `NOTHING RECORDED` and
+> finalize-timeout branches of `down`, and the accels-inconsistent arm retry. **No longer unproven:**
+> the evidence-yield floor, which failed live twice on 2026-08-22 and has since passed at the raised
+> 300 / 200 bar; and the throughput ceiling, which the Fast DDS SHM fix took to 681 recorded frames
+> on a 2-lane flight. The demo flight is still ~5 sim-minutes against a 35-45 min budget, and a
+> long-lived Gazebo has degraded before.
 >
 > Before the live run this was verified by `bash -n` and `shellcheck` clean; `--dry-run` for every
 > subcommand, confirmed to leave no trace (no Docker call, no tmux server, not even a temp file); a
@@ -260,6 +269,29 @@ arm throttle
 AUTO entry at item 1 (re-entering AUTO after a finished mission is otherwise a no-op — learned
 live); `AUTO_OPTIONS 3` lets AUTO take off armed.
 *Look for:* `ARMED`, `height 15`, then `Reached command #N` marching through the lanes.
+*Speed:* **this recipe books none** — the mission flies ArduCopter's `WP_SPD` default of 10.0 m/s
+(10.58 m/s peak, measured on the 2026-09-06 scripted test-flight). That is fine for the NDVI survey
+and the demo. It is **not** fine for a dodge take, whose booking gate exits 1 at that speed.
+
+**Booked variant — the one an avoidance take flies.** `scripts/fly_pipeline.sh --booking
+eval/results/booking_gate_20260907T064136Z.json up` prints exactly this instead. One extra line,
+carrying the booked speed **verbatim in m/s** (`WP_SPD`'s unit; there is no conversion and so no
+rounding), with the other `param set`s so it lands before **both** mode changes — AUTO reads the
+speed when it takes the leg:
+
+```
+wp load /workspace/fieldguard/config/missions/boustrophedon.waypoints
+param set MIS_RESTART 0
+param set AUTO_OPTIONS 3
+param set WP_SPD 5.0
+wp set 1
+mode guided
+mode auto
+arm throttle
+```
+Both blocks are byte-diffed against the launcher by `tests/test_fly_pipeline.py`, so what the recipe
+pane prints and what this page prints cannot drift. A take flown faster than booked is not the
+authorised take — see [`AVOIDANCE_REAL_DETECTION.md`](AVOIDANCE_REAL_DETECTION.md) §0g.
 
 ## Shell 5 — the birds (start AFTER `height 15`)
 

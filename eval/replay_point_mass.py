@@ -1581,27 +1581,50 @@ def _cf_summary(rows: Sequence[dict], bar: float) -> dict:
             "bar_m": bar}
 
 
-_TUNING_PREFIXES = ("WPNAV_", "GUID_", "PSC_", "ANGLE_MAX", "ATC_ANGLE_MAX")
+# `WP_` is the group prefix AC_WPNav is REGISTERED under at ADR-004's pinned SHA
+# (ArduCopter/Parameters.cpp:370 `GOBJECTPTR(wp_nav, "WP_", AC_WPNav)`), so it subsumes the legacy
+# `WPNAV_` spelling; both are kept because a stale doc or an older firmware would use the old one
+# and either would still be an override this study has to see. Added 2026-09-07 with the launcher's
+# booked-speed injection (QA finding G138b): without it, correcting the launcher's wrong-name
+# `WPNAV_SPEED 500` line to the real `WP_SPD 5` one would have made this scanner go silent on a
+# real, live override.
+_TUNING_PREFIXES = ("WP_", "WPNAV_", "GUID_", "PSC_", "ANGLE_MAX", "ATC_ANGLE_MAX")
 # The SECOND surface a parameter can be set on in this project, and the one the first version of
 # this scan missed entirely (QA finding M5, 2026-08-26). Params are typed at the MAVProxy prompt by
 # the bringup scripts -- `scripts/fly_pipeline.sh` and `scripts/run_farm_mission.sh` already do
-# `param set MIS_RESTART / AUTO_OPTIONS / DISARM_DELAY` -- and ADR-017's speed doctrine will land
-# as `param set WPNAV_SPD <n>` in exactly that block. A scan that only globs `config/**/*.parm`
+# `param set MIS_RESTART / AUTO_OPTIONS / DISARM_DELAY` -- and ADR-017's speed doctrine landed
+# as `param set WP_SPD <n>` in exactly that block. A scan that only globs `config/**/*.parm`
 # would keep printing "defaults ARE what flew" on the very run that stopped being true.
 _PARAM_SET_GLOBS = ("scripts/*.sh", "docs/runbooks/*.md", "scripts/*.py")
 _PARAM_SET_RE = re.compile(r"param\s+set\s+([A-Z0-9_]+)", re.IGNORECASE)
+# THE ONE OVERRIDE THIS REPO IS ALLOWED TO CARRY, and why it is named here rather than allowlisted
+# by path. `scripts/fly_pipeline.sh --booking` injects `param set WP_SPD <booked m/s>` into the fly
+# recipe so a dodge take FLIES the speed `predict_forward_lead.py` authorised (ADR-019/ADR-020, QA
+# G128). That is a real override of a real plant constant -- it lowers `v_max_ne_mps` from
+# WP_SPD_DEFAULT 10.0 to whatever was booked -- so it must NOT be scanned away; it is warranted,
+# named, and reported with its consequence, and any OTHER key still trips the loud statement. The
+# three logged encounters all predate it and were flown unbooked, so this study's constants are
+# still what flew on them; a future BOOKED flight is a different plant and its replay must say so.
+WARRANTED_OVERRIDES = {
+    "WP_SPD": ("the booked mission speed: scripts/fly_pipeline.sh --booking types `param set WP_SPD "
+               "<booked m/s>` so a dodge take flies the speed predict_forward_lead.py authorised "
+               "(ADR-019/ADR-020). It LOWERS guided_default.v_max_ne_mps from WP_SPD_DEFAULT 10.0 "
+               "to the booked value for that flight only; the three replayed encounters were all "
+               "flown unbooked, before it existed."),
+}
 # THE THIRD SURFACE, and the reason it is a written warrant rather than a scan: SITL's own startup
 # defaults. `sim_vehicle.py` loads Tools/autotest/default_params/copter.parm plus the frame file
 # (gazebo-iris.parm) before anything in this repo runs. Both were read at the pinned SHA
-# 9895756d874ec9128d50918f6747a83706f4e221 and neither sets any WPNAV_*, PSC_*, GUID_* or
+# 9895756d874ec9128d50918f6747a83706f4e221 and neither sets any WP_*, WPNAV_*, PSC_*, GUID_* or
 # ANGLE_MAX/ATC_ANGLE_MAX key. That is a fact about the FIRMWARE tree, not this repo, so no scan
 # here can keep checking it -- it is carried in the artifact so the claim travels with the numbers
 # instead of living in a reviewer's notes.
 SITL_DEFAULT_PARAM_WARRANT = (
-    "Tools/autotest/default_params/copter.parm and gazebo-iris.parm at ArduPilot "
+    "Tools/autotest/default_params/copter.parm (90 lines) and gazebo-iris.parm (13) at ArduPilot "
     "9895756d874ec9128d50918f6747a83706f4e221 -- the files sim_vehicle.py loads before this repo's "
-    "own --add-param-file -- set no WPNAV_*, PSC_*, GUID_* or ANGLE_MAX key. Verified by reading "
-    "them at the pinned SHA (2026-08-26); re-verify if ADR-004's pins move.")
+    "own --add-param-file -- set no WP_*, WPNAV_*, PSC_*, GUID_* or ANGLE_MAX key. Verified by "
+    "reading them at the pinned SHA (2026-08-26; WP_* re-verified 2026-09-07); re-verify if "
+    "ADR-004's pins move.")
 
 
 def _scan_parms(root: Path) -> List[Path]:
@@ -1624,7 +1647,13 @@ def _tuning_override_scan(root: Path = REPO_ROOT) -> dict:
       1. every `*.parm` under the tree, token at line start;
       2. every `param set <KEY>` in the bringup scripts and runbooks -- the MAVProxy surface.
     `root` is a parameter so the scanner can be pointed at a planted tree in a test; a scanner
-    nothing exercises is a scanner that can be neutered without a single red test."""
+    nothing exercises is a scanner that can be neutered without a single red test.
+
+    THREE OUTCOMES, not two (2026-09-07). Since the launcher books a mission speed into the recipe,
+    "clean" is no longer the only honest green: a hit whose KEY is in `WARRANTED_OVERRIDES` is
+    reported WITH its warrant and its consequence, and any other key still produces the loud
+    TUNING OVERRIDE FOUND statement. The warrant is on the key, never on a path -- allowlisting
+    `scripts/fly_pipeline.sh` would blind the scan to the next parameter typed into that file."""
     hits = []
     for path in sorted(_scan_parms(root)):
         for i, line in enumerate(path.read_text().splitlines(), 1):
@@ -1641,20 +1670,38 @@ def _tuning_override_scan(root: Path = REPO_ROOT) -> dict:
                 for key in _PARAM_SET_RE.findall(line):
                     if any(key.upper().startswith(p) for p in _TUNING_PREFIXES):
                         hits.append(f"{path.relative_to(root)}:{i} {key.upper()} (param set)")
-    if hits:
-        return {"overrides": hits, "sitl_default_warrant": SITL_DEFAULT_PARAM_WARRANT,
+    keys = sorted({hit.split(" ")[1] for hit in hits})
+    unwarranted = [k for k in keys if k not in WARRANTED_OVERRIDES]
+    if unwarranted:
+        return {"overrides": hits, "unwarranted_override_keys": unwarranted,
+                "sitl_default_warrant": SITL_DEFAULT_PARAM_WARRANT,
                 "statement": ("TUNING OVERRIDE FOUND -- this study's plant constants are firmware "
-                              f"DEFAULTS and are no longer what flies: {hits}. Re-read "
-                              "eval/point_mass.py before believing any Q1/Q2/Q3 number below.")}
+                              f"DEFAULTS and are no longer what flies: {unwarranted} in {hits}. "
+                              "Re-read eval/point_mass.py before believing any Q1/Q2/Q3 number "
+                              f"below. Third surface, by written warrant rather than scan: "
+                              f"{SITL_DEFAULT_PARAM_WARRANT}")}
+    if hits:
+        return {"overrides": hits, "unwarranted_override_keys": [],
+                "sitl_default_warrant": SITL_DEFAULT_PARAM_WARRANT,
+                "statement": (
+                    f"CHECKED at run time on BOTH surfaces. This repo carries exactly "
+                    f"{len(keys)} override key(s), all WARRANTED -- {hits} -- and no other "
+                    f"{'/'.join(_TUNING_PREFIXES)} key in any parm file NOR in any `param set` "
+                    f"line in {'/'.join(_PARAM_SET_GLOBS)}. "
+                    + " ".join(f"{k}: {WARRANTED_OVERRIDES[k]}" for k in keys)
+                    + f" Third surface, by written warrant rather than scan: "
+                      f"{SITL_DEFAULT_PARAM_WARRANT} So ArduCopter's defaults ARE what flew on all "
+                      f"three encounters, every one of which predates the booking.")}
     parms = sorted(str(p.relative_to(root)) for p in _scan_parms(root))
-    return {"overrides": [], "sitl_default_warrant": SITL_DEFAULT_PARAM_WARRANT,
+    return {"overrides": [], "unwarranted_override_keys": [],
+            "sitl_default_warrant": SITL_DEFAULT_PARAM_WARRANT,
             "statement": (f"CHECKED at run time on BOTH surfaces: no {'/'.join(_TUNING_PREFIXES)} "
                           f"key appears in any parm file ({', '.join(parms) or 'none'}) NOR in any "
                           f"`param set` line in {'/'.join(_PARAM_SET_GLOBS)} (the MAVProxy prompt, "
                           f"where this project really sets MIS_RESTART and AUTO_OPTIONS, and where "
-                          f"ADR-017's speed doctrine will land). Third surface, by written warrant "
-                          f"rather than scan: {SITL_DEFAULT_PARAM_WARRANT} So ArduCopter's "
-                          f"defaults ARE what flew on all three encounters.")}
+                          f"ADR-017's speed doctrine landed as `param set WP_SPD`). Third surface, "
+                          f"by written warrant rather than scan: {SITL_DEFAULT_PARAM_WARRANT} So "
+                          f"ArduCopter's defaults ARE what flew on all three encounters.")}
 
 
 def assumptions_block() -> dict:

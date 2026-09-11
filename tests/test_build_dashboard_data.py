@@ -27,6 +27,8 @@ tooling and a committed artifact tree, not the planning package.
 import hashlib
 import io
 import json
+import math
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -48,6 +50,26 @@ DATA = REPO_ROOT / "dashboard" / "data"
 
 def load(rel):
     return json.loads((DATA / rel).read_text())
+
+
+# Published floats vs freshly derived ones: `rel_tol=1e-9`, and the tolerance is not slack.
+# TWO real effects sit under it, both measured (2026-09-10):
+#   * the writer rounds every DERIVED float to 12 significant digits so the tree is byte-identical
+#     on every machine (build_dashboard_data.DERIVED_FLOAT_SIG_DIGITS -- read its comment; that
+#     rounding is what makes `--check`'s byte comparison honest on Linux and macOS alike);
+#   * libm is not IEEE-exact: the same `hypot` chain on the same inputs gave
+#     0.03929119396148754 on macOS/arm64 and 0.039291193961487544 on ubuntu/CI -- 1 ulp, and it
+#     was 16 days of red CI.
+# 1e-9 is three orders TIGHTER than the rounding it has to absorb, and nine orders tighter than the
+# 4 decimals the page renders or the 0.5 m / 3.00 m bars the gates apply: a real disagreement
+# between the page and the gate still fails here. Only the noise passes.
+FLOAT_REL_TOL = 1e-9
+
+
+def assert_float_matches(case, published, fresh, msg=""):
+    case.assertTrue(math.isclose(published, fresh, rel_tol=FLOAT_REL_TOL),
+                    f"{msg}: published {published!r} vs freshly derived {fresh!r} "
+                    f"(rel_tol {FLOAT_REL_TOL})")
 
 
 class TestFreshness(unittest.TestCase):
@@ -93,6 +115,57 @@ class TestFreshness(unittest.TestCase):
             self.assertIn("verdicts.json", err.getvalue())
 
 
+class TestPublishedFloatsArePlatformStable(unittest.TestCase):
+    """The freshness pin above is a BYTE comparison, so the bytes must not depend on the machine.
+
+    They did. `hypot`/`sqrt` are libm, not IEEE-exact, and the same CPA geometry over the same
+    committed log produced 0.03929119396148754 on macOS/arm64 and 0.039291193961487544 on
+    ubuntu/CI. The tree was therefore permanently "stale" in CI and permanently fresh on the
+    author's laptop: 16 days of a red that belonged to nobody, behind a red that was declared.
+    Rounding every derived float to 12 significant digits at WRITE time fixes the artifact instead
+    of loosening the check -- these three tests are what stops that from silently regressing."""
+
+    # The two floats above, verbatim. They are 1 ulp apart and both are real measurements of the
+    # same quantity on the two platforms this project is built on.
+    MACOS_CPA_M = 0.03929119396148754
+    LINUX_CPA_M = 0.039291193961487544
+
+    def test_two_platforms_one_ulp_apart_serialise_to_the_same_bytes(self):
+        self.assertNotEqual(self.MACOS_CPA_M, self.LINUX_CPA_M,
+                            "these must be genuinely different floats or this test proves nothing")
+        as_written = [json.dumps(BD._platform_stable({"cpa_m": v}), indent=1, sort_keys=True)
+                      for v in (self.MACOS_CPA_M, self.LINUX_CPA_M)]
+        self.assertEqual(as_written[0], as_written[1],
+                         "a 1-ulp platform difference still reaches the published bytes -- the "
+                         "freshness pin will call a fresh tree stale on the other machine")
+
+    def test_a_difference_a_reader_could_see_still_changes_the_bytes(self):
+        """The negative control. Rounding may swallow libm noise and NOTHING else: a change 4
+        orders of magnitude below the page's own display precision must still move the bytes."""
+        nudged = self.MACOS_CPA_M * (1 + 1e-9)
+        self.assertNotEqual(json.dumps(BD._platform_stable({"cpa_m": self.MACOS_CPA_M})),
+                            json.dumps(BD._platform_stable({"cpa_m": nudged})),
+                            "the rounding is coarse enough to hide a real change")
+
+    def test_every_derived_file_in_the_published_tree_is_already_stable(self):
+        """And the committed tree obeys it: re-rounding any DERIVED file is a no-op. (The two
+        verbatim copies are excluded by name -- a copy is the source's bytes, not ours to round.)"""
+        copies = {f"clips/{name}/{f}" for name in BD.CLIP_NAMES
+                  for f in ("heatmap.json", "meta.json")}
+        checked = 0
+        for path in sorted(DATA.rglob("*.json")):
+            rel = str(path.relative_to(DATA))
+            if rel in copies:
+                continue
+            parsed = json.loads(path.read_text())
+            self.assertEqual(BD._platform_stable(parsed), parsed,
+                             f"{rel} carries a float with more than "
+                             f"{BD.DERIVED_FLOAT_SIG_DIGITS} significant digits -- it was not "
+                             f"written through Build.derive, or the rounding was bypassed")
+            checked += 1
+        self.assertGreater(checked, 0, "no derived files found -- this test checked nothing")
+
+
 class TestProvenance(unittest.TestCase):
     """Every declared source is a real file, and every copy is byte-identical to it."""
 
@@ -106,15 +179,39 @@ class TestProvenance(unittest.TestCase):
             self.assertEqual(len(blob), src["bytes"], src["path"])
             self.assertEqual(hashlib.sha256(blob).hexdigest(), src["sha256"], src["path"])
 
-    def test_flight_logs_and_markers_are_verbatim_copies(self):
+    def test_flight_logs_and_markers_are_NOT_copied_they_are_read_in_place(self):
+        """The de-duplication pin (2026-09-10). The logs and markers are committed evidence at
+        eval/results/; copying them under dashboard/data/ put 140,942 lines of identical JSON in
+        the repository twice, and a copy of evidence is a thing that can disagree with it. The
+        page joins `log`/`marker` onto its own EVIDENCE root instead. If anything ever re-creates
+        those copies, this fails -- and so does the size pin below."""
+        self.assertFalse((DATA / "flights").exists(),
+                         "dashboard/data/flights/ is back: the flight logs are being committed "
+                         "twice again. The page reads eval/results/ in place (app.js EVIDENCE).")
+        published = load("verdicts.json")["flights"]
         for stem in BD.FLIGHT_STEMS:
+            entry = published[stem]
             src = BD.RESULTS / f"{stem}.json"
-            self.assertEqual((DATA / "flights" / f"{stem}.json").read_bytes(), src.read_bytes(),
-                             f"{stem}: published log is not a byte-identical copy")
+            self.assertEqual(entry["log"], src.name, stem)
+            self.assertEqual(REPO_ROOT / entry["evidence_dir"] / entry["log"], src, stem)
+            self.assertTrue(src.exists(), f"{stem}: the evidence the page points at is not there")
             marker = GATE.marker_path_for(src)
             if marker.exists():
-                self.assertEqual((DATA / "flights" / marker.name).read_bytes(), marker.read_bytes(),
-                                 f"{stem}: published safety-finding marker differs from the source")
+                self.assertEqual(entry["marker"], marker.name, stem)
+                self.assertTrue((REPO_ROOT / entry["evidence_dir"] / entry["marker"]).exists(), stem)
+
+    def test_the_evidence_it_points_at_is_committed_not_just_present(self):
+        """`eval/results/*` is gitignored with a by-name re-include list. If that re-include is
+        ever dropped, these files vanish from a fresh checkout -- and the page, which no longer
+        carries its own copy, would 404 on GitHub Pages while still working on the author's disk.
+        `git ls-files` is the only thing that can tell those two states apart."""
+        tracked = subprocess.run(["git", "ls-files", "--", "eval/results"], cwd=REPO_ROOT,
+                                 capture_output=True, text=True, check=True).stdout.split()
+        for stem in BD.FLIGHT_STEMS:
+            self.assertIn(f"eval/results/{stem}.json", tracked, stem)
+            marker = GATE.marker_path_for(BD.RESULTS / f"{stem}.json")
+            if marker.exists():
+                self.assertIn(f"eval/results/{marker.name}", tracked, marker.name)
 
     def test_heatmaps_and_clip_meta_are_verbatim_copies(self):
         for name in BD.CLIP_NAMES:
@@ -128,11 +225,6 @@ class TestProvenance(unittest.TestCase):
         """Everything served must be something the build declares -- an orphan file under data/ is
         a byte a reader would take as evidence and nothing produced."""
         expected = set()
-        for stem in BD.FLIGHT_STEMS:
-            expected.add(f"flights/{stem}.json")
-            marker = GATE.marker_path_for(BD.RESULTS / f"{stem}.json")
-            if marker.exists():
-                expected.add(f"flights/{marker.name}")
         for name in BD.CLIP_NAMES:
             expected |= {f"clips/{name}/heatmap.json", f"clips/{name}/meta.json",
                          f"clips/{name}/tree_check.json"}
@@ -186,7 +278,8 @@ class TestVerdictsArePublishedHonestly(unittest.TestCase):
             if "segment_index" not in cpa:
                 continue
             log = json.loads((BD.RESULTS / f"{stem}.json").read_text())
-            self.assertEqual(cpa["cpa_m"], GATE.closest_approach(log)[0], stem)
+            assert_float_matches(self, cpa["cpa_m"], GATE.closest_approach(log)[0],
+                                 f"{stem}: the drawn CPA is not the gate's CPA")
             path = log["flown_path_enu"]
             self.assertLess(cpa["segment_index"], len(path) - 1, stem)
 
@@ -208,7 +301,7 @@ class TestSchemaSanity(unittest.TestCase):
         cell with no ledger row (or the reverse) is a cell that could be silently skipped."""
         ids = {c["cell_id"] for c in load("field.json")["cells"]}
         for stem in BD.FLIGHT_STEMS:
-            log = load(f"flights/{stem}.json")
+            log = json.loads((BD.RESULTS / f"{stem}.json").read_text())
             self.assertEqual({r["cell_id"] for r in log["coverage_ledger"]}, ids, stem)
             self.assertTrue(all(r["status"] in ("covered", "debt") for r in log["coverage_ledger"]),
                             f"{stem}: a non-terminal ledger status -- absence from the ledger IS the bug")
@@ -232,14 +325,17 @@ class TestSchemaSanity(unittest.TestCase):
             published = load(f"clips/{name}/tree_check.json")
             for key in ("cells_imaged", "cells_total", "trees_imaged", "trees_canopy_grade",
                         "median_lift", "soil_modal_ndvi", "displaced_cells", "passed"):
-                self.assertEqual(published[key], fresh[key], f"{name}.{key}")
+                if isinstance(fresh[key], float):
+                    assert_float_matches(self, published[key], fresh[key], f"{name}.{key}")
+                else:
+                    self.assertEqual(published[key], fresh[key], f"{name}.{key}")
 
     def test_airborne_window_is_derived_not_guessed(self):
         """The replay opens on the airborne window instead of a long parked prologue (40-52 % of the
         ticks on two of the three logs). The rule must be re-derivable and must not be a hand-picked
         tick, so it is recomputed here from the published path and compared field by field."""
         for stem, entry in load("verdicts.json")["flights"].items():
-            path = load(f"flights/{stem}.json")["flown_path_enu"]
+            path = json.loads((BD.RESULTS / f"{stem}.json").read_text())["flown_path_enu"]
             self.assertEqual(entry["airborne"], BD.airborne_window(path), stem)
             air = entry["airborne"]
             self.assertTrue(air["found"], f"{stem}: no airborne window found in a flight log")

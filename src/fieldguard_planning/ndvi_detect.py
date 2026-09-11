@@ -143,6 +143,12 @@ def detect_ndvi(ndvi: np.ndarray, thresh: float, min_area: int = DEFAULT_MIN_ARE
 # into a threat estimate, and is what `avoidance_node.py --detect` plugs into `detection_source`.
 # ==================================================================================================
 
+# What this detector calls itself, in the `Detection` and in the flight log. ONE home, and the
+# sibling of `depth_detect.SOURCE_TAG`: `avoidance_node.detection_source_name` reads the tag off the
+# source that RAN rather than inferring it from a duck-type test, because `hasattr(source,
+# "on_frame")` is true of BOTH frame detectors and labelled a depth flight `ndvi_blob`.
+SOURCE_TAG = "ndvi_blob"
+
 # The bird radius the range estimate assumes, in metres. The world's birds are 0.18 m
 # (`config/birds/farm_world_birds.json`), and this is DELIBERATELY smaller, for two reasons:
 #   1. Range scales linearly with the assumed radius, so under-estimating it places the bird NEARER
@@ -190,7 +196,7 @@ def box_to_detection(box: Sequence[float], intr: CameraIntrinsics, drone_pos_enu
     pos = pixel_at_depth_to_enu(0.5 * (x0 + x1), 0.5 * (y0 + y1), depth_m, intr,
                                 drone_pos_enu, drone_quat_xyzw, mount_offset_body_m)
     return Detection(position_enu=pos, frame_id=int(frame_id), stamp_s=float(stamp_s),
-                     source="ndvi_blob", track_id=None, confidence=1.0)
+                     source=SOURCE_TAG, track_id=None, confidence=1.0)
 
 
 class NdviDetectionSource:
@@ -220,6 +226,10 @@ class NdviDetectionSource:
     # truncated window is visible rather than implied (same shape as RecorderCounters).
     WALL_MS_WINDOW = 10000
 
+    # What the flight log calls this source. Read off the instance by
+    # `avoidance_node.detection_source_name`, so the log names the detector that actually ran.
+    SOURCE_TAG = SOURCE_TAG
+
     def __init__(self, thresh: float, *, intr: Optional[CameraIntrinsics] = None,
                  min_area: int = DEFAULT_MIN_AREA, max_area: int = DEFAULT_MAX_AREA,
                  radius_prior_m: float = BIRD_RADIUS_PRIOR_M,
@@ -239,6 +249,7 @@ class NdviDetectionSource:
         self._frame_index = 0
         self.ndvi_msgs_received = 0
         self.dropped_no_intrinsics = 0
+        self.dropped_frame_shape_mismatch = 0
         self.dropped_no_pose_pair = 0
         self.dropped_stale_pose_pair = 0
         self.frames_with_detection = 0
@@ -249,6 +260,22 @@ class NdviDetectionSource:
 
     def set_intrinsics(self, intr: CameraIntrinsics) -> None:
         self.intr = intr
+
+    def _frame_matches_intrinsics(self, ndvi) -> bool:
+        """Does this frame have the shape the armed `camera_info` describes?
+
+        The same guard `depth_detect.DepthDetectionSource` carries (2026-09-10 QA: the depth seam
+        made it a HARD pre-registered bar while the band that has actually flown had no analogue).
+        `avoidance_node.decode_ndvi_frame` proves the WIRE is self-consistent (encoding, step,
+        payload, endianness); this is the other half of the geometry -- that the frame is the one
+        the intrinsics describe. A byte-perfect 320x240 frame ranged with 640x480 intrinsics puts
+        the same bird at twice the range and below the ground plane, which is how a detected bird
+        becomes a no-threat with every counter clean. Only a 2-D `shape` is judged; a frame object
+        without one is left to `detect_ndvi`'s own contract."""
+        shape = getattr(ndvi, "shape", None)
+        if shape is None or len(shape) != 2:
+            return True
+        return (int(shape[0]), int(shape[1])) == (int(self.intr.height_px), int(self.intr.width_px))
 
     def on_frame(self, stamp_s: float, ndvi, drone_pos_enu: Optional[Vec3],
                  drone_quat_xyzw: Optional[QuatXYZW],
@@ -272,6 +299,12 @@ class NdviDetectionSource:
         try:
             if self.intr is None:
                 self.dropped_no_intrinsics += 1
+                return self._latest
+            if not self._frame_matches_intrinsics(ndvi):
+                # Counted and dropped rather than raised, for the depth seam's reason: the wrong
+                # answer here is a confident bird tens of metres from where it is, and a detector
+                # that drops every frame with a counter saying why is diagnosable from the artifact.
+                self.dropped_frame_shape_mismatch += 1
                 return self._latest
             if drone_pos_enu is None or drone_quat_xyzw is None:
                 self.dropped_no_pose_pair += 1
@@ -315,6 +348,7 @@ class NdviDetectionSource:
         return {
             "ndvi_msgs_received": int(self.ndvi_msgs_received),
             "dropped_no_intrinsics": int(self.dropped_no_intrinsics),
+            "dropped_frame_shape_mismatch": int(self.dropped_frame_shape_mismatch),
             "dropped_no_pose_pair": int(self.dropped_no_pose_pair),
             "dropped_stale_pose_pair": int(self.dropped_stale_pose_pair),
             "frames_detected_on": int(self._frame_index),
@@ -326,6 +360,11 @@ class NdviDetectionSource:
             "detect_wall_ms_n": int(self._wall_ms_n),
             "note": ("ndvi_msgs_received counts every frame handed to on_frame BEFORE any guard; "
                      "frames_detected_on is the subset that actually reached the detector. "
+                     "dropped_frame_shape_mismatch counts frames whose shape is not the armed "
+                     "camera_info's (height_px, width_px) -- a frame whose shape is not the armed "
+                     "camera_info's places the obstacle tens of metres from where it is; a non-zero "
+                     "count means the two halves of the geometry disagree and the detector was "
+                     "blind for that many frames. "
                      "detect_wall_ms times the whole on_frame body on the node's single-threaded "
                      "executor, which shares it with the 5 Hz control tick; null means no sample, "
                      "never zero."),

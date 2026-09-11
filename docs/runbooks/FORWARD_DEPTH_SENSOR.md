@@ -48,7 +48,7 @@ python3 -m pytest tests/fieldguard_planning/test_depth_detect.py \
 
 Measured on the committed artifacts *(host, 2026-08-26)*: the static gate passes **23/23**; the
 sweep passes every mission speed from 2.0 to 9.0 m/s and **FAILs at 10.0 m/s** (ArduCopter's own
-`WPNAV_SPD` default), with margin 1.811× and 28.2 % horizon headroom at the recommended **5.0 m/s**.
+`WP_SPD` default), with margin 1.811× and 28.2 % horizon headroom at the recommended **5.0 m/s**.
 
 **The sweep is for CHOOSING a speed, not for authorising a flight.** It runs on
 `config/depth_camera.json` numbers, so it exits **3** — PASS but NOT BOOKABLE — exactly like the
@@ -364,7 +364,7 @@ principal point outside the frame. **Exit 2 is never a statement about the senso
 | exit | meaning | what to do |
 |---|---|---|
 | **0** | PASS **and BOOKABLE** — margin ≥ 1.3× on live-measured inputs | book the dodge flight |
-| **1** | FAIL | **do not book.** Slow the mission or lengthen the horizon; the failing check names which |
+| **1** | FAIL | **do not book.** Read the failing check — **it prescribes no direction, because neither knob is monotone in the verdict**: past 47.56 m a *longer* horizon fails, below ~0.79 m/s a *slower* mission fails |
 | **2** | REFUSAL — no `--speed`, part of the six-number live set, live `W×H` ≠ config, or any unusable number | fix the input; **nothing was decided about the sensor** |
 | **3** | PASS but **NOT BOOKABLE** — config-sourced inputs, live intrinsics **without** `--acq-range-m`, or a `--sweep` in which some row passes | you skipped D3. The design is sound; the sensor is unmeasured |
 
@@ -382,10 +382,16 @@ and was used to justify passing "the safe end" when unsure, where the safe end i
 failing one.)*
 
 * **Margin falls monotonically with mission speed** on the uncapped plant — verified 0.2–14.0 m/s
-  at 0.05 steps on the live set, **zero inversions**. But **below ~3.5 m/s the mission-speed cap
-  lengthens `t_req`, and the verdict does not include that**: at 0.6 m/s the tool prints its own
-  `NOTE: flying at 0.6 m/s caps the plant's speed and MOVES t_req to 5.326 s — the verdict above
-  uses the uncapped 1.792 s. Re-derive before booking.` Slower is not automatically safer.
+  at 0.05 steps on the live set, **zero inversions**. But **below ~3.86 m/s the mission-speed cap
+  lengthens `t_req`**, so the headline margin describes an escape the vehicle cannot make. Since
+  2026-09-07 that is a **check, not a note** — `escape_survives_mission_speed_cap` re-runs the same
+  1.3× bar against the capped plant, and the verdict has to hold under both readings (QA finding
+  G127). Measured on the booked live set: **below 0.788 m/s the run now exits 1** where it used to
+  print PASS/BOOKABLE plus `NOTE: … Re-derive before booking` — an instruction to a human sitting
+  underneath the exit code that says none is needed. At 0.6 m/s: headline **2.810×**, cap-honest
+  **1.064×**. The cap-honest margin is itself **non-monotone** (it peaks near 2.61 m/s at 2.106×
+  and falls both ways), which is why it is gated rather than reasoned about. **5.0 m/s is
+  unaffected** — the cap does not bind there and the check says so rather than passing silently.
 * **A longer `--acq-range-m` is NOT monotone in the verdict.** Margin rises with it, and then the
   frame-corner check fails: on the live set **47.5 → exit 0, 47.6 → exit 1** (headroom −0.1 %), and
   **58.0 → exit 1** at −18.0 %, which is the contrast the table above prints. Past **47.56 m**
@@ -393,6 +399,52 @@ failing one.)*
 
 And `predict_bird_visibility.py` still has to be re-run at whatever speed you pick — its response
 ADR-016 am. 1 measured non-monotone in a third way. The two gates do not substitute for each other.
+
+### Booking a speed is only half of it — the flight has to be FLOWN at it
+
+*(added 2026-09-07, QA finding G128)* The artifact above authorises **one mission speed**. Nothing
+in the sim made the vehicle fly it until 2026-09-07: no waypoint-speed parameter was set anywhere
+in this repo, so ArduCopter's `WP_SPD` default flew every mission at **10.0 m/s** — the
+2026-09-06 scripted test-flight peaked at **10.576 m/s**, a speed at which this same gate exits
+**1** (margin 1.216×). **A dodge take flown faster than it was booked is not the authorised take**,
+and it used to print a green GT-CPA anyway.
+
+Two halves close that, and this runbook owns only the first:
+
+1. **Set the speed before the take.** `scripts/fly_pipeline.sh --booking <this artifact> up` reads
+   the artifact through the flight-log gate's own `load_booking` (so the two ends of the chain
+   accept exactly the same set of artifacts), and injects `param set WP_SPD <booked m/s>` into the
+   fly recipe — see `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` §0g, which owns that step. The
+   parameter is `WP_SPD`, **in m/s**, at ADR-004's pinned SHA (`AC_WPNav.cpp:49-56`; the old
+   `WPNAV_SPEED` slot reads `// 0 was SPEED`). Whatever speed it sets **is** the speed this D4 run
+   must have been given.
+2. **Bind the booking to the evidence afterwards.** The flight-log gate measures the speed the take
+   actually flew, from the log's own poses, and checks it against the booking:
+
+   ```bash
+   python3 scripts/check_live_flight_log.py eval/results/live_flight_log_<UTC>.json \
+       --truth   eval/results/bird_drive_<UTC>_applied.jsonl \
+       --booking eval/results/booking_gate_<UTC>.json
+   ```
+
+   It reports `booked_speed_mps`, the flown **median / p90 / max** airborne ground speed and their
+   ratio, and **fails the log INVALID** when either of TWO medians exceeds the booked speed by more
+   than **10 %**: the whole flight's, and **each encounter window's** (takeover → resume). The
+   second one is the gate that bites — a boustrophedon's mission median is dominated by turnarounds,
+   so the 2026-08-25 take reads **3.417 m/s (0.68× a 5.0 booking, a pass)** while its encounter ran
+   at a median **9.012 m/s = 1.80× booked**, a speed at which this booking gate exits 1. The
+   tolerance exists because the waypoint speed is a *cap* that transients cross; p90 and max are
+   printed as context and are not gated, and when the tail crosses the bar the gate says so by
+   name.
+   Copying the artifact to `<log-stem>.booking.json` beside the log binds it without the flag.
+
+   Only an artifact that **exited 0** may be bound: a `--sweep` or a config-sourced exit-3 design
+   check authorises nothing, and binding one is itself INVALID. **Do not pass the launcher's
+   `eval/results/live_flight_booking_<UTC>.json`** — that is a bringup *pointer* (the artifact's
+   path, the booked speed, the recipe line) and carries none of the gate's checks; the flight-log
+   gate refuses it by name and tells you which artifact it names. Omitting the booking on an
+   avoidance take is allowed — the NDVI survey needs none — but prints a WARNING that the
+   authorisation is unverified.
 
 ---
 
@@ -597,11 +649,30 @@ never beside the word "cruise".
 
 ## 7. Known gaps — deliberate, named, not blind spots
 
-* **The segmenter does not exist.** `DepthDetectionSource` carries the contract (guards, counters,
-  stamp passthrough, un-projection, the range refusal) and takes the segmenter as a constructor
-  argument; the detector lands next session with perception. Nothing on this list flies a detection.
-* **`avoidance_node` is not wired to it.** Deliberate: that node is flight-software's, and wiring a
-  detection source before its detector exists would be a seam nobody can test.
+*(Updated 2026-09-07 after the segmenter session — ADR-021. Each item now says CLOSED or OPEN and
+names the artifact, because a gaps list nobody dispositions becomes a list nobody reads.)*
+
+* **~~The segmenter does not exist.~~ → CLOSED 2026-09-07 (ADR-021).**
+  `src/fieldguard_planning/depth_segment.py` — a black top-hat on depth
+  (`closing(D, K) − D > margin_m`), **keyed on discontinuity, never on `isfinite`**, scored on an
+  85-station cluttered labelled render. All seven pre-registered bars PASS:
+  `eval/results/depth_segmenter_score_20260907T110000Z.json` +
+  [`eval/results/depth_dataset_20260907/REPORT.md`](../../eval/results/depth_dataset_20260907/REPORT.md).
+  Constants adopted by the pre-registered rules: **K 15, margin 1.5 m, min_area 10 px, open_iter 0,
+  max_boxes 64**, `link_break` OFF.
+* **~~`avoidance_node` is not wired to it.~~ → CLOSED 2026-09-07, and it has NEVER FLOWN.**
+  `--detect --detection-source depth` builds the segmenter behind the seam; default is still `ndvi`
+  and every existing command line is unchanged. **~~OPEN: a depth flight log is UNSCOREABLE~~ →
+  CLOSED the same night (P1, 2026-09-07 late):** `depth_blob` is in `DETECTOR_SOURCES` **together
+  with seven depth-specific bars** (`P1_BARS` in `scripts/check_live_flight_log.py`, each quoting the
+  text pre-registered in `DODGE_TAKE_PREREGISTRATION_20260907.md` §P1; 65 red-first tests; the three
+  committed NDVI logs byte-identical); every NDVI-family gate prints `N/A (depth take)`, never PASS.
+  **What the first depth take will still show — and what the executor owes before it (P2):** bar 5
+  (first-detection range ≥ 33.591 m) reads **CENSORED** because a `detection` event is written only
+  inside the 12 m threat radius, and bar 6 (no dodge against the map) reads **UNMEASURED** because
+  `static_map_hint` is not carried into the log — one field on that event, or a max-range counter on
+  `DepthDetectionSource`, closes both. (`gate_booked_speed` treats `depth_blob` as an avoidance
+  take: authorisation is not scoring.)
 * **The depth camera is NOISELESS** — gz-sensors' own default, kept rather than guessed at, and
   recorded as a transfer gap (proposed TG-6) beside `eval/point_mass.py`'s unmodelled dynamics. It
   makes the sensor optimistic in the same direction the plant model already is.
@@ -620,6 +691,33 @@ never beside the word "cruise".
     sweep cannot see this because its scene is deliberately clutter-free and sky-backed. **The
     segmenter must key on depth DISCONTINUITY against the local background, not on `isfinite`**, and
     must be scored against a cluttered scene before any dodge is booked on it.
+    **→ MERGING CLOSED 2026-09-07 (ADR-021):** the adopted operator returns the bird as its own
+    component carrying its **own** median depth — merge mislabels **0 over 71 visible-bird
+    stations**, and the scorer's matcher has a depth clause precisely so a merge cannot pass as a
+    hit (it is what caught K = 21 losing canopy-backed birds into a 53.9 m canopy component).
+    Annotation stays annotate-and-count: 115 of 115 boxes on the 8 negative frames un-projected
+    inside a mapped tree's geofence, **0 unmapped false positives per frame**.
+* **OPEN — an unplanned LARGE obstacle at close range is a blind spot, and no bar here can see it.**
+  A measured correction to the design notes (which predicted a "ring"): an object **wider than K**
+  lets the closing's erosion recover its own depth across the whole silhouette, so it returns
+  **ZERO candidates** — a 1.3 m canopy sphere is invisible inside ~25 m and a flat wall entirely.
+  Survivable in *this* world only because the large objects are the mapped, geofenced trees and the
+  unplanned obstacle is a 0.18 m bird (detectable 46 m → ~2.85 m with no hole). Any world where an
+  unplanned obstacle can be wide re-opens ADR-021.
+* **OPEN — ONE TARGET PER FRAME is what was measured.** All 85 stations have exactly one bird in the
+  world (birds 1 and 2 parked out of every frustum), while the MVP obstacle density is 2–3 birds.
+  Two touching near objects return **one** component at a median belonging to **neither** (20 m
+  beside 30 m reads 25.0 m). The cheap close is one extra teleport per camera pose in whatever
+  renders next, plus the pre-registered `link_break`-with-min_area-exemption round.
+* **OPEN — motion, and what the noiseless bullet above means for the segmenter.** Every dataset
+  frame is a **parked teleport**, so motion blur, rolling shutter and pose/frame pairing error are
+  outside the measurement. On noise: it enters the `maximum_filter` as a max over K² samples, i.e.
+  biased **upward** — it inflates the background and so pushes FP up rather than FN, the safer
+  direction, but it is unquantified.
+* **OPEN — D5 and D6 are still 3.50 m/s numbers.** Delivery ratio and flight pitch **at the booked
+  5.0 m/s** remain unmeasured (§4, §5). The cheapest close is a scripted `test-flight` with the node
+  on `--detection-source depth` and no birds driven — it also validates the wiring live
+  (`camera_info` arrival, decode, in-container runtime counters) without being a take.
 * **`MIN_RESOLVING_RADIUS_PX = 2.0` was calibrated on `ndvi_detect.detect_blobs`** — the *NDVI*
   detector's morphology — because that is the only scored morphology this repo has. The depth
   segmenter is TBD and may not use it. **Re-measuring the floor against whatever the segmenter
@@ -633,7 +731,66 @@ never beside the word "cruise".
   arithmetically, not causally. A floor measured on synthetic discs describes the discs; the
   segmenter's floor must be measured **against this render**, and against a *cluttered* one, where
   the bird is finite-against-finite rather than finite-against-`+inf`.
-* **Whether the nadir bird-visibility gate is still a precondition for a dodge take** is an open
+  **→ CLOSED 2026-09-07 (ADR-021).** Re-measured against the adopted operator at the worst sub-pixel
+  placement: **2.0 px → 46.80 m** for a 0.18 m target at `min_area_px = 10`. The bound is
+  **reproduced, not inherited** — it arrives via `min_area_px` where the NDVI number arrived via a
+  3×3-cross opening, so the agreement is arithmetic coincidence. It sits just **below** the 47.558 m
+  corner clamp, so **on this sensor the morphology binds the horizon by 0.76 m**, not the far cull.
+  The rule's cost is on the record: at `min_area_px = 6` the floor would be **1.6 px → 58.50 m**.
+  Both are above the booked 46.0 m, so the booking does not move either way. Closes
+  `config/depth_camera.json`'s `min_resolving_radius_source` item too.
+* **OPEN — whether the nadir bird-visibility gate is still a precondition for a dodge take** is a
   question for the ADR, not for this runbook: with detection on the forward sensor,
   `predict_bird_visibility.py` gates the NDVI *map*, not the dodge. It is still a real gate for the
-  survey half; do not silently retire it.
+  survey half; do not silently retire it. **Product-lead ratification owed** (ADR-020 am. 1 open
+  item 4): the recommendation is that for a *depth-source* take the forward booking gate is the
+  **authorising** one and §0b is **REPORTED** — measured, §0b FAILS 2 of 3 birds at the booked
+  5.0 m/s.
+
+---
+
+## 8. The segmenter dataset — how to re-score it, and how to regenerate it
+
+The score is a **host** run over frames rendered **in the container**. Nothing here needs a live
+sim unless you are re-rendering.
+
+**Re-score the committed dataset (host, ~1 min):**
+
+```bash
+python3 eval/score_depth_segmenter.py            # defaults: --dataset eval/results/depth_dataset_20260907
+                                                 #           --out-dir eval/results
+```
+
+It re-hashes every frame on load and stops the run on a mismatch; `labels.jsonl` and
+`docs/design/depth_segmenter_stations.json` both carry their sha256 into the artifact. `--no-write`
+scores without emitting one; `--reps N` (default 5, the n = 425 timing row) sets the timing repeats.
+The **frames are not in git** — see below — so a fresh clone must re-render before it can re-score.
+
+**Re-render the dataset (in the container, one gz launch per camera pose; the renderer must be
+idle and no bird driver may be running — the harness refuses on either):**
+
+```bash
+docker cp eval/results/depth_dataset_20260907/stations_rendered.json fieldguard-sim:/tmp/stations.json
+docker exec -it fieldguard-sim bash /workspace/fieldguard/eval/capture_depth_dataset.sh /tmp/stations.json
+# writes /tmp/depthset/{<id>.npy, labels.jsonl, groups.jsonl, camera_info_<world>.json}
+```
+
+Feed it `stations_rendered.json`, **not** `docs/design/depth_segmenter_stations.json`: the committed
+station file is the 79 design stations, and `stations_rendered.json` is that plus the six pitched
+S080–S085 — i.e. it is the exact input the scored artifact belongs to.
+
+Fail-closed the same way the D2/D3 harness is: every vehicle pose within 0.05 m / 0.5° of command
+and every bird teleport within 0.05 m, **readback-verified**; the **committed 125 × 110 m
+`field_ground`** asserted byte-identical (explicitly *not* the 425 m check-world extension — the
+ground's extent is part of what is being measured); `bird_1`/`bird_2` parked out of every frustum;
+zero gravity so nothing drifts. Result on 2026-09-07: **85 frames, 82 distinct sha1** — the three
+repeats are the occlusion stations against their pose's negative control, which is the occlusion
+proof, not a duplicate.
+
+**What is committed and what is not.** `REPORT.md`, six compressed fixtures (S015 sky-46 m,
+S026 ground-band merge, S036 trunk-edge merge, S040 canopy-backed, S061 negative control,
+S080 pitched), `stations_rendered.json` (the exact station file the renderer consumed: the 79 design
+stations plus the six pitched S080–S085), `CAPTURE_LOG.txt`, and `eval/capture_depth_dataset.sh`.
+**Not committed** (~100 MB): `labels.jsonl`, the 85 `.npy` frames, the per-group `camera_info_*.json`
+— they regenerate from the harness plus the station file, which is why the station file is the thing
+under version control.

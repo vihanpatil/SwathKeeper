@@ -20,6 +20,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -27,7 +28,19 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "fly_pipeline.sh"
 RUNBOOK = REPO_ROOT / "docs" / "runbooks" / "FULL_PIPELINE_DEMO.md"
+DODGE_RUNBOOK = REPO_ROOT / "docs" / "runbooks" / "AVOIDANCE_REAL_DETECTION.md"
 TEST_MISSION = REPO_ROOT / "config" / "missions" / "test_2lane.waypoints"
+# The committed booking every runbook example quotes: 5.0 m/s, bookable, from the 2026-09-07 depth
+# commissioning. Pinned by tests/fieldguard_planning/test_booking_gate_artifact.py; used here as a
+# REAL input, so what these tests prove is what an operator would actually get.
+BOOKING = "eval/results/booking_gate_20260907T064136Z.json"
+# The parameter is WP_SPD, in m/s, at ADR-004's pinned ArduPilot SHA -- AC_WPNav is registered under
+# the group prefix "WP_" (ArduCopter/Parameters.cpp:370) and AC_WPNav.cpp:49-56 declares
+# `@Param: SPD / @Units: m/s / @Range: 0.10 20.00`, with `// 0 was SPEED` marking the retired
+# WPNAV_SPEED slot. The first cut of this feature typed a cm/s WPNAV_SPEED line: a name MAVProxy
+# rejects, so the take flew the 10 m/s default while four artifacts said 5.0 (QA G135).
+BOOKED_PARAM = "WP_SPD"
+BOOKED_LINE = "param set WP_SPD 5.0"
 
 HAVE_BASH = shutil.which("bash") is not None
 
@@ -55,10 +68,34 @@ def floor_constants():
     return int(out[0]), int(out[1])
 
 
+def fenced_blocks(text):
+    """Every ``` block in `text`, in order — odd-indexed pieces of a ```-split."""
+    parts = text.split("```")
+    return [parts[i] for i in range(1, len(parts), 2)]
+
+
+def recipe_blocks(doc=None, heading="## Fly it"):
+    """The recipe blocks of a runbook section, as lists of stripped lines.
+
+    The section stops at the next `## ` heading, so a later shell's ```bash block can never be
+    mistaken for a recipe. Since 2026-09-07 the demo runbook carries TWO: the unbooked recipe and
+    the booked variant (one extra `param set WP_SPD <m/s>` line). Both are diffed against the
+    launcher — the booked one is the whole point of the booking, so a copy of it that nobody diffs
+    is exactly the drift this mechanism exists to prevent.
+    """
+    section = (doc or RUNBOOK.read_text()).split(heading, 1)[1].split("\n## ", 1)[0]
+    return [[line.strip() for line in block.strip().splitlines() if line.strip()]
+            for block in fenced_blocks(section)]
+
+
 def runbook_fly_lines():
-    """The MAVProxy recipe as the runbook spells it — the one source both paths must match."""
-    block = RUNBOOK.read_text().split("## Fly it", 1)[1].split("```", 2)[1]
-    return [line.strip() for line in block.strip().splitlines() if line.strip()]
+    """The UNBOOKED MAVProxy recipe as the runbook spells it — the one source both paths match."""
+    return [b for b in recipe_blocks() if BOOKED_LINE not in b][0]
+
+
+def runbook_booked_fly_lines():
+    """...and the booked variant, the recipe an authorised dodge take flies."""
+    return [b for b in recipe_blocks() if BOOKED_LINE in b][0]
 
 
 @unittest.skipUnless(HAVE_BASH, "bash is unavailable — nothing to run the launcher with")
@@ -166,6 +203,609 @@ class TestRecipePaneMatchesTheRunbook(LauncherTestCase):
         for line in runbook_fly_lines():
             self.assertIn(line, out)
 
+    def test_the_fly_it_section_carries_exactly_the_two_recipes(self):
+        """A count, not a floor — the same tripwire as the nine pane payloads. The section holds
+        the unbooked recipe and the booked variant; a third block, or a lost one, means the
+        extraction below is silently diffing something else."""
+        blocks = recipe_blocks()
+        self.assertEqual(len(blocks), 2, msg=blocks)
+        self.assertEqual(len([b for b in blocks if BOOKED_LINE in b]), 1, msg=blocks)
+        plain, booked = runbook_fly_lines(), runbook_booked_fly_lines()
+        self.assertEqual([line for line in booked if line not in plain], [BOOKED_LINE])
+
+
+class BookingTestCase(LauncherTestCase):
+    """Shared plumbing for the booking (2026-09-07).
+
+    Why the feature exists: the depth commissioning wrote a booking artifact that PASSES at 5.0 m/s
+    and nothing in the repo enforced the speed it names. The recipe set no waypoint speed, so
+    ArduCopter flew its default — 10.58 m/s peak on the 2026-09-06 scripted test-flight, a speed at
+    which that same booking gate exits 1. A take flown faster than booked is not the authorised
+    take, and no post-flight gate could say so.
+    """
+
+    def recipe_from(self, out):
+        """The MAVProxy lines out of a printed recipe (`status` prints it; `up` never does)."""
+        body = out.split("Then, at the MAVProxy prompt:\n", 1)[1].split("\n  Look for:", 1)[0]
+        return [line.strip() for line in body.strip().splitlines() if line.strip()]
+
+    def artifact(self, name, **override):
+        """A copy of the committed booking with fields overridden — `None` deletes the key."""
+        doc = json.loads((REPO_ROOT / BOOKING).read_text())
+        for key, value in override.items():
+            section, _, field = key.partition("__")
+            target = doc[section] if field else doc
+            name_ = field or section
+            if value is None:
+                target.pop(name_, None)
+            else:
+                target[name_] = value
+        path = self.tmpdir / name
+        path.write_text(json.dumps(doc, indent=1))
+        return str(path)
+
+    def source_and_run(self, code, **env):
+        """Run one launcher function with REPO_ROOT pointed at this test's tmpdir, so the writers
+        under test cannot leave anything in the real eval/results/."""
+        prelude = f'source "{SCRIPT}"\nREPO_ROOT="{self.tmpdir}"\n'
+        result = subprocess.run(["bash", "-c", prelude + code], capture_output=True, text=True,
+                                cwd=str(REPO_ROOT),
+                                env=dict(os.environ, TMPDIR=str(self.tmpdir), **env))
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        return result
+
+
+class TestBookingRecipeInjection(BookingTestCase):
+    """What the recipe pane prints, with and without a booking. `status` is used because `up`
+    deliberately never prints a flying command — it writes the recipe to the pane file instead."""
+
+    def test_without_a_booking_the_recipe_is_the_runbook_recipe_unchanged(self):
+        # The NDVI survey and the demo take book nothing and must be untouched by this feature.
+        out = self.run_script("--dry-run", "status").stdout
+        self.assertEqual(self.recipe_from(out), runbook_fly_lines())
+        # The header still NAMES the parameter (saying which default it will fly); what must not
+        # exist is a `param set` for it in the lines the operator types.
+        self.assertNotIn(f"param set {BOOKED_PARAM}", "\n".join(self.recipe_from(out)))
+
+    def test_with_a_booking_the_recipe_is_the_runbook_booked_recipe(self):
+        out = self.run_script("--dry-run", "--booking", BOOKING, "status").stdout
+        self.assertEqual(self.recipe_from(out), runbook_booked_fly_lines())
+
+    def test_the_booked_line_is_exactly_one_line_in_exactly_one_place(self):
+        booked = self.recipe_from(
+            self.run_script("--dry-run", "--booking", BOOKING, "status").stdout)
+        plain = runbook_fly_lines()
+        self.assertEqual([line for line in booked if line not in plain], [BOOKED_LINE])
+        self.assertEqual(len(booked), len(plain) + 1)
+        # Before BOTH mode changes: AUTO reads the speed when it takes the leg, and `mode guided`
+        # is the bounce that forces the fresh AUTO entry. Grouped with the other param sets.
+        self.assertLess(booked.index("param set AUTO_OPTIONS 3"), booked.index(BOOKED_LINE))
+        self.assertLess(booked.index(BOOKED_LINE), booked.index("mode guided"))
+        self.assertLess(booked.index(BOOKED_LINE), booked.index("mode auto"))
+
+    def test_the_header_names_the_booking_and_the_speed(self):
+        out = self.run_script("--dry-run", "--booking", BOOKING, "status").stdout
+        header = out.split("FLY IT", 1)[1].split("WAIT for all three", 1)[0]
+        self.assertIn(BOOKING, header)
+        self.assertIn("5.0 m/s", header)
+        self.assertIn(BOOKED_LINE, header)
+
+    def test_the_unbooked_header_says_so_and_names_the_flag(self):
+        # An operator who reads a recipe with no WPNAV line must be TOLD that is what they have —
+        # the two recipes differ by one line, and the missing one decides whether the take counts.
+        header = self.run_script("--dry-run", "status").stdout \
+                     .split("FLY IT", 1)[1].split("WAIT for all three", 1)[0]
+        self.assertIn("NO SPEED BOOKED", header)
+        self.assertIn("--booking", header)
+
+    def test_the_env_var_books_too_and_the_flag_wins_over_it(self):
+        out = self.run_script("--dry-run", "status", SWATHKEEPER_BOOKING=BOOKING).stdout
+        self.assertEqual(self.recipe_from(out), runbook_booked_fly_lines())
+        # The flag must win, including over an env var pointing at an UNBOOKABLE artifact: an
+        # exported SWATHKEEPER_BOOKING left over from an earlier session cannot veto an explicit one.
+        bad = self.artifact("stale.json", verdict={"bookable": False, "why_not_bookable": "stale"})
+        result = self.run_script("--dry-run", "--booking", BOOKING, "status",
+                                 SWATHKEEPER_BOOKING=bad)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertEqual(self.recipe_from(result.stdout), runbook_booked_fly_lines())
+
+    def test_dry_run_up_prints_the_injected_line_and_still_runs_nothing(self):
+        # `up` prints no recipe (it must never print a flying command), so it names the ONE line it
+        # will inject — that is what a human checks before spending a Docker session.
+        result = self.run_script("--dry-run", "--booking", BOOKING, "up", shims=True)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn(BOOKED_LINE, result.stdout)
+        self.assertEqual(self.shim_calls(), [])                      # no tmux, no docker
+        self.assertEqual(sorted(p.name for p in self.tmpdir.iterdir()), ["shims"])
+        for forbidden in ("arm throttle", "mode auto", "mode guided", "wp load", "wp set"):
+            self.assertNotIn(forbidden, result.stdout)
+
+    def test_test_flight_types_the_booked_line_too(self):
+        # test-flight is the ONE launcher-typed flight: it types the recipe verbatim, so the
+        # booking has to reach the typed lines, not just the printed pane.
+        out = self.run_script("--dry-run", "--booking", BOOKING, "test-flight").stdout
+        typed = [line.replace("  DRY      ", "") for line in out.splitlines()
+                 if line.startswith("  DRY      ")]
+        expected = list(runbook_booked_fly_lines())
+        expected[0] = expected[0].replace("boustrophedon.waypoints", "test_2lane.waypoints")
+        self.assertEqual(typed, expected)
+
+
+class TestBookingRefusals(BookingTestCase):
+    """Every way a booking can fail to authorise a flight. All of them REFUSE — an unreadable
+    authorisation is never a silent fall-back to the unbooked recipe, because that fall-back is
+    exactly the 10 m/s flight this whole mechanism exists to stop."""
+
+    def refuse(self, *args, **env):
+        result = self.run_script("--dry-run", *args, shims=True, **env)
+        self.assertNotEqual(result.returncode, 0, msg=result.stdout)
+        self.assertIn("REFUSING", result.stderr)
+        # Before preflight: a refusal must not have touched the container or a tmux server.
+        self.assertEqual(self.shim_calls(), [])
+        return result.stderr
+
+    def test_the_launcher_reads_a_booking_with_THE_GATES_OWN_FUNCTION(self):
+        """QA finding G137: the two ends of the chain used to validate differently, and the
+        unguarded end was the PRE-flight one. `{"verdict":{"bookable":true},"encounter":
+        {"mission_speed_mps":9.0}}` booked a flight that the post-flight gate then refused as
+        malformed -- so a take could be flown believing it was authorised and only found
+        unauthorised afterwards. One definition of "authorises a flight", and it is
+        `check_live_flight_log.load_booking`, which the gate uses too."""
+        stub = self.tmpdir / "stub.json"
+        stub.write_text(json.dumps({"verdict": {"bookable": True},
+                                    "encounter": {"mission_speed_mps": 9.0}}))
+        err = self.refuse("--booking", str(stub), "up")
+        # `validate_report` and this wording exist ONLY in check_live_flight_log.load_booking, so
+        # seeing them here is the proof that the launcher went through the gate's own reader
+        # rather than a second opinion of its own.
+        self.assertIn("not a well-formed booking-gate artifact", err)
+        self.assertIn("validate_report", err)
+        self.assertIn("missing top-level key(s)", err)
+
+    def test_a_not_bookable_verdict_is_refused_with_its_own_reason(self):
+        path = self.artifact("nb.json", verdict={"pass": True, "bookable": False, "exit_code": 3,
+                                                 "why_not_bookable": "config-sourced inputs"})
+        err = self.refuse("--booking", path, "up")
+        self.assertIn("does not AUTHORISE anything", err)
+        self.assertIn("config-sourced inputs", err)
+
+    def test_a_pass_that_is_not_bookable_is_still_refused(self):
+        # exit 3 of the booking gate: PASS but NOT bookable. `pass: true` must not read as booked.
+        path = self.artifact("p3.json", verdict={"pass": True, "bookable": False,
+                                                 "exit_code": 3, "why_not_bookable": None})
+        self.assertIn("does not AUTHORISE anything", self.refuse("--booking", path, "up"))
+
+    def test_only_a_real_json_true_books(self):
+        """`bookable` is read as an identity, not a truthiness: a string "true", a 1, or a missing
+        verdict block are all artifacts this launcher does not understand, and the safe reading of
+        "I do not understand this authorisation" is to refuse it. Every one of these is refused by
+        the gate's own reader, so the refusal names `verdict` and the flight never starts."""
+        for name, verdict in (("s.json", {"pass": True, "bookable": "true"}),
+                              ("n.json", {"pass": True, "bookable": 1}),
+                              ("e.json", {}), ("z.json", None)):
+            with self.subTest(verdict=verdict):
+                err = self.refuse("--booking", self.artifact(name, verdict=verdict), "up")
+                self.assertIn("verdict", err)
+
+    def test_the_recorded_path_is_repo_relative_however_it_was_given(self):
+        """One path form in the record and the header, so a booking quoted from a gate record can
+        be found from the repo root by anyone — including CI, on a different machine."""
+        out = self.run_script("--dry-run", "--booking", str(REPO_ROOT / BOOKING), "status").stdout
+        self.assertIn(f"BOOKED 5.0 m/s from {BOOKING}", out)
+        self.assertNotIn(str(REPO_ROOT), out)
+
+    def test_a_missing_file_is_refused(self):
+        # The gate's own words: there is no second reader here to drift from them.
+        self.assertIn("does not exist",
+                      self.refuse("--booking", str(self.tmpdir / "gone.json"), "up"))
+
+    def test_a_malformed_artifact_is_refused(self):
+        path = self.tmpdir / "garbage.json"
+        path.write_text("{not json")
+        self.assertIn("not valid JSON", self.refuse("--booking", str(path), "up"))
+
+    def test_the_launchers_OWN_bringup_record_cannot_book_a_flight(self):
+        """`eval/results/live_flight_booking_<UTC>.json` is a pointer written at bringup, sits
+        beside the flight logs, and is the obvious thing to reach for on flight day. The flight-log
+        gate refuses it by name -- and because the launcher now reads through that same function,
+        so does the launcher, instead of booking a flight off its own note-to-self."""
+        path = self.tmpdir / "live_flight_booking_20260907T120000Z.json"
+        path.write_text(json.dumps({
+            "schema_version": "1.1", "kind": "live_flight_booking",
+            "booking": {"path": BOOKING, "booked_speed_mps": 5.0, "parameter": BOOKED_PARAM},
+            "recipe_line": BOOKED_LINE}))
+        err = self.refuse("--booking", str(path), "up")
+        self.assertIn("LAUNCHER'S bringup record", err)
+        self.assertIn(BOOKING, err)                    # and it names the artifact to pass instead
+
+    def test_a_repo_whose_gate_cannot_be_IMPORTED_refuses_rather_than_falling_back(self):
+        """There is deliberately no weaker fallback reader: a two-field read is the G137 defect
+        wearing an ImportError. Only a dodge take passes `--booking`, so this can never block the
+        NDVI survey, the demo or teardown -- it blocks exactly the flight that needs the
+        authorisation. Proven by running a COPY of the launcher out of a tree with no gate in it."""
+        fake = self.tmpdir / "fakerepo" / "scripts"
+        fake.mkdir(parents=True)
+        shutil.copy(SCRIPT, fake / SCRIPT.name)
+        result = subprocess.run(
+            ["bash", str(fake / SCRIPT.name), "--dry-run", "--booking",
+             str(REPO_ROOT / BOOKING), "status"],
+            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            env=dict(os.environ, TMPDIR=str(self.tmpdir), PATH=f"{self.shim_path()}:"
+                     f"{os.environ['PATH']}", FG_SHIM_LOG=str(self.shim_log)))
+        self.assertNotEqual(result.returncode, 0, msg=result.stdout)
+        self.assertIn("cannot import check_live_flight_log.load_booking", result.stderr)
+        self.assertIn("does not authorise a flight", result.stderr)
+        self.assertEqual(self.shim_calls(), [])        # refused before anything was touched
+
+    def test_an_unreadable_speed_is_refused(self):
+        """A string, a bool, a zero, a negative -- none of them is a speed to hold a flight to. The
+        expected substring differs for the last case only because deleting the whole `encounter`
+        block is caught one level earlier, by the schema check."""
+        for name, override, expect in (
+                ("nospeed.json", {"encounter__mission_speed_mps": None}, "mission_speed_mps"),
+                ("str.json", {"encounter__mission_speed_mps": "5.0"}, "mission_speed_mps"),
+                ("zero.json", {"encounter__mission_speed_mps": 0}, "mission_speed_mps"),
+                ("neg.json", {"encounter__mission_speed_mps": -5.0}, "mission_speed_mps"),
+                ("bool.json", {"encounter__mission_speed_mps": True}, "mission_speed_mps"),
+                ("noenc.json", {"encounter": None}, "missing 'encounter'")):
+            with self.subTest(case=name):
+                err = self.refuse("--booking", self.artifact(name, **override), "up")
+                self.assertIn(expect, err)
+
+    def test_a_speed_arducopter_would_ignore_is_refused(self):
+        """WP_SPD's documented range is 0.10..20.00 m/s (AC_WPNav.cpp:53). Outside it the vehicle
+        would keep its default while the recipe CLAIMED the booked speed, which is the same lie in
+        a different direction."""
+        for name, speed in (("slow.json", 0.05), ("fast.json", 20.01)):
+            with self.subTest(speed=speed):
+                err = self.refuse("--booking", self.artifact(
+                    name, encounter__mission_speed_mps=speed), "up")
+                self.assertIn("outside the 0.1..20 m/s", err)
+        # ...and the two edges themselves are accepted, so the check is a band, not a wall.
+        for name, speed, shown in (("min.json", 0.1, "0.1"), ("max.json", 20.0, "20.0")):
+            with self.subTest(speed=speed):
+                out = self.run_script("--dry-run", "--booking", self.artifact(
+                    name, encounter__mission_speed_mps=speed), "status").stdout
+                self.assertIn(f"param set {BOOKED_PARAM} {shown}", out)
+
+    def test_test_flight_refuses_before_it_can_arm_anything(self):
+        # The one scripted flight path: a refusal here has to happen before the teardown trap is
+        # armed and before a single pane exists.
+        path = self.artifact("nb2.json", verdict={"bookable": False, "why_not_bookable": "x"})
+        self.refuse("--booking", path, "test-flight")
+
+    def test_the_flag_needs_a_value(self):
+        result = self.run_script("--dry-run", "--booking", shims=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--booking needs a path", result.stderr)
+
+    def test_a_booking_on_a_command_that_cannot_use_one_is_named_not_obeyed(self):
+        """`down` must never be blocked by a booking file — teardown is what finalizes the clip.
+        But silently ignoring it would be worse than saying so, so it says so."""
+        bad = self.artifact("nb3.json", verdict={"bookable": False, "why_not_bookable": "x"})
+        result = self.run_script("down", "--booking", bad, shims=True)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("has no effect on 'down'", result.stderr)
+
+    def test_the_booked_speed_reaches_the_recipe_UNCONVERTED_and_unrounded(self):
+        """WP_SPD's unit IS m/s, so the number typed at the vehicle is the number in the artifact.
+        The first cut multiplied by 100 and rounded to a whole centimetre; there is now no
+        conversion to get wrong and no rounding step to lose a digit in."""
+        for speed, shown in ((5.0, "5.0"), (3.456, "3.456"), (7.891, "7.891"), (1.0, "1.0"),
+                             (12.345, "12.345")):
+            with self.subTest(speed=speed):
+                out = self.run_script("--dry-run", "--booking", self.artifact(
+                    f"r{shown}.json", encounter__mission_speed_mps=speed), "status").stdout
+                self.assertIn(f"param set {BOOKED_PARAM} {shown}", out)
+                self.assertIn(f"{speed} m/s", out)          # the header quotes the booked m/s
+
+
+class TestBookingReaderIsolation(BookingTestCase):
+    """QA finding G136: the reader used to merge stderr into stdout and read three positional lines
+    out of the merged stream with no numeric check, and the recipe printed the result with `%s`.
+
+    Reproduced at the time with `PYTHONVERBOSE=1`: the launcher printed
+    `BOOKED import _frozen_importlib # frozen m/s` and put
+    `param set WPNAV_SPEED import _imp # builtin` into a recipe a human types verbatim. Any stderr
+    on the SUCCESS path did it -- a sitecustomize print, a .pth banner, a DeprecationWarning under
+    PYTHONWARNINGS. Pinned here with a python3 shim that pollutes each stream in turn.
+    """
+
+    def python_shim(self, before="", after=""):
+        """A `python3` earlier on PATH that emits noise around the real interpreter's own output."""
+        shims = self.shim_path()                       # tmux + docker, so nothing real is touched
+        shim = shims / "python3"
+        shim.write_text('#!/bin/bash\n%s\n"$REAL_PYTHON" "$@"\nrc=$?\n%s\nexit $rc\n'
+                        % (before, after))
+        shim.chmod(0o755)
+        return shims
+
+    def run_with_shim(self, *args, before="", after=""):
+        env = dict(os.environ, TMPDIR=str(self.tmpdir), FG_SHIM_LOG=str(self.shim_log),
+                   REAL_PYTHON=sys.executable)
+        env["PATH"] = f"{self.python_shim(before, after)}:{env['PATH']}"
+        return subprocess.run(["bash", str(SCRIPT), *args], cwd=str(REPO_ROOT),
+                              capture_output=True, text=True, env=env)
+
+    def test_noise_on_STDERR_does_not_become_the_booked_speed(self):
+        result = self.run_with_shim("--dry-run", "--booking", BOOKING, "status",
+                                    before='echo "a deprecation warning" >&2')
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn(f"booked: {BOOKING} -> 5.0 m/s", result.stdout)
+        self.assertIn(BOOKED_LINE, self.recipe_from(result.stdout))
+        self.assertIn("a deprecation warning", result.stderr)   # visible, not swallowed
+
+    def test_noise_on_STDOUT_is_REFUSED_rather_than_flown(self):
+        """The reader takes the last two lines, so a banner ahead of the payload survives -- but
+        anything that lands AFTER it must refuse. `%s` in the recipe would pass literally
+        anything to the vehicle, so the number is validated as a plain decimal before it is used."""
+        result = self.run_with_shim("--dry-run", "--booking", BOOKING, "status",
+                                    after='echo TRAILING_NOISE')
+        self.assertNotEqual(result.returncode, 0, msg=result.stdout)
+        self.assertIn("REFUSING", result.stderr)
+        self.assertIn("booked mission speed in m/s was expected", result.stderr)
+        self.assertNotIn("param set", result.stdout)
+
+    def test_a_banner_BEFORE_the_payload_still_books_correctly(self):
+        result = self.run_with_shim("--dry-run", "--booking", BOOKING, "status",
+                                    before='echo "BANNER: some .pth file said hello"')
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn(f"booked: {BOOKING} -> 5.0 m/s", result.stdout)
+
+
+class TestBookingSidecar(BookingTestCase):
+    """`eval/results/live_flight_booking_<UTC>.json` — the booking, dropped beside the flight logs.
+
+    The scripted test-flight records its booking in its own gate record. A HUMAN-flown take (every
+    demo and every dodge take, ADR-013) has no record here at all: its flight log is written by the
+    avoidance node inside the container, minutes later. Without this file the booked speed would
+    exist only in a tmux pane, and the flight-log gate could never be shown what the flight was
+    authorised to fly.
+    """
+
+    def write(self, **assign):
+        code = "\n".join(f'{k}="{v}"' for k, v in assign.items()) + "\nwrite_booking_sidecar\n"
+        self.source_and_run(code)
+        written = sorted((self.tmpdir / "eval" / "results").glob("live_flight_booking_*.json"))
+        return written
+
+    def test_it_lands_beside_the_flight_logs_with_the_flight_log_stamp_format(self):
+        (path,) = self.write(BOOKING_PATH_REL=BOOKING, BOOKING_SPEED="5.0", CMD="up")
+        self.assertRegex(path.name, r"^live_flight_booking_\d{8}T\d{6}Z\.json$")
+        # Same directory and stamp shape as live_flight_log_<UTC>.json on purpose: the sidecar is
+        # written at BRINGUP, so it always sorts BEFORE the log of the flight it belongs to.
+        self.assertEqual(path.parent.name, "results")
+
+    def test_it_carries_the_path_the_speed_and_the_recipe_line(self):
+        (path,) = self.write(BOOKING_PATH_REL=BOOKING, BOOKING_SPEED="5.0", CMD="up")
+        doc = json.loads(path.read_text())
+        self.assertEqual(doc["booking"], {"path": BOOKING, "booked_speed_mps": 5.0,
+                                          "parameter": BOOKED_PARAM})
+        self.assertEqual(doc["recipe_line"], BOOKED_LINE)
+        self.assertEqual(doc["kind"], "live_flight_booking")
+        self.assertIn("scripts/fly_pipeline.sh up", doc["written_by"])
+        # The explicit flag is the contract; the sidecar only makes it typeable. Say so in the file.
+        self.assertIn("--booking", doc["note"])
+        self.assertTrue((REPO_ROOT / doc["booking"]["path"]).exists(),
+                        msg="the sidecar must name a path that exists from the repo root")
+
+    def test_an_unbooked_bringup_writes_no_sidecar_at_all(self):
+        # Absence is the signal: no file means nothing booked this flight. An empty or null-filled
+        # sidecar would let a reader believe a booking was checked and found blank.
+        self.assertEqual(self.write(BOOKING_PATH_REL="", BOOKING_SPEED="", CMD="up"), [])
+
+    def test_up_is_what_writes_it_and_a_dry_run_never_does(self):
+        body = SCRIPT.read_text().split("\ncmd_up() {", 1)[1].split("\n}", 1)[0]
+        self.assertIn("write_booking_sidecar", body)
+        # ...and it is on the non-dry branch: a dry run must leave the machine as it found it.
+        self.assertIn("write_booking_sidecar", body.split("else", 1)[1])
+        out = self.run_script("--dry-run", "--booking", BOOKING, "up").stdout
+        self.assertIn("eval/results/live_flight_booking_", out)
+
+    def test_the_sidecar_is_git_allowlisted_so_it_survives_into_the_repo(self):
+        """eval/results/* is gitignored. An evidence file nobody committed does not exist (the
+        2026-08-05 clobber lesson), and this one is what says the take was the authorised take."""
+        self.assertIn("!eval/results/live_flight_booking_*.json",
+                      (REPO_ROOT / ".gitignore").read_text())
+
+
+class TestGateRecordCarriesTheBooking(BookingTestCase):
+    """The test-flight gate record, schema 1.1 -> 1.2."""
+
+    def record(self, **assign):
+        code = ('mkdir -p "$REPO_ROOT/work/tails"; : >"$REPO_ROOT/work/evidence.txt"\n'
+                'TF_WORK="$REPO_ROOT/work"; TF_START=2026-09-07T00:00:00Z; TF_T0=0\n'
+                'TF_MISSION_NAME=test_2lane; TF_FRAMES=681; TF_CELLS=417\n'
+                + "\n".join(f'{k}="{v}"' for k, v in assign.items())
+                + '\ntf_write_record\nprintf "%s\\n" "$TF_RECORD"\n')
+        path = Path(self.source_and_run(code).stdout.strip())
+        return json.loads(path.read_text())
+
+    def test_a_booked_flight_records_what_it_was_authorised_to_fly(self):
+        record = self.record(BOOKING_PATH_REL=BOOKING, BOOKING_SPEED="5.0")
+        self.assertEqual(record["schema_version"], "1.2")
+        self.assertEqual(record["booking"], {"path": BOOKING, "booked_speed_mps": 5.0,
+                                             "parameter": BOOKED_PARAM})
+
+    def test_an_unbooked_flight_records_null_not_a_guess(self):
+        record = self.record(BOOKING_PATH_REL="", BOOKING_SPEED="")
+        self.assertEqual(record["schema_version"], "1.2")
+        self.assertIsNone(record["booking"])
+
+    def test_the_rest_of_the_record_is_unchanged_by_the_bump(self):
+        record = self.record(BOOKING_PATH_REL="", BOOKING_SPEED="")
+        for key in ("frames_recorded", "cells_imaged", "evidence_floor", "result", "mission",
+                    "clip", "pane_tails", "evidence"):
+            self.assertIn(key, record)
+        self.assertEqual(record["frames_recorded"], 681)
+
+
+class TestTheDodgeRunbookFliesTheBookedRecipe(unittest.TestCase):
+    """`docs/runbooks/AVOIDANCE_REAL_DETECTION.md` — the page a dodge take is booked and flown from.
+
+    Its §2 recipe is a COPY of the launcher's, and a copy is how a runbook stops describing the
+    flight. Diffed here against the launcher's booked recipe for the committed artifact, which is
+    also the one §0g tells the operator to pass.
+    """
+
+    def setUp(self):
+        self.doc = DODGE_RUNBOOK.read_text()
+
+    def test_its_fly_recipe_is_the_booked_recipe(self):
+        self.assertEqual(recipe_blocks(self.doc, "## 2. Fly it")[0], runbook_booked_fly_lines())
+
+    def test_it_makes_booking_the_bringup_mandatory_and_names_the_artifact(self):
+        section = self.doc.split("### 0g.", 1)[1].split("\n---", 1)[0]
+        self.assertIn("MANDATORY", self.doc.split("### 0g.", 1)[1].split("\n", 1)[0] + section)
+        self.assertIn(f"--booking {BOOKING}", section)
+        self.assertIn(BOOKED_LINE, section)              # the exact line the recipe will carry
+        self.assertIn("not the authorised take", section)
+        self.assertIn("live_flight_booking_", section)          # names the sidecar it writes
+
+    def test_the_launcher_flag_stays_out_of_section_0f(self):
+        """A LOAD-BEARING boundary, not style: tests/test_verify_depth_mount_geometry.py checks
+        that every `--flag` printed in §0f is one `predict_forward_lead.py` accepts. `--booking` is
+        the LAUNCHER's flag, so putting it in §0f turns that test red on a doc edit."""
+        section_0f = self.doc.split("### 0f.", 1)[1].split("\n---", 1)[0]
+        self.assertNotIn("--booking", section_0f)
+
+    def test_the_bringup_command_it_publishes_carries_the_booking(self):
+        bringup = self.doc.split("## 1. Bringup", 1)[1].split("\n## ", 1)[0]
+        self.assertIn(f"scripts/fly_pipeline.sh --booking {BOOKING} up", bringup)
+
+    def test_the_POST_FLIGHT_scoring_command_carries_the_booking_too(self):
+        """QA finding G139: §0g called booking the bringup MANDATORY while §5's own scoring command
+        omitted `--booking`, so an operator following the page verbatim never ran the enforcement
+        the same page calls mandatory. Doc contradicting doc, in the one procedure that decides.
+        Without the flag the gate prints a NOTE and the verdict is unaffected."""
+        section = self.doc.split("## 5. Post-flight gates", 1)[1].split("\n## ", 1)[0]
+        gate1 = section.split("**Gate 1", 1)[1].split("```", 2)[1]
+        self.assertIn("check_live_flight_log.py", gate1)
+        self.assertIn("--booking", gate1)
+        # ...and the variable it uses is captured in the same section, so the block is runnable.
+        self.assertIn("BOOKING=", section)
+        self.assertIn(BOOKING, section)
+
+    def test_the_evidence_table_names_the_booking_flag(self):
+        """Line 13's table is what a reader skims instead of §5. It said `--truth ...` alone."""
+        row = [line for line in self.doc.splitlines()
+               if "live_flight_log_<UTC>.json" in line and line.startswith("|")]
+        self.assertEqual(len(row), 1, msg=row)
+        self.assertIn("--booking", row[0])
+
+    def test_the_visibility_precheck_runs_at_the_BOOKED_speed_not_a_literal(self):
+        """QA finding G140: §0b's abort gate was hard-coded to `--speed 9.4` while §0g booked 5.0 --
+        the exact speed-mismatch failure ADR-016 exists to prevent, and the answer really moves
+        (5.0: 2 of 3 birds below the floor; 9.4: 3 of 3). The command must read the speed out of
+        the booking artifact rather than carry a number of its own."""
+        section = self.doc.split("### 0b.", 1)[1].split("\n### ", 1)[0]
+        cmd = [b for b in fenced_blocks(section) if "predict_bird_visibility.py" in b][0]
+        self.assertIn("mission_speed_mps", cmd, msg=cmd)
+        self.assertNotIn("--speed 9.4", cmd, msg=cmd)
+        self.assertIn(BOOKING, cmd)
+
+
+class TestNodeSubcommand(LauncherTestCase):
+    """`node` — Shell 8 of the dodge take (AVOIDANCE_REAL_DETECTION.md 1 and 1a).
+
+    This is the one pane that COMMANDS the vehicle, and the one the launcher may not invent: the
+    rule (ADR-013) is that the launcher wraps one-liners that have already flown, so what `node`
+    types must be the runbook's line character for character. Both arms are diffed against the
+    runbook here, which is also what makes the default arm's claim checkable — `ndvi` is the node's
+    OWN default, so the documented command must come out with no flag appended at all.
+    """
+
+    def dry(self, *args):
+        result = self.run_script("--dry-run", "node", *args)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        return result.stdout
+
+    @staticmethod
+    def payload(out):
+        """The docker exec line the pane would run, exactly as the runbook spells such a line."""
+        line = [ln for ln in out.splitlines() if "docker exec -it" in ln][0]
+        return line.split("-n node ", 1)[1]
+
+    def test_the_default_arm_is_the_runbooks_shell_8_line_byte_for_byte(self):
+        self.assertIn(self.payload(self.dry()), DODGE_RUNBOOK.read_text())
+
+    def test_the_depth_arm_is_the_runbooks_1a_line_byte_for_byte(self):
+        payload = self.payload(self.dry("--detection-source", "depth"))
+        self.assertIn("--detect --detection-source depth", payload)
+        self.assertIn(payload, DODGE_RUNBOOK.read_text())
+
+    def test_the_default_appends_nothing_at_all(self):
+        """`--detection-source ndvi` must be byte-identical to passing nothing: the node's default
+        IS ndvi, and a launcher that spelled it out would stop matching the documented command."""
+        self.assertEqual(self.payload(self.dry()),
+                         self.payload(self.dry("--detection-source", "ndvi")))
+        self.assertNotIn("--detection-source", self.payload(self.dry()))
+
+    def test_both_arms_carry_detect_because_the_node_refuses_depth_without_it(self):
+        # src/fieldguard_planning/avoidance_node.py: `--detection-source depth` without `--detect`
+        # is a parser error on purpose. The launcher can only ever emit the accepted combination.
+        for args in ((), ("--detection-source", "depth")):
+            self.assertIn("avoidance_node --detect", self.payload(self.dry(*args)))
+
+    def test_an_unknown_detector_is_refused_before_anything_runs(self):
+        result = self.run_script("--dry-run", "node", "--detection-source", "lidar", shims=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not one of: ndvi depth", result.stderr)
+        self.assertEqual(self.shim_calls(), [])
+
+    def test_the_flag_needs_a_value(self):
+        result = self.run_script("--dry-run", "node", "--detection-source")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--detection-source needs one of", result.stderr)
+
+    def test_every_other_subcommand_REFUSES_the_flag_rather_than_ignoring_it(self):
+        """`up --detection-source depth` can only mean the operator believes the bringup decides
+        the take's sensor. It does not — `up` never starts the node — and a silent no-op there
+        costs a booked Docker session and returns a take whose sensor is not the one intended."""
+        for subcommand in ("up", "status", "birds", "test-flight", "attach"):
+            with self.subTest(subcommand=subcommand):
+                result = self.run_script("--dry-run", subcommand,
+                                         "--detection-source", "depth", shims=True)
+                self.assertNotEqual(result.returncode, 0, msg=result.stdout)
+                self.assertIn("does not start the node", result.stderr)
+                self.assertEqual(self.shim_calls(), [], "it must refuse before touching anything")
+
+    def test_teardown_is_never_blocked_by_the_flag(self):
+        """The one exception, and the same one `--booking` makes: `down` after a depth take is the
+        command that waits for the flight log. A stray flag may not stand between a flown take and
+        its evidence — so `down` says the flag did nothing and tears down anyway."""
+        result = self.run_script("down", "--detection-source", "depth", shims=True)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("no effect on 'down'", result.stderr)
+        self.assertIn("nothing to tear down", result.stdout)
+
+    def test_up_still_does_not_start_the_node(self):
+        """ADR-013's carve-out: `up` brings the stack up and stops. The node is started by a
+        separate, deliberate command, because it is the pane that can take the vehicle over."""
+        self.assertNotIn("avoidance_node", self.run_script("--dry-run", "up").stdout)
+
+    def test_it_refuses_without_a_bringup_and_hands_over_the_manual_command(self):
+        result = self.run_script("node", shims=True)      # FG_TMUX_HAS_SESSION unset -> no session
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no tmux session", result.stderr)
+        self.assertIn("avoidance_node --detect", result.stderr,
+                      "a refusal must still hand over the shell the operator can run by hand")
+
+    def test_the_dry_run_states_the_evidence_rule(self):
+        # The node writes the flight log on SHUTDOWN. An operator who tears down early has flown
+        # the take and lost it; this is the one line that stops that, so it is pinned.
+        self.assertIn("wrote flight log ->", self.dry())
+
+    def test_the_already_running_refusal_now_knows_about_the_node(self):
+        """`up`'s refusal greps the container's process list. Until the launcher could start the
+        node, `avoidance_node` was documented as a known gap in that list; starting it here closes
+        the gap — a surviving node still holds /ap/* and can still command a vehicle a new bringup
+        thinks it owns."""
+        code = f'source "{SCRIPT}"; declare -f running_sim_procs'
+        body = subprocess.run(["bash", "-c", code], capture_output=True, text=True,
+                              cwd=str(REPO_ROOT), check=True).stdout
+        self.assertIn("fieldguard_planning.avoidance_node", body)
+
 
 class TestSubcommandsWithNoSession(LauncherTestCase):
     def test_attach_exits_nonzero_with_a_named_cause(self):
@@ -213,9 +853,14 @@ class TestTeardownOrder(LauncherTestCase):
     ("recorder SIGINTed first; finalize confirmed; session killed") is the ordering under test.
     """
 
+    # One pane text serves every window the shim is asked to capture, so it carries BOTH shutdown
+    # lines teardown waits on: the recorder's finalize and the avoidance node's flight log. Without
+    # the second, `down` would poll the node pane for its full NODE_LOG_S budget in this test.
     FINALIZED = ("[record_node] clip finalized: {'num_frames': 12}\n"
                  "[record_node] next: python3 scripts/stitch_ndvi.py "
-                 "--clip /workspace/fieldguard/eval/results/clips/real_flight_20260818T221641Z")
+                 "--clip /workspace/fieldguard/eval/results/clips/real_flight_20260818T221641Z\n"
+                 "[avoidance_node] wrote flight log -> "
+                 "/workspace/fieldguard/eval/results/live_flight_log_20260825T210402Z.json")
 
     _run = None   # `down` sleeps 5 s waiting out the panes; pay that once, assert on it three times
 
@@ -244,8 +889,22 @@ class TestTeardownOrder(LauncherTestCase):
     def test_the_session_is_killed_only_after_every_window_is_signalled(self):
         kill = self.index_of("kill-session")
         last_signal = max(self.index_of("list-panes", f":{w}") for w in
-                          ("record", "birds", "ndvi", "sitl", "agent", "bridge", "gazebo"))
+                          ("record", "node", "birds", "ndvi", "sitl", "agent", "bridge", "gazebo"))
         self.assertLess(last_signal, kill, msg="\n".join(self.calls))
+
+    def test_the_avoidance_node_is_signalled_second_and_its_flight_log_waited_for(self):
+        """The node writes its flight log in a `finally` after `rclpy.spin`, so teardown that does
+        not wait for it throws away the take's only evidence (AVOIDANCE_REAL_DETECTION.md 4:
+        nothing else may be stopped until `wrote flight log ->` appears). Recorder first, node
+        second, everything else after -- and the recovered path is printed, so an operator who
+        looks away still learns whether the flight was written."""
+        node = self.index_of("list-panes", ":node")
+        self.assertLess(self.index_of("list-panes", ":record"), node, msg="\n".join(self.calls))
+        for later in ("birds", "ndvi", "sitl", "agent", "bridge", "gazebo"):
+            self.assertLess(node, self.index_of("list-panes", f":{later}"), later)
+        self.assertIn("flight log written: "
+                      "/workspace/fieldguard/eval/results/live_flight_log_20260825T210402Z.json",
+                      self.result.stdout)
 
     def test_it_waits_for_the_real_finalize_string_and_recovers_the_clip(self):
         # Pinned against src/fieldguard_planning/record_node.py: if either side reworded, `down`
@@ -257,7 +916,7 @@ class TestTeardownOrder(LauncherTestCase):
 
 class TestDryRunChangesNothing(LauncherTestCase):
     def test_no_docker_no_tmux_no_temp_file(self):
-        for subcommand in ("up", "test-flight", "down", "status", "birds", "attach"):
+        for subcommand in ("up", "test-flight", "down", "status", "birds", "node", "attach"):
             with self.subTest(subcommand=subcommand):
                 self.run_script("--dry-run", subcommand, shims=True)
         self.assertEqual(self.shim_calls(), [])

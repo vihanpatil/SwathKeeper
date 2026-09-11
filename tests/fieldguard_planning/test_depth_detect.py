@@ -311,6 +311,83 @@ class TestSeamContract(unittest.TestCase):
             self.assertIsInstance(v, int, msg=k)
 
 
+class TestTheIntrinsicsMustDESCRIBETheFrame(unittest.TestCase):
+    """Rule 4's second half (QA, 2026-09-07). `decode_depth_frame` refuses a step or a payload
+    length that disagrees with the frame because a mis-strided buffer un-projects to the wrong
+    place -- and then handed the array to a projection that never looked at the OTHER half of the
+    same geometry. Measured on this class: one 6x6 patch at rows 100-106 / cols 500-506 at 20 m,
+    drone (10, 20, 15) nose east, lands at ENU (30.150, 12.962, 20.269) under the matched 640x480
+    camera_info and at (30.150, -6.384, 16.308) under a 320x240 one -- 19.35 m of lateral and
+    3.96 m of vertical error, silently."""
+
+    BOX = (500.0, 100.0, 506.0, 106.0)
+
+    @staticmethod
+    def _half_res():
+        """What a 320x240 `camera_info` off this sensor really says: the principal point AND the
+        focal length scale with the resolution. (A half-size frame with the full-size fx is a
+        different, milder error -- 6.15 m here -- and pinning that one would understate the case.)"""
+        return CameraIntrinsics(width_px=320, height_px=240, fx=INTR.fx / 2.0, fy=INTR.fy / 2.0,
+                                cx=160.0, cy=120.0)
+
+    def _src(self, intr):
+        src = DepthDetectionSource(_one_box_segmenter(20.0, self.BOX))
+        src.set_intrinsics(intr)
+        return src
+
+    def test_the_mismatch_this_exists_for_really_does_move_the_obstacle(self):
+        """The premise, measured rather than asserted: without the guard the wrong camera_info is
+        not a crash, it is a confident detection 19 m from the truth."""
+        matched = depth_pixel_to_enu(503.0, 103.0, 20.0, INTR, (10.0, 20.0, 15.0), IDENTITY_Q)
+        wrong = depth_pixel_to_enu(503.0, 103.0, 20.0, self._half_res(),
+                                   (10.0, 20.0, 15.0), IDENTITY_Q)
+        self.assertAlmostEqual(abs(matched[1] - wrong[1]), 19.346, places=2)
+        self.assertAlmostEqual(abs(matched[2] - wrong[2]), 3.961, places=2)
+
+    def test_a_frame_whose_shape_is_not_the_camera_infos_is_counted_and_dropped(self):
+        src = self._src(self._half_res())
+        frame = np.zeros((480, 640), dtype=np.float32)     # the image gz actually publishes
+        self.assertEqual(src.on_frame(1.0, frame, (10.0, 20.0, 15.0), IDENTITY_Q), [])
+        c = src.counters()
+        self.assertEqual(c["depth_msgs_received"], 1)      # counted BEFORE the guard, rule 5
+        self.assertEqual(c["dropped_frame_shape_mismatch"], 1)
+        self.assertEqual(c["frames_detected_on"], 0)       # the segmenter never ran
+
+    def test_the_matched_pair_detects_normally_so_the_guard_is_not_just_off(self):
+        frame = np.zeros((480, 640), dtype=np.float32)
+        dets = self._src(INTR).on_frame(1.0, frame, (10.0, 20.0, 15.0), IDENTITY_Q)
+        self.assertEqual(len(dets), 1)
+        self.assertAlmostEqual(dets[0].position_enu[1], 12.962, places=3)
+        self.assertEqual(self._src(INTR).counters()["dropped_frame_shape_mismatch"], 0)
+
+    def test_a_frame_object_with_no_shape_is_not_refused_here(self):
+        """The dtype/rank contract belongs to the SEGMENTER, which raises on anything that is not a
+        float32 (H, W). Refusing shapeless objects here would only break the fakes."""
+        self.assertEqual(len(self._src(INTR).on_frame(1.0, object(), (0, 0, 15), IDENTITY_Q)), 1)
+
+    def test_an_UNCALIBRATED_camera_info_is_refused_at_ARMING_not_in_the_air(self):
+        """ROS publishes an all-zero K for an uncalibrated camera, and `pixel_to_camera_ray`
+        divides by fx: taking it arms the detector and then raises ZeroDivisionError out of a
+        subscription callback on the first frame carrying a box -- after takeoff."""
+        src = DepthDetectionSource(_one_box_segmenter(20.0, self.BOX))
+        zeros = CameraIntrinsics(width_px=640, height_px=480, fx=0.0, fy=0.0, cx=0.0, cy=0.0)
+        with self.assertRaises(ValueError) as ctx:
+            src.set_intrinsics(zeros)
+        self.assertIn("uncalibrated", str(ctx.exception).lower())
+        self.assertIsNone(src.intr)                        # and it did NOT arm
+
+    def test_every_unusable_intrinsic_is_refused_the_same_way(self):
+        src = DepthDetectionSource(_one_box_segmenter(20.0, self.BOX))
+        for bad in (dict(fx=0.0), dict(fy=0.0), dict(fx=-520.0), dict(fy=float("nan")),
+                    dict(width_px=1), dict(height_px=0)):
+            kw = dict(width_px=640, height_px=480, fx=520.0, fy=520.0, cx=320.0, cy=240.0)
+            kw.update(bad)
+            with self.subTest(**bad):
+                with self.assertRaises(ValueError):
+                    src.set_intrinsics(CameraIntrinsics(**kw))
+        self.assertIsNone(src.intr)
+
+
 class TestStaticMapAnnotation(unittest.TestCase):
     """M7: the forward frame is full of MAPPED clutter -- tree canopies enter from ~24.4 m and the
     ground from ~32.5 m, both inside the 33.6 m horizon the booking gate needs at 5 m/s -- and depth

@@ -1,11 +1,17 @@
-"""PENDING safety-scenario assertions -- the Week 3-4 avoidance loop's acceptance tests, written NOW.
+"""Safety-scenario assertions -- the avoidance loop's acceptance tests.
 
-Every test here states, as a real executable assertion, a safety property that cannot be checked
-until the reactive-avoidance loop exists and can emit a FLIGHT LOG. They are not stubs: the assertion
-body is complete. They are SELF-ACTIVATING -- each skips only because its scenario's flight log does
-not exist yet (`eval/scenarios/<name>/flight_log.json`). The moment the Week 3-4 loop is run on a
-scenario and drops its log there, the matching test goes live with ZERO edits. That is deliberate:
-Week 3 turns these on by producing artifacts, not by inventing assertions.
+Every test here states, as a real executable assertion, a safety property of the reactive-avoidance
+loop. They are not stubs: the assertion body is complete, and each is SELF-ACTIVATING -- it skips
+only while the artifact it scores does not exist.
+
+THE SAFETY-CRITICAL FAMILY WAS WIRED ON 2026-09-10, 37 days after it was written. `TestNoMissedBird`
+was the one class here labelled SAFETY-CRITICAL and it had executed ZERO times, because it waited on
+`eval/scenarios/det_bird_crosses_path/flight_log.json` -- a synthetic scenario nobody ever generated,
+and which by now would be WEAKER evidence than what the repo holds: two real-render clips, labelled
+from the bird driver's own applied poses, scored by this same `eval/score.py`. So the FNR arm now
+scores the committed real-render evidence (`eval/results/adr003_20260823/`, the ADR-003 am. 7 ADOPT
+clip) and the synthetic scenario is retired rather than waited on. Its adversarial sibling (a bird
+over bare, low-NDVI soil) stays skipped and says exactly what it is missing -- see that test.
 
 Flight-log contract (also in eval/scenarios/README.md -- keep the two in sync):
   {
@@ -27,7 +33,10 @@ Flight-log contract (also in eval/scenarios/README.md -- keep the two in sync):
 Property families and where their truth comes from:
   * coverage-debt ledger    -> fieldguard_planning.coverage.check_ledger  (no silently-skipped cell)
   * geofence (3D)           -> fieldguard_planning.geofence + altitude band (no breach on avoid path)
-  * missed-bird / FNR       -> eval/score.py per_bird_track_fnr == 0        (the SAFETY-CRITICAL one)
+  * missed-bird / FNR       -> eval/score.py per_bird_track_fnr == 0        (the SAFETY-CRITICAL one),
+                               scored on the COMMITTED real-render labels, with its denominators
+                               asserted beside it -- a rate over no bird-frames is 0.0 and reads
+                               as perfect
 
 stdlib unittest only. Run: python3 -m unittest discover -s tests/fieldguard_planning -v
 """
@@ -49,6 +58,14 @@ SCENARIOS_DIR = REPO_ROOT / "eval" / "scenarios"
 STATIC_OBSTACLES = REPO_ROOT / "config" / "static_obstacles.json"
 FIELD_POLYGON = REPO_ROOT / "config" / "field_polygon.json"
 
+# The real-render evidence the missed-bird family is scored on: the ADR-003 am. 7 ADOPT clip
+# (2026-08-23), the only committed label set with every bird of the world visible on some frame.
+# Its sibling `adr003_20260825/` is deliberately NOT used: 1 of 3 birds ever visible, 2 bird-frames,
+# and its own `spike_scores.json` calls itself EVIDENCE INSUFFICIENT -- a per-bird FNR of 0.0 over
+# one bird is 0.0 because the denominator is one, which is precisely the vacuous green this
+# project's rules forbid.
+ADR003_EVIDENCE = REPO_ROOT / "eval" / "results" / "adr003_20260823"
+
 TREE_HEIGHT_M = 3.5
 # A flown point is "in the tree danger band" if it is at or below tree height + a vertical buffer.
 # Below this altitude an XY geofence breach is a real collision, not a benign over-flight.
@@ -56,12 +73,13 @@ TREE_DANGER_BAND_TOP_M = TREE_HEIGHT_M + 2.0
 
 
 def _load_flight_log(name: str) -> dict:
-    """Load a scenario's flight log, or skip the test if the avoidance loop hasn't produced one."""
+    """Load a scenario's flight log, or skip the test if nobody has generated one."""
     log_path = SCENARIOS_DIR / name / "flight_log.json"
     if not log_path.exists():
         raise unittest.SkipTest(
-            f"PENDING avoidance loop (Week 3-4): no flight log at {log_path}. This assertion goes "
-            f"live automatically once the loop runs scenario '{name}' and writes that file.")
+            f"no flight log at {log_path}: `eval/scenarios/generate_flight_logs.py` does not "
+            f"produce scenario '{name}'. This assertion goes live with zero edits the moment that "
+            f"file exists.")
     return json.loads(log_path.read_text())
 
 
@@ -107,31 +125,113 @@ class TestNoSilentlySkippedCell(unittest.TestCase):
 
 
 class TestNoMissedBird(unittest.TestCase):
-    """SAFETY-CRITICAL. Reuses eval/score.py so the safety bar is the SAME metric family as ADR-003:
-    per-bird-track FNR == 0 (every bird detected on >=1 frame BEFORE closest approach)."""
+    """SAFETY-CRITICAL, and LIVE since 2026-09-10. Reuses eval/score.py so the safety bar is the
+    SAME metric family as ADR-003: per-bird-track FNR == 0 (every bird detected on >=1 frame BEFORE
+    its closest approach; a bird first seen at/after closest approach is a near-miss the loop could
+    not have avoided).
 
-    def _assert_no_missed_bird(self, name: str):
-        log = _load_flight_log(name)
+    Scored on the committed real-render artifacts rather than on a synthetic scenario: the labels
+    are the bird driver's own APPLIED poses (`label_src: applied`), the detector is the adopted one
+    at the adopted threshold, and the frames are the ones the live camera actually rendered --
+    which produced this committed artifact. This test RE-SCORES that artifact, so it catches scorer
+    regressions and artifact drift, NOT a live detector regression: that is CI's seed-42
+    `check_spike_regression.py` step, which re-runs `fieldguard_planning.ndvi_detect` on a
+    regenerated clip."""
+
+    IOU_THRESH = json.loads((ADR003_EVIDENCE / "spike_scores.json").read_text())["iou_thresh"] \
+        if (ADR003_EVIDENCE / "spike_scores.json").exists() else 0.3
+
+    def _evidence(self, gt_path: Path, det_path: Path) -> dict:
+        for p in (gt_path, det_path):
+            if not p.exists():
+                raise unittest.SkipTest(f"{p} absent (eval/results is gitignore-excepted)")
         import score  # eval/score.py; imported lazily so the module isn't required until activated
-        det_cfg = log["detection"]
-        _, gt_by_fid = score.load_gt(REPO_ROOT / det_cfg["ground_truth"])
-        det = json.loads((REPO_ROOT / det_cfg["detections"]).read_text())
-        m = score.score(gt_by_fid, det["frames"], iou_thresh=0.3)
+        _, gt_by_fid = score.load_gt(gt_path)
+        det = json.loads(det_path.read_text())
+        return score.score(gt_by_fid, det["frames"], iou_thresh=self.IOU_THRESH)
+
+    def _assert_no_missed_bird(self, m: dict, label: str):
         self.assertEqual(m["per_bird_track_fnr"], 0.0,
-                         msg=f"[{name}] per-bird-track FNR = {m['per_bird_track_fnr']:.3f} -- a bird "
-                             f"was first seen only at/after closest approach (a near-miss). "
+                         msg=f"[{label}] per-bird-track FNR = {m['per_bird_track_fnr']:.3f} -- a "
+                             f"bird was first seen only at/after closest approach (a near-miss). "
                              f"per-bird: {m['per_bird']}")
 
-    def test_bird_crosses_path(self):
-        """Scenario det_bird_crosses_path: a bird crosses the flight line; detection must fire pre
-        closest-approach."""
-        self._assert_no_missed_bird("det_bird_crosses_path")
+    def test_no_bird_was_missed_before_closest_approach(self):
+        """THE SAFETY ASSERTION. Every bird that the camera ever saw was detected on at least one
+        frame before it was closest to the vehicle."""
+        m = self._evidence(ADR003_EVIDENCE / "ground_truth.json",
+                           ADR003_EVIDENCE / "detections_ndvi.json")
+        self._assert_no_missed_bird(m, ADR003_EVIDENCE.name)
+        for bird in m["per_bird"]:
+            self.assertTrue(bird["detected_before_closest"], msg=f"{bird}")
+
+    def test_the_zero_has_denominators(self):
+        """A per-bird FNR of 0.0 is also what an EMPTY label set returns. So the evidence behind the
+        green is asserted beside it: every bird the world defines was visible on some frame, there
+        are bird-frames to score, and every scored label's POSITION came from a measured source
+        (`applied`) rather than a model."""
+        m = self._evidence(ADR003_EVIDENCE / "ground_truth.json",
+                           ADR003_EVIDENCE / "detections_ndvi.json")
+        birds_in_world = len(json.loads(
+            (REPO_ROOT / "config" / "birds" / "farm_world_birds.json").read_text())["birds"])
+        self.assertEqual(m["birds_with_visible_frames"], birds_in_world,
+                         msg="a bird the world defines was never visible: its per-bird FNR is "
+                             "undefined, not zero")
+        self.assertGreaterEqual(m["visible_bird_frames"], birds_in_world)
+        self.assertEqual(m["unscoreable_label_frames"], 0,
+                         msg=f"labels from an unmeasured source: {m['label_srcs']}")
+
+    def test_the_recompute_agrees_with_the_committed_score(self):
+        """The artifact and the recomputation must not drift: `spike_scores.json` is what the ADRs
+        quote, and this test is what CI runs. Same inputs, same function, same numbers."""
+        committed = json.loads((ADR003_EVIDENCE / "spike_scores.json").read_text())
+        m = self._evidence(ADR003_EVIDENCE / "ground_truth.json",
+                           ADR003_EVIDENCE / "detections_ndvi.json")
+        a = committed["approaches"]["a_ndvi_direct"]
+        for key in ("TP", "FP", "FN", "per_bird_track_fnr", "birds_with_visible_frames",
+                    "visible_bird_frames", "ambiguous_label_frames"):
+            self.assertEqual(m[key], a[key], msg=f"{key} drifted from the committed artifact")
+
+    def test_the_assertion_fails_on_a_near_miss(self):
+        """NOT VACUOUS, proven by construction: a bird whose only detection lands AFTER its closest
+        approach must fail this assertion. Without this, "FNR == 0" is a test that a detector which
+        never fires also passes on an empty label set."""
+        import score
+        gt_by_fid = {
+            1: {"frame_id": 1, "t_s": 10.0,
+                "birds": [{"bird_id": "bird_0", "bbox": [10, 10, 20, 20], "visible": True,
+                           "range_m": 5.0, "label_src": "applied"}]},
+            2: {"frame_id": 2, "t_s": 11.0,
+                "birds": [{"bird_id": "bird_0", "bbox": [10, 10, 20, 20], "visible": True,
+                           "range_m": 9.0, "label_src": "applied"}]},
+        }
+        # Frame 1 is closest approach (5.0 m) and is NOT detected; frame 2, afterwards, is.
+        det_frames = [{"frame_id": 1, "boxes": []},
+                      {"frame_id": 2, "boxes": [[10, 10, 20, 20]]}]
+        m = score.score(gt_by_fid, det_frames, iou_thresh=self.IOU_THRESH)
+        self.assertEqual(m["per_bird_track_fnr"], 1.0)
+        with self.assertRaises(AssertionError):
+            self._assert_no_missed_bird(m, "synthetic near-miss")
 
     def test_bird_over_low_ndvi_ground(self):
-        """Scenario det_bird_over_low_ndvi (ADVERSARIAL): bird over bare/low-NDVI soil -- the exact
-        FN risk ADR-003 flagged. The spike did not trip it on synthetic frames; this re-checks it on
-        the real render, where low NDVI contrast is hardest."""
-        self._assert_no_missed_bird("det_bird_over_low_ndvi")
+        """STILL PENDING, and this is the honest reason (2026-09-10).
+
+        The adversarial arm asks a different question from the one above: is a bird over BARE,
+        low-NDVI soil -- where the bird/background contrast the -0.61 threshold lives on is at its
+        narrowest -- detected before closest approach? Nothing committed can answer it. The label
+        schema (`eval/label_from_sim.py`) records `bbox`, `visible`, `range_m` and `label_src`; it
+        records NOTHING about what the bird was in front of, and the raw frames that would let a
+        reader classify it are gitignored (ADR-013: clips are 12 GB and stay out of the tree).
+
+        It goes live when a label carries the terrain under the bird -- either a `background` field
+        on the GT box, or a committed per-frame NDVI sample of the bbox. Until then this skips, and
+        it does NOT borrow the test above's green: the two are different questions and the repo has
+        evidence for only one of them."""
+        raise unittest.SkipTest(
+            "no committed artifact records what a labelled bird was in front of: the ground-truth "
+            "schema carries bbox/visible/range_m/label_src and no terrain, and the raw frames are "
+            "gitignored. Goes live when a GT box carries the background class (noted 2026-09-10; "
+            "written 2026-08-04, never run).")
 
 
 class TestAvoidanceDoesNotBreachGeofence(unittest.TestCase):

@@ -6,18 +6,23 @@ Every bug QA finds (missed detection, silently-skipped coverage cell, geofence b
 
 ## How to run (all three work, from repo root)
 
-This file is the **one home** for the suite totals. Measured on the verified host **2026-09-07** —
+This file is the **one home** for the suite totals. Measured on the verified host **2026-09-11** —
 re-run all three commands and re-quote **every** quoter if you change any of them. The quoters, so
-a re-quote can be complete rather than partial: `README.md` (evidence table),
-`docs/drafts/README_FULL.md` (same row), `SETUP.md` §(b). *(They all went stale together on the
-2026-08-26 figures through the depth-commissioning sessions — four copies of one measured
-invariant, and nothing that fails when they disagree. Re-quote all four or none.)*
+a re-quote can be complete rather than partial: `README.md` (evidence table) and `SETUP.md` §(b)
+*(`docs/drafts/README_FULL.md` was a fourth quoter until it was deleted on 2026-09-10). They all
+went stale together on the 2026-08-26 figures through the depth-commissioning sessions — copies
+of one measured invariant with nothing that failed when they disagreed; since 2026-09-10
+`tests/test_suite_totals_one_home.py` fails when they do. Re-quote all three or none.)*
 
 ```bash
-python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1029, OK (skipped=2) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 232 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1258 passed, 1 FAILED, 2 skipped, 0 xfail
+python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1372, OK (skipped=1) — the original CI invocation
+python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 329 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1699 passed, 1 FAILED, 1 skipped, 0 xfail
 ```
+
+**The consistency check that matters:** 1372 + 329 = 1701 = 1699 + 1 + 1. If those two sides
+disagree, a file is invisible to one of the runners — which has happened before and is exactly what
+the second, separate CI job exists to prevent.
 
 **The 1 failure is deliberate and load-bearing:** `test_ci_evidence_gate…test_step_passes_on_the_
 committed_evidence` is red because the committed 2026-08-25 take breached its GT-CPA bar and the
@@ -30,8 +35,8 @@ ran only the first for a while; both are gated now. That second command uses the
 not a filename: naming one file is how `tests/test_ci_evidence_gate.py` becomes invisible to it.
 
 The planning root is **not** install-free: ten of its modules import numpy, and on a bare interpreter
-`discover -s tests/fieldguard_planning` exits 1 with 614 of 822 green (unittest turns a module-scope
-import failure into an ERROR, not a skip). `pip install -r requirements-eval.txt` first — see
+`discover -s tests/fieldguard_planning` exits 1 (unittest turns a module-scope import failure into an
+ERROR, not a skip — measured 2026-08-24 as 614 of the 822 tests that existed then). `pip install -r requirements-eval.txt` first — see
 `SETUP.md` §0, including its Python-version floor.
 
 Two traps, learned 2026-08-18:

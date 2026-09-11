@@ -513,3 +513,100 @@ one painted `far/|ray|` pixel so D2 CULL has ground). It reproduces the live run
 only thing in the repo that turns an in-render mutation red BEHAVIOURALLY. Its red case (station 20
 showing a 30 m frame — centred, one component, distinct, so G105 is blind) is exactly the case
 per-station depth evidence was added for.
+
+**The DEPTH SEGMENTER layer (2026-09-07, `feat/depth-segmenter`).** Operator:
+`src/fieldguard_planning/depth_segment.py` (`closing(D,K) - D > margin`, K 15 / margin 1.5 /
+min_area 10 / open_iter 0 / max_boxes 64 / link_break False). Evidence:
+`eval/score_depth_segmenter.py` -> `eval/results/depth_segmenter_score_20260907T093000Z.json` +
+`eval/results/depth_dataset_20260907/REPORT.md` + 6 `fixtures/*.npz`. Tests:
+`tests/fieldguard_planning/test_depth_segment.py` (32) + `test_depth_segmenter_score_artifact.py`
+(17). Suite after: **Ran 1150, OK (skipped=2)**.
+
+*The four independent re-derivations that ARE the review (each ~30 s, all reproduced 2026-09-07):*
+1. **Labeller without the scorer's negative-control diff** — ray-cast the committed SDF (ground
+   plane + 18 canopy spheres + 18 trunk cylinders, cull on `Z*|dir|`) and take the pixels the render
+   draws >0.5 m nearer than the model. Camera pose = `vehicle_readback` composed with
+   `depth_link_readback_parent_relative`; `u = cx + fx*(-d_y)/d_x`, `v = cy + fy*(-d_z)/d_x`.
+   Result: 0.35 px / 0.011 m worst over 13 stations incl. 270-deg yaw, off-axis, ground-band, pitched.
+2. **Negatives un-projected by hand** — `world = cam_p + depth * (cam_R @ [1, -(u-cx)/fx,
+   -(v-cy)/fy])`, then "inside 2.0 m of a tree axis AND 0<=z<=4.8" (that IS `unsafe_obstacle_3d`).
+   All 135 boxes on the 9 negative frames reproduce the artifact exactly; the z<=4.8 escape is used
+   once, on the pitched negative.
+3. **Occlusion truth** — a zero-changed-pixel frame is ALSO what a failed teleport looks like.
+   Ray-cast along the bird's own ray and require an occluder nearer: 33.64 vs 37.00, 43.61 vs 47.00,
+   43.61 vs 45.00 m. (S058/S059/S060 are byte-identical to S061, the P1 negative: 4 frames, 1 sha1.)
+4. **Median-flip margin** — for each matched component, `bird_px / component_px` from the
+   negative-control diff. The number the artifact does not print, and the one that found G148.
+
+*Source-level mutation (do this, not just the `_mask_terms` hook): back up
+`depth_segment.py`, `str.replace` one construct, run the two test files, restore, `git diff` to
+prove clean.* 12 mutants, 10 killed (added max_area 4000; truncation sorted `-r[0]`; mean instead of
+median; inclusive clip window; each of margin/min_area/K/link_break moved one rung; clip_window and
+step_over_margin deleted). Survivors: `isfinite` alone (documented-redundant, correct) and
+`closing(z)` instead of `closing(zb)` = **G150**.
+
+**The DEPTH-SOURCE WIRING layer (2026-09-07, `feat/depth-segmenter` over 0a84ad6).**
+`avoidance_node --detect --detection-source {ndvi,depth}` (default ndvi; depth without `--detect`
+is a parser error). Tests: `tests/fieldguard_planning/test_avoidance_node_depth_seam.py` (41) plus
+additions to `test_avoidance_node_seam.py` and `test_check_live_flight_log_schema2.py`. Findings:
+[[project-open-safety-gaps]] G157-G166.
+
+*The four probes worth re-running, each ~10 s:*
+1. **"Did the DEFAULT move?"** — `git archive HEAD | tar -x -C <scratch>/before`, then run
+   `parse_args`/`detector_config_from_args`/`build_detection_source`/`detector_log_block` for
+   `[]`, `["--detect"]`, `["--demo"]`, `None` in BOTH trees as subprocesses and diff the JSON.
+   This is the cheapest possible "the flag ships OFF" check and it is stronger than any test in
+   the tree, because it compares the ARTIFACT, not an assertion about it.
+2. **Orientation on an OFF-CENTRE patch.** Every committed depth test uses a block centred on the
+   principal point, where u and v are symmetric and a swap is invisible. Put the patch at
+   `[100:106, 500:506]` and hand-derive
+   `body = (1, -(u-cx)/fx, -(v-cy)/fy)`, `ENU = pos + R(q)@(0.15,0,0) + d*R(q)@body`.
+   Matches to 0.0 m; a u/v swap would move it 12.31 m.
+3. **The MISSION-REALISM run.** Feed all 85 `eval/results/depth_dataset_20260907/S*.npy` through
+   `feed_depth_frame` with the station's own `cam_enu`/`cam_yaw_deg` (quat from yaw; `cam_enu` is
+   the VEHICLE, the 0.15 m mount is added by the seam) and then through the REAL
+   `AvoidancePolicy().decide_multi`. Answers "what does the wired detector do on the world it is
+   about to fly" -- median 16 / max 24 detections per frame, 87.5 % static-map-annotated. Run it in
+   the container too: it is the only stack-equivalence evidence that exists for this layer.
+4. **The gate-reachability sweep.** `grep -n "DET_NDVI_BLOB\|DET_DEMO_VIRTUAL\|DETECTOR_SOURCES"
+   scripts/check_live_flight_log.py` and ask of EVERY hit "what does a `depth_blob` log do here?".
+   That one grep found G157 (the booking predicate) and G158's third net in about a minute.
+   **Generalise: whenever a new value joins an enum, the finding is in the branches that did NOT
+   get updated, and they are always reachable by grepping the OLD members.**
+
+**THE DEPTH-LOG SCORING LAYER (P1, 2026-09-07) — how to re-break it in 5 minutes**
+- Gates: `scripts/check_live_flight_log.py` `gate_depth_detector_ran` / `gate_depth_range_model` /
+  `depth_range_error` / `gate_depth_frustum` / `gate_depth_acquisition` / `gate_depth_static_map` /
+  `depth_na_notes`, routed from `check_schema2`'s one real-detector branch on
+  `source == DET_DEPTH_BLOB`. Tests: `tests/fieldguard_planning/test_check_live_flight_log_depth.py`.
+- **An INDEPENDENT synthetic depth-log builder is the whole trick.** The committed fixtures call the
+  node's own `_depth_detector_log_block`, which is right for drift but shares the builder's
+  assumptions. A hand-written block + a 5-tick due-east path at 1 m/tick (= the booked 5.0 m/s) +
+  `takeover 2 -> detection 2 -> maneuver 2 -> resume 4` reproduces every bar in isolation. **One
+  truth track per probe dir** — the AMBIGUOUS-TAKE guard is real and will mask the bar under test.
+- **Geometry helper that pays for itself:** a world point at a chosen bearing, course due east, is
+  `(cam_e + d, cam_n - d*tan(az), cam_u - d*tan(el))` with `cam = drone + 0.15 m` forward. 1 deg
+  inside / 1 deg outside the derived half-angle is the whole bar-4 probe.
+- **Mutation, TWO rounds, and put `time.sleep(1.1)` between writes** — successive same-second writes
+  to `scripts/check_live_flight_log.py` are served from `scripts/__pycache__` and a killed mutant
+  reports as SURVIVED (cost me one false "bar 5 breakeven survives"). Round 1 = delete each gate's
+  call site (8/8 killed). Round 2 = weaken the BAR (constants, `problems.append` -> `notes.append`,
+  disable a conjunct): 17 mutants, and the survivors were the findings — `problems -> notes` on both
+  of bar 4's branches, and the bar-7 wording constant.
+- **The confound to look for in ANY red fixture: is the INVALID verdict coming from the gate under
+  test, or from a neighbour?** Bar 4's fixtures were at 20 m, which bar 5 fails independently. Put
+  the fixture where every OTHER bar is green, and assert on the gate function's own `problems` list,
+  not on the joined message blob (notes and problems are joined in both verdict branches).
+- **The pre-diff snapshot is the NDVI-path guard:** `tests/.../fixtures/check_live_flight_log_committed_output.txt`
+  == `git show HEAD:scripts/check_live_flight_log.py` run over the three committed logs (verified
+  byte-identical 2026-09-07). To reproduce the "before", the temp copy must live in `scripts/` —
+  `REPO_ROOT` is derived from `__file__`, so a copy in /tmp cannot import `fieldguard_planning`.
+- Checker is stdlib-only by contract: `/opt/homebrew/bin/python3.12` has no numpy and produces
+  byte-identical output on all three committed logs and on a synthetic depth log. Host is 3.9.6.
+
+*Mutation harness for this layer:* `cp -R src scripts config tests eval <scratch>/qa2`, symlink
+`eval/results` back to the repo (the dataset is 100 MB), and run
+`test_avoidance_node_depth_seam.py test_avoidance_node_seam.py test_check_live_flight_log_schema2.py
+test_depth_detect.py test_depth_segment.py` = 349 tests, ~1.8 s. Baseline in that copy is **4 red**
+(`TestStaticMountGate` needs `sim/worlds/`), so count FAILED names excluding it, not the summary
+line. 22 mutants, 18 killed; the 4 survivors are G160/G161/G162/G163.

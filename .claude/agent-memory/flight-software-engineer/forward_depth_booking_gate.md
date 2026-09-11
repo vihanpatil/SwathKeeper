@@ -60,6 +60,10 @@ without `scripts/predict_forward_lead.py` exiting **0** on live-measured inputs.
   FLOOR that says more about the scene than the horizon. Schema **1.2** records the prefix and
   whether the booked number was clamped from it. Live 2026-09-06 at 5.0 m/s: 46.0 m -> exit 0,
   margin **1.780x**; 58.0 m (prefix) -> exit 1 on the corner check alone, at every speed.
+* **A booking authorises ONE SPEED and the flight has to be flown at it** — the launcher injects it
+  and `check_live_flight_log --booking` measures it back off the poses. See
+  [[booking-speed-enforcement]]; the artifact schema is **1.3** since 2026-09-07 and `checks` carries
+  a fourth entry, `escape_survives_mission_speed_cap`.
 * **The committed D4 artifact is `eval/results/booking_gate_20260907T064136Z.json`** (un-ignored in
   `.gitignore`, read by a hard-asserting host test, `tests/fieldguard_planning/
   test_booking_gate_artifact.py`): 5.0 m/s, margin 1.780x, acq 46.0 m clamped from a 58.0 m prefix,

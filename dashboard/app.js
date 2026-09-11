@@ -52,6 +52,20 @@ const S = {
   hover: null, tour: -1, view: 'replay',
 };
 
+// ------------------------------------------------------------------ where the files are
+// TWO roots, both relative to dashboard/index.html, and the split is deliberate:
+//   DATA      what scripts/build_dashboard_data.py DERIVES (canonical grid, verdicts, clip
+//             oracles) plus the two artifacts that live inside gitignored 12 GB clip directories.
+//   EVIDENCE  the committed evidence ITSELF — flight logs and their safety-finding markers — read
+//             in the directory the gates read it from. Until 2026-09-10 these were also copied
+//             under data/: 140,942 lines of identical JSON committed twice, and a copy of evidence
+//             is a thing that can disagree with the evidence.
+// Both roots resolve in BOTH layouts this page is served from — `python3 -m http.server` from the
+// repository root, and the GitHub Pages site (.github/workflows/pages.yml lays eval/results/ down
+// beside dashboard/) — and tests/test_dashboard_data_paths.py checks that file by file, in both.
+const DATA = 'data/';
+const EVIDENCE = '../eval/results/';
+
 // ------------------------------------------------------------------ load
 async function getJSON(p) { const r = await fetch(p); if (!r.ok) throw new Error(p + ': HTTP ' + r.status); return r.json(); }
 async function getText(p) { const r = await fetch(p); if (!r.ok) throw new Error(p + ': HTTP ' + r.status); return r.text(); }
@@ -60,16 +74,16 @@ async function boot() {
   let d;
   try {
     const [manifest, field, verdicts, clipIndex] = await Promise.all(
-      ['data/manifest.json', 'data/field.json', 'data/verdicts.json', 'data/clips/index.json'].map(getJSON));
+      [DATA + 'manifest.json', DATA + 'field.json', DATA + 'verdicts.json', DATA + 'clips/index.json'].map(getJSON));
     d = { manifest, field, verdicts, clips: {}, flights: {} };
     await Promise.all(Object.entries(verdicts.flights).map(async ([stem, v]) => {
-      const log = await getJSON('data/' + v.log);
-      const marker = v.marker ? await getText('data/' + v.marker) : null;
-      const truth = (v.schema_version >= 2) ? await getJSON('data/truth/' + stem + '.json').catch(() => null) : null;
+      const log = await getJSON(EVIDENCE + v.log);
+      const marker = v.marker ? await getText(EVIDENCE + v.marker) : null;
+      const truth = (v.schema_version >= 2) ? await getJSON(DATA + 'truth/' + stem + '.json').catch(() => null) : null;
       d.flights[stem] = { stem, v, log, marker, truth };
     }));
     await Promise.all(Object.entries(clipIndex.clips).map(async ([name, c]) => {
-      const [heatmap, meta, treeCheck] = await Promise.all([c.heatmap, c.meta, c.tree_check].map(p => getJSON('data/' + p)));
+      const [heatmap, meta, treeCheck] = await Promise.all([c.heatmap, c.meta, c.tree_check].map(p => getJSON(DATA + p)));
       d.clips[name] = { name, heatmap, meta, treeCheck };
     }));
   } catch (err) {
@@ -1287,32 +1301,124 @@ function mapHover(ev) {
 }
 
 // ------------------------------------------------------------------ tour
+// THE TOUR READS THE SELECTED FLIGHT (O10, 2026-09-10). It used to be five paragraphs of prose
+// about the 2026-08-25 take, printed verbatim whichever flight was selected: with 2026-08-18 on
+// screen it said INVALID over an ACKNOWLEDGED verdict, "a detection nothing injected" over a
+// `--demo` bird the node placed itself, and "it flew OVER it" over a bird sitting at the vehicle's
+// own cruise altitude. Three falsehoods, on a page whose whole claim is that every number on it
+// comes from the artifact. Every flight-specific clause is now a substitution into `tourFacts`,
+// and `tests/test_dashboard_prose.py` re-renders these templates in Python against
+// `data/verdicts.json` and fails if a stem, a verdict word or a measured number is typed in here.
+
+/** What produced the detections this flight avoided. NEVER read from `detection.source` on a
+ *  schema-1 log: until the 2026-08-24 seam the `Detection` default was "ndvi_blob", so the two
+ *  `--demo` flights record a virtual bird claiming to be an NDVI blob on every event. The run
+ *  block is the only field the flight-log gate itself trusts, and where there is none the demo
+ *  source is identified the way it identifies itself -- by naming its track `demo_bird_*`. */
+function detectorSource(f) {
+  const run = f.log.run || {};
+  const tag = (run.detector && run.detector.source) || null;
+  const demoTracks = f.log.events.some(e => e.kind === 'detection'
+    && typeof e.track_id === 'string' && e.track_id.startsWith('demo_'));
+  if (tag === 'ndvi_blob') return { tag, phrase: 'A fused NDVI frame off the live render produced this detection — nothing was injected — and the policy ranged it from the apparent-size ray' };
+  if (tag === 'depth_blob') return { tag, phrase: 'A forward depth frame produced this detection — nothing was injected — and the range is the depth the sensor measured' };
+  if (tag === 'demo_virtual' || (!tag && demoTracks)) return { tag: tag || 'demo_virtual', phrase: 'This threat was INJECTED: `--demo` places a virtual bird at a fixed point, so the position the loop reacted to is a constant the node chose rather than anything a camera saw' };
+  return { tag: null, phrase: 'This log does not name the detector that produced its detections, so the page will not tell you where they came from' };
+}
+
+/** What the dodge actually did, in the page's own honest metric: displacement ALONG the commanded
+ *  direction (`encounterFacts`), never total distance travelled -- most of which is the cruise the
+ *  vehicle was already doing. No bar is applied to it here or anywhere; the flight-log gate reports
+ *  the same number as a note for the same reason. */
+function dodgeSummary(m) {
+  const e = m.encounters[0];
+  if (!e) return 'this log records no GUIDED encounter at all, so there is no dodge to measure';
+  const dur = e.dur_s !== null ? `${e.dur_s.toFixed(3)} s` : `${e.ticks} ticks (this log carries no clock, so its window cannot be stated in seconds)`;
+  if (e.along_m === null || !e.commanded_m) return `the loop held authority for ${dur}, and this log records no commanded setpoint to measure the result against`;
+  const away = e.along_m < 0 ? ' — a NEGATIVE number: the vehicle finished further from the point it was sent to than it started' : '';
+  return `the loop held authority for ${dur}, and the vehicle moved ${e.along_m.toFixed(4)} m along the direction of the ${e.commanded_m.toFixed(2)} m setpoint it commanded${away}`;
+}
+
+/** Every flight-specific value the tour prose substitutes. Derived from the gate's own verdict
+ *  record (`data/verdicts.json`, which is `check_live_flight_log.check_file` output) plus the log
+ *  the page already loaded -- nothing typed, nothing about one flight hard-coded into another. */
+function tourFacts(f, m) {
+  const v = f.v, cpa = v.cpa || {};
+  const cpaM = (cpa.gt_cpa_m !== undefined && cpa.gt_cpa_m !== null) ? cpa.gt_cpa_m : cpa.cpa_m;
+  const basis = (cpa.basis || 'unstated').split(':')[0];
+  const vert = (cpa.bird_z_m !== undefined && cpa.bird_z_m !== null
+    && cpa.drone_z_m !== undefined && cpa.drone_z_m !== null)
+    ? `the bird sat ${(cpa.drone_z_m - cpa.bird_z_m).toFixed(2)} m below the vehicle, which this top-down view flattens away — the altitude strip is where that gap lives`
+    : 'this log measures closest approach in the HORIZONTAL plane only, so nothing on this page claims there was a vertical gap';
+  const ack = v.acknowledged_pin
+    ? 'Both halves of the acknowledgement are present: the marker file beside the log AND the stem pinned in the gate after a reviewed diff.'
+    : (v.verdict === 'VALID'
+      ? 'No breach was recorded, so there is no acknowledgement to make.'
+      : 'The marker file is beside the log and the acknowledgement pin is deliberately WITHHELD, so CI stays red until this take is re-flown. A gate you only trust when it is green is not a gate.');
+  // The legend is the gate's own sentence, so it is normalised for prose rather than rewritten:
+  // capitalised and terminated, never reworded.
+  const raw = (S.data.verdicts.verdict_legend || {})[v.verdict] || 'this verdict has no legend entry';
+  const legend = raw.charAt(0).toUpperCase() + raw.slice(1) + (/[.!?]$/.test(raw) ? '' : '.');
+  const g = m.encounters[0];
+  const win = g ? m.events.filter(e => e.tick >= g.from && e.tick <= g.to) : [];
+  const n = kind => win.filter(e => e.kind === kind).length;
+  return {
+    verdict: v.verdict,
+    verdictLegend: legend,
+    source: detectorSource(f).phrase,
+    cpa: cpaM === undefined || cpaM === null ? 'no closest approach was measurable on this log' : `closest approach ${cpaM.toFixed(4)} m against a ${Number(cpa.bar_m).toFixed(2)} m bar (basis: ${basis})`,
+    vertical: vert,
+    dodge: dodgeSummary(m),
+    // What the executor actually did inside the window, counted rather than described: the
+    // 2026-08-18 log predates `latch` entirely and records 61 maneuvers, so "latched ONE setpoint"
+    // was simply untrue there.
+    commands: g ? `${n('maneuver')} accepted maneuver(s), ${n('latch')} latch(es) and ${n('relatch')} re-latch(es)` : 'no commands at all',
+    ack: ack,
+    covered: m.covered, debt: m.debt, cells: m.ledger.length,
+    clip: S.clipId,
+    clipNote: clipAttribution(S.clipId, S.flightId),
+  };
+}
+
+/** Whether the clip on the NDVI tab was recorded in the SAME SESSION as the selected flight -- and
+ *  the page will only say so on evidence. No committed artifact links a flight log to a clip (clip
+ *  `meta.json` carries no log stem; `verdicts.json` carries no clip), so the only thing to reason
+ *  from is the two stems' own UTC timestamps: `real_flight_<UTC>` is when the recorder STARTED and
+ *  `live_flight_log_<UTC>` is when the node WROTE the log at teardown. A clip that started on the
+ *  same UTC date and BEFORE the log was written was recording while that flight flew; anything
+ *  else is another flight's clip, and the tour says so rather than attributing it to "this
+ *  flight" (the 2026-08-18 flight has no clip at all; the 2026-08-23 clip started 7 h AFTER that
+ *  day's log was written). */
+function clipAttribution(clipId, flightStem) {
+  const stamp = id => {
+    const m = /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/.exec(id || '');
+    return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null;
+  };
+  const c = stamp(clipId), f = stamp(flightStem);
+  if (c === null || f === null) return ' — the page cannot date one of the two stems, so it makes no claim about which flight this clip belongs to';
+  const sameDay = new Date(c).toISOString().slice(0, 10) === new Date(f).toISOString().slice(0, 10);
+  if (sameDay && c < f) {
+    const mins = Math.round((f - c) / 60000);
+    return ` — recorded during this flight's session: the recorder started ${mins} min before this log was written, on the same UTC date`;
+  }
+  return " — a DIFFERENT flight's clip: no committed clip was recorded during the flight selected above, so nothing on the NDVI tab is this flight's imagery";
+}
+
 const TOUR = [
-  { t: 'A 75 × 60 m field, surveyed before takeoff',
-    b: 'The 720 grey squares are the canonical 2.5 m coverage cells — the same grid the NDVI map and the '
-      + 'coverage ledger both join on. The green dots are 18 surveyed trees with their 2 m geofences: known '
-      + 'static obstacles, so the drone never has to detect them. Dashed blue is the planned boustrophedon.',
+  { t: F => `A 75 × 60 m field, surveyed before takeoff`,
+    b: F => `The ${F.cells} grey squares are the canonical 2.5 m coverage cells — the same grid the NDVI map and the coverage ledger both join on. The green dots are 18 surveyed trees with their 2 m geofences: known static obstacles, so the drone never has to detect them. Dashed blue is the planned boustrophedon.`,
     go: m => ({ view: 'replay', idx: m.air && m.air.found ? m.air.first_motion_tick - 1 : 0 }) },
-  { t: 'The loop takes the vehicle',
-    b: 'An NDVI frame off the real render produced a detection nothing injected. The policy ranged it from the '
-      + 'apparent-size ray, vetted a dodge against every tree, latched ONE setpoint and switched AUTO → GUIDED. '
-      + 'The pink stretch is the vehicle under the avoidance loop; the pink X is the point it was commanded to.',
+  { t: F => `The loop takes the vehicle`,
+    b: F => `${F.source}. The policy vetted the dodge against every surveyed tree before commanding it and the executor switched AUTO → GUIDED; inside that window the log records ${F.commands}. The pink stretch is the vehicle under the avoidance loop; the pink X is the point it was commanded to.`,
     go: m => ({ view: 'replay', idx: (m.encounters[0] ? m.encounters[0].from - 1 : 0) - 3 }) },
-  { t: 'The closest approach — look at the altitude strip',
-    b: 'Top-down, this looks like the drone flew straight through the bird. It did not: it flew OVER it. '
-      + 'The altitude strip shows the gap the map flattens away. The dodge was commanded, vetted and flown — '
-      + 'and it moved the vehicle centimetres, because the bird was first seen on the tick of closest approach.',
+  { t: F => `The closest approach — and what the dodge actually bought`,
+    b: F => `On this take, ${F.cpa}. Top-down it can look as though the drone flew through the bird: ${F.vertical}. And the manoeuvre itself is measured, not asserted — ${F.dodge}.`,
     go: (m, f) => ({ view: 'replay', idx: (cpaMark(f, m) ? cpaMark(f, m).tick - 1 : 0) }) },
-  { t: 'Why this take is INVALID, and why that is the point',
-    b: 'The safety gate that failed this flight was built the day before it, and the process that built it wrote '
-      + 'down, in advance, that the flight might fail it. It did. The marker file is beside the log; the '
-      + '"acknowledged" pin is deliberately withheld, so CI stays red until it is re-flown. A gate you only '
-      + 'trust when it is green is not a gate.',
+  { t: F => `Why the gate calls this take ${F.verdict} — and why that is the point`,
+    b: F => `${F.verdictLegend} ${F.ack} The verdict on this page is not a summary of the gate: it IS the gate's output, recomputed by the same script CI runs.`,
     go: () => ({ view: 'replay' }) },
-  { t: 'The same flight still produced a full health map',
-    b: '720 of 720 cells imaged, all 18 surveyed trees found where the survey says they are, 11 of them reading '
-      + 'canopy-grade NDVI. Those numbers are recomputed in your browser and cross-checked against the host-side '
-      + 'gate — the green banner is the page checking itself.',
+  { t: F => `What this flight closed on the ledger — and whose imagery the NDVI tab shows`,
+    b: F => `This flight's ledger closed ${F.covered} of ${F.cells} cells covered and ${F.debt} in debt — every cell terminal, none silently absent. The NDVI tab shows the stitched heatmap from clip ${F.clip}${F.clipNote}. Cells imaged, trees found and canopy-grade are recomputed in your browser from that artifact and cross-checked against the host-side gate — the green banner is the page checking itself.`,
     go: () => ({ view: 'ndvi' }) },
 ];
 function renderTour() {
@@ -1322,10 +1428,11 @@ function renderTour() {
   const to = step.go(m, f) || {};
   if (to.view) show(to.view);
   if (to.idx !== undefined) { stop(); seek(Math.max(0, to.idx)); }
+  const F = tourFacts(f, m);
   box.hidden = false; box.innerHTML = '';
   box.appendChild(el('div', 'step', `Step ${S.tour + 1} of ${TOUR.length}`));
-  box.appendChild(el('h3', null, step.t));
-  box.appendChild(el('p', null, step.b));
+  box.appendChild(el('h3', null, step.t(F)));
+  box.appendChild(el('p', null, step.b(F)));
   const row = el('div', 'row');
   const prev = el('button', 'ghost', '← Back'); prev.onclick = () => { S.tour--; renderTour(); };
   if (S.tour === 0) prev.disabled = true;

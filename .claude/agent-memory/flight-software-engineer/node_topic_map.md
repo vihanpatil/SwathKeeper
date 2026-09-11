@@ -17,8 +17,20 @@ replace — a bare `PYTHONPATH=src` inside the container wipes out ROS 2's own P
 `ModuleNotFoundError: No module named 'rclpy'`). If this ever gets promoted to a colcon package,
 that prepend gotcha becomes moot but is worth remembering for now.
 
+**`geom.py` is the ONE 2-D geometry primitive + the ONE definition of airborne (D5, 2026-09-10).**
+`point_segment_distance_xy` / `point_segment_projection_xy` (distance, fraction) replaced three
+byte-identical copies — `geofence._point_segment_distance`, `coverage._point_segment_distance`,
+`check_live_flight_log._point_segment_xy` (the last two kept as module aliases because
+`build_dashboard_data.py` reaches for `GATE._point_segment_xy_m`). It imports `math` and NOTHING
+else — no config, no numpy, no sibling — which is the only reason the stdlib-pure gate can take it;
+`tests/fieldguard_planning/test_geom.py` pins that import list and re-runs the three original bodies
+over 10k randomised points for EXACT equality. `AIRBORNE_Z_M = 1.0` now lives there too and the gate
+imports it. STILL DUPLICATED (not my files this pass, proposed edits in the 2026-09-10 report):
+`clip_recorder.py:81` and `build_dashboard_data.py:105` still define their own 1.0 — all three agree
+today and `test_check_live_flight_log_booking.py` pins them equal.
+
 Two dependency tiers inside the package (a project-blessed, documented split, not an accident):
-- **stdlib-only**: `geofence.py`, `coverage.py`, `mission_waypoints.py`, `avoidance_types.py`,
+- **stdlib-only**: `geom.py`, `geofence.py`, `coverage.py`, `mission_waypoints.py`, `avoidance_types.py`,
   `avoidance_policy.py`, `avoidance_executor.py`, `ros2_adapter.py`'s pure `enu_to_geodetic`, and
   `ndvi_georef.py`'s single-point transform functions (`pixel_to_latlon`, `world_enu_to_pixel`,
   etc. — no numpy needed for one point/ray). Runs on a bare interpreter, zero installs.
@@ -265,6 +277,80 @@ dataclass default that `check_live_flight_log.py` reads as its bar. Unknown knob
 ## Forward depth camera (ADR-019/020, live 2026-09-06)
 The second aperture — `/fg/depth/image` + `/fg/depth/camera_info`, its clip asymmetry, and the
 booking gate that authorises a dodge flight: see [[forward-depth-booking-gate]].
+
+### Wired into `avoidance_node` 2026-09-07 — behind a flag that SHIPS OFF (never flown)
+- **CLI:** `python3 -m fieldguard_planning.avoidance_node --detect --detection-source depth`.
+  `--detection-source {ndvi,depth}` **defaults to `ndvi`**, so every existing command is unchanged.
+  `--detection-source depth` WITHOUT `--detect` is a parser error (it selects a detector, it does
+  not arm one); `--detect`/`--demo` stay exclusive.
+- **EXCLUSIVE BY CONSTRUCTION** (orchestrator's call on DESIGN §7 Q2, 2026-09-07): the node holds
+  ONE `detection_source` and subscribes to exactly one `(image, camera_info)` pair, chosen from
+  `avoidance_node.FRAME_TOPICS` by the source's own `SOURCE_TAG`. So a depth run disarms the NDVI
+  detector and produces **no ADR-003 in-air detection evidence** — a cost the node prints at
+  startup. A combined mode would be a product decision and a later flag.
+- **`detection_source_name` now reads `source.SOURCE_TAG`**, never `hasattr(source, "on_frame")`
+  (true of BOTH frame detectors — a depth flight would have been logged, and gated, as
+  `ndvi_blob`). `ndvi_detect.SOURCE_TAG`/`depth_detect.SOURCE_TAG` are class attributes too; the
+  node's literal copies are cross-pinned by test. An untagged frame source is
+  `untagged_frame_source` — deliberately NOT `demo_virtual`, whose logged position the gate treats
+  as exact truth.
+- **Depth log block** (`run.detector`): `source, module, seam_module, params, params_provenance,
+  params_provisional, min_range_m, max_range_m, range_model, static_map_annotator, intrinsics,
+  counters, segmenter_counters`. Params are the WHOLE frozen `DepthSegmenterParams` as one object
+  with `DEFAULT_PARAMS_PROVENANCE`, `params_provisional=False` (unlike the NDVI threshold). The
+  NDVI block's field set is snapshot-pinned unchanged.
+- **The seam's exclusive range window IS the segmenter's clip window** — `min_range_m/max_range_m`
+  are passed from `DEFAULT_PARAMS.near_m/far_m`, one number, pinned by test.
+- **`decode_depth_frame` / `feed_depth_frame` are module-level pure functions**, not methods inside
+  `build_node`: decode + pose pairing + the seam call are unit-testable with a duck-typed Image and
+  no ROS. Decode derives everything from the message (`step == width*4`, payload `== height*step`,
+  `encoding == 32FC1`, byte order from `is_bigendian`) and **raises** rather than reshaping — a
+  stride fault is true of frame 1 and would otherwise fly a blind detector to completion.
+- **`decode_ndvi_frame` is its mirror on the band that has actually flown (G10, 2026-09-10).** Until
+  then `_on_ndvi` was `np.frombuffer(msg.data, float32).reshape(h, w)` with NOTHING checked, on 1302
+  flown frames, while the never-flown depth decoder checked all four. `is_bigendian` was the silent
+  one: a byte-swapped buffer reshapes perfectly into denormal noise, finds nothing under −0.61, and
+  logs a healthy detector that saw no birds. `encoding` matters because `/fg/ndvi/preview` is rgb8
+  off the same fused array. Constant `NDVI_IMAGE_ENCODING = "32FC1"`, round-tripped against
+  `ndvi_node.assemble_ndvi_msg_fields` in `test_detection_seam.py`; an accepted frame is pinned
+  byte-identical to the old expression.
+- **`scripts/check_live_flight_log.py` does NOT score a depth take yet, deliberately.**
+  `DET_DEPTH_BLOB` exists but is NOT in `DETECTOR_SOURCES`, so a depth log is UNSCOREABLE ("the
+  gate cannot know what the logged detections are worth") — its gates (detect-rate floor over
+  `ndvi_msgs_received`, apparent-size estimator check, nadir-footprint CPA reasoning) were written
+  for the nadir camera. New rule `gate_detector_block_matches_source` fails any block whose
+  `source` and whose FIELDS are different detectors, both directions.
+  **But it IS booking-gated:** `gate_booked_speed`'s `is_avoidance` includes `depth_blob`
+  (authorisation ≠ scoring — the forward aperture is the sensor ADR-019/020 booked in the first
+  place; excluding it told the one take that needs a booking that it needs none). **Landmine for
+  the follow-on scoring diff (QA-measured):** on a depth block `gate_detector_ran` answers
+  "counters missing or non-numeric for ['ndvi_msgs_received']" instead of DETECTOR NEVER RAN, so
+  adding `depth_blob` to `DETECTOR_SOURCES` without a depth branch there scores it on the nadir
+  camera's counter.
+
+### Two startup refusals now, not one (fix round 2026-09-07) — flight-day operational
+`--detect` refuses to fly on either missing input, and the runbook's four-line startup contract does
+not yet mention the second:
+- **exit 3** — no Gazebo `/clock` reading in `GZ_CLOCK_WAIT_S` 10 s (unchanged).
+- **exit 4, NEW** — no usable `camera_info` in `CAMERA_INFO_WAIT_S` 20 s, for EITHER band. Until
+  this, a take whose `camera_info` never arrived flew blind for the whole flight (measured off-sim:
+  1200 frames → `dropped_no_intrinsics` 1200, 0 detections) while the 2 s heartbeat printed
+  `nearest_bird=none in view`; `check_render_alive.py` probes the two IMAGE topics only, and the
+  gate's DETECTOR NEVER RAN check reads the artifact after the take is burnt. The wait SPINS
+  (`wait_for_live_intrinsics(node, rclpy.spin_once)`) — a sleep-only wait can never see a
+  subscription arrive. `--demo` has no frame detector and waits for nothing.
+- `DepthDetectionSource.set_intrinsics` REFUSES fx/fy ≤ 0 or a degenerate frame size at ARMING
+  (ROS's uncalibrated convention is an all-zero K → un-projection divides by fx → ZeroDivisionError
+  out of a subscription callback after takeoff). The node logs that refusal ONCE and leaves the
+  detector unarmed, so exit 4 fires.
+- New counter `dropped_frame_shape_mismatch`: the decoded frame's shape must equal the armed
+  `camera_info`'s (height_px, width_px), counted and dropped per frame. A 320×240 camera_info
+  against the 640×480 image mis-places a measured 20 m target by 19.35 m laterally / 3.96 m
+  vertically, silently — `decode_depth_frame` checked stride and payload and nothing checked the
+  other half of the same geometry.
+- `serialise_flight_log` wraps the dump: a `json.dumps` TypeError (a numpy scalar in a counters
+  dict) re-encodes with `repr` + a top-level `log_serialisation_degraded` note instead of losing
+  the whole flight log inside `main`'s `finally`.
 
 ## `test-flight` gate parameters (as of 2026-08-19 — verify against `scripts/fly_pipeline.sh` before quoting)
 - The gate's LAST check is an **evidence-yield floor**: `TF_MIN_FRAMES=12`, `TF_MIN_CELLS=40`,

@@ -77,3 +77,60 @@ builders' reports — diff prose against the CODE: grep every named identifier, 
 and compare the exit code, and re-run the tool that wrote every committed artifact and diff it
 field-by-field. Two of the four defects above were found by running a command the doc said would do
 something else.
+
+**8. A FIRMWARE identifier typed at a prompt is a CITATION — fetch it at the pinned SHA.** Added
+2026-09-07. The booking-enforcement build injected `param set WPNAV_SPEED 500` into the fly recipe;
+at the pinned ArduPilot SHA the parameter is `WP_SPD`, in **m/s**, `@Range 0.10 20.00`
+(`GOBJECTPTR(wp_nav, "WP_", AC_WPNav)` in `ArduCopter/Parameters.cpp`; `AP_Float _wp_speed_ms` in
+`AC_WPNav.h`). Wrong name AND wrong units by 100×, so the whole pre-flight half of the feature was a
+no-op that printed `BOOKED 5.0 m/s` on four artifacts. The builder's report *named* this as a
+judgment call ("parameter name is WPNAV_SPEED, not the repo's WPNAV_SPD shorthand") and reasoned it
+instead of fetching it — and the repo's own ADR log already contained the counter-evidence.
+**Why:** this project's plant constants are all sourced with pinned-SHA URLs (`eval/point_mass.py`);
+the one identifier that leaves the host and enters the *vehicle* was the one nobody sourced. The
+same family as G70 (a constant cited to a header that does not contain it) and G46.
+**How to apply:** when a diff adds a string that will be typed at a MAVProxy/ROS prompt, WebFetch the
+owning source file at the CLAUDE.md pinned SHA and quote the `@Param`/`@Units`/`@Range` block before
+grading anything else. Then check the second-order effect: here, correcting the name to `WP_SPD`
+would have silenced `_tuning_override_scan`'s `WPNAV_`-prefixed detector — the fix creates the
+vacuous green unless both land in one diff.
+
+**9. WHEN A NEW VALUE JOINS AN ENUM, THE FINDING IS IN THE BRANCHES THAT DID NOT GET UPDATED — and
+they are reachable by grepping the OLD members.** Added 2026-09-07 (depth-source wiring, G157/G158).
+The build added `DET_DEPTH_BLOB` to `scripts/check_live_flight_log.py` and carefully wired it into
+the new mislabel rule twelve lines below. `grep -n "DET_NDVI_BLOB\|DET_DEMO_VIRTUAL\|
+DETECTOR_SOURCES"` on the same file returned nine hits; asking "what does a `depth_blob` log do
+HERE?" of each one found, in about a minute, that `gate_booked_speed:1813
+is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL)` tells the ONE take type the ADR-020
+booking gate exists to authorise that it is *"not an avoidance take ... and needs none"*, and that
+`gate_detector_ran`'s `DETECTOR NEVER RAN` check — the repo's only net for "camera_info never
+arrived" — is unreachable for the new source.
+**Why:** an added enum member is grep-able; the branches that silently EXCLUDE it are not, because
+they name the old members and read as complete. Both defects here point the same way (a new sensor
+exempted from a check that exists for it), which is the fail-DANGEROUS direction.
+**How to apply:** on any diff that widens a set of named constants, grep the OLD members across the
+whole repo, not the new one, and read every hit as a question. Then ask the second-order version:
+"when the follow-on diff promotes the new member into the main list, what breaks?" — here,
+`gate_detector_ran` would report *"counters missing for ['ndvi_msgs_received']"* on a depth block,
+so the landmine is already laid for the next session.
+
+**7. Multi-builder rounds leak at the HANDOFF, not inside the file.** Measured 2026-09-10: four
+builders on disjoint files produced clean, well-tested work inside their own scope and **five of the
+cross-file edits they each wrote out in full went nowhere** — `dashboard/README.md`,
+`AVOIDANCE_REAL_DETECTION.md` §4, `depth_segment.py:5`, `DEPTH_SEGMENTER_DESIGN.md:17`,
+`AIRBORNE_Z_M` in two files. Every one was correctly diagnosed and correctly written up; none had an
+owner. Two builders independently wrote the SAME handoff (the prototype reference) and it still did
+not land.
+**Why:** "report the edit instead of making it" is the right rule for concurrency and a guaranteed
+drop unless someone sweeps the handoffs at the end.
+**How to apply:** before grading anything else in a multi-builder round, collect every "HANDOFF" and
+"COULD NOT" item and grep for it FIRST — it is the cheapest finding density in the review, and a
+deleted file still referenced or a doc made false by someone else's change is a MAJOR by the rubric.
+
+**8. Grade the number the round ITSELF introduced, hardest.** The stale numbers a round fixes are
+easy; the ones it creates are invisible because they look freshly measured. Two landed on
+2026-09-10: `README.md` "22 ADRs" (actual 23 — inherited from a handoff quoting the audit's
+pre-ADR-022 count) and `CLAUDE.md` "tests:src is capped at 3.45:1 (today's ratio)" (measured 3.69:1
+in the same tree — 3.45 was HEAD's).
+**How to apply:** for every NEW count/ratio/date in a doc of record, run the one-line command that
+produces it (`grep -c`, `wc -l`, `git rev-parse`) rather than reading the sentence.

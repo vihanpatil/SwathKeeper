@@ -503,7 +503,13 @@ class AvoidanceExecutor:
 
     def _enforce_guided_ceiling(self) -> None:
         """Design note 4's backstop: no encounter holds GUIDED forever. ~10 lines, unconditional,
-        and it runs BEFORE this tick's decision so a threat tick cannot keep deferring it."""
+        and it runs LAST in the tick -- AFTER the decision handler, deliberately (see the comment at
+        the call site, :449). It used to run first; that let a ceiling expiry landing on a DIVERT
+        tick emit set_mode(AUTO) -> set_mode(GUIDED) -> send_setpoint inside ONE callback, two
+        racing async ModeSwitch calls, which is the shape that hides a failed GUIDED takeover (QA
+        N1, 2026-08-25). Running last costs nothing: a still-present threat re-takes-over on the
+        NEXT tick with a freshly vetted latch. (Docstring corrected 2026-09-10 -- it claimed the
+        opposite order for two weeks.)"""
         held = self._ticks_in_guided()
         if held is None or held < self.guided_ceiling_ticks:
             return

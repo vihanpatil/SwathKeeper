@@ -7,9 +7,15 @@ contents are force-added, reviewed artifacts), the clips are 12 GB, and the flig
 paths a Pages URL cannot reach. This script is the ONE seam between the evidence and the page, and
 it has exactly two moves:
 
-  * COPY, byte for byte -- flight logs, safety-finding markers, stitched heatmaps, clip meta. The
-    page's numbers then come from the same bytes the gates read. `sha256` of every source is
-    recorded in `manifest.json` so a reader can verify the copy: `shasum -a 256 <source>`.
+  * COPY, byte for byte -- stitched heatmaps and clip meta, the two artifacts that live inside
+    12 GB of gitignored clip directories. The page's numbers then come from the same bytes the
+    gates read. `sha256` of every source is recorded in `manifest.json` so a reader can verify the
+    copy: `shasum -a 256 <source>`.
+    NOT COPIED, since 2026-09-10: the live flight logs and their safety-finding markers. Those are
+    committed at `eval/results/` (`.gitignore` re-includes them by name), so copying them here put
+    140,942 lines of identical JSON in the repository twice -- and a copy of evidence is a thing
+    that can disagree with the evidence. The page reads them in place through its own EVIDENCE
+    root; `verdicts.json` carries their file names and `evidence_dir`.
   * DERIVE, by calling the gates themselves -- never by re-implementing them. Verdicts come from
     `check_live_flight_log.check_file`, the ground-truth CPA from that module's `ground_truth_cpa`,
     the tree/canopy oracle from `check_tree_positions.analyse`, the canonical grid from
@@ -96,13 +102,14 @@ MISSIONS = ("boustrophedon", "test_2lane")
 #   * AIRBORNE_Z_M is 1.0 because that is already this project's definition of airborne: it is the
 #     `z_threshold_m` the clip recorder writes into every clip's `meta.airborne` block. Inventing a
 #     second threshold here would give the dashboard and the NDVI evidence two different ideas of
-#     when the flight started.
+#     when the flight started -- so it is IMPORTED from its one home, `fieldguard_planning.geom`,
+#     not redefined.
 #   * the sustain run rejects a single spurious sample. 5 ticks is ~1 s at the node's nominal 5 Hz
 #     control rate -- long enough to be a climb, short enough to cost nothing at the real takeoff.
 # Measured on the committed logs (see tests/test_build_dashboard_data.py, which re-derives all of
 # this): the sustain requirement moves NO boundary on any of the three -- every one climbs cleanly --
 # so it is insurance, not a fudge factor, and the test pins that fact.
-AIRBORNE_Z_M = 1.0
+from fieldguard_planning.geom import AIRBORNE_Z_M  # noqa: E402  -- the one home
 AIRBORNE_SUSTAIN_TICKS = 5
 
 
@@ -145,6 +152,37 @@ def airborne_window(path) -> dict:
 # ================================================================================================
 # output plumbing -- everything lands in a staging tree first, so a removed output cannot linger
 # ================================================================================================
+# A DERIVED float is written to 12 significant digits. THE BUG THIS FIXES (2026-09-10): the same
+# geometry, on the same inputs, disagreed in the LAST bit between machines --
+#   macOS/arm64  cpa_m = 0.03929119396148754
+#   ubuntu/CI    cpa_m = 0.039291193961487544     (1 ulp apart; hypot/sqrt are libm, not IEEE-exact)
+# -- so `--check`'s byte comparison called the committed tree STALE on every CI run while it was
+# fresh on the machine that built it, and `test_build_dashboard_data.py` was red on Linux and green
+# on macOS for 16 days. Two bad ways out: drop the byte comparison (the freshness pin IS the byte
+# comparison -- ADR-003 am. 10's drift is what it exists to catch), or compare with a tolerance
+# everywhere (a tolerance wide enough for 1 ulp is a tolerance, and tolerances grow).
+#
+# So the ARTIFACT is made platform-independent instead of the check made loose. 12 significant
+# digits is chosen, not rounded-to-taste: it is ~4 orders of magnitude coarser than the ~1e-16
+# relative spread between libms (so the last written digit is one every machine agrees on) and ~9
+# orders FINER than anything the page renders (4 decimals) or any bar the gates apply (0.5 m, 3.00
+# m). A real change to any published number is still a byte change; only the noise is gone.
+# `test_build_dashboard_data.py` re-derives the same values from the gates and compares with
+# `math.isclose(rel_tol=1e-9)` -- three orders tighter than the rounding, so the pin still bites.
+DERIVED_FLOAT_SIG_DIGITS = 12
+
+
+def _platform_stable(obj):
+    """`obj` with every float rounded to DERIVED_FLOAT_SIG_DIGITS significant digits."""
+    if isinstance(obj, float):
+        return float(f"%.{DERIVED_FLOAT_SIG_DIGITS}g" % obj)
+    if isinstance(obj, dict):
+        return {k: _platform_stable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_platform_stable(v) for v in obj]
+    return obj
+
+
 class Build:
     """Accumulates files + their provenance, then syncs the staging tree onto the real one."""
 
@@ -164,8 +202,12 @@ class Build:
         self.note_source(src, role, data)
 
     def derive(self, obj, rel: str) -> None:
-        """A derived JSON, written deterministically (sorted keys, fixed indent, trailing newline)."""
-        self._dest(rel).write_text(json.dumps(obj, indent=1, sort_keys=True) + "\n")
+        """A derived JSON, written deterministically (sorted keys, fixed indent, trailing newline).
+
+        Deterministic ACROSS MACHINES, not just across runs: every float goes through
+        `_platform_stable` first. See that function for the failure it fixes."""
+        self._dest(rel).write_text(
+            json.dumps(_platform_stable(obj), indent=1, sort_keys=True) + "\n")
 
     def note_source(self, src: Path, role: str, data: Optional[bytes] = None) -> None:
         rel = str(src.relative_to(REPO_ROOT))
@@ -337,11 +379,21 @@ def build_flights(b: Build) -> None:
     for stem in FLIGHT_STEMS:
         log_path = RESULTS / f"{stem}.json"
         marker_path = GATE.marker_path_for(log_path)
-        b.copy(log_path, f"flights/{stem}.json", "live flight log")
-        entry: Dict[str, object] = {"stem": stem, "log": f"flights/{stem}.json"}
+        # NOT COPIED (2026-09-10). The logs and their markers are COMMITTED at
+        # eval/results/ -- `.gitignore` re-includes `live_flight_log_*.json` and
+        # `live_flight_log_*.SAFETY_FINDING.md` precisely so they survive into a checkout -- so a
+        # second copy under dashboard/data/ was 140,942 lines of the same bytes committed twice,
+        # and a copy of evidence is a thing that can disagree with the evidence. The page reads
+        # them in place (EVIDENCE in dashboard/app.js); their sha256 is still recorded below, and
+        # tests/test_dashboard_data_paths.py proves every path the page fetches resolves in BOTH
+        # layouts it is served from (a local `python3 -m http.server` at the repository root, and
+        # the Pages site built by .github/workflows/pages.yml).
+        b.note_source(log_path, "live flight log (read in place; never copied)")
+        entry: Dict[str, object] = {"stem": stem, "log": log_path.name,
+                                    "evidence_dir": str(RESULTS.relative_to(REPO_ROOT))}
         if marker_path.exists():
-            b.copy(marker_path, f"flights/{marker_path.name}", "written safety finding (marker)")
-            entry["marker"] = f"flights/{marker_path.name}"
+            b.note_source(marker_path, "written safety finding (marker; read in place)")
+            entry["marker"] = marker_path.name
 
         status, messages = GATE.check_file(log_path)
         entry["verdict"] = status
@@ -363,6 +415,10 @@ def build_flights(b: Build) -> None:
 
     b.derive({
         "flights": verdicts,
+        "log_and_marker_are_read_in_place":
+            "`log` and `marker` are FILE NAMES inside `evidence_dir` (eval/results/), not paths "
+            "under dashboard/data/. The page joins them onto its own EVIDENCE root so the "
+            "committed evidence is served once, from where the gates read it.",
         "verdict_legend": {
             "VALID": "every gate green -- evidence of a flight that met its bars",
             "ACKNOWLEDGED": "a REVIEWED, recorded closest-approach breach: marker file beside the "

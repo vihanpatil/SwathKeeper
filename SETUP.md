@@ -35,17 +35,21 @@ python3 -m unittest discover -s tests/fieldguard_planning     # planning, safety
 ```
 
 ```
-Ran 57 tests in 6.760s
-OK
-Ran 822 tests in 13.040s
-OK (skipped=2)
+Ran 329 tests in 103.830s
+FAILED (failures=1)                             # measured 2026-09-11 — the ONE deliberate red, see (b)
+Ran 1372 tests in 27.557s
+OK (skipped=1)
 ```
 
 Two roots because `discover -s tests/fieldguard_planning` never walks `tests/test_*.py` — CI runs
 both for exactly that reason. **The honest caveat, measured on a clean Python 3.12 venv with nothing
 installed:** only the *first* command is truly install-free there. Ten of the second's modules import
 numpy and fail to load with `ModuleNotFoundError: No module named 'numpy'` (the command exits 1); the
-other 614 tests still run green, and step (b) clears the ten — on Python 3.11+, see its floor note.
+rest still run green, and step (b) clears the ten — on Python 3.11+, see its floor note. *(That
+bare-venv split was measured 2026-08-24, as 614 of the 822 tests that existed then; the ten modules
+are the invariant, not the count.)* **The first command's one failure is expected** —
+`tests/test_ci_evidence_gate.py` is red on the committed 2026-08-25 breach take, deliberately; see
+(b) and `tests/README.md`.
 
 **(b) Install the pins, run everything at once.** **Needs Python 3.11+** (read the note below first).
 
@@ -55,7 +59,7 @@ python3 -m pytest tests -q
 ```
 
 ```
-1258 passed, 1 failed, 2 skipped in 68.95s      # measured 2026-09-07
+1699 passed, 1 failed, 1 skipped in 133.42s     # measured 2026-09-11
 ```
 
 **The 1 failure is expected and deliberate** — `tests/test_ci_evidence_gate.py` is red on the
@@ -80,15 +84,18 @@ python3 scripts/check_live_flight_log.py eval/results/live_flight_log_*.json
 
 ```
 [check_live_flight_log] ACKNOWLEDGED SAFETY FINDING: eval/results/live_flight_log_20260823T004031Z.json
-    - covered=720 debt=0 path_points=984 | CPA 0.0518 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND.
+    - covered=720 debt=0 path_points=984 | CPA 0.0391 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND.
     - acknowledged by live_flight_log_20260823T004031Z.SAFETY_FINDING.md -- recorded history, kept as evidence, NOT a passing flight
 [check_live_flight_log] PASS WITH 2 ACKNOWLEDGED SAFETY FINDING(S): 0 of 2 log(s) clean.
 ```
 
-*(abridged: the second finding — the 2026-08-18 flight, CPA 0.0597 m, 513 covered / 207 debt — prints
-the same three lines above this tail.)* Both flights passed every gate that existed on their day, and
-a **later** gate measured what none of them had: the distance actually flown past the bird — 0.0518 m
-and 0.0597 m against a 3.00 m bar. Both logs are kept and marked, neither counts as a pass, and the
+*(abridged and re-quoted 2026-09-11: the second finding — the 2026-08-18 flight, CPA 0.0393 m, 513
+covered / 207 debt — prints the same three lines above this tail; the third committed log, the
+2026-08-25 take, is INVALID and is what makes the full glob exit 1 — see (b).)* Both flights passed
+every gate that existed on their day, and a **later** gate measured what none of them had: the
+distance actually flown past the bird — **0.0391 m and 0.0393 m** against a 3.00 m bar (the gate's
+path-segment recompute; the `.SAFETY_FINDING.md` markers filed on the day record 0.0518 m and
+0.0597 m under the older vertex-only geometry, superseded 2026-08-26). Both logs are kept and marked, neither counts as a pass, and the
 fix that matters (escape geometry) is deliberately still open. The exit code is 0 only because each
 finding has a reviewed `.SAFETY_FINDING.md` marker beside it. CI runs this same command and
 **hard-fails if the glob matches zero files** — a gate with no denominator does not score green here.

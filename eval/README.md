@@ -48,6 +48,36 @@ detector's box in cyan beside the label's in red, refusing a detections file fro
 A frame with no visible bird still writes a still, and the tool says so on stderr: a boxless
 picture is what a labelling failure looks like too.
 
+## Forward depth camera — offline tooling (ADR-020 / ADR-021)
+
+Commissioned and scored, never flown (see `README.md`'s "Forward depth camera" section for the
+headline numbers). Three pieces, host-side, no Docker except the capture step:
+
+- `capture_depth_dataset.sh` — the labelled-dataset capture harness. Runs **inside** `fieldguard-sim`
+  (the renderer must be idle): one `gz` launch per distinct camera pose baked into an SDF copy,
+  `bird_0` teleported per station with every actuation verified by a pose readback (fail-closed),
+  and each pose rendered **twice** — once with the birds present and once with all three parked off
+  the world edge — so the bird's rendered footprint is established by diffing against its own
+  negative control, never by asking the detector. Spec: `docs/design/DEPTH_SEGMENTER_DESIGN.md` §5.
+  Input a station file (`docs/design/depth_segmenter_stations.json`); output `.npy` depth frames +
+  `labels.jsonl` + `groups.jsonl` into `eval/results/depth_dataset_20260907/` (frames stay
+  gitignored — ~100 MB — everything else needed to reproduce the score is committed).
+- `score_depth_segmenter.py` — labels and scores the forward depth segmenter
+  (`src/fieldguard_planning/depth_segment.py`) against that captured dataset, against the seven bars
+  pre-registered in `docs/design/DEPTH_SEGMENTER_DESIGN.md` §4. Every label is recomputed from the
+  render's own pose readbacks, not trusted from the station file's predictions, and the run stops if
+  the two disagree by more than a pixel tolerance — a station file that disagrees with the render is
+  a harness bug, not a relabel. `python3 eval/score_depth_segmenter.py` (full run, ~3 min, numpy +
+  scipy only) writes `eval/results/depth_segmenter_score_<UTC>.json` + the dataset's `REPORT.md`.
+- `replay_point_mass.py` (+ `point_mass.py`, the plant model) — the offline confound-resolver
+  (ADR-016, Council Ruling 001) that replayed all three committed live avoidance flights through a
+  jerk/accel-limited point mass to separate candidate ordering, warning time, and plant compliance,
+  and swept 81 mission speeds to ask whether any speed makes the nadir camera's geometry survivable
+  (it found none — ADR-017). **This is a study, not a gate**: it lives in `eval/`, not `scripts/`,
+  on purpose — its numbers move when the sweep grid changes, so it must never be wired into CI as a
+  pass/fail check. Its output can seed a gate later (a required-lead-time bar beside CPA is the
+  obvious one); today it is evidence, not enforcement.
+
 ## Ground truth for real clips
 
 The synthetic spike clips carry `birds[]` on every `poses.jsonl` line; a clip from the live
