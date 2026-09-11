@@ -1,9 +1,103 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION; G171-G175 the P1 DEPTH-LOG SCORING GATES -- G168 CLOSED, but the AUTHORISING bar credits a 500 m range from a 60 m sensor and the runtime bars are skippable by an impossible counter -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION; G171-G175 the P1 DEPTH-LOG SCORING GATES -- G168 CLOSED, but the AUTHORISING bar credits a 500 m range from a 60 m sensor and the runtime bars are skippable by an impossible counter -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight; G176-G188 the 2026-09-10 PORTFOLIO-FLOOR round -- the NDVI seam still has no frame-shape guard the depth seam makes a HARD bar, a runbook that governs the next flight still says it has never been flown, a booking flag the launcher no-ops, and five cross-builder handoffs that never landed; G175 CLOSED)
 metadata:
   type: project
 ---
+
+**G176-G187 (2026-09-10) — THE PORTFOLIO-FLOOR ROUND** (four builders on disjoint files; I verified
+adversarially and chased the cross-builder handoffs). What I PROVED GOOD, so nobody re-does it: the
+three committed logs + markers are byte-identical to HEAD and the gate's verdicts/exit codes are
+unchanged (0/0/1) with only ADDED note lines; I re-derived 0.434 s and the (-0.0182, -3.9518,
+-0.0200) m raw dENU from the log's own `tick_stamp_sim_s` + `flown_path_enu` myself; `geom.py` is
+bit-exact against HEAD's three originals over 60,000 randomised + degenerate cases; the KNOWN_RED
+allowlist killed 7/7 stubbed mutants AND caught a real injected failing test file end-to-end; the
+dashboard prose test is red on HEAD's app.js (0 tour steps parsed) and 12/12 green now; all 17
+dashboard fetches resolve byte-identically in BOTH layouts (repo-root http.server and the assembled
+`_site`); LICENSE is byte-identical to apache.org's canonical text except the copyright line.
+
+- **G176 (MAJOR, the one that ranks first by CONSEQUENCE) — the NDVI seam still has no
+  frame-shape-vs-intrinsics check, on the band that has actually flown.** G10's remedy landed the
+  four WIRE-FORMAT refusals in `avoidance_node.decode_ndvi_frame` (encoding / step / payload /
+  `is_bigendian`) but not the fifth guard the depth path has:
+  `depth_detect.dropped_frame_shape_mismatch` (:425, :465), which the P1 pre-registration makes a
+  HARD `== 0` bar. `ndvi_detect.NdviDetectionSource.on_frame` has three drop counters and none of
+  them is shape. MEASURED with the flight's own live intrinsics (fx 520.0058, 640x480): the correct
+  frame puts the bird at slant range 9.832 m / ENU (15.15, 21.45, 5.17) -- inside the 12 m cylinder;
+  a 320x240 frame carrying the SAME physical bird reads 20.893 m / ENU (9.15, 25.95, **-4.58**),
+  |dz| 19.6 m > `vertical_threat_m` 6.0 -> **the policy PROCEEDS**. A detected bird converted into a
+  no-threat, with every counter clean. Reachability today is LOW (`/fg/ndvi/camera_info` is
+  ndvi_node's pass-through of the RGB info and `ndvi_fusion` raises on red/nir shape mismatch), so
+  this is a latent guard gap, not a live defect -- say that plainly when reporting it.
+- **G177 (MAJOR) — `docs/runbooks/AVOIDANCE_REAL_DETECTION.md:16` still says "this procedure has
+  NEVER BEEN FLOWN".** It was flown on 2026-08-25: the marker
+  `live_flight_log_20260825T210402Z.SAFETY_FINDING.md:44-46` quotes that file's §7 as "binding at
+  flight time". Same class as audit S7 (`FULL_PIPELINE_DEMO.md` "never run live"), which the same
+  round FIXED -- the sibling was missed. §7 is still in future tense ("R2 and R3 fly for the first
+  time here", "This flight may honestly FAIL") with no resolved-on marker. No test pins the banner.
+- **G178 (MAJOR) — §1a publishes `--booking <artifact>` on the `node` line and the launcher
+  no-ops it.** The runbook calls it "§0g's launcher flag, MANDATORY for a dodge take ... Omit it and
+  the node still runs; the take is not authorised" -- but `fly_pipeline.sh node --booking <a>` warns
+  "has no effect on 'node'" and books nothing: no `param set WP_SPD`, no
+  `eval/results/live_flight_booking_<UTC>.json` sidecar. Only `up`/`test-flight` apply it
+  (verified by dry-run). An operator who follows §1a flies UNBOOKED and UNENFORCED -- the exact
+  failure ADR-020 am. 3 exists to prevent. devops flagged it in a handoff; nobody landed it.
+- **G179 (MAJOR) — §4 of the same runbook contradicts §1a, which points AT §4 as "unchanged".**
+  §4 step 1 still says "`fly_pipeline.sh down` does not know about this shell; a `docker restart` or
+  a `pkill` here loses the entire flight log" and step 3 still calls the missing `avoidance_node`
+  process grep a "Known gap". Both are false since this round: `cmd_down` SIGINTs the `node` window
+  second and waits `NODE_LOG_S=60` for `wrote flight log ->`, and `running_sim_procs`
+  (`scripts/fly_pipeline.sh:475`) greps `fieldguard_planning.avoidance_node`. Caveat for the edit:
+  §4's warning is STILL TRUE for the raw `docker exec` Shell-8 path, which §1 keeps as the fallback
+  -- the correct fix is conditional, not a deletion.
+- **G180 (CRITICAL by the round's rubric, low consequence) — `README.md:287` says "22 architecture
+  decision records"; `grep -c '^## ADR-' docs/DECISIONS.md` = 24 = 1 template + ADR-000..ADR-022 =
+  **23**.** The off-by-one came through a handoff that re-quoted the audit's PRE-ADR-022 count.
+- **G181 (CRITICAL by the same rubric, low consequence) — `CLAUDE.md:140` sets "tests:src is capped
+  at 3.45:1 (today's ratio)" and the tree it shipped in measures **3.69:1**** (`src/fieldguard_
+  planning/*.py` 6,738 lines; `tests/**.{py,sh}` 24,895). 3.45:1 is HEAD's ratio, not today's. The
+  cap is breached by the commit set that writes it, three homes deep (CLAUDE.md:140,
+  ROADMAP.md:187, the ADR-022 clause at DECISIONS.md:4486 -- append-only, so that one needs a dated
+  amendment, not an edit).
+- **G182 (MAJOR) — `dashboard/README.md` is the round's one unswept pocket:** `:8` still frames the
+  project as "detect -> avoid -> **replan -> requeue**" (audit O2, fixed everywhere else); `:23-25`
+  still give the OLD Pages instructions ("Deploy from a branch", `https://<user>.github.io/<repo>/`)
+  against a repo that now ships `.github/workflows/pages.yml` (Source: GitHub Actions); `:31` still
+  lists `data/flights/*.json` as what the replay reads -- **those six files were DELETED this
+  round**, and two tests now assert that directory stays gone; `:65` and `:100` still say the logs
+  are "copied". devops wrote the exact edits in a handoff; nobody owned the file.
+- **G183 (MAJOR) — two dangling references to the deleted `eval/depth_segmenter_proto.py`:**
+  `src/fieldguard_planning/depth_segment.py:5` and `docs/design/DEPTH_SEGMENTER_DESIGN.md:17`. Both
+  were written up as exact proposed edits in TWO separate builder handoffs and neither landed.
+  (`DEPTH_SEGMENTER_ALGORITHM.md:20` DID land the strikethrough.)
+- **G184 (MAJOR) — `AIRBORNE_Z_M` still has three homes** (`geom.py:39`, `clip_recorder.py:81`,
+  `build_dashboard_data.py:111`). The consolidation gave it a home and moved the gate onto it; the
+  other two were handed off and not landed. `test_check_live_flight_log_booking.py:176-185` pins all
+  three equal, so it is safe -- but that test's own docstring now states a false reason ("The gate
+  keeps its own copy because clip_recorder imports numpy"); the gate imports geom.
+- **G185 (MINOR) — `docs/drafts/README_FULL.md` / `README_SKELETON.md` were STUBBED, not deleted**
+  (the GTM session had no shell), and `tests/README.md:12` still names README_FULL.md as one of
+  "four" suite-total quoter homes and says "Re-quote all four or none". The file no longer quotes
+  anything and the suite-totals test skips it.
+- **G186 (MINOR) — `.github/workflows/ci.yml`'s evidence-step comment still says the gate "prints
+  their CPA (0.0597 m / 0.0518 m)".** Measured today it prints **0.0393 m / 0.0391 m** (the
+  2026-08-26 segment-path recompute). Stale in a file this round edited.
+- **G187 (MINOR) — dashboard tour step 5 is titled "What this flight put on the map" and then names
+  `S.clipId`**, which is set once at boot (`app.js:94`) and never follows the flight selection; no
+  clip corresponds to the 2026-08-18 flight at all. Residual O10, uncovered by
+  `test_dashboard_prose.py`. Also `README.md:339` says the dashboard computes "every figure ... in
+  your browser" while `dashboard/README.md:58` correctly hedges it with "or is a verbatim line
+  printed by a gate that ran on the host" -- the verdicts and CPA are the latter.
+- **G175 is CLOSED.** No document of record still calls a depth log UNSCOREABLE: the runbook banner
+  and §1a, ROADMAP, docs/README, FORWARD_DEPTH_SENSOR and the DECISIONS entries all now say
+  SCOREABLE-since-P1 or carry a struck-through CLOSED. Only the append-only pre-registration keeps
+  the historical text, correctly labelled by its own later disposition note.
+- **G188 (MINOR) — `TestNoMissedBird` is live but scores a FROZEN detections artifact.** It re-runs
+  `eval/score.py` over committed `detections_ndvi.json`, so a scorer bug or artifact drift fails it
+  and a DETECTOR regression does not. The live detector regression gate is the CI seed-42 spike
+  step, which this round proved is worth keeping (`eval/baseline_ndvi.py:43` imports the flown
+  `fieldguard_planning.ndvi_detect`). The class docstring's "the detector is the adopted one at the
+  adopted threshold" describes provenance, not a live run -- worth one clarifying clause.
 
 **G171-G175 (2026-09-07 late) — THE P1 DEPTH-LOG SCORING GATES** (verifying my own seven
 pre-registered bars, `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` §P1, as implemented in

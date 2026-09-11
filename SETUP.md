@@ -35,10 +35,10 @@ python3 -m unittest discover -s tests/fieldguard_planning     # planning, safety
 ```
 
 ```
-Ran 277 tests in 38.137s
-FAILED (failures=1)                             # measured 2026-09-07 — the ONE deliberate red, see (b)
-Ran 1325 tests in 28.483s
-OK (skipped=2)
+Ran 329 tests in 103.830s
+FAILED (failures=1)                             # measured 2026-09-11 — the ONE deliberate red, see (b)
+Ran 1372 tests in 27.557s
+OK (skipped=1)
 ```
 
 Two roots because `discover -s tests/fieldguard_planning` never walks `tests/test_*.py` — CI runs
@@ -59,7 +59,7 @@ python3 -m pytest tests -q
 ```
 
 ```
-1599 passed, 1 failed, 2 skipped in 68.18s      # measured 2026-09-07
+1699 passed, 1 failed, 1 skipped in 133.42s     # measured 2026-09-11
 ```
 
 **The 1 failure is expected and deliberate** — `tests/test_ci_evidence_gate.py` is red on the

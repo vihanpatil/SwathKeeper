@@ -14,7 +14,8 @@ threshold whose value is measured on a cluttered labelled dataset rather than ch
 
 ### Concurrent work — read this before building either
 
-A prototype was being written in parallel with this note (`eval/depth_segmenter_proto.py`, with a
+A prototype was written in parallel with this note (`eval/depth_segmenter_proto.py` — DELETED
+2026-09-10 under ADR-022; the module of record is `src/fieldguard_planning/depth_segment.py`, with a
 sibling `docs/design/DEPTH_SEGMENTER_ALGORITHM.md`), and the two arrived **independently at the same
 core decision**: discontinuity against a local background, never `isfinite`, for the same measured
 reason. That agreement is worth more than either document. **Two substantive deltas remain, and they

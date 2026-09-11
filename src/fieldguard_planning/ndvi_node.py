@@ -28,12 +28,13 @@ off-sim, so it lives in the module-level pure functions below (`assemble_ndvi_ms
 `assemble_preview_msg_fields`, `apply_image_fields`) and is unit-tested in
 `tests/fieldguard_planning/test_ndvi_node.py`. The callback only constructs `Image()` and publishes.
 
-STATUS: NOT RUN LIVE. The render this node depends on (`/fg/sensor/rgb/image`,
-`/fg/sensor/nir/image`) has not rendered yet -- gated on the human Docker session,
-`docs/runbooks/NDVI_VALIDATION.md` Gates 0-2. This file is written and ready to run the moment those topics
-exist; do not treat anything here as exercised against the real render until Gate 2 is green and
-this node has actually been run against it (mirrors how `avoidance_node.py` was written ahead of
-its own Week-3 Docker validation).
+STATUS: RUN LIVE (corrected 2026-09-10; this block said "NOT RUN LIVE" for three weeks after it
+was). This node is the WRITER OF RECORD for 16 of the 27 committed clips -- every clip from
+`real_flight_20260821T032316Z` to `real_flight_20260906T195307Z` names it in
+`meta.json fuser.writer`. The 11 earlier real-render clips (2026-08-18/19) predate the fuser stats
+block, so they carry no writer field; ADR-007 Gates 1-3 went green live on 2026-08-18 against this
+code. Treat the fused-frame path as exercised against the real render, and the counters below as
+measured rather than aspirational.
 
 VERIFY-IN-CONTAINER items (cannot be checked outside Docker/ROS 2, same category as
 `ros2_adapter.py`'s note):
@@ -44,11 +45,12 @@ VERIFY-IN-CONTAINER items (cannot be checked outside Docker/ROS 2, same category
     `message_filters.Subscriber.registerCallback` (standard `SimpleFilter` API -- the synchronizer
     itself attaches the same way), which this repo had never used. They climb: red 73/126/113/217,
     nir 404/418/409/411 (ADR-013 am. 6). Nothing left to confirm here.
-  * [NOT YET RUN LIVE, added 2026-08-21] `nir_camera_info_frames` subscribes
-    `/fg/sensor/nir/camera_info`, which is bridged (`sim/bridge/fg_sensor_bridge.yaml`) but has had
-    ZERO subscribers until now -- so the first instrumented flight must confirm it climbs rather
-    than sitting at 0. A 0 here means "nothing is publishing that topic", NOT "the NIR sensor never
-    ticked", and the two must not be confused when reading the artifact.
+  * [ANSWERED 2026-08-22, and re-checked 2026-09-10] `nir_camera_info_frames` subscribes
+    `/fg/sensor/nir/camera_info`, which is bridged (`sim/bridge/fg_sensor_bridge.yaml`) and had ZERO
+    subscribers before that flight. It climbs: 689 / 676 / 667 / 688 on the first four instrumented
+    clips, 3399 on the 2026-08-25 flagship take. Nothing left to confirm. (The reading rule stands
+    for any future 0: it means "nothing is publishing that topic", NOT "the NIR sensor never
+    ticked", and the two must not be confused when reading the artifact.)
   * `use_sim_time` is NOT hardcoded here (matches `avoidance_node.py`'s convention) -- launch with
     `--ros-args -p use_sim_time:=true` per ADR-007's "use_sim_time=true" requirement, or the NDVI
     frame's stamp arithmetic (delta vs. the stale-pair guard) will compare wall-clock stamps against

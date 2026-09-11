@@ -1,3 +1,4 @@
+- [ADR-022 DIRECTION RESET 2026-09-10](project_adr022-direction-reset.md) — portfolio floor → 10-conversation method market test → drone-as-product deferred; wire CUT; four standing freezes
 - [ADR-003 NDVI detection CLOSED](project_adr003-ndvi-detection.md) — ADOPT NDVI-direct on the real render (2026-08-23); −0.61 threshold still PROVISIONAL, no model justified
 - [Week-6 seam: ANSWERED](project_week6-detection-seam-open-questions.md) — binding calls 2026-08-24: gz clock end-to-end, GT-CPA vs applied-pose log, detector single-sourced to src/ + scipy in the image
 - [Avoidance take: FLOWN + SCORED + BREACHED](project_avoidance-take-blockers.md) — gt_cpa 0.0067 m, pre-registered (ADR-013 am. 18); R2 passed live, R3 vacuous by 15 mm, R4 re-scoped by 0.175 s of LEAD TIME

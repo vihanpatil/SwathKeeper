@@ -6,6 +6,42 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-09-10 — the audit, and the direction reset it bought
+
+An end-to-end read of the repo against its own artifacts — eight subsystem passes, three outside
+critiques, a verification round that confirmed nine findings and refuted three. What it measured:
+the effort curve had inverted (`src/` share of each phase 31.9 % → 5.3 %), the verification
+apparatus was **2.28×** the thing it verifies, the #1 differentiator had flown three times and
+breached three times (0.0393 / 0.0391 / 0.0067 m against a 3.00 m bar), the flagship dodge moved the
+aircraft **1.8 cm in a 0.434 s GUIDED window against a 10 m command**, the new depth sensor had
+**zero flights**, and five state documents contradicted each other and the tree.
+
+The owner's call the same day (**ADR-022**): SwathKeeper is a **portfolio project** — finish the
+floor, then test the market for the **method** (~10 conversations about pre-registered evidence gates
+on other teams' logs, kill criterion 0 of 10), and defer drone-as-product behind that answer. The
+**ADR-019 wire program is CUT** (am. 1); an NDVI analytics product is **rejected**; deletion is
+aggressive; the honesty artifacts stay on the front page and are **widened** — all three breaches
+disclosed, the INVALID verdict kept, the red CI declared exactly. Four freezes ship with it: NDVI,
+the depth segmenter until a flight, `DECISIONS.md` amendments ≤ 10 lines, tests:src capped at
+3.45:1. **R8** — the coverage mission violating its own XY geofence by −1.997 m while CI runs the
+check `|| true` — is recorded OPEN, owed a diff.
+
+## 2026-09-06/07 — the forward depth sensor goes from a drawing to a scored operator
+
+Two sessions, no new capability in the air. **Commissioning (ADR-020 am. 1-2):** all six D-gates
+measured live — intrinsics 8/8, an optical prefix of 58.0 m clamped to a **bookable 46.0 m**, the
+booking gate `exit 0` at 5.0 m/s with 1.780× margin, 132/132 depth-to-`camera_info` delivery, −1.18°
+median pitch. The asterisk went into the record with the numbers: D5 and D6 were measured at a
+**3.50 m/s** median ground speed, not the booked 5.0. **Booking enforcement (am. 3):** the booked
+speed is now typed into the recipe and gated per **encounter** — QA caught the first build typing
+`WPNAV_SPEED 500`, a parameter retired at the pinned SHA, wrong by 100×, and the committed take's
+whole-flight 3.417 m/s hid a 9.012 m/s encounter. **The segmenter (ADR-021):** a black top-hat on
+depth, keyed on discontinuity rather than `isfinite`, scored 7/7 on an 85-station cluttered render
+with every constant an output of a sweep. **The wiring:** `--detection-source depth`, exclusive by
+construction, plus a new exit 4 when `camera_info` never arrives. **The gates:** a depth flight log
+became scoreable on seven pre-registered bars the same night. Everything here is offline: the sensor
+has still never flown, and ADR-022 froze it there until it does.
+
 ## 2026-08-26 — the replay answers what the flight could not, and the answer fires the tripwire everyone had pre-signed
 
 **Ruling 001's item 1 executed offline, in one session, through six adversarial QA rounds.** The

@@ -13,10 +13,13 @@ ground-plane projection).
 | `eval/results/live_flight_log_<UTC>.json` (schema 2) | detect → avoid, at a measured separation, at the speed it was booked at | `scripts/check_live_flight_log.py --truth … --booking …` |
 | `eval/results/clips/real_flight_<UTC>/` + its heatmap | the NDVI map is where it says it is | `scripts/check_tree_positions.py` |
 
-> **Status: this procedure has NEVER BEEN FLOWN.** Every command below is verified offline (host
-> test suite, `fly_pipeline.sh --dry-run`, and an offline replay of the seam over the adopted clip).
-> Verified offline is not flown; the first execution of this runbook is the flight it describes.
-> Numbers marked *(offline)* are predictions to compare the flight against, not results.
+> **Status: FLOWN ONCE — 2026-08-25, and the take stands INVALID.** §7's pre-registration resolved:
+> the flight breached its own GT-CPA bar at **0.0067 m against 3.00 m** (marker beside the log,
+> `eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md`), R2 passed live (min swept tree
+> clearance 1.340 m, 8 candidate rejections) and R3 did not fire (missed by 15 mm). R4 — the escape
+> geometry that caused it — is open and uncut, so a re-fly is still expected to be hard.
+> **The DEPTH-SOURCE variant (§1a) has never been flown.** Numbers marked *(offline)* are still
+> predictions to compare a flight against, not results.
 
 > **THE DEPTH-SOURCE VARIANT IS SCOREABLE — on its OWN seven bars, since the P1 diff (2026-09-07,
 > late).** Since ADR-021 the same node can fly the **forward depth** detector (`--detect
@@ -219,8 +222,14 @@ speed **this** mission will fly.
 >   static vehicle, noiseless sensor, level attitude and "no clutter behind the band beyond 30 m in
 >   this world" remain in the clause.)*
 
-This does **not** retire §0b: with detection on the forward sensor, the nadir bird-visibility gate
-now governs the NDVI *map* rather than the dodge, and it is still a real gate for the survey half.
+**§0b is NOT softened by this gate, and it is not demoted here.** §0b's ABORT RULE stands exactly as
+written: a nonzero exit means **do not book the session** — a dodge take on the forward sensor
+included. Whether §0b becomes REPORTED rather than a precondition is a **product-lead decision that
+has not been made** (the recommendation is recorded in ADR-020 am. 1 item 4 and is still open on
+2026-09-10). Until it is made in writing, the abort stands, and nothing on this page may be read as
+permission to fly past it. *(Withdrawn 2026-09-10, audit finding R10: this paragraph used to say §0b
+"now governs the NDVI map rather than the dodge" — one file softening an abort rule that nothing
+enforces mechanically.)*
 
 ---
 
@@ -284,10 +293,13 @@ this flight's **bird ground truth**: `eval/results/bird_drive_<UTC>_applied.json
 `set_pose` call that actually landed. That file is the input to the safety gate in §5 — without it
 the flight cannot be scored. Manual override, only when airborne: `scripts/fly_pipeline.sh birds`.
 
-**Shell 8 — the avoidance node with the real detector.** Deliberately a plain `docker exec` and
+**Shell 8 — the avoidance node with the real detector.** Historically a plain `docker exec` and
 **not** a `fly_pipeline.sh` pane: the node writes its flight log in a `finally` after `rclpy.spin`,
 and teardown's `pkill` would destroy the evidence the flight exists to produce. ADR-013's own rule is
 that the launcher wraps one-liners that have already flown — this one has not.
+*(Updated 2026-09-10: `scripts/fly_pipeline.sh node` now wraps exactly this command and `down` kills
+it — see §1a. The evidence rule is unchanged and now rides on the operator: wait for
+`wrote flight log →` before tearing anything down.)*
 
 ```bash
 docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.avoidance_node --detect'
@@ -317,7 +329,27 @@ them, so a flag here could let the gate and the control law disagree silently.
 
 ### 1a. Shell 8, the DEPTH-SOURCE variant *(ADR-021 — built, host-tested, NEVER FLOWN)*
 
-Same shell, one flag, and it changes which sensor the whole take is about:
+Same shell, one flag, and it changes which sensor the whole take is about. **Since 2026-09-10 the
+launcher owns this shell**, and this is the form to use:
+
+```bash
+scripts/fly_pipeline.sh node --detection-source depth
+```
+
+- **`--detection-source ndvi` is the default, and it reproduces the documented shell-8 command
+  below** — the launcher wraps a one-liner that has already flown (ADR-013's rule), it does not
+  invent a new flight path.
+- **`down` now kills the node.** The evidence rule therefore rides on the operator, not on the node
+  being outside tmux: Ctrl-C this shell (or run `down`) only after `wrote flight log →` has printed.
+  Teardown stays recorder-first and evidence-first — §4, unchanged.
+- **`--booking` does NOT belong on `node`.** The booking is applied at BRINGUP —
+  `scripts/fly_pipeline.sh --booking <artifact> up` (§0g) — which is what types `param set WP_SPD`
+  into the recipe pane and writes the `eval/results/live_flight_booking_<UTC>.json` sidecar that §5's
+  scoring command reads. Passing it here is accepted and WARNS that it did nothing; if you see that
+  warning, the take is **not** authorised — tear down and re-run `up` with `--booking`.
+
+The raw command it types — the fallback if the launcher is unavailable, and the thing to diff
+against if the two ever disagree:
 
 ```bash
 docker exec -it fieldguard-sim bash -c 'source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.avoidance_node --detect --detection-source depth'
@@ -409,16 +441,20 @@ booking typed at the prompt leaves no artifact for the flight-log gate to read.
 
 1. **Ctrl-C Shell 8 FIRST** and wait for
    `wrote flight log -> …/eval/results/live_flight_log_<UTC>.json`.
-   Nothing else may be stopped until that line appears. `fly_pipeline.sh down` does not know about
-   this shell; a `docker restart` or a `pkill` here loses the entire flight log.
+   Nothing else may be stopped until that line appears. If you started Shell 8 with
+   `scripts/fly_pipeline.sh node`, `down` now signals it SECOND (recorder first) and waits up to 60 s
+   for that line, printing the recovered path — the rule is unchanged and is now also enforced
+   mechanically. If you started it as a raw `docker exec` (the §1 fallback), `down` still does not
+   know about it: a `docker restart` or a `pkill` there loses the entire flight log.
 2. **Then** `scripts/fly_pipeline.sh down` — already recorder-first, waits for `clip finalized` (the
    step that converts the raw in-flight dumps to schema PNGs and writes `meta.json`), then prints the
    host-side stitch command with the real clip path.
 3. **Before the next `up`, confirm Shell 8 is really gone**:
    `docker exec fieldguard-sim ps -eo args= | grep avoidance_node`.
    `up`'s already-running refusal greps for the Gazebo/bridge/agent/SITL/ndvi/record/birds processes
-   — `avoidance_node` is **not** on that list, so a survivor would not be caught by it. Known gap,
-   documented rather than papered over; `docker restart fieldguard-sim` clears everything.
+   **and, since 2026-09-10, `fieldguard_planning.avoidance_node`** (`running_sim_procs` in
+   `scripts/fly_pipeline.sh`) — a surviving node DOES make the next `up` refuse. The gap is closed;
+   `docker restart fieldguard-sim` remains the escape hatch.
 
 ## 5. Post-flight gates — every one names its script
 
@@ -654,6 +690,9 @@ R2 (`lateral_tree_margin_m` 1.0 m) and R3 (degenerate re-latch refusal) fly for 
 strikes is unchanged, and ADR-015's threat bird passes nearly overhead. **This flight may honestly
 FAIL its own GT-CPA gate.** That is a measurement which ranks R4 next, not a wasted take — and it is
 written here *before* the flight so it cannot be reinterpreted afterwards.
+
+> **RESOLVED 2026-08-25:** it did fail — **0.0067 m** against the 3.00 m bar. See §6a and the marker
+> beside the log. R4 is ranked next and still open (2026-09-10). R2 passed live; R3 did not fire.
 
 ## 8. Known gaps — deliberate, named, not blind spots
 

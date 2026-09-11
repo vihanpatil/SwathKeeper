@@ -113,3 +113,24 @@ whole repo, not the new one, and read every hit as a question. Then ask the seco
 "when the follow-on diff promotes the new member into the main list, what breaks?" — here,
 `gate_detector_ran` would report *"counters missing for ['ndvi_msgs_received']"* on a depth block,
 so the landmine is already laid for the next session.
+
+**7. Multi-builder rounds leak at the HANDOFF, not inside the file.** Measured 2026-09-10: four
+builders on disjoint files produced clean, well-tested work inside their own scope and **five of the
+cross-file edits they each wrote out in full went nowhere** — `dashboard/README.md`,
+`AVOIDANCE_REAL_DETECTION.md` §4, `depth_segment.py:5`, `DEPTH_SEGMENTER_DESIGN.md:17`,
+`AIRBORNE_Z_M` in two files. Every one was correctly diagnosed and correctly written up; none had an
+owner. Two builders independently wrote the SAME handoff (the prototype reference) and it still did
+not land.
+**Why:** "report the edit instead of making it" is the right rule for concurrency and a guaranteed
+drop unless someone sweeps the handoffs at the end.
+**How to apply:** before grading anything else in a multi-builder round, collect every "HANDOFF" and
+"COULD NOT" item and grep for it FIRST — it is the cheapest finding density in the review, and a
+deleted file still referenced or a doc made false by someone else's change is a MAJOR by the rubric.
+
+**8. Grade the number the round ITSELF introduced, hardest.** The stale numbers a round fixes are
+easy; the ones it creates are invisible because they look freshly measured. Two landed on
+2026-09-10: `README.md` "22 ADRs" (actual 23 — inherited from a handoff quoting the audit's
+pre-ADR-022 count) and `CLAUDE.md` "tests:src is capped at 3.45:1 (today's ratio)" (measured 3.69:1
+in the same tree — 3.45 was HEAD's).
+**How to apply:** for every NEW count/ratio/date in a doc of record, run the one-line command that
+produces it (`grep -c`, `wc -l`, `git rev-parse`) rather than reading the sentence.

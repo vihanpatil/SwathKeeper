@@ -1,10 +1,11 @@
 # SwathKeeper Tiger Team — Setup, Use & Maintenance Guide
 
 > **Just browsing?** This file is the *process* behind the repo, not the drone system: SwathKeeper
-> is built by one engineer directing eight specialised Claude Code subagents (product, architecture,
-> perception, sim, flight software, devops, QA/safety, narrative), and this is how that team is
-> configured and run. For the system itself go to [`README.md`](README.md); to run it,
-> [`SETUP.md`](SETUP.md). Nothing here is needed to build or fly the sim.
+> is built by one engineer directing nine specialised Claude Code subagents (product, architecture,
+> perception, sim, flight software, devops, QA/safety, narrative, plus an executive council for
+> direction-level calls), and this is how that team is configured and run. For the system itself go
+> to [`README.md`](README.md); to run it, [`SETUP.md`](SETUP.md). Nothing here is needed to build or
+> fly the sim.
 
 This guide turns the generic solo-founder tiger-team playbook into a **working, version-controlled
 Claude Code team tailored to SwathKeeper**. It covers what was built, how to set it up, how to run
@@ -23,7 +24,7 @@ ROS 2 / Gazebo / ArduPilot **robotics simulation** project. So the roles were **
 pasted**, and the team was wired up as real Claude Code subagents per the current
 [sub-agents docs](https://code.claude.com/docs/en/sub-agents) (schema verified July 2026).
 
-**The eight agents** (`.claude/agents/`):
+**The nine agents** (`.claude/agents/`):
 
 | Agent | Playbook origin | What changed for SwathKeeper |
 |---|---|---|
@@ -35,6 +36,7 @@ pasted**, and the team was wired up as real Claude Code subagents per the curren
 | `devops-reliability-engineer` | DevOps/Reliability | Retargeted from cloud-free-tier cost to **local-sim reproducibility, headless CI, and demo-artifact recording**. |
 | `qa-safety-reviewer` | QA/Security & Safety | Given teeth for a safety-relevant autonomous system: false negatives, silently-skipped cells, geofence breaches, confidently-wrong perception. |
 | `gtm-narrative-lead` | GTM/Narrative | Tailored to the SwathKeeper story, metric-backed resume bullets, and mining `docs/DECISIONS.md` for interview answers. |
+| `exec-council` | **NEW (supplemental, added later)** | A C-suite tier *above* the eight build-lane agents, run on Fable, convened sparingly for direction-level questions (charter changes, scope pivots, go/no-go calls) that the tiger team's escalation rule doesn't cover — `product-lead` remains the v1 tiebreaker for build-level calls. |
 
 Plus: `/standup` slash command, `CLAUDE.md` project context (loads into every agent), a permission
 allowlist, a living roadmap, a decision log, a README skeleton, and a project directory scaffold.
@@ -57,7 +59,7 @@ allowlist, a living roadmap, a decision log, a README skeleton, and a project di
    load reliably after one restart. (New files added to an already-watched dir are picked up live.)
 2. **Verify the team loaded.** In a fresh session, ask:
    `List the SwathKeeper subagents available and their models.`
-   You should see all eight. If any are missing, restart once more.
+   You should see all nine. If any are missing, restart once more.
 3. **Optional — make the first commit** (the scaffold is ready to version):
    ```bash
    git add -A && git commit -m "Scaffold SwathKeeper tiger team + project structure"
@@ -75,7 +77,7 @@ allowlist, a living roadmap, a decision log, a README skeleton, and a project di
 
 ### 1.3 What lives where
 ```
-.claude/agents/*.md      the eight tiger-team subagents (the team)
+.claude/agents/*.md      the nine tiger-team subagents (the team)
 .claude/commands/standup.md   the /standup session opener
 .claude/settings.json    permission allowlist + subagent nesting cap
 CLAUDE.md                always-loaded project context (every agent reads this)
@@ -154,9 +156,9 @@ pin versions, change architecture, or move phase, update it. It is intentionally
 bloating it; deep detail belongs in `docs/`.
 
 ### 3.2 Agent memory (`memory: project`)
-All eight agents have persistent per-project memory (`memory: project` in each agent's frontmatter;
-a given agent's `.claude/agent-memory/<name>/` directory appears on its first write — as of
-2026-08-18, `gtm-narrative-lead` simply hasn't written yet). Memory lives in `.claude/agent-memory/<agent-name>/` and is
+All nine agents have persistent per-project memory (`memory: project` in each agent's frontmatter;
+a given agent's `.claude/agent-memory/<name>/` directory appears on its first write). Memory lives
+in `.claude/agent-memory/<agent-name>/` and is
 committed to version control, so knowledge (pinned versions, gotchas, metric baselines, safety
 scenarios) persists across sessions and is reviewable in diffs.
 - Prompt them to use it: *"Check your memory for what we decided about X."* / *"Save what you learned."*

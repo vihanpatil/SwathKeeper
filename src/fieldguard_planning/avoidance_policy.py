@@ -61,9 +61,15 @@ XY = Tuple[float, float]
 ENU = Tuple[float, float, float]
 
 # Candidate dodge directions, as rotations (degrees, CCW) applied to the primary "away-from-bird"
-# heading. 0 = straight away (best); +/-45 and +/-90 are progressively more lateral escapes. All of
-# these strictly INCREASE separation from the triggering bird (for a perpendicular move, new_dist^2 =
-# d0^2 + divert^2 > d0^2), so trying them in order degrades gracefully from "ideal" to "still safe".
+# heading. 0 = straight away (best); +/-45 and +/-90 are progressively more lateral escapes, and a
+# perpendicular move strictly increases separation (new_dist^2 = d0^2 + divert^2 > d0^2).
+# CORRECTED 2026-09-10 -- this comment used to claim ALL of them increase separation, and the
+# +/-135 pair does not: at theta=135 deg, new_dist^2 = d0^2 + L^2 - sqrt(2)*d0*L, which is SMALLER
+# than d0^2 whenever d0 > L/sqrt(2) = 7.07 m at the default divert_distance_m of 10.0. Behaviour is
+# nonetheless correct, and by a gate rather than by luck: _vet gate 4 rejects any setpoint whose
+# distance to a threat drops below the current one ("setpoint moves CLOSER to bird"), so the
+# +/-135 candidates are refused exactly in the regime where they would close the gap. They stay in
+# the list because inside 7.07 m they are still openers and the last usable escape geometry.
 # 180 (straight toward the bird) is deliberately excluded. Ordered by preference.
 _CANDIDATE_ANGLES_DEG: Tuple[float, ...] = (0.0, 45.0, -45.0, 90.0, -90.0, 135.0, -135.0)
 

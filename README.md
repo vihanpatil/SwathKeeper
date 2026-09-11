@@ -1,5 +1,8 @@
 # SwathKeeper
 
+[![CI](https://github.com/vihanpatil/SwathKeeper/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vihanpatil/SwathKeeper/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+
 **An autonomous ag-survey drone that reacts to obstacles its mission plan never knew about — and
 proves the survey is still complete afterwards. Built entirely in simulation; every number on this
 page comes from a gate that can fail, and one of them is failing right now, on purpose.**
@@ -13,41 +16,74 @@ silently skipped swath is a test failure rather than a rounding error. Crop-heal
 out of the same flight and the same camera. It runs on ArduPilot + Gazebo + ROS 2, in simulation,
 which is what makes the numbers below re-runnable by anyone.
 
-![NDVI crop-health map from one simulated flight: a 2.5 m grid over the field, with bright canopy
-cells over the three tree rows against darker soil](eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.png)
+![NDVI heatmap from one simulated flight: a 2.5 m grid over the field, with bright canopy cells
+over the three tree rows against darker soil](eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.png)
 
 *One flight (`real_flight_20260825T205705Z`), stitched offline: **720 of 720** cells on a 2.5 m grid
 from **649 painting frames of 671 airborne**; **18/18** trees imaged, **11** canopy-grade, median
 NDVI lift **+0.5562**, every one of the 11 positive cells within 2.0 m of a real tree centre; gate
 PASS. Same flight as the avoidance story below. NDVI = Normalized Difference Vegetation Index, a
-red / near-infrared ratio that reads as plant health.*
+red / near-infrared ratio commonly used as a plant-health proxy in the field — on this hand-authored
+world it separates canopy from soil on four typed temperatures, not degrees of health (see
+[What this is, and what it is not](#what-this-is-and-what-it-is-not)).*
 
-**Dashboard** — flight replay, avoidance event log, NDVI overlay: *GitHub Pages not enabled yet
-(placeholder: `https://<user>.github.io/<repo>/dashboard/`)*. Locally: `python3 -m http.server 8000`
-from the repo root, then open `/dashboard/`. **Demo video (2–3 min):** TODO — not yet recorded.
+**Dashboard** — flight replay, avoidance event log, NDVI overlay:
+[`vihanpatil.github.io/SwathKeeper/dashboard/`](https://vihanpatil.github.io/SwathKeeper/dashboard/)
+*(enable Pages in Settings → Pages → GitHub Actions if this 404s)*. Locally:
+`python3 -m http.server 8000` from the repo root, then open `/dashboard/`. **Demo video (2–3 min):**
+TODO — not yet recorded.
 
-- **A reactive avoidance loop that keeps its books.** Detect → take over (AUTO→GUIDED) → dodge →
-  resume → reconcile coverage. Latest flight: **720 of 720 cells covered, 0 debt**, 1858 path
-  points, **116 at-risk cells recovered across 4 diverts**, 0 clock-domain violations.
+## What this is, and what it is not
+
+**What it is:** a single-operator simulation lab — ArduPilot SITL (real firmware) + Gazebo Harmonic
+(real physics and render) + ROS 2, one hand-built farm world, exercised by one engineer.
+
+**What it is not, stated plainly rather than left for you to find:**
+- The birds are teleported spheres with no collision geometry (`gz service set_pose`, physics
+  bypassed) — a strike in sim is physically impossible. The offline safety gate below is the
+  *entire* safety system.
+- The NDVI map is a canopy-vs-soil sign test on four hand-typed material temperatures, not a
+  crop-health signal — the world has no disease, stress, or moisture variation to detect.
+- The flying Docker image is not SHA-pinned; no flight log records exactly what code flew it.
+- Nothing here has flown on hardware.
+
+**Claims ceiling, stated as policy: sim-demonstrated, evidence-gated.** Nothing on this page is a
+field-readiness or production claim (full statement under
+[Honest limitations](#honest-limitations) below).
+
+- **A reactive avoidance loop that keeps its books — with no replan and no requeue.** Detect → take
+  over (AUTO→GUIDED) → dodge → resume **the same waypoint** → book coverage debt. v1 scoped out both
+  replanning and requeueing (ADR-002); the loop doesn't reroute the mission or re-inject a missed
+  cell, it resumes where it left off and the ledger records honestly what that cost. Latest flight:
+  **720 of 720 cells covered, 0 debt**, 1858 path points, 4 accepted dodges (8 candidates rejected
+  for cutting a tree too close), 0 clock-domain violations.
 - **The flagship flight failed its own safety gate — and that is the headline.** Ground-truth
-  closest approach **0.0067 m** against a **3.00 m** bar. The failure was **pre-registered in
-  writing before takeoff**; the take stands **INVALID, exit 1**, and it is not softened anywhere in
-  this repo.
+  closest approach **0.0067 m** against a **3.00 m** bar, on the one flight where the drone dodged a
+  bird it detected on its own camera. The failure was **pre-registered in writing before takeoff**;
+  the take stands **INVALID, exit 1**. It is the third of three live avoidance flights to breach
+  this bar — see the results table below for the other two.
 - **Then the project measured *why*, offline, and changed course on the measurement.** A
-  jerk/accel-limited replay of all three flights swept 81 cells (2–10 m/s × every escape candidate ×
-  3 plant models) and returned **no mission speed at which the nadir sensor geometry is safe** —
-  the intruder's own 6.0 m/s closing speed caps warning at **0.41 s even from a hover**, and the
-  cheapest escape needs **1.25 s**. A second forward-facing sensor moved from growth path to scope.
+  jerk/accel-limited replay of all three flights swept **81 mission speeds** from 2 to 10 m/s, each
+  checked against every escape candidate and three different plant/acceleration models, and returned
+  **no mission speed at which the nadir sensor geometry is safe** — the intruder's own 6.0 m/s
+  closing speed caps warning at **0.41 s even from a hover**, and the cheapest escape needs **1.25
+  s**. A second forward-facing sensor moved from growth path to scope (see below).
+- **A second, more basic finding underneath the geometry one: the dodge barely moved the aircraft.**
+  On that same flight the executor held GUIDED authority for **0.434 s** and the vehicle displaced
+  **0.018 m** laterally against a **10 m** commanded divert. Nothing in the pipeline gates whether a
+  commanded maneuver was actually flown — see below.
 - **Perception is measured, not asserted.** On the real render: per-obstacle-track false-negative
   rate **0.000** (3 of 3 intruders, 20 obstacle-visible frames), precision 0.708 / recall 0.850. A
-  classical blob detector was **adopted over a learned model** because it won on the same harness —
-  and re-confirmed in 2026-08-26's comparison study against a working rival arm at **gap +0.000**.
-- **A crop-health map from the same flight, on the same cell grid as the coverage ledger.**
-  **720/720** cells on a 2.5 m grid from 649 painting frames, **18/18** trees imaged, 11 of them
-  canopy-grade, median NDVI lift **+0.5562**, every bright cell within 2.0 m of a real tree centre.
+  classical blob detector was **adopted over the RGB comparison arm on the same harness** — no
+  learned model was ever built — and re-confirmed in 2026-08-26's comparison study against a working
+  rival arm at **gap +0.000**.
+- **A map from the same flight, on the same cell grid as the coverage ledger.** **720/720** cells on
+  a 2.5 m grid from 649 painting frames, **18/18** trees imaged, 11 of them canopy-grade, median
+  NDVI lift **+0.5562**, every bright cell within 2.0 m of a real tree centre. (It reads canopy vs.
+  soil, not crop health — see above.)
 - **Reproducible or it doesn't count.** Every headline number names the artifact that proves it, and
-  the evidence gates run in CI — where `main` is currently **red by design**, because the committed
-  breach has not been re-flown.
+  the evidence gates run in CI — where `main` is red by design on exactly **one** declared test (the
+  committed breach has not been re-flown); an allowlist test asserts that failure and no other.
 
 ## Architecture at a glance
 
@@ -59,9 +95,11 @@ Gazebo farm world  ──►  NDVI camera (RGB Red + thermal-as-NIR, ADR-007)
 ArduPilot SITL  ◄─AP_DDS──  ROS 2 avoidance node
  (real firmware,             │      ├─ AVOID    policy: dodge? where? (swept path vetted in 3D
   software-in-the-loop)      │      │           against the surveyed tree geofence)
-                             │      ├─ REPLAN   executor: AUTO → GUIDED, fly it, hand back, resume
-                             │      └─ REQUEUE  ledger: every cell the dodge disturbed is re-covered
-                             │                  or booked as coverage debt
+                             │      ├─ RESUME   executor: AUTO → GUIDED, fly the dodge, hand back,
+                             │      │           resume the SAME waypoint index — no replan, v1
+                             │      │           scoped it out (ADR-002)
+                             │      └─ LEDGER   coverage ledger: every cell the dodge disturbed is
+                             │                  booked covered or debt — no requeue mechanism exists
                              │
                              └──►  recorded clip (frames + sim-clock-stamped poses)
                                         └──►  offline stitch (ADR-010) ──►  NDVI heatmap on the
@@ -80,16 +118,17 @@ and `VehicleCommandSink` (any autopilot).
 platforms — and the category leaders' own manuals disclaim wire bypass (DJI's T50 FAQ advises
 against obstacle bypassing around electric or guy wires, and gives the specular-reflection physics
 for why). What no commercial *mapping* platform does is react to an unmapped obstacle mid-flight;
-that gap is where this project sits. Wire corridors here are **scoped future work, as mapped
-infrastructure** (ADR-019) — not a capability this repo demonstrates.
+that gap is where this project sits, as a sim-only lab demonstration — not a shipped capability, and
+not (see [What's next](#whats-next)) a product this repo is currently building toward.
 
 ## Results, quantified
 
 | Measurement | Number | Proved by |
 |---|---|---|
-| Coverage integrity, live flight | **720 covered / 0 debt**; 116 at-risk cells recovered across 4 diverts; 1858 path points | [eval/results/live_flight_log_20260825T210402Z.json](eval/results/live_flight_log_20260825T210402Z.json) + its `.SAFETY_FINDING.md` |
-| Detector rate, first in-air measurement | **1301 / 1302 frames = 99.92 %** against a 0.90 floor | same log; [docs/DECISIONS.md](docs/DECISIONS.md) ADR-013 am. 18 |
-| Bird clearance on that same flight | **0.0067 m horizontal at 4.03 m vertical, against a 3.00 m bar — INVALID.** Reported as the system working | [eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md](eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md) |
+| Coverage integrity, live flight | **720 covered / 0 debt**, 1858 path points, 4 accepted dodges / 8 rejected candidates. No replan, no requeue (ADR-002) — the executor resumes the same waypoint and the ledger books debt honestly | [eval/results/live_flight_log_20260825T210402Z.json](eval/results/live_flight_log_20260825T210402Z.json) + its `.SAFETY_FINDING.md` |
+| Pipeline liveness, first in-air measurement | **1301 / 1302 frames reached the detector = 99.92 %** against a 0.90 floor — this is throughput, not sight: the detector *fired* on only **2 of those 1302 frames** (2 boxes), the only 2 frames in the whole flight with the bird inside the image | same log; [docs/DECISIONS.md](docs/DECISIONS.md) ADR-013 am. 18 |
+| Bird clearance — three live avoidance flights, three breaches against the same 3.00 m bar | **0.0393 m** (2026-08-18, scripted `--demo` bird, ACKNOWLEDGED, exit 0) · **0.0391 m** (2026-08-23, scripted `--demo`, ACKNOWLEDGED, exit 0) · **0.0067 m** (2026-08-25, the drone's own real-time detection, **INVALID**, exit 1) | the three `.SAFETY_FINDING.md` markers; gate's current segment-path CPA recompute |
+| Commanded vs. achieved displacement, the 2026-08-25 dodge | GUIDED authority window **0.434 s**; the aircraft displaced **0.018 m** laterally against a **10 m** commanded divert. No gate compares commanded to achieved — the loop is open-loop | [docs/DECISIONS.md](docs/DECISIONS.md) ADR-013 am. 12 addendum; same `.SAFETY_FINDING.md` |
 | Detection quality, real render (ADR-003 criterion 3) | per-track FNR **0.000**, 3/3 intruders, 20 obstacle-visible frames; precision 0.708 / recall 0.850 (TP 17 / FP 7 / FN 3) | [eval/results/adr003_20260823/spike_scores.json](eval/results/adr003_20260823/spike_scores.json) |
 | Adopted detector vs the working RGB comparison arm (criterion 2, closed 2026-08-26) | safety numbers **identical**; precision 0.708 → 0.227 (3.1×) on the adopted clip, 1.000 → 0.037 (27×) in the air; **gap +0.000 → ADOPT** | ADR-003 am. 10 |
 | Map completeness | **720 / 720** cells, 2.5 m grid, 649 painting frames | [eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.json](eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.json) |
@@ -97,7 +136,7 @@ infrastructure** (ADR-019) — not a capability this repo demonstrates.
 | Recording cadence | **5.0 Hz** flat, 100 % delivery on both bands (was 0.41 Hz — a Fast DDS shared-memory segment was the root cause) | that clip's `meta.json` |
 | Live↔offline equivalence | flight-logged obstacle positions reproduced to **1 µm** across SciPy 1.8.0 (air) / 1.13.1 (host), all 1301 in-window frames | ADR-009 am. 2 |
 | Monocular range estimator vs ground truth at closest approach | agrees to **3.3 mm** (0.0035 m vs 0.0067 m) — and is still refused as a gate, on purpose | ADR-013 am. 19 |
-| Automated tests | **1599 passed, 1 failed, 2 skipped, 0 xfail** (`python3 -m pytest tests -q`). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-09-07 — re-run and re-quote if you change the suite |
+| Automated tests | **1699 passed, 1 failed, 1 skipped, 0 xfail** (`python3 -m pytest tests -q`). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-09-07 — re-run and re-quote if you change the suite |
 
 Two caveats this repo refuses to round off. The −0.61 real-render detection threshold is
 **PROVISIONAL** — narrowed on 2026-08-26 across a 2.3× depth span (3.9 / 6.9 / 9.0 m), still open
@@ -119,9 +158,11 @@ from the survey mission, flies the dodge, hands control back, and then reconcile
 every cell of the field the detour disturbed is either re-covered or booked as debt. On this flight
 it accepted four dodges, each keeping the whole swept path at least 1.3 m clear of the nearest tree
 (1.393 / 1.756 / 1.340 / 1.857 m against a 1.0 m margin), and rejected eight other candidates for
-cutting closer than that. The coverage ledger closed at **720 cells covered, 0 debt**. The detector
-ran on **1301 of 1302** frames in the air, against a floor of 90 %. The crop-health map from that
-same flight is the best I have.
+cutting closer than that. The coverage ledger closed at **720 cells covered, 0 debt** — resumed at
+the same waypoint each time, never replanned or requeued. The pipeline reached the detector on
+**1301 of 1302** frames in the air, against a floor of 90 % — that number is throughput, not sight;
+the detector itself *fired* on only 2 of those 1302 frames, and both are shown below. The map from
+that same flight is the best I have.
 
 **And the take is INVALID.** The closest the aircraft actually came to the bird — measured against
 the simulator's own record of where the bird was, not against what the drone thought it saw — was
@@ -131,6 +172,14 @@ consecutive log entries also shared a timestamp, which hides 0.161 s of bird mov
 charges that blind spot as distance the bird could have covered — a 1.1277 m penalty — so the
 number it actually judges reads **−1.1210 m**. Either way it's a strike, and the check exits with a
 failure.
+
+This was not the first close call. Two earlier flights — 2026-08-18 and 2026-08-23, both flown
+against a scripted `--demo` bird, on executor code that predates this take's hardening — also
+breached the same 3.00 m bar, at **0.0393 m** and **0.0391 m** (the gate's current path-segment
+recompute; the original vertex-only geometry under-measured both as 0.0597 m and 0.0518 m until a
+2026-08-26 fix). Both are marked **ACKNOWLEDGED**, not passing — acknowledgement is a written,
+two-part record filed beside the evidence, never a softened verdict. Three live avoidance flights,
+three breaches.
 
 I wrote that outcome down before I flew it:
 
@@ -163,9 +212,9 @@ So I didn't go and build the escape-geometry fix that the failure was supposed t
 replayed all three of my
 logged flights through a simple physics model of the aircraft — one held to the same acceleration
 and jerk limits the real autopilot enforces — and asked the question directly: is there *any* speed
-at which this camera makes this encounter survivable? **81 combinations** — mission speeds from 2
-to 10 m/s, every escape direction, three different assumptions about how hard the aircraft can
-actually accelerate.
+at which this camera makes this encounter survivable? I swept **81 mission speeds** from 2 to
+10 m/s, each checked against every escape direction and three different assumptions about how hard
+the aircraft can actually accelerate.
 
 Not one clears 3 m. Flying slower can't fix it, because the bird brings its own 6.0 m/s toward
 me: even from a standstill the camera can only ever buy **0.41 s** of warning, and the cheapest
@@ -182,6 +231,41 @@ and, tight around the same bird, the box the detector produced](eval/results/adr
 
 *The only two frames of the whole flight with the intruder inside the image — the detector boxed
 both, and the harness still refused to call two frames evidence.*
+
+**There's a second problem underneath even that geometry, and I only found it by finally checking
+something I'd never checked: did the dodge actually move the aircraft?** On this take the executor
+held GUIDED authority — the interval where my software, not the autopilot, disposes motor commands —
+for **0.434 s**. In that window the aircraft displaced **0.018 m** laterally against a divert I'd
+commanded as 10 m. My software fires a mode switch and a setpoint and calls the maneuver "accepted"
+the instant it publishes them; nothing downstream checks whether the vehicle actually moved. That
+isn't a sensor problem, and a forward-facing camera doesn't fix it: the loop is **open-loop** — a
+fire-and-forget mode/setpoint command with no gate on achieved displacement. That is why the next
+engineering quarter here, if there is one, is closing that loop, not adding another sensor (see
+[What's next](#whats-next)).
+
+## Forward depth camera — built, scored, never flown
+
+The sensor the geometry finding put into scope now exists in sim, and it has never flown. Recording
+both facts is the point.
+
+**Commissioned (ADR-020).** A `gz-sim` `depth_camera` on its own nose-mounted aperture, separate
+from the nadir NDVI mount. Six commissioning gates (D1–D6) were measured live in a Docker session:
+mount geometry, delivery, a booking gate that refuses to authorise a flight on config prose alone —
+it passed at **5.0 m/s with 1.780× margin** on the sensor's own live intrinsics, not a number I typed
+in.
+
+**Scored (ADR-021).** A forward depth segmenter (a black top-hat on depth: `closing(D, K) − D >
+margin`) was scored against **85 stations of a cluttered, hand-labelled render** — parked, static
+vehicle, noiseless sensor. All seven pre-registered bars passed: 0 missed detections of 49, 0 merge
+mislabels of 71, 0 unmapped false positives across 8 frames, range error p95 **0.108 m**. Its
+cluttered acquisition range measured **46.0 m**, which *qualifies* the booking above and does not
+raise it — read that number's clutter robustness to **28 m only**; every rung from 30 m to 46 m in
+that render happens to be sky-backed, not clutter-tested, which is this world's geometry, not a
+property of the sensor.
+
+**Never flown.** The detection source is wired into the avoidance node behind a flag, but the
+one-command launcher can't pass it yet, and zero depth-camera flights exist. A parked, noiseless,
+single-target render is not a flight, and this repo doesn't call it one.
 
 ## How this repo proves things
 
@@ -200,7 +284,7 @@ both, and the harness still refused to call two frames evidence.*
   recurred on 2026-08-25, with a green 99.92 % detect rate on a flight that flew through a bird. Two
   instances make it a pattern, not an anecdote.
 
-The full log is [docs/DECISIONS.md](docs/DECISIONS.md): 19 architecture decision records, where corrections land as
+The full log is [docs/DECISIONS.md](docs/DECISIONS.md): 23 architecture decision records, where corrections land as
 dated **amendments** rather than edits, because the log is append-only. The amendments are the
 interesting part.
 
@@ -211,7 +295,8 @@ page is a field-readiness or production claim, and this project will not make on
 hardware data or an outside conversation exists to support it.
 
 1. **Sim-only, and that is the design choice.** ArduPilot SITL is the real firmware; Gazebo Harmonic
-   is the real render; the toolchain is version- and SHA-pinned (ADR-004). What sim buys is a
+   is the real render; the toolchain versions and upstream SHAs are recorded (ADR-004) — as a
+   document, not as a baked artifact: see the image caveat above. What sim buys is a
    re-flyable flight behind every number. What it costs is named, not hidden: the **transfer-gap
    register** in the replay artifact lists five gaps (attitude/motor lag, EKF lag, wind/drag,
    mode-switch latency, the plant's own accel limit), four of them flagged optimistic for the model.
@@ -222,10 +307,13 @@ hardware data or an outside conversation exists to support it.
 3. **The plant model is unvalidated against SITL.** The point-mass replay's effective lateral accel
    (1.05 m/s²) is a one-parameter fit from **one admissible axis of one flight** — labelled
    ESTIMATED, not measured, in the artifact itself.
-4. **`main`'s CI is red, on purpose.** The evidence gate fails on the committed breach and stays
-   failing until a clean re-fly. Turning it green would mean deleting the evidence or pinning the
-   breach as acknowledged — both refused. **A green badge over a hidden bird strike is the thing
-   this repo is arguing against.**
+4. **`main`'s CI is red, on purpose — and on exactly one declared test.** The evidence-gate step
+   (`tests/test_ci_evidence_gate.py::TestLiveFlightLogGateHasEvidence::test_step_passes_on_the_committed_evidence`)
+   fails on the committed breach and stays failing until a clean re-fly. Turning it green would mean
+   deleting the evidence or pinning the breach as acknowledged — both refused. **A green badge over a
+   hidden bird strike is the thing this repo is arguing against.** An allowlist test asserts that
+   this is the *only* permitted red — any other failure is undeclared and must be fixed, not folded
+   into "red by design."
 5. **Known measurement debt, booked not buried.** The committed lane pitch (15 m) exceeds the true
    camera swath derived from `camera_info` (13.772 m), leaving a **1.228 m unimaged strip per lane
    pair**; 720/720 survives only by cell-centre quantization, with 0.636 m of margin. Re-planning
@@ -250,7 +338,7 @@ marker file beside the log explains how to reproduce that number.
 
 | If you want to… | Go to |
 |---|---|
-| **See it move, nothing to install** | the dashboard — three views over the committed artifacts, every figure computed in your browser, sha256 provenance in the footer, 5-step tour. *Pages not enabled yet;* run `python3 -m http.server 8000` and open `/dashboard/` |
+| **See it move, nothing to install** | the dashboard — three views over the committed artifacts, every figure either computed in your browser or quoted verbatim from the gate that produced it, sha256 provenance in the footer, 5-step tour: [`vihanpatil.github.io/SwathKeeper/dashboard/`](https://vihanpatil.github.io/SwathKeeper/dashboard/) *(enable Pages in Settings → Pages → GitHub Actions if this 404s)*, or `python3 -m http.server 8000` → `/dashboard/` |
 | **Watch the 2–3 min narrated walkthrough** | demo video — TODO, not yet recorded |
 | **Read the failure, written up beside its evidence** | [eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md](eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md) |
 | **See the pre-registration in situ** | [docs/runbooks/AVOIDANCE_REAL_DETECTION.md](docs/runbooks/AVOIDANCE_REAL_DETECTION.md) §7 |
@@ -258,18 +346,26 @@ marker file beside the log explains how to reproduce that number.
 | **See exactly where the project stands, including what is not done** | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | **Run it / how it works / how it was built** | [SETUP.md](SETUP.md) · [docs/SPEC.md](docs/SPEC.md) · [TIGER_TEAM_GUIDE.md](TIGER_TEAM_GUIDE.md) |
 
-## What I'd do next
+## What's next
 
-1. **A forward-facing depth camera, on its own aperture**, beside the nadir survey camera — specced
-   by the replay rather than by appetite: ≥1.25 s of physically-resolving lead, 17.8–38.7 m of
-   forward horizon at the speeds I actually fly. Tilting the single camera stays rejected; it would
-   trade a validated survey instrument for warning time.
-2. **Then one bird dodge that clears the 3.00 m bar** — booked only once the offline predictor,
-   reading the new sensor's own `camera_info`, clears that bar with ≥1.3× lead margin on the
-   conservative plant. The gate exists to end failure theater: the next take is *designed* to pass.
-3. **Then a mapped-wire corridor demo** — wires as a fresh per-field survey, never an external GIS
-   layer, with metres of buffer because catenary sag moves 0.15–1.4 m across the design temperature
-   swing. No camera wire detection is promised. (The ratified program: [docs/DECISIONS.md](docs/DECISIONS.md) ADR-019.)
+1. **Finish this floor.** The honest, reproducible portfolio this README describes: the dashboard on
+   GitHub Pages, the demo video, a license, and CI that fails on exactly the breach it should — no
+   new engineering beyond that.
+2. **About ten conversations with ArduPilot/PX4 autonomy teams, labs, and Part-108-minded
+   integrators** — to find out whether the thing this repo is actually good at (pre-registered
+   flight-evidence gates: a booking gate that caught a real 1.8× speed violation, a CPA gate that
+   called a bird strike before the flight was even flown, a dashboard that recomputes its own
+   verdicts from the raw log) has a buyer outside a resume. If none of the ten want to run a gate
+   like this on their own logs, that's the answer: strong portfolio, no product — and that's fine.
+3. **If the drone itself turns out to be worth pursuing**, the next quarter is closing the control
+   loop in sim, not adding sensors: a designed gate on commanded-vs-achieved displacement (today
+   `verdict="accepted"` is a hardcoded constant — nothing checks whether a dodge moved the vehicle),
+   an object tracker, and a written kill criterion — **at least 20 seeded headless encounters
+   clearing the 3.00 m bar** — before this repo claims "avoidance" again.
+
+**Cut from scope, recorded so it isn't re-opened:** the ADR-019 mapped-wire-corridor demo, and
+further NDVI/crop-health work — ADR-019 already called plain NDVI a commodity with nothing left to
+invest in; the pipeline stays frozen as the working demo it already is.
 
 ## Names, and how it was built
 
@@ -278,5 +374,10 @@ deliberately keep the old name — `fieldguard_planning`, the `/fg/*` topics, th
 container. That topic contract is live-verified, and renaming verified interfaces for cosmetics
 re-opens confirmed state for zero functional gain. If you see `fg_`, you're in the right place.
 
-Built by a Claude Code *tiger team*: eight specialized subagents (product, tech-lead, perception/ML,
-sim, flight software, devops, QA/safety, GTM), each owning its own gates. See [TIGER_TEAM_GUIDE.md](TIGER_TEAM_GUIDE.md).
+Built by a Claude Code *tiger team*: nine specialized subagents (product, tech-lead, perception/ML,
+sim, flight software, devops, QA/safety, GTM, plus an executive council for direction-level calls),
+each owning its own gates. See [TIGER_TEAM_GUIDE.md](TIGER_TEAM_GUIDE.md).
+
+---
+
+Licensed under [Apache-2.0](LICENSE).

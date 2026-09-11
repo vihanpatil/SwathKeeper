@@ -1,5 +1,18 @@
 # DRAFT — demo video package for user review (2026-08-26, revision 2)
 
+**Recording-day checklist — confirm all five before rolling:**
+1. GitHub Pages is enabled and the dashboard URL in the closing card resolves (Settings → Pages →
+   GitHub Actions), not the local `http.server` fallback.
+2. All **three** bird-clearance breaches (0.0393 m / 0.0391 m / 0.0067 m) are represented on screen
+   or in narration where the script currently names only the 2026-08-25 one — read against the
+   current `README.md` before recording, not this draft's original wording.
+3. No "product," "customer," or field-readiness language anywhere in the narration — this is a
+   portfolio piece, not a pitch; see `README.md`'s claims ceiling.
+4. Every spoken number is re-verified against its source artifact on the day (numbers have moved
+   before — see item 4 in the footage-dependencies list below).
+5. The forward depth camera is described as **built and scored, never flown** if it's mentioned at
+   all — it is not "documented growth path" any more (see `README.md`).
+
 **Status: DRAFT for review. Nothing recorded, nothing committed to the README.**
 Format: **narrated walkthrough, voiceover recorded by the user** — first person, spoken, engineer
 showing their work. Never a marketing read.
@@ -109,7 +122,7 @@ the pauses in. The last line of shot 6 is the thesis; slow down for it.
 | **B** | **NDVI heatmap render** | `eval/results/clips/real_flight_20260825T205705Z/heatmap/heatmap.png` (best on record) | Shot 4. Tree markers should land one by one rather than appearing at once |
 | **C** | **Detection overlay stills — SAME FLIGHT, and the only ones in git** | `eval/results/adr003_20260825/overlays/` — 8 PNGs, **committed** (`.gitignore` now allowlists them): `gt_ndvi`/`gt_rgb` for frames 000964 + 000965, and the `gtdet_a_ndvi_direct_{ndvi,rgb}` pairs. Byte-verified against the scored labels and detections | Perception regenerated these since revision 1. **These are the only two frames in the whole flight where the bird was inside the image — and the detector boxed both.** **Shot-choice hazard:** on frame **965** (closest approach) the red ground-truth box sits ~15 px off the rendered bird from applied-pose render lag (IoU 0.511) while the detector's cyan box is tight — **a GT-only still of 965 reads on screen as "the detector missed," which is the opposite of the truth.** Use a `gtdet_*` still (both boxes, cyan = detector, red = GT, chosen for colour-blind separability) or frame **964**, where they nearly coincide (IoU 0.826). The 08-23 overlays are **not** in git (`adr003_*/overlays/` was gitignored as "regenerable," though the 3.8 GB source frames are ignored too) — drop them as the fallback |
 | **E** | **Terminal: the abort gate refusing the booking** | `python3 scripts/predict_bird_visibility.py --speed 9.4` → FAIL | 3 s, shot 6. The project's own gate saying no. **This is the only terminal appearance in the video** |
-| **F** | **The no-safe-speed slide (designed, progressive reveal)** | Data from `eval/results/replay_point_mass_20260826T160218Z.json` → `verdict.q3` | Build it; do not screenshot JSON. Values: `speed_at_which_nadir_becomes_safe_mps: null`, `max_lead_s 0.4132`, `sensor_horizon_m 2.48`, `required_sensor_horizon_m_at_flown_speed 17.752 – 38.748`. **Footer must cite the artifact and say "81 configurations — speeds × escape directions × three vehicle-limit assumptions,"** so the speed ladder is understood as a slice of the sweep and not the whole experiment |
+| **F** | **The no-safe-speed slide (designed, progressive reveal)** | Data from `eval/results/replay_point_mass_20260826T160218Z.json` → `verdict.q3` | Build it; do not screenshot JSON. Values: `speed_at_which_nadir_becomes_safe_mps: null`, `max_lead_s 0.4132`, `sensor_horizon_m 2.48`, `required_sensor_horizon_m_at_flown_speed 17.752 – 38.748`. **Footer must cite the artifact and say "81 speed points, swept from 2 to 10 m/s, each checked against every escape direction and three vehicle-limit assumptions,"** so the speed ladder is understood as a slice of the sweep and not the whole experiment |
 | **G** | **Pull-quote cards** (replacing document scrolls) | Text from `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` §7; `docs/DECISIONS.md` for shot 7's scroll | Shot 5's card: the pre-registration sentence, one line highlighted, 4 s. Shot 7 may scroll the ADR log for ~3 s as texture only |
 | **D** | **Terminal: the safety verdict** | `python3 scripts/check_live_flight_log.py …` | **Cut in revision 2** — it was a log-scroll, and shot 5's animated distance readout tells the same fact with motion. Keep it in reserve if the dashboard can't render the closest-approach moment; if used, note that the shipped invocation returns INVALID for an *ambiguous truth track* and does not print the 0.0067 m line (see the SAFETY_FINDING marker) |
 
@@ -136,5 +149,3 @@ flies on this geometry (ADR-017 am. 1). A new avoidance flight waits on the forw
 4. **Re-verify every spoken number against the artifacts on recording day.** Voiceover is expensive
    to re-cut, and these numbers have moved before — the CPA figures shifted on 2026-08-26 when the
    legacy check's corner-only geometry was fixed.
-</content>
-</invoke>

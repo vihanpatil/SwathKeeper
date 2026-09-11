@@ -1,6 +1,11 @@
 # The depth segmenter — algorithm, measured
 
-**Owner:** perception-ml-engineer. **Status:** prototype scored, not wired.
+**Owner:** perception-ml-engineer. **Status:** SUPERSEDED AS THE MODULE OF RECORD (2026-09-10) —
+the operator that ships is `src/fieldguard_planning/depth_segment.py`, scored by ADR-021 and wired
+behind `--detection-source depth`. This note is kept for the *derivations*: it is where each
+constant's sweep is written down. **Its numbers came from the prototype, which shipped different
+constants** — see the artifacts table.
+
 **Companion:** `docs/design/DEPTH_SEGMENTER_DESIGN.md` (tech-lead) owns the architecture, the
 contract and the dataset spec. This note owns the *operator*, its constants, and the numbers that
 chose them. Where the two disagree, §8 says so explicitly rather than quietly.
@@ -9,8 +14,15 @@ chose them. Where the two disagree, §8 says so explicitly rather than quietly.
 
 | file | what it is |
 |---|---|
-| `eval/depth_segmenter_proto.py` | the prototype: pure numpy/scipy module + CLI. **Not wired into `src/`.** |
-| `eval/test_depth_segmenter_proto.py` | 24 host-only tests; every constant below is re-derived by one of them |
+| `src/fieldguard_planning/depth_segment.py` | **THE MODULE OF RECORD** — the operator that flies, its `DEFAULT_PARAMS` and their `DEFAULT_PARAMS_PROVENANCE`, scored 7/7 by ADR-021 |
+| `tests/fieldguard_planning/test_depth_segment.py` | its tests, in CI |
+| `eval/score_depth_segmenter.py` + `eval/results/depth_segmenter_score_20260907T110000Z.json` | the 85-station cluttered score that chose the shipped constants |
+| ~~`eval/depth_segmenter_proto.py`~~ + its 24 orphan tests | the prototype this note was written against — **DELETED 2026-09-10** (ADR-022: it ran in neither CI job and duplicated a module that ships) |
+
+> **READ THE CONSTANTS OUT OF `depth_segment.py`, NOT OUT OF THIS NOTE.** The shipped values are
+> **K 15, margin 1.5 m, min_area 10 px, open_iter 0, max_boxes 64** (chosen by the pre-registered
+> sweep rules on the 85-station cluttered render). The prototype this note measured used **margin
+> 1.2 m / min_area 6 px** — two of five differ, and where they do, the shipped value wins.
 
 Every number here was produced by that module on the 12 commissioned depth frames (run 2 + probe 5)
 or on synthetic frames it renders itself. Nothing in this note is asserted from prose.
@@ -211,7 +223,9 @@ still visible in the flight log.
 
 ## 3. Score on the 12 real frames
 
-`python3 eval/depth_segmenter_proto.py --labels <labels.json>`, defaults, match radius 12 px.
+*(Historical: run with the now-deleted prototype at its own defaults, match radius 12 px. The
+equivalent today is `python3 eval/score_depth_segmenter.py`, which scored the shipped module on 85
+cluttered stations — a superset of these 12.)*
 Depth error is against the sphere's **nearest surface** (`centre − 0.18`), the quantity a clearance
 is measured from. Centroid error is on the **bbox midpoint**, which is what the seam consumes.
 
