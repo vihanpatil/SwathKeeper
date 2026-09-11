@@ -15,12 +15,12 @@ of one measured invariant with nothing that failed when they disagreed; since 20
 `tests/test_suite_totals_one_home.py` fails when they do. Re-quote all three or none.)*
 
 ```bash
-python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1372, OK (skipped=1) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 329 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1699 passed, 1 FAILED, 1 skipped, 0 xfail
+python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1386, OK (skipped=1) — the original CI invocation
+python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 331 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1715 passed, 1 FAILED, 1 skipped, 0 xfail
 ```
 
-**The consistency check that matters:** 1372 + 329 = 1701 = 1699 + 1 + 1. If those two sides
+**The consistency check that matters:** 1386 + 331 = 1717 = 1715 + 1 + 1. If those two sides
 disagree, a file is invisible to one of the runners — which has happened before and is exactly what
 the second, separate CI job exists to prevent.
 

@@ -4557,3 +4557,29 @@ the segmenter, 0 dropped** (all four drop counters 0, incl. frame_shape_mismatch
 the 100 ms bar of §1.5 — a real stall on ≥ 1 frame, cause **uninvestigated**, owed before step-0 re-flies. Status stays
 **confirmation-pending**: nothing was in front of the sensor in the air, so FNR, range, acquisition and frustum read
 UNMEASURED (**0 of 4 depth bars**), and the ADR-022 8(d) freeze stands until a flight WITH a target exists.
+
+### ADR-022 amendment 2 (2026-09-11, R8 CLOSED): the mission geofence is judged in 3D, and CI is armed
+
+`scripts/check_mission_geofence.py` no longer answers a question the mission cannot pass. It flattens the mission
+to (east, north, **altitude**) via `mission_waypoints.mission_xyz_path`, samples every leg at 0.5 m — plus each
+leg's entry/exit/closest parameters on every obstacle circle, so a graze shorter than the step cannot slip through
+— and takes its verdict from the executor's own `geofence.unsafe_obstacle_3d` (proved by mutation: neuter that
+function and the gate goes green). The **committed mission is unchanged** — every committed flight log flew it,
+and comparability outranks a cosmetic lane shift — and now reads **PASS, exit 0**: leg 4 still **-1.997 m in XY**
+against tree row 0, REPORTED every run, with **+10.200 m** of vertical clearance over the **4.80 m** band top
+(z 0.0 + height 3.8 + margin 1.0). Exit 1 = a leg enters a tree volume; exit 2 = unreadable inputs or no legs.
+`.github/workflows/ci.yml` runs it as its own gated step — the `|| true` is **gone**, and
+`tests/test_ci_evidence_gate.py::TestMissionGeofenceGateIsArmed` runs that block against a failing stub to keep it so.
+
+### ADR-022 amendment 3 (2026-09-11, R8 REVIEWED — amendment 2's "cannot slip through" was false)
+
+Amendment 2 claimed 0.5 m sampling plus every obstacle-circle entry/exit meant "a graze shorter than the step cannot slip
+through". QA falsified it the same day: on a leg that CHANGES ALTITUDE the in-volume window is bounded by a **band
+crossing**, not the circle, so it is shorter than any step — and the circle samples sit exactly on the boundary where the
+rule's `<=` is decided by rounding. Measured through the real `.waypoints` → gate pipeline: **57 false passes in 2,500
+unsafe sloped legs (2.28 %)**, worst 18.6 cm inside a trunk over 0.43 m of path, printed `CLEAR-BY-ALTITUDE … PASS, exit
+0`; level legs 0, which is why the graze test missed it. Fixed by SOLVING each tree's in-volume window (XY chord ∩
+altitude band) and sampling its midpoint: **16 → 0** false passes re-measured, 0 false alarms, committed mission
+unchanged (**PASS, −1.997 m / +10.200 m**). Two same-class holes closed with it: `mission_xyz_path` REFUSES a NAV command
+it cannot place (dropping one joined two waypoints with a line the vehicle never flies — a NAV_SPLINE_WAYPOINT in a tree
+read PASS; exit 2 now), and `height_m` is REQUIRED in the export (0.0 made every tree a stub). One margin, one home.

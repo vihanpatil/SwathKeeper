@@ -1961,3 +1961,67 @@ sensor); booking line printed on the config fallback (2); band `min()` -> `cy` (
   `tests/fieldguard_planning/test_predict_forward_lead.py:397-401` still says "the two copies are
   deliberate ... Deliberate duplication is only honest if something pins the copies equal". There is
   one copy, imported by all three gates. Same wrong architecture as round-2's G115.
+
+## 2026-09-11 — R8 CLOSURE review (`fix/r8-mission-geofence-3d`, the mission geofence made 3D + armed in CI)
+
+The round is right in shape (verdict from `geofence.unsafe_obstacle_3d`, committed mission NOT
+re-planned, `|| true` gone, 8 of my 9 mutants killed) and wrong in **completeness**. Two demonstrated
+false PASSes on a gate that now decides the build.
+
+- **G195 (CRITICAL) — a SLOPED leg that enters a tree volume can pass the gate.** `leg_report()`
+  samples a uniform 0.5 m grid plus `chord_samples()` = the circle entry/exit/closest parameters.
+  On a leg that changes altitude the in-volume window is bounded by (circle entry, canopy-band
+  crossing) and can be SHORTER than the step; the entry/exit samples sit exactly ON the circle where
+  `unsafe_obstacle_3d`'s `<=` is a float coin-flip, and the closest-approach sample can be above the
+  band. Measured through the real `.waypoints` -> `mission_xyz_path` -> gate pipeline: **57 of 2,500
+  truly-unsafe sloped legs PASS (2.28 %), worst 18.6 cm inside the 2.0 m exclusion cylinder over
+  0.43 m of path**; **0 of 2,500 LEVEL legs** miss — the hole is exactly the new capability (climb /
+  RTL descent) the R8 fix added. End-to-end proof kept at
+  `scratchpad/qa/false_pass.waypoints` (3 lines; leg 1 spends 0.356 m inside `tree_row1_3`, 1 mm
+  brute force of the policy rule: 356/11,641 samples inside) -> gate prints
+  `PASS -- 0 of 2 legs enter a tree's 3D volume`, exit 0, and even reports `+0.005 m` of vertical
+  clearance. So ADR-022 am. 2's "**so a graze shorter than the step cannot slip through**" and
+  sim/README.md's "any mission that descends into that band, including mid-climb, fails it" are
+  FALSE as written. **Fix proven:** one ~30-line `volume_samples(obs, p1, p2, margin)` helper that
+  analytically intersects the XY chord interval with the z-band interval and samples the window
+  MIDPOINT (strictly interior; verdict still from `unsafe_obstacle_3d`) -> 57 -> **0**, committed
+  mission output byte-identical (1094 samples, -1.997 / +10.200), all 22 existing tests green.
+- **G196 (CRITICAL) — a positional NAV command the flattener does not model is SILENTLY DROPPED,
+  and the gate prints PASS.** `mission_waypoints._flatten` has `else: continue  # unhandled command
+  type; skip rather than guess`. A waypoint that sits ON `tree_row0_0` at 3 m fails (exit 1) as
+  `NAV_WAYPOINT`, and PASSES (exit 0) as `NAV_SPLINE_WAYPOINT` (82), `NAV_LAND` (21) or
+  `NAV_LOITER_TO_ALT` (31) — the two neighbours are joined by a straight line that never goes where
+  the vehicle goes. The fail-dangerous MAV_FRAME check is bypassed on the same items. Nothing
+  compares the printed "N flight-path points" against the item count. **Fix proven:** a
+  `NAV_COMMAND_RANGE = range(16, 96)` guard that raises when `check_alt_frame` is True -> the three
+  missions go exit 0 -> **exit 2**, committed mission unchanged, tests green.
+- **G197 (MAJOR) — `SAMPLE_STEP_M` is completely unpinned.** Setting it 0.5 -> 5.0, and even
+  -> 1e9 (endpoints + chord samples only), leaves **all 22 tests OK**. The uniform grid is the only
+  thing catching mid-band crossings on sloped legs, and no test can tell if it is deleted.
+- **G198 (MAJOR) — two checked-in devops memory files now instruct the team to re-disarm the gate.**
+  `.claude/agent-memory/devops-reliability-engineer/known_ci_flake_check_mission_geofence.md`
+  ("exits 1 by design ... never gate CI on its exit code directly") and
+  `feedback_bug_hunter_not_yaml_author.md:20-22`. Flight-software flagged them in its OWN memory
+  instead of editing another role's — correct etiquette, wrong outcome: the false instruction is
+  still what a teammate reads.
+- **G199 (MINOR) — ROADMAP holds both states of R8.** Row at `:35` says CLOSED; the cut/deferred log
+  at `:192-195` still says "recorded OPEN ... the gate is still disarmed", with the superseded
+  3.5 m tree height the same round corrected to 3.8 elsewhere.
+- **G200 (MINOR) — tests:src 3.699 -> 3.719, over the ADR-022 am. 1 cap of 3.70** (25,365 / 6,820,
+  measured with CLAUDE.md:143's own denominators). No test file was added (existing files extended),
+  and NO TEST enforces the numeric cap — the per-file clause is all that is machine-checked.
+- **G201 (MINOR) — `Obstacle.from_json` defaults `height_m` to 0.0.** An export missing the field
+  silently turns every tree into a 1.0 m stump (band = margin only) and the armed gate prints PASS
+  on a 3 m mission straight down row 0 — measured. The COMMITTED export is covered by
+  `test_world_contract_sync.py`; a `--static-obstacles` override is not.
+- **G202 (NIT) — the vertical margin still has four declarations.** The gate correctly imports
+  `avoidance_executor.DEFAULT_VERTICAL_MARGIN_M`, but `geofence.unsafe_obstacle_3d`'s own default,
+  `avoidance_policy.PolicyParams.vertical_margin_m` and the executor constant are three separate
+  `1.0` literals. "One margin, one home" is 3/4 true.
+
+**Verified GOOD in this round (do not re-litigate):** committed-mission verdict and every printed
+number reproduce exactly; `mission_xy_path` output is `repr`-identical to HEAD's on the committed
+mission; tree `height_m` 3.8 traces to the SDF canopy sphere (centre 2.500 + radius 1.3); 4.80 m
+fails / 4.81 m passes and `4.799999` / `4.800001` straddle correctly; unreadable mission, MSL frame
+and missing obstacle file are exit 2; `|| true` gone and HEAD had no such step; the mutation test
+kills an inline re-derivation of the rule; no test function was deleted anywhere in the diff.

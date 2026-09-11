@@ -610,3 +610,29 @@ additions to `test_avoidance_node_seam.py` and `test_check_live_flight_log_schem
 test_depth_detect.py test_depth_segment.py` = 349 tests, ~1.8 s. Baseline in that copy is **4 red**
 (`TestStaticMountGate` needs `sim/worlds/`), so count FAILED names excluding it, not the summary
 line. 22 mutants, 18 killed; the 4 survivors are G160/G161/G162/G163.
+
+## The mission-geofence gate layer (R8, ADR-022 am. 2, reviewed 2026-09-11)
+
+`scripts/check_mission_geofence.py` is now a CI gate with a real exit code
+(`.github/workflows/ci.yml` step "Gate the committed mission against the tree geofence in 3D").
+It is importable in-process: `sys.path.insert(0, REPO_ROOT/"scripts"); import check_mission_geofence`,
+then `gate.main(["--mission", p])` returns the exit code — so exit codes are testable without
+`subprocess`. Committed mission = exit 0, 15 points / 14 legs / 18 trees / 1094 samples, leg 4
+`xy=-1.997` + `vert=+10.200` `CLEAR-BY-ALTITUDE`, band top `0.00 + 3.80 + 1.00 = 4.80`.
+
+**Probe kit that found the two false PASSes (rebuild in ~5 min):**
+- Independent QGC-WPL writer (do NOT reuse `mission_waypoints`' own projection for fixtures) +
+  the analytic ground truth: for each obstacle, the XY chord interval `[t0,t1]` from the quadratic
+  and the z-band interval `[s0,s1]` from `lerp`; the leg is inside iff
+  `max(t0,s0) <= min(t1,s1)`. Both constraints are convex in t, so this is exact and ~1000x faster
+  than a mm sweep. Cross-check the headline case with a 1 mm sweep of `unsafe_obstacle_3d` itself.
+- Bias the random legs toward the boundary (lateral offset 1.4-2.05 m around the 2.0 m radius,
+  |slope| 0.2-1.5, z centred in the band) and ROUND-TRIP every leg through a written `.waypoints`
+  file — the 7-decimal lat/lon quantisation moves float-knife-edge cases, so a hit found on raw
+  ENU may vanish in a real mission file. Level legs are a clean control: 0/2500.
+- Mutation set for this layer (scratch copy of `src scripts config tests/fieldguard_planning`,
+  `python3 -m unittest discover -s <scratch>/tests/fieldguard_planning -p "test_mission*.py"`,
+  baseline 22 OK, ~0.04 s): verdict -> None; verdict -> `excluding_obstacle` (XY only); verdict
+  re-derived inline; `chord_samples` removed; margin literal instead of the import; geofence band
+  `<=` -> `<`; `mission_xyz_path` forced to cruise altitude; `SAMPLE_STEP_M` 0.5 -> 5.0 / 1e9;
+  exit 2 -> exit 0. **8 killed, 1 survivor: the step size (both variants).**

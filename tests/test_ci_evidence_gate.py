@@ -10,6 +10,10 @@ files and exit 0*. Two of this repo's evidence gates are one rename away from ex
     are SELF-ACTIVATING — they *skip* when `eval/scenarios/<name>/flight_log.json` is missing, so a
     deleted fixture silently retires the ledger-honesty and geofence properties.
 
+A third way is louder and was live for longer: run the gate and throw its exit code away. The
+mission-geofence step did exactly that (`|| true`) from 2026-08-18 until R8 closed it on 2026-09-11
+— see `TestMissionGeofenceGateIsArmed`.
+
 So this file asserts the denominators: the glob matches committed files, every generator scenario has
 a committed fixture, and the workflow step FAILS on an empty match (run for real, in a tree with no
 matching files — the pre-fix step exits 0 there).
@@ -42,6 +46,7 @@ import generate_flight_logs as GEN  # noqa: E402  (the generator IS the scenario
 # The step whose `run:` block is executed below. Matched on a fragment of its `name:` so the step can
 # be reworded without silently un-testing it -- if the fragment stops matching, the helper raises.
 EVIDENCE_STEP = "Validate committed live flight-log evidence"
+GEOFENCE_STEP = "tree geofence"          # the mission-vs-geofence gate (R8, ADR-022 am. 2)
 
 
 def _step_run_block(name_fragment: str) -> str:
@@ -141,6 +146,63 @@ class TestLiveFlightLogGateHasEvidence(unittest.TestCase):
                              f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
         n_logs = len([p for p in logs if p.endswith(".json")])
         self.assertIn(f"matched: {n_logs}", proc.stdout)
+
+
+class TestMissionGeofenceGateIsArmed(unittest.TestCase):
+    """R8 (ADR-022 am. 2): the mission-vs-geofence step has to be able to FAIL.
+
+    From 2026-08-18 to 2026-09-11 it ran `python3 scripts/check_mission_geofence.py || true`, because
+    the script exited 1 on the committed mission's documented, safe XY overlap on leg 4. The waiver
+    was sound and the gate was disarmed anyway — an XY geofence that cannot fail is not one. The
+    script now judges the mission in 3D (and passes it), so the exit code means something again;
+    these two tests are what stop a future `|| true` from coming back.
+    """
+
+    STUB_MARKER = "stub-check-mission-geofence-ran"
+
+    def _run_step_with_stub(self, exit_code):
+        """The REAL step body, in a tree where the checker is a stub with a known exit code. This
+        tests the shell wiring — the thing `|| true` broke. The checker's own verdicts are pinned in
+        tests/fieldguard_planning/test_mission_geofence.py, against the real mission and real trees."""
+        body = _step_run_block(GEOFENCE_STEP)
+        with tempfile.TemporaryDirectory() as tmp:
+            scripts = Path(tmp) / "scripts"
+            scripts.mkdir()
+            (scripts / "check_mission_geofence.py").write_text(
+                "import sys\n"
+                f"print({self.STUB_MARKER!r})\n"
+                f"sys.exit(0 if '--help' in sys.argv else {exit_code})\n")
+            return subprocess.run(["bash", "-c", body], cwd=tmp, capture_output=True, text=True)
+
+    def test_the_step_fails_when_the_checker_does(self):
+        """The mutation: a checker that exits 1 must take the step — and the build — with it."""
+        proc = self._run_step_with_stub(1)
+        self.assertIn(self.STUB_MARKER, proc.stdout,
+                      msg=f"the step never reached the checker, so its exit code proves nothing.\n"
+                          f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
+        self.assertNotEqual(proc.returncode, 0,
+                            msg=f"the mission-geofence step swallowed a FAILING checker — this is "
+                                f"exactly the `|| true` R8 closed.\nstdout: {proc.stdout}")
+        self.assertEqual(self._run_step_with_stub(0).returncode, 0,
+                         msg="...and it must still be green when the checker passes, or the test "
+                             "above is just asserting that the step is broken")
+
+    def test_the_real_invocation_is_not_swallowed(self):
+        """Read the block too: `|| true`, `|| :` and `set +e` all reproduce the disarmed gate while
+        the stub test above still passes if they are applied only to a later line."""
+        body = _step_run_block(GEOFENCE_STEP)
+        self.assertIn("set -euo pipefail", body,
+                      msg="without `set -e` a non-final failing command does not fail the step")
+        calls = [ln.strip() for ln in body.splitlines()
+                 if "check_mission_geofence.py" in ln and not ln.strip().startswith("#")]
+        gating = [c for c in calls if "--help" not in c]
+        self.assertTrue(gating, msg=f"the step no longer runs the mission through the checker at "
+                                    f"all (only --help smokes it):\n{body}")
+        for call in gating:
+            for swallow in ("|| true", "|| :", "continue-on-error"):
+                self.assertNotIn(swallow, call,
+                                 msg=f"the gate's exit code is thrown away again: {call!r}")
+        self.assertNotIn("set +e", body)
 
 
 class TestNoRedCanHideBehindTheDeclaredOne(unittest.TestCase):
