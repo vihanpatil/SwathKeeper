@@ -10,9 +10,11 @@ set no `WPNAV_SPEED`, so flights ran ArduCopter's default (10.58 m/s peak, 2026-
 a speed at which the same booking gate exits 1. Closed 2026-09-07 from two sides at once:
 
 * **devops (mine):** `scripts/fly_pipeline.sh --booking <booking_gate_*.json>` (env
-  `SWATHKEEPER_BOOKING`) reads `verdict.bookable` + `encounter.mission_speed_mps` and injects
-  `param set WPNAV_SPEED <int(round(speed*100))>` into the recipe. OPTIONAL (NDVI/demo book
-  nothing), MANDATORY for a dodge take.
+  `SWATHKEEPER_BOOKING`) reads the artifact through the GATE'S OWN `load_booking` and injects
+  `param set WP_SPD <m/s>` into the recipe. **The parameter is `WP_SPD`, in m/s** — the first cut
+  typed `WPNAV_SPEED <cm/s>`, a name RETIRED at ADR-004's pinned ArduPilot SHA, so MAVProxy
+  rejected the line and the take flew the 10 m/s default while four artifacts claimed 5.0 (QA
+  G135). OPTIONAL (NDVI/demo book nothing), MANDATORY for a dodge take.
 * **flight-software (parallel):** `check_live_flight_log.py --booking` measures the flown MEDIAN
   airborne ground speed from the log's own poses against the booked one (tolerance 1.10).
 

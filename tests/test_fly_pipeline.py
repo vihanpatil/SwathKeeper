@@ -705,6 +705,108 @@ class TestTheDodgeRunbookFliesTheBookedRecipe(unittest.TestCase):
         self.assertIn(BOOKING, cmd)
 
 
+class TestNodeSubcommand(LauncherTestCase):
+    """`node` — Shell 8 of the dodge take (AVOIDANCE_REAL_DETECTION.md 1 and 1a).
+
+    This is the one pane that COMMANDS the vehicle, and the one the launcher may not invent: the
+    rule (ADR-013) is that the launcher wraps one-liners that have already flown, so what `node`
+    types must be the runbook's line character for character. Both arms are diffed against the
+    runbook here, which is also what makes the default arm's claim checkable — `ndvi` is the node's
+    OWN default, so the documented command must come out with no flag appended at all.
+    """
+
+    def dry(self, *args):
+        result = self.run_script("--dry-run", "node", *args)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        return result.stdout
+
+    @staticmethod
+    def payload(out):
+        """The docker exec line the pane would run, exactly as the runbook spells such a line."""
+        line = [ln for ln in out.splitlines() if "docker exec -it" in ln][0]
+        return line.split("-n node ", 1)[1]
+
+    def test_the_default_arm_is_the_runbooks_shell_8_line_byte_for_byte(self):
+        self.assertIn(self.payload(self.dry()), DODGE_RUNBOOK.read_text())
+
+    def test_the_depth_arm_is_the_runbooks_1a_line_byte_for_byte(self):
+        payload = self.payload(self.dry("--detection-source", "depth"))
+        self.assertIn("--detect --detection-source depth", payload)
+        self.assertIn(payload, DODGE_RUNBOOK.read_text())
+
+    def test_the_default_appends_nothing_at_all(self):
+        """`--detection-source ndvi` must be byte-identical to passing nothing: the node's default
+        IS ndvi, and a launcher that spelled it out would stop matching the documented command."""
+        self.assertEqual(self.payload(self.dry()),
+                         self.payload(self.dry("--detection-source", "ndvi")))
+        self.assertNotIn("--detection-source", self.payload(self.dry()))
+
+    def test_both_arms_carry_detect_because_the_node_refuses_depth_without_it(self):
+        # src/fieldguard_planning/avoidance_node.py: `--detection-source depth` without `--detect`
+        # is a parser error on purpose. The launcher can only ever emit the accepted combination.
+        for args in ((), ("--detection-source", "depth")):
+            self.assertIn("avoidance_node --detect", self.payload(self.dry(*args)))
+
+    def test_an_unknown_detector_is_refused_before_anything_runs(self):
+        result = self.run_script("--dry-run", "node", "--detection-source", "lidar", shims=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not one of: ndvi depth", result.stderr)
+        self.assertEqual(self.shim_calls(), [])
+
+    def test_the_flag_needs_a_value(self):
+        result = self.run_script("--dry-run", "node", "--detection-source")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--detection-source needs one of", result.stderr)
+
+    def test_every_other_subcommand_REFUSES_the_flag_rather_than_ignoring_it(self):
+        """`up --detection-source depth` can only mean the operator believes the bringup decides
+        the take's sensor. It does not — `up` never starts the node — and a silent no-op there
+        costs a booked Docker session and returns a take whose sensor is not the one intended."""
+        for subcommand in ("up", "status", "birds", "test-flight", "attach"):
+            with self.subTest(subcommand=subcommand):
+                result = self.run_script("--dry-run", subcommand,
+                                         "--detection-source", "depth", shims=True)
+                self.assertNotEqual(result.returncode, 0, msg=result.stdout)
+                self.assertIn("does not start the node", result.stderr)
+                self.assertEqual(self.shim_calls(), [], "it must refuse before touching anything")
+
+    def test_teardown_is_never_blocked_by_the_flag(self):
+        """The one exception, and the same one `--booking` makes: `down` after a depth take is the
+        command that waits for the flight log. A stray flag may not stand between a flown take and
+        its evidence — so `down` says the flag did nothing and tears down anyway."""
+        result = self.run_script("down", "--detection-source", "depth", shims=True)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("no effect on 'down'", result.stderr)
+        self.assertIn("nothing to tear down", result.stdout)
+
+    def test_up_still_does_not_start_the_node(self):
+        """ADR-013's carve-out: `up` brings the stack up and stops. The node is started by a
+        separate, deliberate command, because it is the pane that can take the vehicle over."""
+        self.assertNotIn("avoidance_node", self.run_script("--dry-run", "up").stdout)
+
+    def test_it_refuses_without_a_bringup_and_hands_over_the_manual_command(self):
+        result = self.run_script("node", shims=True)      # FG_TMUX_HAS_SESSION unset -> no session
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no tmux session", result.stderr)
+        self.assertIn("avoidance_node --detect", result.stderr,
+                      "a refusal must still hand over the shell the operator can run by hand")
+
+    def test_the_dry_run_states_the_evidence_rule(self):
+        # The node writes the flight log on SHUTDOWN. An operator who tears down early has flown
+        # the take and lost it; this is the one line that stops that, so it is pinned.
+        self.assertIn("wrote flight log ->", self.dry())
+
+    def test_the_already_running_refusal_now_knows_about_the_node(self):
+        """`up`'s refusal greps the container's process list. Until the launcher could start the
+        node, `avoidance_node` was documented as a known gap in that list; starting it here closes
+        the gap — a surviving node still holds /ap/* and can still command a vehicle a new bringup
+        thinks it owns."""
+        code = f'source "{SCRIPT}"; declare -f running_sim_procs'
+        body = subprocess.run(["bash", "-c", code], capture_output=True, text=True,
+                              cwd=str(REPO_ROOT), check=True).stdout
+        self.assertIn("fieldguard_planning.avoidance_node", body)
+
+
 class TestSubcommandsWithNoSession(LauncherTestCase):
     def test_attach_exits_nonzero_with_a_named_cause(self):
         result = self.run_script("attach", shims=True)
@@ -751,9 +853,14 @@ class TestTeardownOrder(LauncherTestCase):
     ("recorder SIGINTed first; finalize confirmed; session killed") is the ordering under test.
     """
 
+    # One pane text serves every window the shim is asked to capture, so it carries BOTH shutdown
+    # lines teardown waits on: the recorder's finalize and the avoidance node's flight log. Without
+    # the second, `down` would poll the node pane for its full NODE_LOG_S budget in this test.
     FINALIZED = ("[record_node] clip finalized: {'num_frames': 12}\n"
                  "[record_node] next: python3 scripts/stitch_ndvi.py "
-                 "--clip /workspace/fieldguard/eval/results/clips/real_flight_20260818T221641Z")
+                 "--clip /workspace/fieldguard/eval/results/clips/real_flight_20260818T221641Z\n"
+                 "[avoidance_node] wrote flight log -> "
+                 "/workspace/fieldguard/eval/results/live_flight_log_20260825T210402Z.json")
 
     _run = None   # `down` sleeps 5 s waiting out the panes; pay that once, assert on it three times
 
@@ -782,8 +889,22 @@ class TestTeardownOrder(LauncherTestCase):
     def test_the_session_is_killed_only_after_every_window_is_signalled(self):
         kill = self.index_of("kill-session")
         last_signal = max(self.index_of("list-panes", f":{w}") for w in
-                          ("record", "birds", "ndvi", "sitl", "agent", "bridge", "gazebo"))
+                          ("record", "node", "birds", "ndvi", "sitl", "agent", "bridge", "gazebo"))
         self.assertLess(last_signal, kill, msg="\n".join(self.calls))
+
+    def test_the_avoidance_node_is_signalled_second_and_its_flight_log_waited_for(self):
+        """The node writes its flight log in a `finally` after `rclpy.spin`, so teardown that does
+        not wait for it throws away the take's only evidence (AVOIDANCE_REAL_DETECTION.md 4:
+        nothing else may be stopped until `wrote flight log ->` appears). Recorder first, node
+        second, everything else after -- and the recovered path is printed, so an operator who
+        looks away still learns whether the flight was written."""
+        node = self.index_of("list-panes", ":node")
+        self.assertLess(self.index_of("list-panes", ":record"), node, msg="\n".join(self.calls))
+        for later in ("birds", "ndvi", "sitl", "agent", "bridge", "gazebo"):
+            self.assertLess(node, self.index_of("list-panes", f":{later}"), later)
+        self.assertIn("flight log written: "
+                      "/workspace/fieldguard/eval/results/live_flight_log_20260825T210402Z.json",
+                      self.result.stdout)
 
     def test_it_waits_for_the_real_finalize_string_and_recovers_the_clip(self):
         # Pinned against src/fieldguard_planning/record_node.py: if either side reworded, `down`
@@ -795,7 +916,7 @@ class TestTeardownOrder(LauncherTestCase):
 
 class TestDryRunChangesNothing(LauncherTestCase):
     def test_no_docker_no_tmux_no_temp_file(self):
-        for subcommand in ("up", "test-flight", "down", "status", "birds", "attach"):
+        for subcommand in ("up", "test-flight", "down", "status", "birds", "node", "attach"):
             with self.subTest(subcommand=subcommand):
                 self.run_script("--dry-run", subcommand, shims=True)
         self.assertEqual(self.shim_calls(), [])

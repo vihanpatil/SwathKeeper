@@ -34,8 +34,9 @@
 # ADR-011: the `fieldguard` identifiers (container, /workspace path, /fg topics) are intentional.
 #
 # Usage (host, repo root):
-#   scripts/fly_pipeline.sh [up|attach|status|birds|down|test-flight] [--dry-run] [--gate-geometry]
-#                           [--booking eval/results/booking_gate_<UTC>.json]
+#   scripts/fly_pipeline.sh [up|attach|status|birds|node|down|test-flight] [--dry-run]
+#                           [--gate-geometry] [--booking eval/results/booking_gate_<UTC>.json]
+#                           [--detection-source ndvi|depth]
 set -euo pipefail
 
 SESSION="swathkeeper"
@@ -49,6 +50,14 @@ DRY_RUN=0
 GATE_GEOMETRY=0
 TESTFLIGHT=0
 CMD="up"
+
+# WHICH real detector `node` arms. The node's own default is ndvi and the two are EXCLUSIVE by
+# construction (it subscribes only to that source's image + camera_info pair), so this is the one
+# flag that decides which sensor a whole take is about. Values are the node's `--detection-source`
+# choices; anything else is refused here rather than at the far end of a docker exec.
+DETECTION_SOURCE="ndvi"
+DETECTION_SOURCE_DEFAULT="ndvi"
+DETECTION_SOURCES="ndvi depth"
 
 # --- the booking: the ONE speed a dodge take is authorised to fly (ADR-019 / ADR-020) ------------
 # scripts/predict_forward_lead.py authorises an avoidance take at ONE mission speed, and until
@@ -95,6 +104,7 @@ GATE_AGENT_S=60
 GATE_GEOMETRY_S=600
 GATE_STOP_S=45         # how long a SIGINTed Gazebo gets to stop advertising before we refuse
 FINALIZE_S=120         # recorder finalize: raw dumps -> schema PNGs -> meta.json
+NODE_LOG_S=60          # avoidance node: SIGINT -> `wrote flight log ->` (written in a finally)
 RENDER_RETRIES=2
 POLL_S=3
 
@@ -116,6 +126,15 @@ INNER_NDVI='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_P
 # shellcheck disable=SC2016
 INNER_RECORD='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.record_node --out /workspace/fieldguard/eval/results/clips/real_flight_$(date -u +%Y%m%dT%H%M%SZ)'
 INNER_BIRDS='python3 /workspace/fieldguard/scripts/drive_birds.py --rate 2'
+# Shell 8 of docs/runbooks/AVOIDANCE_REAL_DETECTION.md 1 -- the avoidance node with the REAL
+# detector, payload-verbatim like the seven above. `--detect` is part of the payload and not a
+# flag this script composes: the node REFUSES `--detection-source depth` without it (parser error,
+# by design -- a run that asked for the depth detector and silently flew with none would be an
+# observation run wearing a dodge take's command line), so the launcher can only ever emit the
+# combination the node accepts. `--detection-source ndvi` is the node's own default and is
+# therefore NOT appended: the default command stays byte-identical to the documented one.
+# shellcheck disable=SC2016
+INNER_NODE='source /root/ardu_ws/install/setup.bash && export FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/fieldguard/config/dds/fg_fastdds.xml && cd /workspace/fieldguard && PYTHONPATH=src:$PYTHONPATH python3 -m fieldguard_planning.avoidance_node --detect'
 INNER_APT='apt-get update -qq && apt-get install -y -qq ros-humble-actuator-msgs ros-humble-gps-msgs ros-humble-vision-msgs'
 # The three the bridge needs at RUNTIME. dpkg-checked in preflight, installed by INNER_APT (which
 # keeps its own literal copy: that string is diffed against the runbook character for character).
@@ -169,13 +188,23 @@ scripts/fly_pipeline.sh [SUBCOMMAND] [FLAGS]      (host side, macOS; needs tmux 
   attach    attach to the running '$SESSION' session (sitl window selected)
   status    session/window state + a read-only re-run of the live gates + the fly recipe
   birds     start drive_birds.py NOW, bypassing the altitude gate (drone must be airborne)
-  down      SIGINT the recorder first, wait for finalize, stop the rest, print the stitch command
+  node      start the avoidance node with the REAL detector in a 'node' window -- the dodge take's
+            Shell 8 (AVOIDANCE_REAL_DETECTION.md 1/1a), byte-identical to the documented command.
+            Needs a live bringup; 'up' never starts it, because it is the one pane that commands
+            the vehicle. It writes the flight log on shutdown: WAIT for 'wrote flight log ->'.
+  down      SIGINT the recorder first, wait for finalize, then the node (and wait for its flight
+            log), stop the rest, print the stitch command
   test-flight  REGRESSION GATE, not the demo path: 'up', then fly the short test mission
                unattended (only after DDS+EKF+GPS ready), tear down, stitch, judge the flight's
                evidence yield against the floor, write a gate record under eval/results/.
                Demo/recording flights stay human-flown.
 
   --dry-run         print every docker/tmux command instead of running it (works with no Docker)
+  --detection-source ndvi|depth
+                    which real detector 'node' arms (default: ndvi, the ADOPTED ADR-003 detector).
+                    'depth' is ADR-021's forward segmenter: built, scored offline, NEVER FLOWN.
+                    One flight has ONE detection source -- 'depth' DISARMS the NDVI detector, so
+                    that take produces no in-air NDVI detection evidence. Only 'node' reads it.
   --gate-geometry   also run scripts/verify_mount_geometry.sh after the bridge (one-time gate
                     after mount/world/georef changes; off by default — it launches its own world)
   --booking PATH    an eval/results/booking_gate_*.json from scripts/predict_forward_lead.py, whose
@@ -438,8 +467,12 @@ running_sim_procs() {
   all=$(docker exec "$CONTAINER" ps -eo args= 2>/dev/null) || return 0
   [ -n "$all" ] || { warn "could not read the container process list — the already-running check
   below is inconclusive. If a bringup is already live, stop it before continuing."; return 0; }
+  # `avoidance_node` is on this list since 2026-09-10, when `node` gave the launcher a way to
+  # start it. A surviving node is the worst survivor of all: it holds the /ap/* subscriptions and
+  # can still command MODE changes at a vehicle a new bringup thinks it owns.
   printf '%s\n' "$all" | grep -F -e 'gz sim ' -e 'parameter_bridge' -e 'micro_ros_agent ' \
     -e 'sim_vehicle.py' -e 'fieldguard_planning.ndvi_node' \
+    -e 'fieldguard_planning.avoidance_node' \
     -e 'fieldguard_planning.record_node' -e 'drive_birds.py' || true
 }
 
@@ -718,6 +751,11 @@ EOF
 # or this script's stitch hint). Last one wins: the newest line is the current clip.
 parse_clip() { sed -n 's#.*--clip \([^[:space:]]*\).*#\1#p' | tail -n 1; }
 
+# The path out of the avoidance node's own shutdown line, pinned against
+# src/fieldguard_planning/avoidance_node.py: `wrote flight log -> <path>`. Anchored on the ARROW so
+# a heartbeat mentioning the phrase cannot be read as a written log.
+parse_flight_log() { sed -n 's#.*wrote flight log -> \([^[:space:]]*\).*#\1#p' | tail -n 1; }
+
 # The altitude the birds pane fired its OWN gate at:
 #   "[birds] altitude 12.34 m > 10 m -- launching drive_birds.py --rate 2"
 # ONE anchor, on "launching", and deliberately so: the pane's "waiting for takeoff: altitude 3.2 m"
@@ -882,10 +920,54 @@ cmd_birds() {
   say "birds window respawned (watch it: scripts/fly_pipeline.sh attach, then select the birds window)"
 }
 
+# The exact pane payload for the chosen detection source. The ndvi arm appends NOTHING, so the
+# default command is the runbook's Shell-8 line character for character; only a non-default source
+# spends a flag. `--detect` is already in INNER_NODE (see its comment) -- the internal check below
+# is there because a payload that lost it would be a SILENT downgrade: the node would come up with
+# no detector and the take would look normal.
+node_payload() {
+  case " $DETECTION_SOURCES " in *" $DETECTION_SOURCE "*) ;; *)
+    die "--detection-source $DETECTION_SOURCE is not one of: $DETECTION_SOURCES";; esac
+  case $INNER_NODE in *" --detect"*) ;; *)
+    die "internal: the node payload lost --detect — it would fly with no detector";; esac
+  if [ "$DETECTION_SOURCE" = "$DETECTION_SOURCE_DEFAULT" ]; then
+    printf '%s' "$INNER_NODE"
+  else
+    printf '%s --detection-source %s' "$INNER_NODE" "$DETECTION_SOURCE"
+  fi
+}
+
+cmd_node() {
+  local line
+  line=$(exec_line "$(node_payload)")
+  if (( DRY_RUN )); then
+    printf '  DRY  tmux new-window -d -t %s -n node %s\n' "$SESSION" "$line"
+    printf '  DRY  detection source: %s\n' "$DETECTION_SOURCE"
+    printf '  DRY  then WAIT for "wrote flight log ->" before down — the node writes the flight log on shutdown\n'
+    return 0
+  fi
+  session_exists || die "no tmux session '$SESSION' — the node needs the bringup it talks to.
+  Start it first:  scripts/fly_pipeline.sh up     (then run this again)
+  Or run the shell by hand:
+  $line"
+  if tmux list-panes -t "$SESSION:node" >/dev/null 2>&1; then
+    die "a 'node' window already exists in session '$SESSION' — refusing to start a second
+  avoidance node on the same vehicle. Two of them take over and hand back independently, and the
+  flight log of each records a flight the other was also steering. Attach and look:
+  scripts/fly_pipeline.sh attach"
+  fi
+  say "avoidance node, detection source: $DETECTION_SOURCE (the node arms exactly one)"
+  new_window node "$line"
+  say "watch it: scripts/fly_pipeline.sh attach, then select the 'node' window."
+  say "EVIDENCE RULE: it writes eval/results/live_flight_log_<UTC>.json on shutdown. Do not tear"
+  say "anything down until its pane prints 'wrote flight log ->' ('down' now waits for that line)."
+}
+
 cmd_down() {
   if (( DRY_RUN )); then
     printf '  DRY  tmux send-keys -t %s:record C-c        # RECORDER FIRST — finalize writes meta.json\n' "$SESSION"
     printf '  DRY  poll the record pane up to %ss for "clip finalized"\n' "$FINALIZE_S"
+    printf '  DRY  tmux send-keys -t %s:node C-c     # then poll up to %ss for "wrote flight log ->"\n' "$SESSION" "$NODE_LOG_S"
     printf '  DRY  tmux send-keys C-c -> birds ndvi sitl agent bridge gazebo\n'
     printf '  DRY  tmux kill-session -t %s\n' "$SESSION"
     print_stitch_hint ""
@@ -935,6 +1017,36 @@ cmd_down() {
   if (( have_record )) && [ -z "$clip" ] && (( waited >= FINALIZE_S )); then
     warn "recorder finalize did not report within ${FINALIZE_S}s — the clip may be incomplete.
   Read the record window's tail before trusting it; the PNG conversion may still have been running."
+  fi
+
+  # SECOND, and only second: the avoidance node. It writes the flight log in a `finally` after
+  # rclpy.spin, so a SIGINT it is not given time to act on costs the entire take's evidence -- the
+  # runbook's rule (AVOIDANCE_REAL_DETECTION.md 4) is that nothing else may stop until
+  # `wrote flight log ->` has printed, and this is that rule, mechanically. A session with no node
+  # window (every NDVI demo) skips all of it silently.
+  local node_log="" node_waited=0
+  if send_ctrl_c node; then
+    say "SIGINT -> node window: waiting up to ${NODE_LOG_S}s for the flight log it writes on exit."
+    while (( node_waited < NODE_LOG_S )); do
+      tail_txt=$(pane_text node)
+      if grep -q 'wrote flight log' <<<"$tail_txt"; then
+        node_log=$(parse_flight_log <<<"$tail_txt")
+        say "flight log written: ${node_log:-(path not recovered from the pane)}"
+        break
+      fi
+      if window_failed node && [ -z "$node_log" ]; then
+        warn "the node pane exited without printing 'wrote flight log' — the take may have no log."
+        printf '%s\n' "--- tail of the 'node' window ---" >&2
+        meaningful <<<"$tail_txt" | tail -n 15 >&2
+        break
+      fi
+      sleep "$POLL_S"; node_waited=$(( node_waited + POLL_S ))
+    done
+    if [ -z "$node_log" ] && (( node_waited >= NODE_LOG_S )); then
+      warn "no 'wrote flight log' line from the node within ${NODE_LOG_S}s. Read the node window
+  BEFORE the session is killed — if the log was never written, the flight has no evidence and
+  nothing downstream (check_live_flight_log.py) can score it."
+    fi
   fi
 
   local w
@@ -1336,12 +1448,39 @@ main() {
       --booking)       [ $# -ge 2 ] || die "--booking needs a path to an eval/results/booking_gate_*.json"
                        BOOKING_ARG=$2; shift ;;
       --booking=*)     BOOKING_ARG=${1#--booking=} ;;
+      --detection-source)
+                       [ $# -ge 2 ] || die "--detection-source needs one of: $DETECTION_SOURCES"
+                       DETECTION_SOURCE=$2; shift ;;
+      --detection-source=*) DETECTION_SOURCE=${1#--detection-source=} ;;
       -h|--help)       usage; exit 0 ;;
-      up|attach|status|birds|down|test-flight) CMD=$1 ;;
+      up|attach|status|birds|node|down|test-flight) CMD=$1 ;;
       *) usage >&2; die "unknown argument: $1" ;;
     esac
     shift
   done
+
+  # WHICH DETECTOR is only a question `node` can answer, so every other subcommand REFUSES the
+  # flag instead of ignoring it. Refuses, not warns (unlike --booking, which has an env var and may
+  # be inherited): `up --detection-source depth` can only mean the operator believes this bringup
+  # decides the take's sensor. It does not -- `up` never starts the node -- and finding that out
+  # after the flight costs a booked Docker session.
+  case " $DETECTION_SOURCES " in
+    *" $DETECTION_SOURCE "*) ;;
+    *) die "--detection-source $DETECTION_SOURCE is not one of: $DETECTION_SOURCES";;
+  esac
+  if [ "$DETECTION_SOURCE" != "$DETECTION_SOURCE_DEFAULT" ] && [ "$CMD" != node ]; then
+    if [ "$CMD" = down ]; then
+      # ...with ONE exception, and it is the same one the booking makes: teardown is never
+      # blocked. `down` after a depth take is the command that waits for the flight log; refusing
+      # it over a stray flag would put a scare between a flown take and its evidence.
+      warn "--detection-source has no effect on 'down' (it books nothing and starts nothing).
+  Tearing down anyway — teardown is never blocked by a flag."
+    else
+      die "--detection-source $DETECTION_SOURCE selects WHICH detector the avoidance node arms, and
+  '$CMD' does not start the node. Nothing was run. The take's sensor is chosen here:
+  scripts/fly_pipeline.sh node --detection-source $DETECTION_SOURCE"
+    fi
+  fi
 
   # The authorisation is resolved BEFORE anything else happens — before the tmux check, before
   # preflight touches the container — so an unbookable artifact costs nothing and refuses at once.
@@ -1366,6 +1505,7 @@ main() {
     attach)      cmd_attach ;;
     status)      cmd_status ;;
     birds)       cmd_birds ;;
+    node)        cmd_node ;;
     down)        cmd_down ;;
     test-flight) cmd_test_flight ;;
     *)           usage >&2; die "unknown subcommand: $CMD" ;;

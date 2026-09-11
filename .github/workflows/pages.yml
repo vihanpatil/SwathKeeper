@@ -1,0 +1,127 @@
+name: GitHub Pages
+
+# Publishes the dashboard + the rendered docs to https://vihanpatil.github.io/SwathKeeper/.
+#
+# ONE-TIME, BY A HUMAN: Settings -> Pages -> Source: **GitHub Actions**. Until that is set, this
+# workflow builds the site and the deploy job fails with "Pages is not enabled" -- it cannot turn
+# Pages on for itself, and nothing else in the repository can tell you it is off.
+#
+# WHAT IT PUBLISHES, and why the site is assembled rather than served from the tree:
+#   * `dashboard/` — the static page and the DERIVED artifacts under `dashboard/data/`;
+#   * `eval/results/live_flight_log_*` — the committed flight logs and their safety-finding
+#     markers, copied HERE at build time. The page reads them in place (`EVIDENCE` in
+#     dashboard/app.js) instead of carrying a second committed copy of 140,942 lines of JSON, so
+#     the site build is what puts them beside the page. `python3 -m http.server` from the
+#     repository root produces the same layout, which is why one relative path works in both.
+#   * `docs/` — scripts/build_docs_site.py's output (its link + heading gates run here too).
+#
+# It publishes NOTHING it has not first gated: a stale `dashboard/data/` fails the build rather
+# than being silently rebuilt, because a rebuild here would hide exactly the drift
+# `build_dashboard_data.py --check` exists to catch (ADR-003 am. 10).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one half-done: a cancelled deploy can leave the live
+# site on a partial upload.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the published site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned dependencies (markdown lives in requirements-eval.txt)
+        run: pip install -r requirements-eval.txt
+
+      - name: Refuse to publish a stale dashboard (no silent rebuild)
+        run: |
+          set -euo pipefail
+          python3 scripts/build_dashboard_data.py --check
+
+      - name: Build the docs site (fails on broken links or heading drift)
+        run: |
+          set -euo pipefail
+          python3 scripts/build_docs_site.py
+
+      # THIS BLOCK IS EXECUTED BY tests/test_dashboard_data_paths.py, in a temp tree, with SITE and
+      # DOCS_SITE pointed elsewhere -- so the layout the page is served from is tested rather than
+      # described. Keep it runnable from the repository root with nothing but coreutils.
+      - name: Assemble the published site
+        run: |
+          set -euo pipefail
+          SITE="${SITE:-_site}"
+          DOCS_SITE="${DOCS_SITE:-docs-site}"
+          rm -rf "$SITE"
+          mkdir -p "$SITE/eval/results"
+          # 1. the page, with its derived data/ exactly as committed
+          cp -R dashboard "$SITE/dashboard"
+          # 2. the evidence it reads in place -- committed logs + their written findings
+          cp eval/results/live_flight_log_*.json "$SITE/eval/results/"
+          cp eval/results/live_flight_log_*.SAFETY_FINDING.md "$SITE/eval/results/"
+          # 3. the rendered docs. Absent means the generator step above did not run: that is a
+          #    broken site, not a smaller one, so it is a hard failure.
+          if [ ! -d "$DOCS_SITE" ]; then
+            echo "[pages] FAIL: no '$DOCS_SITE' to publish -- run scripts/build_docs_site.py" >&2
+            exit 1
+          fi
+          cp -R "$DOCS_SITE" "$SITE/docs"
+          # 4. a landing page. Relative links only: the site must work at any path prefix, and the
+          #    dashboard's own no-network rule (ADR-018) is not worth breaking at the front door.
+          cat > "$SITE/index.html" <<'HTML'
+          <!doctype html>
+          <html lang="en"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>SwathKeeper</title>
+          <style>
+            :root { color-scheme: light dark; }
+            body { font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+                   max-width: 46rem; margin: 4rem auto; padding: 0 1.5rem; }
+            h1 { margin-bottom: .25rem; } p.sub { margin-top: 0; opacity: .75; }
+            a.card { display: block; padding: 1rem 1.25rem; margin: .75rem 0; border: 1px solid;
+                     border-radius: .5rem; text-decoration: none; }
+            a.card b { display: block; font-size: 1.1rem; }
+            a.card span { opacity: .75; }
+          </style></head><body>
+          <h1>SwathKeeper</h1>
+          <p class="sub">Autonomous drone survey + reactive obstacle avoidance, built entirely in
+          simulation on ArduPilot + Gazebo + ROS 2. Sim-demonstrated, evidence-gated.</p>
+          <a class="card" href="dashboard/"><b>Flight dashboard</b>
+          <span>Replay three live flights, their avoidance events and the NDVI map — every number
+          either computed in your browser from the committed evidence or quoted verbatim from the
+          gate that produced it, including the take the safety gate calls INVALID.</span></a>
+          <a class="card" href="docs/"><b>Documentation</b>
+          <span>Spec, decision log (ADRs), runbooks and the build log, rendered from the
+          repository.</span></a>
+          </body></html>
+          HTML
+          echo "[pages] assembled $(find "$SITE" -type f | wc -l | tr -d ' ') files into $SITE"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

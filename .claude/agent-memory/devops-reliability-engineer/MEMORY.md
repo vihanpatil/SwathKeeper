@@ -1,9 +1,10 @@
-- [CI pipeline structure & verified commands](project_ci_pipeline.md) — 4-job map, exact local repro commands, and which test root is truly install-free (2026-08-25)
+- [CI pipeline structure & verified commands](project_ci_pipeline.md) — job map incl. the if-always + KNOWN_RED rework and pages.yml, local repro commands, install-free root (2026-09-10)
+- [Owner's 2026-09-10 direction call](project_portfolio_decision_20260910.md) — portfolio first, market-test the METHOD, wire program cut, delete aggressively, honesty artifacts widened
 - [check_mission_geofence.py exit-1-by-design flake](known_ci_flake_check_mission_geofence.md) — why it's `|| true` in CI, when to revisit
 - [Where pinned versions live](reference_pinned_versions.md) — CLAUDE.md vs requirements-eval.txt vs validate-config's unpinned pyyaml
 - [Bug-hunter-not-YAML-author working style](feedback_bug_hunter_not_yaml_author.md) — always run locally in a matching venv before writing CI steps; never claim green without proof
 - [Doc claims get measured too](feedback_docs_claims_get_measured.md) — reproduce the reader's env, quote real stdout, re-check handed-down facts against DECISIONS.md
 - [sim image + container state](project_sim_image_state.md) — scipy rebuild DONE (verified 2026-08-25), shm 1 G; what still gates a booked take
 - [Weeks 5-6 headless Docker/Gazebo CI job](project_week5_ci_gazebo.md) — feasibility verdict (no hosted-runner precedent even upstream), what's built vs unverified, manual-dispatch-gated until a human confirms green (2026-08-05)
-- [Booked speed → the air](project_booking_speed_enforcement.md) — `--booking` injects WPNAV_SPEED; why there are TWO booking sidecars and which is the contract (2026-09-07)
+- [Booked speed → the air](project_booking_speed_enforcement.md) — `--booking` injects `param set WP_SPD <m/s>` (NOT WPNAV_SPEED); why there are TWO booking sidecars (2026-09-07)
 - [The tuning scanner blocks flight params](project_tuning_scanner_blocks_flight_params.md) — any WPNAV_/PSC_/GUID_ token, even in prose, fails the point-mass validity test; no placement avoids it

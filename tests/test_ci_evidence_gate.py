@@ -143,6 +143,94 @@ class TestLiveFlightLogGateHasEvidence(unittest.TestCase):
         self.assertIn(f"matched: {n_logs}", proc.stdout)
 
 
+class TestNoRedCanHideBehindTheDeclaredOne(unittest.TestCase):
+    """The gates after the test suites must RUN when a test suite is red.
+
+    `main` carries a declared red (the 2026-08-25 breach, `docs/runbooks/
+    AVOIDANCE_REAL_DETECTION.md` 6a). GitHub skips every later step of a job once one fails, so
+    between 2026-08-25 and 2026-09-10 that single honest failure took the seed-42 FNR regression,
+    the scenario regenerate+diff and the generator smoke test dark for 16 days — and two unrelated
+    failures reached `main` inside the blind spot. `if: always()` on each of those steps is what
+    makes "CI is red on purpose" a statement about ONE test instead of a blindfold over the rest,
+    so it is asserted here rather than remembered.
+    """
+
+    JOB = "planning-and-eval"
+    # Once this step can fail, everything after it needs `if: always()` to keep reporting.
+    FIRST_FALLIBLE = "Planning test suite"
+
+    def _job_lines(self):
+        lines = CI_YML.read_text().splitlines()
+        start = next(i for i, ln in enumerate(lines) if ln.strip() == f"{self.JOB}:")
+        indent = len(lines[start]) - len(lines[start].lstrip())
+        end = next((i for i in range(start + 1, len(lines))
+                    if lines[i].strip() and not lines[i].startswith(" " * (indent + 1))), len(lines))
+        return lines[start:end]
+
+    def _steps(self):
+        """[(name, [body lines]), ...] for the job's steps, in order."""
+        steps, current = [], None
+        for line in self._job_lines():
+            stripped = line.strip()
+            if stripped.startswith("- name:"):
+                current = (stripped.split("- name:", 1)[1].strip(), [])
+                steps.append(current)
+            elif stripped.startswith("- uses:"):
+                current = (stripped, [])
+                steps.append(current)
+            elif current is not None:
+                current[1].append(stripped)
+        return steps
+
+    def test_every_step_after_the_first_fallible_one_runs_anyway(self):
+        steps = self._steps()
+        names = [name for name, _ in steps]
+        self.assertIn(self.FIRST_FALLIBLE, names, f"{self.JOB} lost its test suite step")
+        after = steps[names.index(self.FIRST_FALLIBLE) + 1:]
+        self.assertGreaterEqual(len(after), 5, "suspiciously few gates after the test suite")
+        missing = [name for name, body in after
+                   if not any(ln.startswith("if:") and "always()" in ln for ln in body)]
+        self.assertEqual(missing, [], msg=(
+            "these CI steps run AFTER a step that is red on purpose, with no `if: always()`, so "
+            "they are skipped on every push and prove nothing:\n"
+            + "\n".join("    " + name for name in missing)))
+
+    def test_the_allowlist_gate_is_one_of_them_and_runs_the_allowlist(self):
+        """The step that names WHICH red is declared. Without it, `if: always()` above just means
+        more output: something has to assert that the failing set is exactly the declared one."""
+        step = next((s for s in self._steps() if "KNOWN_RED" in s[0]), None)
+        self.assertIsNotNone(step, "no CI step runs the KNOWN_RED allowlist")
+        body = " ".join(step[1])
+        self.assertIn("test_known_red_allowlist.py", body)
+        self.assertTrue((REPO_ROOT / "tests" / "test_known_red_allowlist.py").exists())
+
+    def test_the_allowlist_step_fails_instead_of_matching_nothing(self):
+        """The vacuous-gate rule, applied to the gate that exists to stop vacuous reds.
+
+        `unittest discover -p <pattern>` on a pattern that matches no file prints "Ran 0 tests",
+        reports OK and exits 0. So this step is run FOR REAL in an empty tree: deleting the
+        allowlist must break the build, not quietly pass it. (It exits on the guard, so this costs
+        milliseconds rather than the two minutes the real run takes.)"""
+        script = _step_run_block("KNOWN_RED")
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = subprocess.run(["bash", "-c", script], cwd=tmp,
+                                  capture_output=True, text=True, timeout=120)
+        self.assertNotEqual(proc.returncode, 0,
+                            msg=f"the allowlist step passed with no allowlist to run.\n"
+                                f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
+        self.assertIn("test_known_red_allowlist.py is gone", proc.stderr)
+
+    def test_the_seed_42_safety_regression_is_one_of_the_steps_it_protects(self):
+        """Named, because it is the one the 16-day blind spot actually cost: `check_spike_
+        regression.py` gates per-bird-track FNR on the ADOPTED detector (ADR-003 am. 8 moved it
+        into `src/fieldguard_planning/ndvi_detect.py`, and `eval/baseline_ndvi.py` imports it), so
+        while this step was skipped, the flown detector had no CI regression gate at all."""
+        step = next((s for s in self._steps() if "seed-42 headline metric" in s[0]), None)
+        self.assertIsNotNone(step, "the seed-42 regression gate left CI")
+        self.assertTrue(any(ln.startswith("if:") and "always()" in ln for ln in step[1]))
+        self.assertIn("check_spike_regression.py", " ".join(step[1]))
+
+
 class TestScenarioFixturesAreGated(unittest.TestCase):
     """The scenario fixtures' gates are the regenerate+diff step and the self-activating pending
     tests -- both of which are only real if the fixtures are actually there."""

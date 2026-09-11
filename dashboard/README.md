@@ -1,12 +1,14 @@
 # SwathKeeper dashboard
 
-The farmer-facing view — flight replay, avoidance event log, NDVI health map — as a **static,
-self-contained, client-side page** (ADR-018). No framework, no CDN, no build step, no server-side
-anything. It renders entirely from the committed evidence under `data/`, so it works offline and it
-publishes to GitHub Pages unchanged.
+The farmer-facing view — flight replay, avoidance event log, NDVI map (canopy vs soil on this
+world, not a health signal) — as a **static, self-contained, client-side page** (ADR-018). No
+framework, no CDN, no build step, no server-side anything. It renders entirely from committed
+evidence — the derived files under `data/` plus the flight logs read in place from
+`../eval/results/` — so it works offline and it publishes to GitHub Pages unchanged.
 
-> It is the proof, not the point. The detect → avoid → replan → requeue loop is the project; this
-> page just shows you what that loop actually did, including the flight it failed.
+> It is the proof, not the point. The detect → avoid → resume → honest-debt loop is the project (v1
+> has no replan and no requeue, ADR-002 — see the root README); this page just shows you what that
+> loop actually did, including the flight it failed.
 
 ## View it in one command
 
@@ -20,17 +22,20 @@ Opening `index.html` straight off disk (`file://`) will **not** work — browser
 
 ### On GitHub Pages
 
-Enable Pages for the repository (Settings → Pages → *Deploy from a branch*, branch `main`,
-folder `/ (root)`). The dashboard is then at `https://<user>.github.io/<repo>/dashboard/`. Nothing
-else is needed: every path the page fetches is relative, and `data/` is committed.
+Enable Pages once (Settings → Pages → **Source: GitHub Actions**). `.github/workflows/pages.yml`
+then builds and deploys on every push to `main`, and the dashboard is at
+<https://vihanpatil.github.io/SwathKeeper/dashboard/>. The site build copies
+`eval/results/live_flight_log_*` in beside `dashboard/`, which is the same layout
+`python3 -m http.server` gives you from the repository root — `tests/test_dashboard_data_paths.py`
+checks both.
 
 ## The three views
 
 | view | what it shows | what it reads |
 |---|---|---|
-| **Flight replay** | top-down field, tree geofences, planned lanes, the flown path on a time scrubber, birds, every avoidance event, and the closest-approach instant | `data/flights/*.json`, `data/truth/*.json`, `data/field.json` |
+| **Flight replay** | top-down field, tree geofences, planned lanes, the flown path on a time scrubber, birds, every avoidance event, and the closest-approach instant | `../eval/results/live_flight_log_*.json` (read in place, not copied), `data/truth/*.json`, `data/field.json` |
 | **Avoidance log** | the event table synced to the scrubber (click a row to seek), the run block (detector, clock, policy parameters), candidate rejections, swept clearances | the same flight log |
-| **NDVI health map** | the offline stitch (ADR-010) on the canonical 2.5 m cell grid, per-cell values, trees with canopy grade, and the coverage ledger joined by `cell_id` | `data/clips/*/heatmap.json` + `meta.json`, plus the selected flight's ledger |
+| **NDVI map** | the offline stitch (ADR-010) on the canonical 2.5 m cell grid, per-cell values, trees with canopy grade, and the coverage ledger joined by `cell_id` | `data/clips/*/heatmap.json` + `meta.json`, plus the selected flight's ledger |
 
 Each flight's header carries **its gate verdict, verbatim** — including the 2026-08-25 take, which
 reads INVALID because it flew 0.0067 m from a bird against a 3.00 m bar. That is not an oversight in
@@ -62,8 +67,9 @@ printed by a gate that ran on the host. Nothing is typed in. Specifically:
 * Trees imaged / canopy-grade / median lift → recomputed by the page from the heatmap and the
   surveyed tree positions, then **cross-checked against `scripts/check_tree_positions.py`'s committed
   output**. If the two ever disagree, the page says so in red instead of picking one.
-* Coverage counts, detector rate, frame denominators → counted from the copied artifacts, always
-  shown with their denominator.
+* Coverage counts, detector rate, frame denominators → counted from the artifacts the page reads —
+  the flight logs and markers in place from `eval/results/` (sha256 still recorded in
+  `data/manifest.json`), the rest under `data/` — always shown with their denominator.
 * Frame counts are quoted as *airborne* and *painting*, never as the recorder's raw `num_frames`
   (most of which, on the 2026-08-25 clip, is a parked vehicle below the ground plane).
 
@@ -97,8 +103,10 @@ python3 scripts/build_dashboard_data.py            # rebuild (idempotent; prints
 python3 scripts/build_dashboard_data.py --check    # exit 1 if the committed tree is stale
 ```
 
-The build script copies or derives every byte from `eval/results/` and `config/`, and records each
-source's SHA-256 in `data/manifest.json` (the page lists them in its footer — verify any of them
+The build script derives every byte under `data/` from `eval/results/` and `config/` — the flight
+logs and `.SAFETY_FINDING.md` markers are no longer copied in (the page reads them in place from
+`eval/results/`, and `data/` is 0.47 MB rather than 2.7 MB) — and records each source's SHA-256 in
+`data/manifest.json` (the page lists them in its footer — verify any of them
 with `shasum -a 256 <path>`). `tests/test_build_dashboard_data.py` runs `--check` in CI, so a stale
 copy cannot sit in the repository unnoticed. That pin exists because this project has already been
 bitten once by a committed copy of a derived artifact drifting away from its source.

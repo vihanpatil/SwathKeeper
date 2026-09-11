@@ -22,17 +22,24 @@
      30.0,
      30.0
     ],
-    "cpa_m": 0.03929119396148754,
+    "cpa_m": 0.0392911939615,
     "segment_index": 3562,
     "track_id": "demo_bird_0"
    },
+   "evidence_dir": "eval/results",
    "gate": "scripts/check_live_flight_log.py",
    "gate_messages": [
     "covered=513 debt=207 path_points=4328 | CPA 0.0393 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND. The policy refuses to place a setpoint within 3.00 m of a threat; this path came within 0.0393 m of one (ADR-013 amendment 12, S1).",
+    "achieved displacement, encounter 1 [REPORTED, NOT GATED -- no bar is applied to this number, and `maneuver.verdict` is a constant, not a readback]: GUIDED authority ticks 3528 -> 3589 (takeover -> resume), 61 tick step(s), n/a (no `run` block: this log has no time axis)",
+    "  commanded 10.0000 m (3D 10.0000 m) from the tick-3528 maneuver: setpoint (29.9695, 10.0931, 15.0000) minus the tick-3528 position (29.9848, 20.0931, 15.0000); commanded axis (E -0.0015, N -1.0000); 0 re-latch(es) inside the window (the axis is the command in force at takeover, not a later one)",
+    "  achieved ON THE COMMANDED AXIS -14.5385 m over ticks 3528 -> 3589 = -145.39 % of the 10.0000 m commanded, of which cross-course dodge -0.0005 m and cruise leak -14.5380 m (+14.5393 m of ordinary forward flight seen through 89.22 deg between the commanded axis and the track normal) -- the along-command figure is NOT a dodge measurement",
+    "  achieved 3D straight line 14.5402 m over the same ticks; raw delta-ENU (+0.1816, +14.5382, -0.1500) m -- the vector is the fact, every projection above is a reading of it",
+    "  +2.0 s past resume: n/a -- no tick stamps, so this log cannot say which tick is 2 seconds later",
+    "  course axis from the last telemetry secant strictly before takeover, so the entry course carries none of the maneuver's own response; the split is ill-conditioned when the two axes are near-parallel, which is why the raw vector is printed with it",
     "acknowledged by live_flight_log_20260818T144711Z.SAFETY_FINDING.md -- recorded history, kept as evidence, NOT a passing flight"
    ],
-   "log": "flights/live_flight_log_20260818T144711Z.json",
-   "marker": "flights/live_flight_log_20260818T144711Z.SAFETY_FINDING.md",
+   "log": "live_flight_log_20260818T144711Z.json",
+   "marker": "live_flight_log_20260818T144711Z.SAFETY_FINDING.md",
    "schema_version": null,
    "stem": "live_flight_log_20260818T144711Z",
    "time_axis": "tick_index",
@@ -60,17 +67,24 @@
      30.0,
      30.0
     ],
-    "cpa_m": 0.039056561444838274,
+    "cpa_m": 0.0390565614448,
     "segment_index": 327,
     "track_id": "demo_bird_0"
    },
+   "evidence_dir": "eval/results",
    "gate": "scripts/check_live_flight_log.py",
    "gate_messages": [
     "covered=720 debt=0 path_points=984 | CPA 0.0391 m to demo_bird_0 (bar: min_bird_clearance_m 3.00 m) -- FLEW CLOSER THAN THE POLICY WILL COMMAND. The policy refuses to place a setpoint within 3.00 m of a threat; this path came within 0.0391 m of one (ADR-013 amendment 12, S1).",
+    "achieved displacement, encounter 1 [REPORTED, NOT GATED -- no bar is applied to this number, and `maneuver.verdict` is a constant, not a readback]: GUIDED authority ticks 323 -> 342 (takeover -> resume), 19 tick step(s), n/a (no `run` block: this log has no time axis)",
+    "  commanded 10.0000 m (3D 10.0000 m) from the tick-323 latch: setpoint (29.9873, 10.7276, 15.0000) minus the tick-323 position (29.9939, 20.7276, 15.0000); commanded axis (E -0.0007, N -1.0000); 7 re-latch(es) inside the window (the axis is the command in force at takeover, not a later one)",
+    "  achieved ON THE COMMANDED AXIS -21.7965 m over ticks 323 -> 342 = -217.97 % of the 10.0000 m commanded, of which cross-course dodge +0.0018 m and cruise leak -21.7983 m (+21.7996 m of ordinary forward flight seen through 89.37 deg between the commanded axis and the track normal) -- the along-command figure is NOT a dodge measurement",
+    "  achieved 3D straight line 21.8013 m over the same ticks; raw delta-ENU (+0.4176, +21.7962, -0.2200) m -- the vector is the fact, every projection above is a reading of it",
+    "  +2.0 s past resume: n/a -- no tick stamps, so this log cannot say which tick is 2 seconds later",
+    "  course axis from the last telemetry secant strictly before takeover, so the entry course carries none of the maneuver's own response; the split is ill-conditioned when the two axes are near-parallel, which is why the raw vector is printed with it",
     "acknowledged by live_flight_log_20260823T004031Z.SAFETY_FINDING.md -- recorded history, kept as evidence, NOT a passing flight"
    ],
-   "log": "flights/live_flight_log_20260823T004031Z.json",
-   "marker": "flights/live_flight_log_20260823T004031Z.SAFETY_FINDING.md",
+   "log": "live_flight_log_20260823T004031Z.json",
+   "marker": "live_flight_log_20260823T004031Z.SAFETY_FINDING.md",
    "schema_version": null,
    "stem": "live_flight_log_20260823T004031Z",
    "time_axis": "tick_index",
@@ -115,12 +129,12 @@
      998,
      999
     ],
-    "dist_3d_m": 4.030005367244537,
-    "drone_z_m": 15.029999732971191,
-    "freeze_debit_m": 1.1276939655172509,
-    "gt_cpa_gated_m": -1.120955102712108,
-    "gt_cpa_m": 0.006738862805142883,
-    "min_horizontal_any_band_m": 0.006738862805142883,
+    "dist_3d_m": 4.03000536724,
+    "drone_z_m": 15.029999733,
+    "freeze_debit_m": 1.12769396552,
+    "gt_cpa_gated_m": -1.12095510271,
+    "gt_cpa_m": 0.00673886280514,
+    "min_horizontal_any_band_m": 0.00673886280514,
     "pairs_in_band": 4335,
     "stamp_advance": {
      "advanced": 1855,
@@ -130,11 +144,11 @@
       2,
       192.9
      ],
-     "frozen_window_s": 0.16100000000000136,
+     "frozen_window_s": 0.161,
      "longest_frozen_run": 2,
-     "mean_step_s": 0.14025067385444742,
+     "mean_step_s": 0.140250673854,
      "pairs": 1857,
-     "span_s": 260.16499999999996,
+     "span_s": 260.165,
      "usable": 1858
     },
     "t_sim_s": 202.775,
@@ -147,13 +161,14 @@
     "truth_poses_scored": 610,
     "truth_poses_total": 610,
     "truth_span_sim_s": [
-     183.05700420949034,
-     996.7999890681916
+     183.057004209,
+     996.799989068
     ],
     "truth_track": "bird_drive_20260825T210030Z_applied.jsonl",
-    "vertical_sep_m": 4.029999732971191,
+    "vertical_sep_m": 4.02999973297,
     "vertical_threat_m": 6.0
    },
+   "evidence_dir": "eval/results",
    "gate": "scripts/check_live_flight_log.py",
    "gate_messages": [
     "covered=720 debt=0 path_points=1858 | clock gz_clock_stream, 0 domain violations",
@@ -173,17 +188,24 @@
     "detection_cpa_m 0.0035 m to 795 -- monocular apparent-size estimate; ESTIMATOR CHECK, NOT A SAFETY GATE | range_estimate_error_at_cpa_m +0.0033 (gt_cpa_m minus detection_cpa_m: the two MINIMA, not one instant)",
     "bird truly inside the threat cylinder on 16 tick(s); the loop engaged on 4 of them (missed-detection signal, NOT gated -- the camera is NADIR, so a bird inside the cylinder can sit outside the downward footprint at its own altitude, and one above the drone is never in frame at all)",
     "n_stale_dropped=0 over 4 detection event(s) -- reported for every flight, and FAILED by gate_detector_ran in exactly one combination: drops > 0 with 0 engagements, which is avoidance dead for the whole take",
+    "achieved displacement, encounter 1 [REPORTED, NOT GATED -- no bar is applied to this number, and `maneuver.verdict` is a constant, not a readback]: GUIDED authority ticks 991 -> 995 (takeover -> resume), 4 tick step(s), 0.434 s sim (202.775 -> 203.209 s)",
+    "  commanded 10.0000 m (3D 10.0000 m) from the tick-991 latch: setpoint (4.9974, 21.5161, 15.0000) minus the tick-991 position (14.9969, 21.6070, 15.0300); commanded axis (E -1.0000, N -0.0091); 2 re-latch(es) inside the window (the axis is the command in force at takeover, not a later one)",
+    "  achieved ON THE COMMANDED AXIS +0.0541 m over ticks 991 -> 995 = 0.54 % of the 10.0000 m commanded, of which cross-course dodge +0.0182 m and cruise leak +0.0359 m (+3.9518 m of ordinary forward flight seen through 0.52 deg between the commanded axis and the track normal) -- the along-command figure is NOT a dodge measurement",
+    "  achieved 3D straight line 3.9519 m over the same ticks; raw delta-ENU (-0.0182, -3.9518, -0.0200) m -- the vector is the fact, every projection above is a reading of it",
+    "  +2.0 s past resume (ticks 991 -> 1012, 2.372 s from takeover, AUTO for the tail): on the commanded axis +0.2005 m (cross-course +0.0545 m), 3D straight line 16.0751 m",
+    "  course axis from the last telemetry secant strictly before takeover, so the entry course carries none of the maneuver's own response; the split is ill-conditioned when the two axes are near-parallel, which is why the raw vector is printed with it",
     "CPA BREACH: flew within -1.1210 m of a bird, closer than the policy's own min_bird_clearance_m 3.00 m -- the policy refuses to place a SETPOINT that near a threat (ADR-013 amendment 12, S1). (worst case: the measured join reads 0.0067 m and is debited 1.1277 m for the 0.161 s clock freeze above)",
     "live_flight_log_20260825T210402Z.SAFETY_FINDING.md is present but the log stem 'live_flight_log_20260825T210402Z' is NOT pinned in ACKNOWLEDGED_BREACH_STEMS in scripts/check_live_flight_log.py: that is HALF an acknowledgement, and half acknowledges nothing. A marker file alone is a drive-by file in a gitignored directory -- it would turn a NEW breach green with nobody reviewing it. Both halves or neither: the marker (the written finding, beside the evidence) AND the pinned stem (a reviewed diff on this safety gate). If this is a new flight, THE FLIGHT FAILED -- the pre-registered answer while R4 is open."
    ],
-   "log": "flights/live_flight_log_20260825T210402Z.json",
-   "marker": "flights/live_flight_log_20260825T210402Z.SAFETY_FINDING.md",
+   "log": "live_flight_log_20260825T210402Z.json",
+   "marker": "live_flight_log_20260825T210402Z.SAFETY_FINDING.md",
    "schema_version": 2,
    "stem": "live_flight_log_20260825T210402Z",
    "time_axis": "sim_seconds",
    "verdict": "INVALID"
   }
  },
+ "log_and_marker_are_read_in_place": "`log` and `marker` are FILE NAMES inside `evidence_dir` (eval/results/), not paths under dashboard/data/. The page joins them onto its own EVIDENCE root so the committed evidence is served once, from where the gates read it.",
  "verdict_legend": {
   "ACKNOWLEDGED": "a REVIEWED, recorded closest-approach breach: marker file beside the log AND the stem pinned in ACKNOWLEDGED_BREACH_STEMS. Kept as history, deliberately never the word VALID.",
   "INVALID": "the gate refuses this log as evidence of a safe flight",

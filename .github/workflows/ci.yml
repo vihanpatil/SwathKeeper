@@ -64,6 +64,8 @@ jobs:
           python3 -m unittest discover -s tests/fieldguard_planning -v
 
       - name: Host-side test suite (tests/test_*.py -- launcher + CI-gate config, no sim)
+        # `if: always()` from here down -- see the comment block below this step.
+        if: always()
         run: |
           set -euo pipefail
           # These live in tests/, not tests/fieldguard_planning/, on purpose (see their docstrings):
@@ -75,20 +77,53 @@ jobs:
           # package discovery was removed in Python 3.11) -- verified on 3.12, no test runs twice.
           python3 -m unittest discover -s tests -p 'test_*.py' -v
 
+      # WHY EVERY STEP BELOW CARRIES `if: always()` (2026-09-10). This repo runs a DECLARED red on
+      # `main`: the 2026-08-25 real-detection take breached its own pre-registered clearance bar, the
+      # gate calls it INVALID, and tests/test_ci_evidence_gate.py fails on purpose (README "main's CI
+      # is red, on purpose"; docs/runbooks/AVOIDANCE_REAL_DETECTION.md 6a). A failing step SKIPS every
+      # later step by default, so that one honest red took the seed-42 FNR regression, the scenario
+      # regenerate+diff and the generator smoke test dark for 16 days -- and while they were dark, two
+      # further failures (Linux-only float/staleness reds in tests/test_build_dashboard_data.py)
+      # reached `main` unnoticed. A red that hides other reds is not honesty, it is a blindfold.
+      # `if: always()` makes every gate report its own verdict, and the step below asserts that the
+      # set of failures is EXACTLY the declared one.
+      - name: Known reds are exactly the declared ones (KNOWN_RED allowlist + expiry)
+        if: always()
+        run: |
+          set -euo pipefail
+          # THE DENOMINATOR FIRST (the same rule as the evidence step below): `discover` on a
+          # pattern that matches nothing prints "Ran 0 tests", says OK and exits 0 -- so deleting
+          # the allowlist would turn this step green, which is the one outcome it may never have.
+          if [ ! -f tests/test_known_red_allowlist.py ]; then
+            echo "[ci] FAIL: tests/test_known_red_allowlist.py is gone. This step would have" >&2
+            echo "     matched no tests and passed, having asserted nothing about which tests" >&2
+            echo "     fail. Restore it or delete this step deliberately." >&2
+            exit 1
+          fi
+          # Re-runs both test roots in a child process and compares the failing set against the
+          # allowlist. Three ways to fail, all of them useful: an UNDECLARED red (the blindfold
+          # above), a declared red that has started PASSING (a vacuous allowlist entry), and an
+          # entry past its expiry date (a red nobody re-read).
+          python3 -m unittest discover -s tests -p 'test_known_red_allowlist.py' -v
+
       - name: Scenario flight logs are current (regenerate + diff -- catches silent rot)
+        if: always()
         run: |
           set -euo pipefail
           python3 eval/scenarios/generate_flight_logs.py
           git diff --exit-code eval/scenarios/
 
       - name: Validate committed live flight-log evidence (CPA + idle-run clobber guard)
+        if: always()
         run: |
           set -euo pipefail
           # WHAT THIS SEES IN CI (measured, not assumed -- `git archive HEAD` + this exact command,
           # 2026-08-24): .gitignore ignores eval/results/* but RE-INCLUDES
           # `!eval/results/live_flight_log_*.json`, so a fresh checkout carries the two committed
           # live logs (2026-08-18, 2026-08-23) and this glob matches BOTH. The gate really runs: it
-          # prints their CPA (0.0597 m / 0.0518 m), reports each as an ACKNOWLEDGED SAFETY FINDING
+          # prints their CPA (0.0393 m / 0.0391 m -- the 2026-08-26 segment-path recompute; the markers
+          # beside the logs still carry the superseded vertex-only 0.0597 / 0.0518), reports each as an
+          # ACKNOWLEDGED SAFETY FINDING
           # against its sibling marker file, and exits 0. It also still catches the failure it was
           # born for -- the 2026-08-05 demo log silently clobbered by an idle run (empty
           # flown_path_enu, 720/720 debt).
@@ -124,6 +159,7 @@ jobs:
           python3 scripts/check_live_flight_log.py "${logs[@]}"
 
       - name: Smoke-run stdlib generator scripts (catch import/CLI breakage)
+        if: always()
         run: |
           set -euo pipefail
           python3 scripts/gen_boustrophedon.py -o /tmp/smoke_boustrophedon.waypoints
@@ -142,16 +178,19 @@ jobs:
           python3 scripts/check_mission_geofence.py || true
 
       - name: Regenerate spike clip (fixed seed 42 -- the reproducibility regression)
+        if: always()
         run: |
           set -euo pipefail
           python3 sim/spike/gen_spike_clip.py --seed 42 --out sim/spike/out/spike_seed42
 
       - name: Run eval spike harness end-to-end (label GT -> both baselines -> score)
+        if: always()
         run: |
           set -euo pipefail
           bash eval/run_spike.sh
 
       - name: Assert no regression on the seed-42 headline metric
+        if: always()
         run: |
           set -euo pipefail
           python3 scripts/check_spike_regression.py eval/results/spike_scores.json

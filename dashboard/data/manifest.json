@@ -73,37 +73,37 @@
   {
    "bytes": 1531,
    "path": "eval/results/live_flight_log_20260818T144711Z.SAFETY_FINDING.md",
-   "role": "written safety finding (marker)",
+   "role": "written safety finding (marker; read in place)",
    "sha256": "05acf36000fd6041af89fe0694c46c46d7a87f8f83c6ba503d4b8d0a77fbfdfc"
   },
   {
    "bytes": 1368959,
    "path": "eval/results/live_flight_log_20260818T144711Z.json",
-   "role": "live flight log",
+   "role": "live flight log (read in place; never copied)",
    "sha256": "d4d6b607d9755a300c86b3818e25e20d08773e815186944d9543e88cb434bb80"
   },
   {
    "bytes": 2995,
    "path": "eval/results/live_flight_log_20260823T004031Z.SAFETY_FINDING.md",
-   "role": "written safety finding (marker)",
+   "role": "written safety finding (marker; read in place)",
    "sha256": "21da3f16efe72dda91d46b8933538b509c6b37a54083569b03949873ed0ba363"
   },
   {
    "bytes": 372512,
    "path": "eval/results/live_flight_log_20260823T004031Z.json",
-   "role": "live flight log",
+   "role": "live flight log (read in place; never copied)",
    "sha256": "5708e5cb2231424d21cda94544af00af98bc2d278018006c6a26a87aa818a2aa"
   },
   {
    "bytes": 12161,
    "path": "eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md",
-   "role": "written safety finding (marker)",
+   "role": "written safety finding (marker; read in place)",
    "sha256": "d166f969dedc903d5075b98e6aa218dd30b69a3c7fc32aad65df38825710d65e"
   },
   {
    "bytes": 570617,
    "path": "eval/results/live_flight_log_20260825T210402Z.json",
-   "role": "live flight log",
+   "role": "live flight log (read in place; never copied)",
    "sha256": "c08607b8b50eb64eb5e45b20fbf4d065de4964e1db46716bdaabe6f2b0b928c0"
   }
  ],
