@@ -50,6 +50,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
+from .geom import point_segment_distance_xy
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_FIELD_POLYGON = REPO_ROOT / "config" / "field_polygon.json"
 DEFAULT_CAMERA_CONFIG = REPO_ROOT / "config" / "ndvi_camera.json"
@@ -84,8 +86,9 @@ def derive_swath_half_width_m(altitude_agl_m: float,
 
     The fx formula is restated here rather than imported: `ndvi_georef.CameraIntrinsics.from_config`
     owns it for the project, but `ndvi_georef` imports THIS module, and coverage.py stays stdlib-only
-    (same reason `_point_segment_distance` is local rather than taken from geofence.py). The two are
-    pinned equal by `test_coverage.TestSwathComesFromTheCamera`, so the restatement cannot drift.
+    (the same purity that lets the point-to-segment primitive live in `geom.py`, which imports
+    `math` and nothing else, instead of being copied per caller as it was until 2026-09-10). The two
+    are pinned equal by `test_coverage.TestSwathComesFromTheCamera`, so the restatement cannot drift.
     """
     cfg = _require_json(camera_config_path, "the NDVI camera's intrinsics are unknown and the "
                                             "coverage swath cannot be derived")
@@ -164,20 +167,6 @@ def build_grid(polygon: Sequence[Tuple[float, float]],
     return cells
 
 
-def _point_segment_distance(px: float, py: float,
-                            ax: float, ay: float, bx: float, by: float) -> float:
-    """Distance from a point to a segment (same math as geofence._point_segment_distance; kept
-    local so coverage.py has no import dependency on geofence.py)."""
-    dx, dy = bx - ax, by - ay
-    seg_len_sq = dx * dx + dy * dy
-    if seg_len_sq == 0.0:
-        return math.hypot(px - ax, py - ay)
-    t = ((px - ax) * dx + (py - ay) * dy) / seg_len_sq
-    t = max(0.0, min(1.0, t))
-    cx, cy = ax + t * dx, ay + t * dy
-    return math.hypot(px - cx, py - cy)
-
-
 def coverage_from_path(cells: Sequence[CoverageCell],
                        path: Sequence[Tuple[float, float]],
                        swath_half_width_m: float = DEFAULT_SWATH_HALF_WIDTH_M) -> Dict[str, bool]:
@@ -189,7 +178,7 @@ def coverage_from_path(cells: Sequence[CoverageCell],
     for cell in cells:
         hit = False
         for (ax, ay), (bx, by) in legs:
-            if _point_segment_distance(cell.cx_m, cell.cy_m, ax, ay, bx, by) <= swath_half_width_m:
+            if point_segment_distance_xy(cell.cx_m, cell.cy_m, ax, ay, bx, by) <= swath_half_width_m:
                 hit = True
                 break
         covered[cell.cell_id] = hit

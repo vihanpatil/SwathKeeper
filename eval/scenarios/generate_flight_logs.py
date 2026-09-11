@@ -7,11 +7,12 @@ bird(s). Writing `eval/scenarios/<name>/flight_log.json` self-activates the matc
 These logs are produced by the actual loop, not hand-authored: the coverage ledger comes straight
 from `AvoidanceExecutor.finalize()` (honest by construction), so the tests check a genuine artifact.
 
-NOT generated here (on purpose): the detection scenarios `det_bird_crosses_path` /
-`det_bird_over_low_ndvi`. Their "no missed bird" property reuses `eval/score.py` and needs DETECTION
-artifacts (ground_truth.json + detections.json), i.e. the detection pipeline on a real NDVI render
-(Weeks 5-6) -- NOT an avoidance flown path. Fabricating detection data to turn them green would be
-exactly the fake-a-metric move this project refuses. They stay pending on the real render.
+NOT generated here (on purpose): the detection scenario `det_bird_over_low_ndvi` (and, until it was
+RETIRED on 2026-09-10, `det_bird_crosses_path` -- whose "no missed bird" property is now asserted on
+the committed real-render evidence `eval/results/adr003_20260823/`). That property reuses
+`eval/score.py` and needs DETECTION artifacts (ground_truth.json + detections.json) from a real NDVI
+render -- NOT an avoidance flown path. Fabricating detection data to turn a scenario green would be
+exactly the fake-a-metric move this project refuses.
 
 Run (stdlib + fieldguard_planning only, no numpy/ROS 2):
     python3 eval/scenarios/generate_flight_logs.py

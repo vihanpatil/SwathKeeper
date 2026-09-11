@@ -122,6 +122,10 @@ CAMERA_INFO_WAIT_S = 20.0
 # subscribing the rgb band would add a third reader to the hop that has starved twice.
 NDVI_IMAGE_TOPIC = "/fg/ndvi/image"
 NDVI_INFO_TOPIC = "/fg/ndvi/camera_info"
+# 32-bit float, one channel: NDVI in [-1, 1]. The SAME node also publishes `/fg/ndvi/preview` as
+# rgb8 off the same fused array (`ndvi_node.NDVI_ENCODING` / `PREVIEW_ENCODING`), which is why the
+# encoding is asserted rather than assumed -- the two topics differ by one word in a launch line.
+NDVI_IMAGE_ENCODING = "32FC1"
 
 # The forward depth aperture (ADR-019/020). `/fg/depth/camera_info` is DERIVED by gz-sensors from
 # `<topic>`, not declared -- `config/depth_camera.json` records why, and the runbook's gate D1
@@ -683,6 +687,58 @@ def decode_depth_frame(msg):
     return buf.view(dtype).reshape(height, width).astype(np.float32, copy=False)
 
 
+def decode_ndvi_frame(msg):
+    """A `sensor_msgs/Image` on `/fg/ndvi/image` -> a float32 (H, W) array of NDVI in [-1, 1].
+
+    THE SAME FOUR CHECKS `decode_depth_frame` MAKES, on the band that has actually flown (G10,
+    2026-09-10). Until now this decoder was `np.frombuffer(msg.data, float32).reshape(h, w)` with
+    nothing asserted, and the three failure modes are not equally loud:
+
+      * `is_bigendian` was IGNORED, and that one is SILENT. A byte-swapped float32 buffer reshapes
+        perfectly into an array of plausible-looking numbers; NDVI would be denormal noise, the
+        -0.61 threshold would find nothing, and the flight would log a clean detector that saw no
+        birds. Exactly the shape of the failures this project keeps finding after the fact.
+      * `encoding` was ASSUMED. `/fg/ndvi/preview` is rgb8 off the same fused array, one word away
+        in a launch line; any 4-byte-per-pixel encoding pointed at this topic decodes without
+        complaint into confident NDVI.
+      * `step` and payload length were UNASSERTED. Those two do raise today -- but as a bare
+        `cannot reshape array of size N into shape (H,W)` out of a subscription callback, which
+        names neither the topic nor the cause. A padded row that DID divide evenly would place
+        every pixel at the wrong coordinate, and `ndvi_georef.project_world_point` would then
+        georeference a real detection to the wrong cell: the ADR-007 am. 5 family (a value correct
+        under a geometry nobody checked), which cost this project two weeks.
+
+    NOT caught by the node, same doctrine as the depth decoder: a wire-format fault is true of frame
+    1 and of every frame after it, so it stops the take loudly at the start rather than degrading a
+    flight nobody re-flies. `main`'s `finally` still writes the flight log.
+
+    A VALID frame decodes byte-identically to what this node has always produced -- pinned in
+    `tests/fieldguard_planning/test_detection_seam.py`, because the point is the refusals, and a
+    refactor that also moved a pixel would be a silent change to the adopted detector."""
+    import numpy as np
+
+    encoding = getattr(msg, "encoding", None)
+    if encoding != NDVI_IMAGE_ENCODING:
+        raise ValueError(f"{NDVI_IMAGE_TOPIC} carried encoding {encoding!r}, expected "
+                         f"{NDVI_IMAGE_ENCODING!r} (32-bit float NDVI). Refusing rather than "
+                         f"reinterpreting: the rgb8 preview of this very band read as float32 is "
+                         f"a confident NDVI value per 4 bytes of colour.")
+    height, width, step = int(msg.height), int(msg.width), int(msg.step)
+    itemsize = 4                                    # 32FC1: one float32 channel per pixel
+    if width <= 0 or height <= 0:
+        raise ValueError(f"{NDVI_IMAGE_TOPIC} carried a degenerate frame {width}x{height}")
+    if step != width * itemsize:
+        raise ValueError(f"{NDVI_IMAGE_TOPIC} step {step} != width {width} * {itemsize} bytes "
+                         f"({width * itemsize}) -- a padded or mis-strided row shifts every pixel, "
+                         f"and a detection's centroid then georeferences to the wrong cell")
+    buf = np.frombuffer(msg.data, dtype=np.uint8)
+    if buf.size != height * step:
+        raise ValueError(f"{NDVI_IMAGE_TOPIC} payload is {buf.size} bytes, expected height "
+                         f"{height} * step {step} = {height * step}")
+    dtype = np.dtype(">f4" if getattr(msg, "is_bigendian", 0) else "<f4")
+    return buf.view(dtype).reshape(height, width).astype(np.float32, copy=False)
+
+
 def feed_depth_frame(source, pose_buf, msg):
     """One depth message -> the seam, paired to the pose nearest the frame's OWN gz stamp.
 
@@ -737,7 +793,6 @@ def build_node(detection_source: Optional[DetectionSource] = None,
     import subprocess
     import threading
 
-    import numpy as np
     import rclpy
     from rclpy.node import Node
     from rclpy.qos import (HistoryPolicy, QoSProfile, ReliabilityPolicy,
@@ -902,9 +957,12 @@ def build_node(detection_source: Optional[DetectionSource] = None,
 
         def _on_ndvi(self, msg) -> None:
             """Fused NDVI frame -> detections, paired to the pose nearest the frame's OWN gz stamp.
-            Every drop is counted inside the source; nothing here returns silently."""
+            Every drop is counted inside the source; nothing here returns silently. The decode is
+            `decode_ndvi_frame`'s, out at module scope where a test can drive it with a duck-typed
+            message and no ROS -- a malformed frame raises there rather than being reshaped into a
+            plausible NDVI image."""
             stamp_s = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-            ndvi = np.frombuffer(msg.data, dtype=np.float32).reshape(msg.height, msg.width)
+            ndvi = decode_ndvi_frame(msg)
             paired = self._pose_buf.nearest(stamp_s)
             if paired is None:
                 self._frame_detector.on_frame(stamp_s, ndvi, None, None)

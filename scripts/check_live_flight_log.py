@@ -162,6 +162,12 @@ from fieldguard_planning.avoidance_policy import PolicyParams  # noqa: E402
 from fieldguard_planning.coverage import (  # noqa: E402
     CELL_COVERED, CELL_DEBT, DEFAULT_CELL_SIZE_M, build_grid, check_ledger, load_field_polygon,
 )
+# geom.py is the ONE point-to-segment primitive and the ONE definition of airborne. It imports
+# `math` and nothing else -- no config, no numpy, no sibling -- so importing it costs this gate
+# none of its stdlib-only purity.
+from fieldguard_planning.geom import (  # noqa: E402
+    AIRBORNE_Z_M, point_segment_projection_xy,
+)
 from drive_birds import (  # noqa: E402
     DEFAULT_BIRDS_CONFIG, applied_log_path_for, applied_sim_span, pose_at, read_applied_log,
 )
@@ -700,15 +706,9 @@ def truth_candidates(tick_span: Optional[Tuple[float, float]],
     return out
 
 
-def _point_segment_xy(px: float, py: float, ax: float, ay: float,
-                      bx: float, by: float) -> Tuple[float, float]:
-    """(horizontal distance from (px,py) to the SEGMENT (ax,ay)-(bx,by), the fraction along that
-    segment where the closest point sits). Degenerate segment (a == b) collapses to the point
-    distance at fraction 0."""
-    dx, dy = bx - ax, by - ay
-    seg = dx * dx + dy * dy
-    t = 0.0 if seg == 0.0 else max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / seg))
-    return math.hypot(px - (ax + t * dx), py - (ay + t * dy)), t
+# The project's one point-to-segment primitive, re-exported under the names this module's callers
+# (and its tests, and build_dashboard_data) already use. `fieldguard_planning.geom` owns the body.
+_point_segment_xy = point_segment_projection_xy
 
 
 def _point_segment_xy_m(px: float, py: float, ax: float, ay: float,
@@ -2567,19 +2567,15 @@ def gate_r2_r3(log, run) -> Tuple[List[str], List[str]]:
 # gap) and far looser than a leg-entry transient or the sampling noise of a 5 Hz numerical
 # derivative. A booking flown at 5.0 admits a 5.5 m/s median; the unbooked default is 10.
 BOOKED_SPEED_TOLERANCE = 1.10
-# Altitude above which a tick counts as AIRBORNE. This project already has exactly one definition of
-# airborne -- `fieldguard_planning.clip_recorder.AIRBORNE_Z_M`, the `z_threshold_m` written into
-# every clip's `meta.airborne` block, and the same 1.0 m `build_dashboard_data.airborne_window`
-# trims the replay to. It is restated here rather than imported because `clip_recorder` imports
-# numpy and this gate is stdlib-only by contract (see the module docstring), and because
-# `build_dashboard_data` imports THIS module, so importing it back would be circular. The three
-# copies are pinned equal by test (tests/fieldguard_planning/test_check_live_flight_log_booking.py).
+# Altitude above which a tick counts as AIRBORNE: `fieldguard_planning.geom.AIRBORNE_Z_M`, imported
+# at the top of this file. It used to be restated here (and in `clip_recorder`, and in
+# `build_dashboard_data`) because `clip_recorder` imports numpy and this gate is stdlib-only by
+# contract; `geom.py` is the stdlib-only home that ends the restating.
 #
 # WHY THE PROLOGUE HAS TO COME OUT AT ALL: every committed flight log opens with a long stretch of a
 # parked vehicle -- 40-52 % of the ticks on two of the three -- because the node starts logging at
 # bringup and the human arms and takes off at the MAVProxy prompt some seconds later (ADR-013).
 # A median over ALL ticks on those logs is ~0 m/s, i.e. every flight would clear every booking.
-AIRBORNE_Z_M = 1.0
 # The sidecar: `<log-stem>.booking.json` beside the flight log, resolved exactly the way
 # `marker_path_for` resolves the SAFETY_FINDING marker. `--booking` is the contract and this is the
 # convenience -- a copy of the authorising artifact, laid down beside the evidence by whoever
@@ -2707,6 +2703,227 @@ def encounter_windows(log, n_ticks: int) -> List[Tuple[int, int, str]]:
         out.append((opened, max(opened, n_ticks),
                     f"takeover {opened} -> UNCLOSED (to last tick {n_ticks})"))
     return out
+
+# ------------------------------------------------------------------------------------------------
+# ACHIEVED DISPLACEMENT -- REPORTED, NEVER GATED (G1/G2, 2026-09-10)
+# ------------------------------------------------------------------------------------------------
+# WHAT THIS IS. `maneuver.verdict` is the string "accepted", written by the executor on the tick it
+# PUBLISHES a setpoint (`avoidance_executor.py`); nothing anywhere reads back whether the vehicle
+# accepted the mode switch, and no gate compares what was commanded with what the aircraft did. So
+# the flight log's own answer to "did the dodge move the aircraft" has always been a constant. These
+# notes put the measurement in the artifact every flight prints.
+#
+# WHY IT IS A NOTE AND NOT A BAR. The offline point-mass replay measured exactly this on all three
+# committed flights (`eval/replay_point_mass.py`, 2026-08-26, ADR-016 am. 2) and found the naive
+# reading is wrong-axis: on 2 of 3 flights the along-command figure is NEGATIVE (the vehicle went the
+# other way), and on the third the window is 0.434 s -- so short that a working command path and a
+# dead one differ by half a telemetry quantum. A bar over a number that cannot discriminate would be
+# a gate that passes for the wrong reason. Sizing one is R4/B-track work; measuring it is not, and
+# an unmeasured number is how the 0.018 m dodge survived a green gate for a fortnight.
+#
+# THE DECOMPOSITION IS THE POINT (the replay's M6 finding, reproduced here so the two agree). The
+# displacement projected on the commanded direction splits EXACTLY into two orthogonal terms:
+#     d . cmd = (d . track)(track . cmd) + (d . cross)(cross . cmd)
+# The second is the dodge. The first is ORDINARY FORWARD FLIGHT leaking in through the small angle
+# between the commanded direction and the track normal. On 2026-08-25: +0.0541 m along command is
+# +0.0182 m of real cross-course dodge plus +0.0359 m of the 3.95 m cruise leg seen through 0.52
+# deg. Two thirds of the headline is forward flight, so the along-command figure is never quoted
+# alone -- and the raw delta-ENU is printed beside both, because that vector is the fact and every
+# projection of it is a reading.
+DISPLACEMENT_SETTLE_S = 2.0
+
+
+def _entry_course_unit(log, tick, max_back: int = 5) -> Optional[Tuple[float, float]]:
+    """The vehicle's horizontal course ARRIVING at `tick`, as a unit (E, N), or None.
+
+    STRICTLY BEFORE the tick, unlike `_course_unit` (which straddles it): that one answers "where
+    was the camera pointing AT this instant" and wants the widest bracket; this one answers "what
+    was the vehicle doing when authority changed hands", and a bracket that reaches forward would
+    mix the maneuver's own response into the baseline the response is measured against. Walks back
+    up to `max_back` ticks so a repeated pose (a parked or hovering vehicle, which the telemetry
+    produces by the hundred) yields the last real motion instead of a zero vector."""
+    here = _flown_point(log, tick)
+    if here is None:
+        return None
+    for back in range(1, max_back + 1):
+        prev = _flown_point(log, tick - back)
+        if prev is None:
+            continue
+        de, dn = here[0] - prev[0], here[1] - prev[1]
+        norm = math.hypot(de, dn)
+        if norm > 1e-9:
+            return (de / norm, dn / norm)
+    return None
+
+
+def commanded_dodge(log, first_tick: int, last_tick: int
+                    ) -> Optional[Tuple[int, str, Tuple[float, float, float]]]:
+    """(tick, what named it, setpoint_enu) -- the dodge point the executor commanded when it took
+    authority in this window, or None if the window carries no setpoint at all.
+
+    The EARLIEST setpoint in the window, because displacement is measured from the position at
+    takeover and the only command in force there is the one latched then. A `latch` wins a tie with
+    a `maneuver` on the same tick (the latch is the point actually re-commanded until it clears);
+    the 2026-08-18 log predates latch events entirely, so the accepted `maneuver` is the fallback.
+    Re-latches later in the window are reported as a count, not folded in: a displacement measured
+    against a command that changed mid-window is not a measurement of either command."""
+    best: Optional[Tuple[Tuple[int, int], int, str, Tuple[float, float, float]]] = None
+    for ev in log.get("events") or []:
+        if not isinstance(ev, dict):
+            continue
+        kind = ev.get("kind")
+        if kind not in ("latch", "maneuver"):
+            continue
+        if kind == "maneuver" and ev.get("verdict") not in (None, "accepted"):
+            continue
+        tick = ev.get("tick")
+        if not isinstance(tick, int) or isinstance(tick, bool):
+            continue
+        if not (first_tick <= tick <= last_tick):
+            continue
+        sp = ev.get("setpoint_enu")
+        try:
+            point = (float(sp[0]), float(sp[1]), float(sp[2]))
+        except (TypeError, ValueError, IndexError):
+            continue
+        key = (tick, 0 if kind == "latch" else 1)
+        if best is None or key < best[0]:
+            best = (key, tick, kind, point)
+    return None if best is None else (best[1], best[2], best[3])
+
+
+def _displacement_split(p0: Tuple[float, float, float], p1: Tuple[float, float, float],
+                        cmd_unit: Tuple[float, float],
+                        course: Optional[Tuple[float, float]]) -> dict:
+    """The one arithmetic both note blocks use: the raw delta, its 3D length, its projection on the
+    commanded axis, and (when a course exists) that projection's dodge/cruise-leak split."""
+    d = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
+    out = {"d": d,
+           "d3": math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]),
+           "along": d[0] * cmd_unit[0] + d[1] * cmd_unit[1],
+           "cross": None, "leak": None, "misalign_deg": None}
+    if course is None:
+        return out
+    cross = (-course[1], course[0])
+    if cross[0] * cmd_unit[0] + cross[1] * cmd_unit[1] < 0.0:
+        cross = (-cross[0], -cross[1])              # point it the way the command went
+    d_track = d[0] * course[0] + d[1] * course[1]
+    d_cross = d[0] * cross[0] + d[1] * cross[1]
+    out["cross"] = d_cross * (cross[0] * cmd_unit[0] + cross[1] * cmd_unit[1])
+    out["leak"] = d_track * (course[0] * cmd_unit[0] + course[1] * cmd_unit[1])
+    out["track"] = d_track
+    out["misalign_deg"] = math.degrees(math.acos(max(-1.0, min(1.0, abs(
+        cross[0] * cmd_unit[0] + cross[1] * cmd_unit[1])))))
+    return out
+
+
+def displacement_notes(log) -> List[str]:
+    """One block per takeover -> resume window: what was commanded, what the aircraft did, on which
+    ticks. REPORTED, NEVER GATED -- nothing here can change a verdict or an exit code.
+
+    A legacy (pre-`run`) log has no time axis at all, so its seconds and its +2 s figures read
+    `n/a`: the same refusal `check_file` already makes for a booking's flown speed. The tick
+    displacements are still facts and are still printed."""
+    path = log.get("flown_path_enu") if isinstance(log, dict) else None
+    if not isinstance(path, list) or not path:
+        return []
+    windows = encounter_windows(log, len(path))
+    if not windows:
+        return []
+    run = log.get("run")
+    stamps = run.get("tick_stamp_sim_s") if isinstance(run, dict) else None
+    if not isinstance(stamps, list):
+        stamps = []
+
+    def stamp(tick) -> Optional[float]:
+        if isinstance(tick, int) and 1 <= tick <= len(stamps):
+            return _num(stamps[tick - 1])
+        return None
+
+    notes: List[str] = []
+    for n, (t0, t1, _label) in enumerate(windows, 1):
+        p0, p1 = _flown_point(log, t0), _flown_point(log, t1)
+        s0, s1 = stamp(t0), stamp(t1)
+        span = "n/a (no `run` block: this log has no time axis)" if None in (s0, s1) else \
+            f"{s1 - s0:.3f} s sim ({s0:.3f} -> {s1:.3f} s)"
+        head = (f"achieved displacement, encounter {n} [REPORTED, NOT GATED -- no bar is applied to "
+                f"this number, and `maneuver.verdict` is a constant, not a readback]: GUIDED "
+                f"authority ticks {t0} -> {t1} (takeover -> resume), {t1 - t0} tick step(s), {span}")
+        cmd = commanded_dodge(log, t0, t1)
+        if p0 is None or p1 is None or cmd is None:
+            notes.append(head + " -- NOT MEASURED: the window carries no commanded setpoint or no "
+                                "position at its ends, so there is nothing to compare")
+            continue
+        cmd_tick, cmd_kind, sp = cmd
+        vec = (sp[0] - p0[0], sp[1] - p0[1], sp[2] - p0[2])
+        horiz = math.hypot(vec[0], vec[1])
+        if horiz <= 1e-9:
+            notes.append(head + " -- NOT MEASURED: the commanded point is directly above/below the "
+                                "position at takeover, so it defines no horizontal axis")
+            continue
+        cmd_unit = (vec[0] / horiz, vec[1] / horiz)
+        course = _entry_course_unit(log, t0)
+        n_relatch = sum(1 for ev in log.get("events") or []
+                        if isinstance(ev, dict) and ev.get("kind") == "relatch"
+                        and isinstance(ev.get("tick"), int) and t0 <= ev["tick"] <= t1)
+        notes.append(head)
+        notes.append(
+            f"  commanded {horiz:.4f} m (3D {math.sqrt(sum(v * v for v in vec)):.4f} m) from the "
+            f"tick-{cmd_tick} {cmd_kind}: setpoint ({sp[0]:.4f}, {sp[1]:.4f}, {sp[2]:.4f}) minus "
+            f"the tick-{t0} position ({p0[0]:.4f}, {p0[1]:.4f}, {p0[2]:.4f}); commanded axis "
+            f"(E {cmd_unit[0]:+.4f}, N {cmd_unit[1]:+.4f}); {n_relatch} re-latch(es) inside the "
+            f"window (the axis is the command in force at takeover, not a later one)")
+        win = _displacement_split(p0, p1, cmd_unit, course)
+        notes.append(f"  achieved ON THE COMMANDED AXIS {win['along']:+.4f} m over ticks {t0} -> "
+                     f"{t1} = {100.0 * win['along'] / horiz:.2f} % of the {horiz:.4f} m commanded"
+                     + (" [no entry course: the vehicle was not moving before takeover, so the "
+                        "dodge/cruise split cannot be taken]" if win["cross"] is None else
+                        f", of which cross-course dodge {win['cross']:+.4f} m and cruise leak "
+                        f"{win['leak']:+.4f} m ({win['track']:+.4f} m of ordinary forward flight "
+                        f"seen through {win['misalign_deg']:.2f} deg between the commanded axis and "
+                        f"the track normal) -- the along-command figure is NOT a dodge measurement"))
+        notes.append(f"  achieved 3D straight line {win['d3']:.4f} m over the same ticks; raw "
+                     f"delta-ENU ({win['d'][0]:+.4f}, {win['d'][1]:+.4f}, {win['d'][2]:+.4f}) m "
+                     f"-- the vector is the fact, every projection above is a reading of it")
+        t2, s2 = _settle_tick(stamps, t1, len(path))
+        if t2 is None or s0 is None:
+            notes.append(f"  +{DISPLACEMENT_SETTLE_S:.1f} s past resume: n/a -- no tick stamps, so "
+                         f"this log cannot say which tick is 2 seconds later")
+        else:
+            settle = _displacement_split(p0, _flown_point(log, t2) or p0, cmd_unit, course)
+            notes.append(
+                f"  +{DISPLACEMENT_SETTLE_S:.1f} s past resume (ticks {t0} -> {t2}, "
+                f"{s2 - s0:.3f} s from takeover, AUTO for the tail): on the commanded axis "
+                f"{settle['along']:+.4f} m"
+                + ("" if settle["cross"] is None else
+                   f" (cross-course {settle['cross']:+.4f} m)")
+                + f", 3D straight line {settle['d3']:.4f} m")
+        notes.append(
+            f"  course axis from the last telemetry secant strictly before takeover, so the entry "
+            f"course carries none of the maneuver's own response; the split is ill-conditioned when "
+            f"the two axes are near-parallel, which is why the raw vector is printed with it")
+    return notes
+
+
+def _settle_tick(stamps: Sequence, resume_tick: int, n_ticks: int
+                 ) -> Tuple[Optional[int], Optional[float]]:
+    """(the last tick whose stamp is within DISPLACEMENT_SETTLE_S of the resume tick's, its stamp).
+    The vehicle is back in AUTO over that tail -- the point is how much of the shortfall is window
+    LENGTH rather than a dead command path, which is the same counterfactual the point-mass replay
+    prices with its SETTLE_S."""
+    if not isinstance(resume_tick, int) or not (1 <= resume_tick <= len(stamps)):
+        return None, None
+    s1 = _num(stamps[resume_tick - 1])
+    if s1 is None:
+        return None, None
+    best_tick, best_stamp = resume_tick, s1
+    for tick in range(resume_tick + 1, min(len(stamps), n_ticks) + 1):
+        s = _num(stamps[tick - 1])
+        if s is None or s > s1 + DISPLACEMENT_SETTLE_S:
+            break
+        best_tick, best_stamp = tick, s
+    return best_tick, best_stamp
+
 
 
 def load_booking(path: Path) -> Tuple[Optional[dict], Optional[str]]:
@@ -3305,6 +3522,8 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
                  f"FAILED by gate_detector_ran in exactly one combination: drops > 0 with 0 "
                  f"engagements, which is avoidance dead for the whole take")
 
+    notes.extend(displacement_notes(log))        # REPORTED, NEVER GATED (G1/G2)
+
     # --- verdict: a marker acknowledges a CPA FINDING, never a failed gate ------------------------
     marker = marker_path_for(path)
     breach = cpa_m is not None and cpa_m < bar
@@ -3433,9 +3652,10 @@ def check_file(path: Path, truth: Optional[Path] = None,
     bar = min_bird_clearance_m()
     cpa = closest_approach(log)
     marker = marker_path_for(path)
+    disp = displacement_notes(log)               # REPORTED, NEVER GATED (G1/G2)
     if cpa is None:
         return VALID, [f"{headline} | CPA NO-CPA-EVIDENCE (no logged detections with a position, "
-                       f"or no flown path) -- this log says nothing about separation"]
+                       f"or no flown path) -- this log says nothing about separation"] + disp
     cpa_m, track_id = cpa
     cpa_note = f"CPA {cpa_m:.4f} m to {track_id} (bar: min_bird_clearance_m {bar:.2f} m)"
 
@@ -3445,17 +3665,17 @@ def check_file(path: Path, truth: Optional[Path] = None,
                   f"{cpa_m:.4f} m of one (ADR-013 amendment 12, S1).")
         ack = acknowledgement_problem(path)
         if ack is None:
-            return ACKNOWLEDGED, [f"{headline} | {breach}",
-                                  f"acknowledged by {marker.name} -- recorded history, kept as "
-                                  f"evidence, NOT a passing flight"]
-        return INVALID, [breach, ack]
+            return ACKNOWLEDGED, [f"{headline} | {breach}"] + disp + [
+                f"acknowledged by {marker.name} -- recorded history, kept as evidence, NOT a "
+                f"passing flight"]
+        return INVALID, [breach] + disp + [ack]
 
     if marker.exists():
-        return INVALID, [f"{headline} | {cpa_note} -- PASSES",
-                         f"but a stale acknowledgement marker {marker.name} is present. An "
-                         f"acknowledgement beside a passing log pre-authorises the next regression "
-                         f"on this file; delete the marker."]
-    return VALID, [f"{headline} | {cpa_note}"]
+        return INVALID, [f"{headline} | {cpa_note} -- PASSES"] + disp + [
+            f"but a stale acknowledgement marker {marker.name} is present. An acknowledgement "
+            f"beside a passing log pre-authorises the next regression on this file; delete the "
+            f"marker."]
+    return VALID, [f"{headline} | {cpa_note}"] + disp
 
 
 def main(argv=None) -> int:

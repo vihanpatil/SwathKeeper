@@ -17,9 +17,10 @@ query: `sim/README.md` documents that tree canopy height (3.5 m) sits well below
 separate, already-satisfied constraint -- see `scripts/check_mission_geofence.py` for where that
 gets confirmed numerically for the current mission, rather than baked as an assumption in here.
 
-Dependency: stdlib only (json, math, dataclasses) -- deliberate, so tests run without a venv/ROS 2
-environment (see this project's Week 2 environment-honesty note: only pure-logic modules like this
-one can be validated outside the Docker/Gazebo/ROS 2 stack).
+Dependency: stdlib only (json, math, dataclasses) plus `geom.py`, which is itself stdlib-only --
+deliberate, so tests run without a venv/ROS 2 environment (see this project's Week 2
+environment-honesty note: only pure-logic modules like this one can be validated outside the
+Docker/Gazebo/ROS 2 stack).
 """
 from __future__ import annotations
 
@@ -28,6 +29,8 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Sequence, Tuple
+
+from .geom import point_segment_distance_xy
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_STATIC_OBSTACLES = REPO_ROOT / "config" / "static_obstacles.json"
@@ -70,18 +73,6 @@ class ClearanceResult(NamedTuple):
     value is exactly how many meters of margin remain."""
     obstacle: Optional[Obstacle]
     clearance_m: float
-
-
-def _point_segment_distance(px: float, py: float, ax: float, ay: float, bx: float, by: float) -> float:
-    """Exact (not sampled) distance from point (px,py) to segment [(ax,ay),(bx,by)]."""
-    dx, dy = bx - ax, by - ay
-    seg_len_sq = dx * dx + dy * dy
-    if seg_len_sq == 0.0:
-        return math.hypot(px - ax, py - ay)
-    t = ((px - ax) * dx + (py - ay) * dy) / seg_len_sq
-    t = max(0.0, min(1.0, t))
-    cx, cy = ax + t * dx, ay + t * dy
-    return math.hypot(px - cx, py - cy)
 
 
 class GeofenceMap:
@@ -133,7 +124,7 @@ class GeofenceMap:
         best: Optional[Obstacle] = None
         best_clearance = math.inf
         for obs in self._obstacles:
-            d = _point_segment_distance(obs.x_m, obs.y_m, ax, ay, bx, by) - obs.obstacle_radius_m
+            d = point_segment_distance_xy(obs.x_m, obs.y_m, ax, ay, bx, by) - obs.obstacle_radius_m
             if d < best_clearance:
                 best_clearance = d
                 best = obs

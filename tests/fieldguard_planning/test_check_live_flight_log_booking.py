@@ -174,15 +174,21 @@ class TestAirborneGroundSpeed(unittest.TestCase):
         self.assertAlmostEqual(got["median_mps"], 2.0, places=6)
 
     def test_the_airborne_threshold_is_THIS_PROJECTS_one_and_not_a_new_invention(self):
-        """1.0 m is `clip_recorder.AIRBORNE_Z_M` -- the `z_threshold_m` written into every clip's
-        meta.airborne block -- and the same number `build_dashboard_data` trims the replay with.
-        The gate keeps its own copy because clip_recorder imports numpy (this gate is stdlib-only
-        by contract) and build_dashboard_data imports THIS module (importing it back is circular).
-        A copy is only honest if something pins it."""
+        """1.0 m is the `z_threshold_m` written into every clip's meta.airborne block, and the same
+        number `build_dashboard_data` trims the replay with. Since 2026-09-10 the constant has ONE
+        home, `fieldguard_planning.geom.AIRBORNE_Z_M` (stdlib-only, so this stdlib-only gate can
+        import it where it could not import numpy-bound `clip_recorder`); the gate, the recorder and
+        the dashboard builder all re-export THAT object. What this pins is that none of the three
+        has quietly grown a copy again -- identity, not just equality."""
+        from fieldguard_planning import geom
         from fieldguard_planning.clip_recorder import AIRBORNE_Z_M as RECORDER_Z
         import build_dashboard_data as dash
         self.assertEqual(checker.AIRBORNE_Z_M, RECORDER_Z)
         self.assertEqual(checker.AIRBORNE_Z_M, dash.AIRBORNE_Z_M)
+        self.assertEqual(checker.AIRBORNE_Z_M, geom.AIRBORNE_Z_M)
+        for module in (checker, dash):
+            self.assertIs(module.AIRBORNE_Z_M, geom.AIRBORNE_Z_M)
+        self.assertIs(RECORDER_Z, geom.AIRBORNE_Z_M)
 
 
 # ================================================================================================

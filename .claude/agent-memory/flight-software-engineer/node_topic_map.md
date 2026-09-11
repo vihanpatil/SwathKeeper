@@ -17,8 +17,20 @@ replace — a bare `PYTHONPATH=src` inside the container wipes out ROS 2's own P
 `ModuleNotFoundError: No module named 'rclpy'`). If this ever gets promoted to a colcon package,
 that prepend gotcha becomes moot but is worth remembering for now.
 
+**`geom.py` is the ONE 2-D geometry primitive + the ONE definition of airborne (D5, 2026-09-10).**
+`point_segment_distance_xy` / `point_segment_projection_xy` (distance, fraction) replaced three
+byte-identical copies — `geofence._point_segment_distance`, `coverage._point_segment_distance`,
+`check_live_flight_log._point_segment_xy` (the last two kept as module aliases because
+`build_dashboard_data.py` reaches for `GATE._point_segment_xy_m`). It imports `math` and NOTHING
+else — no config, no numpy, no sibling — which is the only reason the stdlib-pure gate can take it;
+`tests/fieldguard_planning/test_geom.py` pins that import list and re-runs the three original bodies
+over 10k randomised points for EXACT equality. `AIRBORNE_Z_M = 1.0` now lives there too and the gate
+imports it. STILL DUPLICATED (not my files this pass, proposed edits in the 2026-09-10 report):
+`clip_recorder.py:81` and `build_dashboard_data.py:105` still define their own 1.0 — all three agree
+today and `test_check_live_flight_log_booking.py` pins them equal.
+
 Two dependency tiers inside the package (a project-blessed, documented split, not an accident):
-- **stdlib-only**: `geofence.py`, `coverage.py`, `mission_waypoints.py`, `avoidance_types.py`,
+- **stdlib-only**: `geom.py`, `geofence.py`, `coverage.py`, `mission_waypoints.py`, `avoidance_types.py`,
   `avoidance_policy.py`, `avoidance_executor.py`, `ros2_adapter.py`'s pure `enu_to_geodetic`, and
   `ndvi_georef.py`'s single-point transform functions (`pixel_to_latlon`, `world_enu_to_pixel`,
   etc. — no numpy needed for one point/ray). Runs on a bare interpreter, zero installs.
@@ -294,6 +306,14 @@ booking gate that authorises a dodge flight: see [[forward-depth-booking-gate]].
   no ROS. Decode derives everything from the message (`step == width*4`, payload `== height*step`,
   `encoding == 32FC1`, byte order from `is_bigendian`) and **raises** rather than reshaping — a
   stride fault is true of frame 1 and would otherwise fly a blind detector to completion.
+- **`decode_ndvi_frame` is its mirror on the band that has actually flown (G10, 2026-09-10).** Until
+  then `_on_ndvi` was `np.frombuffer(msg.data, float32).reshape(h, w)` with NOTHING checked, on 1302
+  flown frames, while the never-flown depth decoder checked all four. `is_bigendian` was the silent
+  one: a byte-swapped buffer reshapes perfectly into denormal noise, finds nothing under −0.61, and
+  logs a healthy detector that saw no birds. `encoding` matters because `/fg/ndvi/preview` is rgb8
+  off the same fused array. Constant `NDVI_IMAGE_ENCODING = "32FC1"`, round-tripped against
+  `ndvi_node.assemble_ndvi_msg_fields` in `test_detection_seam.py`; an accepted frame is pinned
+  byte-identical to the old expression.
 - **`scripts/check_live_flight_log.py` does NOT score a depth take yet, deliberately.**
   `DET_DEPTH_BLOB` exists but is NOT in `DETECTOR_SOURCES`, so a depth log is UNSCOREABLE ("the
   gate cannot know what the logged detections are worth") — its gates (detect-rate floor over

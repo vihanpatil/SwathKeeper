@@ -2,7 +2,9 @@
 """The FORWARD depth segmenter: one depth frame -> near-obstacle boxes, by DEPTH DISCONTINUITY.
 
 This is the flight-side module the `depth_detect.DepthSegmenter` seam takes in its constructor. The
-prototype that chose the operator is `eval/depth_segmenter_proto.py`; the numbers that chose the
+prototype that chose the operator (`eval/depth_segmenter_proto.py`, DELETED 2026-09-10 under ADR-022
+-- it ran in no CI job and duplicated this module with different constants) is recorded in
+`docs/design/DEPTH_SEGMENTER_ALGORITHM.md`; the numbers that chose the
 CONSTANTS are in the committed score artifact named by `DEFAULT_PARAMS_PROVENANCE` below. Nothing
 here is tunable at call time -- the seam's callable takes exactly one argument, so every knob is
 bound at construction and travels as one frozen object into the flight log.

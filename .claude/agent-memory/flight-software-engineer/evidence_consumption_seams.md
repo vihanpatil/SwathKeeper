@@ -32,6 +32,17 @@ internally-consistent stale files agreeing with each other.
 **Path index ↔ tick:** `flown_path_enu[tick - 1]`. Confirmed against the 2026-08-25 GT-CPA
 (tick 991 → index 990, drone z 15.03 m). `ground_truth_cpa` reports 1-based ticks.
 
+**Dodge displacement is now a CALLABLE SEAM — `check_live_flight_log.displacement_notes(log)`
+(2026-09-10, G1/G2).** Returns one 6-line note block per takeover→resume window (window ticks +
+sim seconds, commanded vector + axis, along-command displacement with its cross-course/cruise-leak
+split, 3D straight line + raw ΔENU, the same two over +2.0 s past resume). It is REPORTED, NEVER
+GATED: appended to `notes`, so no verdict or exit code moves; pinned by
+`tests/fieldguard_planning/test_check_live_flight_log_displacement.py` and by the byte-identity
+snapshot `tests/fieldguard_planning/fixtures/check_live_flight_log_committed_output.txt`
+(regenerating that snapshot is a reviewed diff — regenerate, never delete). Building blocks:
+`commanded_dodge(log, t0, t1)`, `_entry_course_unit(log, tick)` (strictly BACKWARD, unlike
+`_course_unit` which straddles), `_displacement_split(p0, p1, cmd_unit, course)`.
+
 **Dodge displacement is WINDOW-DEPENDENT — do not quote "1.8 cm" from the ROADMAP as the GUIDED-window
 number.** Measured 2026-08-26 over the full takeover→resume window, projecting the displacement onto
 the first commanded setpoint direction:
@@ -41,6 +52,15 @@ the first commanded setpoint direction:
 | 20260825 (ticks 991→995, 0.434 s) | 10.00 m | **+0.0541 m** (0.5 %) | 3.95 m | 3.95 m |
 | 20260823 (ticks 323→342) | 10.00 m | **−21.7965 m** | 0.40 m | 21.80 m |
 | 20260818 (ticks 3528→3589) | 10.00 m | **−14.5385 m** | 0.16 m | 14.54 m |
+
+**The along-command figure is NOT a dodge measurement, and the decomposition says why.**
+`d·cmd = (d·track)(track·cmd) + (d·cross)(cross·cmd)`: on 2026-08-25 the +0.0541 m along command is
+**+0.0182 m of real cross-course dodge** (this IS the ADR's "0.018 m laterally") plus **+0.0359 m of
+cruise leak** — 3.95 m of ordinary forward flight seen through 0.52° between the commanded axis and
+the track normal. Two thirds of the headline is forward flight. The split is ILL-CONDITIONED when the
+axes are near-parallel: the course axis must come from the last telemetry secant strictly BEFORE
+takeover (a 0.6 s least-squares entry velocity gives 0.0103 m instead of 0.0182 m, and `_course_unit`'s
+straddling bracket gives 0.0037 m). Print the raw ΔENU beside any projection.
 
 ADR-016's 1.8 cm is over the point-mass study's own shorter window; at tick 992 the along-command
 figure is 2.02 cm. Both are right for their window — say which window. The two NEGATIVE rows are the
