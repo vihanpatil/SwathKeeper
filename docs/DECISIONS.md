@@ -4523,3 +4523,14 @@ data paths, dashboard prose, suite totals, geom, achieved displacement) and reti
 arrival is re-baselined, not argued: the cap is **3.70:1 from today**, the +0.25 is declared here
 rather than hidden, and the rule stands unchanged from this baseline — every new test file retires
 one until the ratio falls. Re-derive: `cat src/fieldguard_planning/*.py | wc -l` vs `tests/**.{py,sh}`.
+
+### ADR-020 amendment 5 (2026-09-11, amendment 4 CONFIRMED by the user — with a forward-looking requirement): the tall-obstacle re-score gates any depth-camera dodge booking
+
+The user confirmed amendment 4 as ruled: the pre-registered §4.4 definition governs, cluttered acquisition is
+**46.0 m**, the invalidation did not fire, and every quote of 46.0 m carries the qualifier "clutter robustness
+demonstrated to 28 m; beyond 30 m no clutter can stand behind an in-band bird in THIS world". **New requirement,
+added forward rather than read back into the old clause:** no depth-camera dodge take is booked until the
+segmenter is re-scored on a **tall-obstacle world variant** (structure ≥ ~12 m behind the ±6 m band at 34–46 m)
+so clutter is tested at or beyond the **33.591 m** breakeven — same 85-station protocol, same seven bars, the
+result recorded as an ADR-021 amendment. Cost when wanted: one render (~10 min) + one score run. Owed only if
+the deferred close-the-loop path (ADR-022 clause 3) is ever pursued; the pre-registration's P5 is CLOSED.

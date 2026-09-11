@@ -134,3 +134,27 @@ pre-ADR-022 count) and `CLAUDE.md` "tests:src is capped at 3.45:1 (today's ratio
 in the same tree — 3.45 was HEAD's).
 **How to apply:** for every NEW count/ratio/date in a doc of record, run the one-line command that
 produces it (`grep -c`, `wc -l`, `git rev-parse`) rather than reading the sentence.
+
+**9. Outward-facing copy drifts by DROPPING a qualifier, and always in the flattering direction.**
+Measured 2026-09-11 on the ADR-022 outreach kit: the builder's own memory file correctly wrote
+"against a *hypothetical* 5.0 m/s booking" and the message said "the mission **was booked** at
+5.0 m/s"; the repo's own marker says two flights breached "with every gate green" and the message
+said "on three flights the gates **caught** real failures". Neither was invented — both are a true
+sentence with the inconvenient half removed.
+**Why:** prose has no gate. A number can be recomputed from an artifact; a *premise* ("the mission
+was booked", "the gate caught it") is a claim about provenance and history that no test checks, and
+it is exactly what a reader who opens the repo will check first.
+**How to apply:** for every outward claim, ask WHO and WHEN, not just WHAT — which gate, written on
+what date, relative to the flight date? Then grep the artifact for the qualifier ("hypothetical",
+"reproduced", "would have", "every gate green") and make sure it survived into the copy. On this
+round that single question produced the two highest-consequence findings, and both made the copy
+stronger, not weaker.
+
+**10. `docs/**` publishes. Draft ≠ private.** `scripts/build_docs_site.py` walks `docs/**/*.md` and
+files nothing lists land under "Other documents" — so `docs/drafts/DEMO_VIDEO_SCRIPT.md` is served at
+`.../docs/docs/drafts/DEMO_VIDEO_SCRIPT.html` (200, verified) with its "should sell the product"
+stage direction intact. A private working file belongs in a gitignored path (the outreach kit did
+this right: `.gitignore:117`), never in `docs/drafts/`.
+**How to apply:** when reviewing any doc for a claims ceiling, curl the published URL rather than
+assuming "drafts" means unpublished; and scan the whole published set, not just the changed file.
+

@@ -1,9 +1,75 @@
 ---
 name: project-open-safety-gaps
-description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION; G171-G175 the P1 DEPTH-LOG SCORING GATES -- G168 CLOSED, but the AUTHORISING bar credits a 500 m range from a 60 m sensor and the runtime bars are skippable by an impossible counter -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight; G176-G188 the 2026-09-10 PORTFOLIO-FLOOR round -- the NDVI seam still has no frame-shape guard the depth seam makes a HARD bar, a runbook that governs the next flight still says it has never been flown, a booking flag the launcher no-ops, and five cross-builder handoffs that never landed; G175 CLOSED)
+description: Standing to-break list of open SwathKeeper safety gaps, ranked by consequence, current as of 2026-09-07 (G43-G55 breaching take; G56-G60 + G74 CLOSED; G61-G73 point-mass replay; G75 stale CPA figures; G76/G77 replay-fix regressions; G78-G89 the ADR-019 forward depth sensor build; G90-G100 the D2/D3 harness rewrite; G101-G114 the D3->D4 handover + fix round; G115-G122 the commissioning-close DOC lens; G125-G134 the harness/gate-integrity lens; G135-G147 the BOOKING-ENFORCEMENT tree; G148-G156 the DEPTH SEGMENTER; G157-G166 the DEPTH-SOURCE WIRING into avoidance_node -- the booking gate does not know the sensor it authorises, and a depth take can fly blind with no net; G167-G170 the DODGE-TAKE PRE-REGISTRATION; G171-G175 the P1 DEPTH-LOG SCORING GATES -- G168 CLOSED, but the AUTHORISING bar credits a 500 m range from a 60 m sensor and the runtime bars are skippable by an impossible counter -- the invalidation clause may have already fired at 28 m vs a 33.591 m breakeven, a depth log is unscoreable by construction, and the runbook's own abort gate forbids the flight; G176-G188 the 2026-09-10 PORTFOLIO-FLOOR round -- the NDVI seam still has no frame-shape guard the depth seam makes a HARD bar, a runbook that governs the next flight still says it has never been flown, a booking flag the launcher no-ops, and five cross-builder handoffs that never landed; G175 CLOSED; G189-G194 the 2026-09-11 OUTREACH-KIT + VIDEO-ASSET round -- copy that credited gates with catching two breaches they were GREEN for, a hypothetical booking asserted as fact, and a live 'sell the product' on the published docs site (G191, still OPEN))
 metadata:
   type: project
 ---
+
+**G189-G194 (2026-09-11) — THE OUTREACH-KIT + VIDEO-ASSET round** (the ADR-022 market-test kit at
+`docs/outreach/` — gitignored, private — plus `docs/drafts/video_assets/{F_no_safe_speed_slide.html,
+G_preregistration_card.html,RECORDING_SHEET.md}`). What I PROVED GOOD, so nobody re-does it: every
+one of ~35 numbers in both files traces to `live_flight_log_20260825T210402Z.json`/`.SAFETY_FINDING.md`,
+`replay_point_mass_20260826T160218Z.json`, `README.md` or ADR-020 am. 3 and recomputes exactly (the
+81-row ladder rung-by-rung, hover 0.4132/0.2278, q3's five verdict fields, 17.752/27.25/38.748 @ 9.2,
+`angle_max_ceiling` IS the most generous plant on all 81 rows, `flown_gt_cpa_m` really is
+`check_live_flight_log.ground_truth_cpa`); the airborne window recomputes to frames **824-1494 = 671
+contiguous, 0 missing of 3310**; both HTML files parse (187 / 41 tags) with **zero** http refs and no
+`src=`/`href=`; all seven narration blocks are verbatim against `DEMO_VIDEO_SCRIPT.md` §(b); the
+dashboard controls claimed all exist (`<select id="speed">` 0.25/1/4/16, `jumpToEncounter` = cpa-7 =
+tick 984); `predict_bird_visibility.py --speed 9.012` really prints `VERDICT: FAIL -- 3 of 3 birds`
+and exits 1; `docs/outreach/` IS ignored (`git check-ignore` exit 0, `.gitignore:117`).
+
+- **G189 (CRITICAL by consequence — FIXED THIS ROUND) — the outreach copy inverted the project's own
+  worst finding into a sales point.** All three message variants opened "every safety gate is
+  pre-registered in writing before the flight, and **on three flights the gates caught real
+  failures**". Two of the three flights exited **0, green**; their marker says it in those words —
+  `live_flight_log_20260818T144711Z.SAFETY_FINDING.md`: *"Two independent flights, five days and one
+  executor revision apart, flew ~6 cm from the threat **with every gate green**"*. The breaches were
+  found LATER by the GT-CPA gate's first run over committed evidence. Sending "the gates caught it"
+  to people who can read the repo is the exact credibility loss the market test exists to measure.
+  Rewritten to "three flights, three breaches — the first two were green at the time", which is both
+  true and the stronger story.
+- **G190 (MAJOR — FIXED THIS ROUND) — a hypothetical premise hardened into an asserted fact between
+  the builder's notes and the copy.** `ONE_PAGE_EXPLAINER.md` said "**The mission was booked at
+  5.0 m/s**". No flight has ever carried a booking (no `live_flight_log_*.json` has a `booking`
+  block); `--booking` + the WP_SPD injection landed 2026-09-07, 13 days after that flight, and
+  `booking_gate_20260907T064136Z.json` is a PRE-flight prediction for a take that has not flown. The
+  builder's own memory file said "against a **hypothetical** 5.0 m/s booking" — the qualifier died in
+  the copy. Now: "replayed against a 5.0 m/s booking … the finding is the denominator".
+- **G191 (MAJOR, OPEN, not mine to edit) — a claims-ceiling breach is LIVE on the public site the
+  outreach links to.** `docs/drafts/DEMO_VIDEO_SCRIPT.md:46` contains the stage direction *"This shot
+  alone should sell the product"*, and `scripts/build_docs_site.py` discovery walks `docs/**/*.md`,
+  so it publishes under "Other documents": **`https://vihanpatil.github.io/SwathKeeper/docs/docs/
+  drafts/DEMO_VIDEO_SCRIPT.html` returns 200 and the phrase is in the served HTML** (verified
+  2026-09-11). ADR-022 + CLAIMS ceiling forbid exactly this word on an outward surface. One-line fix:
+  reword that cell. (The only other hit repo-wide is `DECISIONS.md:3295`, the user's own words quoted
+  inside ADR-019 immediately above its own veto — that one is a record, and it stands.)
+- **G192 (MINOR — FIXED THIS ROUND) — the re-verification table pointed at the wrong array index.**
+  `RECORDING_SHEET.md` §6 twice cited `verdict.q2.rows[2]` for the 2026-08-25 numbers. `q2.rows` has
+  **5** rows and `rows[2]` is the 2026-08-23 flight (0.0391 m / 0.2 s); the 08-25 row is `rows[4]`
+  (0.0067 m / 1.25 s). An on-the-day re-check would have "confirmed" a different flight's numbers —
+  a gate that measures the wrong thing, in the one table whose whole job is re-measuring.
+- **G193 (MINOR, RESOLVED not fixed) — the "4 % vs ~9 %" footprint discrepancy is not one.** The
+  footprint scales with depth: README's **4 %** is 18.45 / 452.39 at THIS encounter's 4.03 m; ROADMAP:48
+  / ADR-017's "**≤ ~9 %** … ever in view" is the same ratio at the ±6 m band edge, where the footprint
+  is largest — `4.96·6/4.03 × 3.72·6/4.03 = 40.90 m²`, / 452.39 = **9.04 %**, exact. Both stand. The
+  note in the F slide and the sheet now carries the derivation instead of "an unstated measure", so
+  nobody "corrects" a correct number next time.
+- **G194 (NIT — FIXED THIS ROUND) — stale liveness/provenance claims.** The kit said the dashboard is
+  "live once the PR merges" and `TARGETS.md` quoted an unsourced "~16k members". PR #32 merged
+  2026-09-11 08:13 UTC, the `pages.yml` run on `main` succeeded, and the dashboard URL returns **200**
+  (as do all 11 target URLs incl. both Discord invites). Member count removed; the two web-search-only
+  claims (ROS Aerial WG meeting cadence, GRASP Lab at the 2026-07-02 meeting) are now marked
+  NOT independently verified.
+
+**Not tested this round, on purpose, so nobody assumes it was:** neither HTML card was opened in a
+browser by me (my only F edit was inside an HTML comment — zero layout impact; the builder reports a
+visual pass on the pre-edit file); `ffmpeg` is not installed, so `H_flyover.mp4` was never rendered —
+only the frame math was checked; the G card's verbatim §7 quote says "the two historical **~5 cm**
+bird strikes" while its own state-2 line reads **0.0393 / 0.0391 m** (both correct — ~5 cm was the
+vertex-only geometry of 2026-08-24) and I did NOT edit the card to say so, because the `.outcome` box
+sits at top 770 of 1080 and one more wrapped line risks the layout; the caption text is parked in
+`RECORDING_SHEET.md` §5 instead.
 
 **G176-G187 (2026-09-10) — THE PORTFOLIO-FLOOR ROUND** (four builders on disjoint files; I verified
 adversarially and chased the cross-builder handoffs). What I PROVED GOOD, so nobody re-does it: the
