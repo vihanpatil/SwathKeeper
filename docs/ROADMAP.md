@@ -112,7 +112,7 @@ from this file. Full narrative: `docs/BUILD_LOG.md`.
 
 ## Next up, in order (the ADR-022 sequence, 2026-09-10)
 
-**0. The owner's two calls, then push.** (a) confirm or overturn **ADR-020 amendment 4** — the P5
+**0. The owner's two calls, then push.** (a) ~~confirm or overturn~~ **ADR-020 amendment 4 — CONFIRMED 2026-09-11, with am. 5's forward-looking rule: no depth-camera dodge is booked until the segmenter is re-scored on a tall-obstacle world with clutter at ≥ 33.6 m** (owed only if the deferred loop path is pursued); the original call: — the P5
 ruling that cluttered acquisition is 46.0 m on the pre-registered definition, so the invalidation
 clause did not fire; (b) choose a **LICENSE** (Apache-2 / BSL / AGPL — it decides who may evaluate
 this repo tomorrow). Then push `feat/depth-segmenter` and open its PR.

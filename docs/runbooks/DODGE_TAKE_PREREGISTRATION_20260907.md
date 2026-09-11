@@ -39,6 +39,11 @@ best-case-scene reasoning that amendment forbids quoting bare.
 > refused in either direction. If the user overturns: the take is not bookable at 5 m/s until a
 > clutter-backed measurement at ≥ 33.6 m exists, which needs a taller-obstacle world model (its own ADR).
 
+> **CONFIRMED by the user 2026-09-11 (ADR-020 am. 5), with a forward-looking requirement:** no depth-camera
+> dodge is booked until the segmenter is re-scored on a tall-obstacle world (≥ ~12 m structure behind the band
+> at 34–46 m) so clutter is tested at or beyond 33.591 m — same 85-station protocol, same seven bars. **P5 is
+> CLOSED**; the re-score is owed only if the deferred close-the-loop path (ADR-022 clause 3) is pursued.
+
 ### P1 — the depth-log scoring gates diff *(owner: flight-software-engineer + QA review)*
 `scripts/check_live_flight_log.py:264` — `DETECTOR_SOURCES = (ndvi_blob, demo_virtual, none)`.
 `depth_blob` is **deliberately absent** (comment at :265-275), so line :2162 refuses any depth log:
