@@ -4,3 +4,4 @@
 - [Narrative guardrails](narrative-guardrails.md) — honesty + lean-writing rules for outward-facing docs, and the doc parts pinned by tests/link gate
 - [Week 7 GTM decisions](week7-gtm-decisions.md) — the user's 2026-08-26 audience/format/review rules and the ratified narrative spine (SUPERSEDED in part — see [[portfolio-decision-2026-09-10]])
 - [Portfolio decision + README truth pass, 2026-09-10](portfolio-decision-2026-09-10.md) — **read this one first**: the owner's job/product framing decision, the ADR-019 wire-program cut, and the current honesty baseline (three disclosed breaches, the open-loop finding, the depth camera's built/scored/never-flown status)
+- [Outreach kit + booking-gate story, 2026-09-11](outreach-kit-adr022-market-test.md) — private `docs/outreach/` kit for the ADR-022 ten-conversation market test; a 4th self-catching-gate story (booking gate vs flight-wide median) not yet folded into the story bank; no-Bash-tool note

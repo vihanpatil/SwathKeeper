@@ -112,3 +112,6 @@ eval/results/clips/real_flight_*/*
 # Generated docs site (the generator is the tracked artifact; the site is disposable —
 # rebuild with `python3 scripts/build_docs_site.py`, ADR-014)
 docs-site/
+
+# Private outreach working files for the ADR-022 market test (drafts, targets, tracker) — never committed
+docs/outreach/

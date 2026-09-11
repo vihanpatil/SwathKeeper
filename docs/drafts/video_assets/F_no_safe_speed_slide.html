@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SwathKeeper — F: the no-safe-speed slide</title>
+<!--
+  ASSET F — the no-safe-speed slide (shot 6 of docs/drafts/DEMO_VIDEO_SCRIPT.md).
+  Self-contained: inline CSS + JS, system fonts, no CDN, no fetch. Fixed 1920x1080 stage that scales
+  to whatever window it is opened in (open the file, go fullscreen, record the window).
+
+  CONTROLS — progressive reveal, one press per beat so it can be recorded in time with narration:
+    Right arrow / Space / Enter / PageDown / left-click ........ next beat
+    Left arrow / Backspace / PageUp / right-click ............... previous beat
+    R ............................................................ reset to beat 0
+    H ............................................................ hide/show the faint beat indicator
+    #N in the URL (e.g. F_no_safe_speed_slide.html#4) ............ open at beat N (for re-takes)
+
+  BEATS (6 presses; the script's "beat 2" speed ladder is split in three so the rungs can land on
+  the spoken words "Ten." "Five." "Two."):
+    1  the nadir footprint drawn inside the 12 m threat cylinder at 4.03 m of vertical separation
+    2  speed ladder rungs 10, 9, 8, 7, 6 m/s land red          ("Ten metres a second: still a strike")
+    3  rungs 5, 4, 3 m/s land red                              ("Five.")
+    4  rung 2 m/s lands red + the verdict line                 ("Two.")
+    5  the hover rung (0 m/s) + the two times: 0.41 s vs 1.25 s ("Even from a standstill ...")
+    6  forward vision needed 17.8–38.7 m vs 2.48 m available   ("No speed makes this geometry safe")
+
+  PALETTE / TYPE: copied from dashboard/style.css :root so the card matches the dashboard —
+  bg #090d13, panel #111823, lines #1e2836/#2a3849, ink #e8eff7, dim #8fa0b3, faint #5f7186,
+  accent #38bdf8, bad #f87171, bird/warn #fbbf24, good #34d399, dodge #f472b6, tree #4ade80,
+  violet #a78bfa; the same --sans / --mono system stacks.
+
+  ============================== EVERY NUMBER ON THIS SLIDE, WITH ITS SOURCE ==============================
+  Threat cylinder radius 12.0 m, vertical band ±6.0 m
+      eval/results/live_flight_log_20260825T210402Z.json  run.policy_params.threat_radius_m = 12.0,
+      run.policy_params.vertical_threat_m = 6.0  (same values in
+      eval/results/replay_point_mass_20260826T160218Z.json  flights[].policy_params)
+  Vertical separation at the encounter 4.03 m (drone z 15.0300 m, bird z 11.0000 m)
+      eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md  table row "geometry at CPA";
+      eval/results/replay_point_mass_20260826T160218Z.json  tripwire.sensor_horizon.depth_m = 4.03
+  Nadir footprint 4.96 x 3.72 m at 4.03 m depth
+      docs/ROADMAP.md line 48: "The nadir footprint at 4.03 m depth is 4.96 × 3.72 m against a 12 m
+      threat radius";  = 2 x tripwire.sensor_horizon.half_footprint_x_m (2.48) and
+      2 x half_footprint_y_m (1.86) in the replay artifact (provenance: live /fg/ndvi/camera_info)
+  "about 4 %" of the cross-section
+      README.md ("it covers only about 4 % of the cross-section of the airspace the avoidance rules
+      treat as dangerous"). Arithmetic shown on the slide: 4.96 x 3.72 = 18.45 m^2;
+      pi x 12.0^2 = 452.39 m^2; 18.45 / 452.39 = 0.0408.
+      NOTE (resolved 2026-09-11, QA): docs/ROADMAP.md:48 and docs/DECISIONS.md:2996 quote "<= ~9 %
+      ... ever in view" and that is NOT a competing measure of the same thing -- the footprint scales
+      with depth, so 9 % is the ratio at the *far edge of the +/-6 m band*, where the footprint is
+      largest: 4.96*6/4.03 x 3.72*6/4.03 = 7.385 x 5.538 = 40.90 m^2, / 452.39 = 9.04 %. README's 4 %
+      is the ratio at THIS encounter's 4.03 m of separation. Both are correct; the slide uses the
+      encounter figure and labels it "this encounter's depth, not a sensor spec" (DEMO_VIDEO_SCRIPT
+      honesty check for shot 6). Do not quote 4 % without that label, and do not "correct" 9 %.
+  Sensor lead 0.175 s / policy lead 0.000 s on the flight
+      eval/results/live_flight_log_20260825T210402Z.SAFETY_FINDING.md  row "sensor lead / policy lead"
+  Bird closing speed 6.00 m/s (6.0024)
+      replay artifact  tripwire.bird_speed_mps = 6.0024;  tripwire.why_no_safe_speed quotes 6.00 m/s
+  Speed ladder rows (mission speed -> max_lead_s -> plants.angle_max_ceiling.max_lateral_displacement_m,
+  the most generous of the three vehicle-limit assumptions; cleared_by_any_plant = false on every row)
+      replay artifact  tripwire.speed_sweep[]  (81 rows, mission_speed_mps 2.0 .. 10.0 at 0.1 m/s):
+        10.0 m/s  lead 0.1550 s  moved 0.0124 m
+         9.0 m/s  lead 0.1653 s  moved 0.0151 m
+         8.0 m/s  lead 0.1771 s  moved 0.0185 m
+         7.0 m/s  lead 0.1907 s  moved 0.0231 m
+         6.0 m/s  lead 0.2066 s  moved 0.0294 m
+         5.0 m/s  lead 0.2254 s  moved 0.0382 m
+         4.0 m/s  lead 0.2479 s  moved 0.0508 m
+         3.0 m/s  lead 0.2755 s  moved 0.0697 m
+         2.0 m/s  lead 0.3099 s  moved 0.0991 m
+  Hover rung (0 m/s): lead 0.4132 s, moved 0.2278 m (angle_max_ceiling), cleared false
+      replay artifact  tripwire.hover_limit  {max_lead_s: 0.4132, plants.angle_max_ceiling
+      .max_lateral_displacement_m: 0.2278, cleared_by_any_plant: false}
+  Verdict fields quoted verbatim
+      replay artifact  verdict.q3: safe_speed_exists_in_2_10_mps = false,
+      speed_at_which_nadir_becomes_safe_mps = null, safe_speed_band_mps = null, bar_m = 3.0,
+      cleared_at_hover_limit = false, tripwire_fires = true, sensor_horizon_m = 2.48;
+      why_no_safe_speed: "the closing speed cannot fall below the bird's own 6.00 m/s, so lead is
+      capped at 2.480 m / 6.00 m/s = 0.4132 s however slowly the drone flies -- and no plant,
+      including the ANGLE_MAX ceiling, can move 3.00 m sideways in that time."
+  The bar 3.00 m
+      run.policy_params.min_bird_clearance_m = 3.0 (flight log); verdict.q3.bar_m = 3.0
+  0.41 s of warning even from a hover
+      replay artifact  tripwire.hover_limit.max_lead_s = 0.4132;  README.md "0.41 s even from a hover"
+  1.25 s cheapest escape
+      replay artifact  verdict.q2.rows[stem = live_flight_log_20260825T210402Z]
+      .min_physically_resolving_lead_s = 1.25 (plant angle_max_ceiling);  README.md "the cheapest
+      escape that clears the bar needs 1.25 s"
+  Forward vision needed 17.752 / 27.25 / 38.748 m at the flown speed 9.2 m/s; available 2.48 m
+      replay artifact  verdict.q3.required_sensor_horizon_m_at_flown_speed
+      {mission_speed_mps: 9.2, angle_max_ceiling: 17.752, guided_default: 27.25,
+       poscontrol_bare: 38.748};  verdict.q3.sensor_horizon_m = 2.48;
+      README.md "I would need 17.8–38.7 m of forward vision. Pointed at the crop, I have 2.48 m."
+  Footer sentence ("81 speed points, swept from 2 to 10 m/s, each checked against every escape
+  direction and three vehicle-limit assumptions")
+      required verbatim by docs/drafts/DEMO_VIDEO_SCRIPT.md footage inventory row F; the counts are
+      the artifact's: len(tripwire.speed_sweep) = 81; assumptions.sweep_grid lists the candidates
+      (7 headings + climb + brake + 2 forward sidesteps) and plants ['guided_default',
+      'poscontrol_bare', 'angle_max_ceiling'].
+  Claims ceiling: sim-demonstrated, evidence-gated (README.md; docs/DECISIONS.md ADR-019 / ADR-022).
+  =========================================================================================================
+-->
+<style>
+:root{
+  --bg:#090d13; --bg2:#0c1119; --panel:#111823; --panel2:#161f2b; --panel3:#1c2734;
+  --line:#1e2836; --line2:#2a3849; --line3:#3a4c61;
+  --ink:#e8eff7; --dim:#8fa0b3; --faint:#5f7186;
+  --accent:#38bdf8; --bad:#f87171; --bird:#fbbf24; --good:#34d399; --dodge:#f472b6; --tree:#4ade80; --violet:#a78bfa;
+  --sans:ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono:ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+body{font:400 20px/1.4 var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-variant-numeric:tabular-nums;cursor:default;user-select:none}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:50% 50%;
+  background:radial-gradient(1200px 600px at 15% -10%, #10202e 0%, transparent 60%),
+             radial-gradient(900px 500px at 95% 0%, #171226 0%, transparent 55%), var(--bg);}
+.abs{position:absolute}
+
+/* header */
+.eyebrow{left:72px;top:54px;font:650 15px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+h1{left:72px;top:84px;margin:0;font-size:46px;line-height:1.1;letter-spacing:-.03em;font-weight:600;position:absolute}
+h1 em{font-style:normal;color:var(--dim);font-weight:500}
+
+/* reveal machinery */
+.rv{opacity:0;transform:translateY(10px);transition:opacity .45s ease,transform .45s ease}
+.rv.on{opacity:1;transform:none}
+
+/* left: geometry */
+#geo{left:72px;top:160px;width:720px;height:640px}
+#geo svg{display:block}
+.cyl{fill:rgba(251,191,36,.06);stroke:rgba(251,191,36,.75);stroke-width:2.5;stroke-dasharray:1660;stroke-dashoffset:1660;transition:stroke-dashoffset 1.4s ease .1s}
+.on .cyl{stroke-dashoffset:0}
+.fp{fill:rgba(56,189,248,.28);stroke:var(--accent);stroke-width:2.5;transform-origin:350px 300px;transform:scale(.2);opacity:0;transition:transform .7s cubic-bezier(.2,.7,.3,1) .9s,opacity .5s ease .9s}
+.on .fp{transform:none;opacity:1}
+.lbl{font:600 16px var(--mono);fill:var(--ink);opacity:0;transition:opacity .5s ease 1.5s}
+.lbl.dim{fill:var(--dim);font-weight:500}
+.on .lbl{opacity:1}
+.ray{stroke:rgba(251,191,36,.6);stroke-width:1.5;stroke-dasharray:5 5;opacity:0;transition:opacity .5s ease 1.3s}
+.ray.a{stroke:var(--accent);stroke-dasharray:none;stroke-width:2.5}
+.on .ray{opacity:1}
+.birdm{fill:var(--bird);opacity:0;transition:opacity .5s ease 1.5s}
+.on .birdm{opacity:1}
+.geocap{left:72px;top:800px;width:740px;font-size:19px;line-height:1.45;color:var(--dim)}
+.geocap b{color:var(--ink);font-weight:600}
+.geocap .m{font-family:var(--mono);font-size:17px;color:var(--faint);display:block;margin-top:6px}
+.geocap .spec{display:inline-block;margin-top:8px;font:650 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--bird);border:1px solid rgba(251,191,36,.35);border-radius:5px;padding:5px 8px}
+
+/* right: ladder */
+#ladder{left:860px;top:160px;width:988px}
+.lhead{font-size:16px;color:var(--dim);line-height:1.35;margin:0 0 10px;min-height:44px}
+.lhead b{color:var(--ink);font-weight:600}
+.cols{display:grid;grid-template-columns:170px 1fr 300px 104px;gap:0 18px;font:650 11.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:0 12px 8px;border-bottom:1px solid var(--line2)}
+.rung{display:grid;grid-template-columns:170px 1fr 300px 104px;gap:0 18px;align-items:center;height:40px;padding:0 12px;border-bottom:1px solid var(--line);
+  opacity:0;transform:translateX(26px);transition:opacity .35s ease,transform .35s ease;transition-delay:calc(var(--i) * .16s)}
+.rung.on{opacity:1;transform:none}
+.rung .sp{font:600 24px var(--mono);letter-spacing:-.02em}
+.rung .sp small{font-size:15px;color:var(--dim);font-weight:500;margin-left:6px}
+.track{position:relative;height:12px;background:var(--panel3);border-radius:6px;overflow:visible}
+.track::after{content:"3.00 m bar";position:absolute;right:-2px;top:-24px;font:600 11px var(--mono);color:var(--faint);letter-spacing:.06em}
+.rung:not(.first) .track::after{content:""}
+.track .bar{position:absolute;right:0;top:-5px;width:2px;height:22px;background:var(--dim);border-radius:1px}
+.track .fill{position:absolute;left:0;top:0;height:100%;width:0;background:var(--bad);border-radius:6px;transition:width .55s ease calc(var(--i) * .16s + .15s);box-shadow:0 0 12px rgba(248,113,113,.6)}
+.rung.on .fill{width:var(--w)}
+.nums{font:500 16px var(--mono);color:var(--dim);white-space:nowrap}
+.nums b{color:var(--ink);font-weight:600}
+.tag{justify-self:end;font:700 12px/1 var(--sans);letter-spacing:.14em;padding:6px 10px;border-radius:5px;background:var(--bad);color:#2a0a0a;opacity:0;transform:scale(.6)}
+.rung.on .tag{animation:land .45s cubic-bezier(.2,.7,.3,1) calc(var(--i) * .16s + .35s) both}
+@keyframes land{from{opacity:0;transform:scale(.6)}60%{opacity:1;transform:scale(1.12)}to{opacity:1;transform:none}}
+.rung.hover{background:linear-gradient(90deg,rgba(251,191,36,.07),transparent);border-radius:8px;margin-top:6px;border-bottom:0}
+.rung.hover .sp{color:var(--bird)}
+.verdict{margin-top:14px;padding:14px 16px;border:1px solid var(--line2);border-left:3px solid var(--bad);border-radius:12px;background:var(--panel);font-size:19px;line-height:1.4}
+.verdict b{color:var(--bad);font-weight:600}
+.verdict code{font:500 15px var(--mono);color:var(--dim);display:block;margin-top:6px}
+
+/* beat 5: the two times */
+#times{left:860px;top:740px;width:988px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.time{padding:10px 18px 12px;border:1px solid var(--line2);border-radius:12px;background:var(--panel)}
+.time .big{font:600 46px/1 var(--mono);letter-spacing:-.04em}
+.time.a .big{color:var(--bird)} .time.b .big{color:var(--bad)}
+.time p{margin:6px 0 0;font-size:16px;line-height:1.35;color:var(--dim)}
+.time p b{color:var(--ink);font-weight:600}
+.time p code{font-family:var(--mono);font-size:14.5px;color:var(--faint)}
+
+/* beat 6: forward vision */
+#fwd{left:72px;top:893px;width:1776px;height:132px;padding:12px 18px 10px;border:1px solid var(--line2);border-radius:14px;background:var(--panel)}
+#fwd h3{margin:0 0 10px;font:650 11.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+#fwd h3 b{color:var(--ink);font:600 19px/1 var(--sans);letter-spacing:-.01em;text-transform:none;margin-left:12px}
+.scale{position:relative;height:72px;margin:6px 0 0}
+.scale .axis{position:absolute;left:0;right:0;top:52px;height:1px;background:var(--line3)}
+.scale .tick{position:absolute;top:48px;width:1px;height:9px;background:var(--line3)}
+.scale .tick span{position:absolute;top:11px;left:0;transform:translateX(-50%);font:500 11px var(--mono);color:var(--faint);white-space:nowrap}
+.scale .have,.scale .need{position:absolute;top:18px;height:26px;border-radius:5px}
+.scale .have{left:0;background:var(--accent);width:0;transition:width .7s ease .1s}
+.on .scale .have{width:var(--w)}
+.scale .need{background:rgba(248,113,113,.35);border:1.5px solid var(--bad);width:0;transition:width .9s ease .6s;overflow:hidden}
+.on .scale .need{width:var(--w)}
+.scale .cap{position:absolute;top:22px;font:600 15px var(--mono);white-space:nowrap;opacity:0;transition:opacity .5s ease 1.4s}
+.on .scale .cap{opacity:1}
+.scale .cap.h{color:var(--accent)} .scale .cap.n{color:var(--ink);font-size:14.5px;top:23px}
+.scale .cap small{color:var(--dim);font-weight:500;font-size:13px;margin-left:8px}
+.scale .pt{position:absolute;top:14px;width:2px;height:34px;background:var(--bad);opacity:0;transition:opacity .4s ease 1.3s}
+.on .scale .pt{opacity:1}
+.scale .pt span{position:absolute;top:-15px;left:4px;font:500 11px var(--mono);color:var(--dim);white-space:nowrap}
+.scale .pt.r span{left:auto;right:4px}
+
+/* footer */
+.foot{left:72px;top:1039px;width:1776px;font:500 13.5px/1.3 var(--mono);color:var(--faint)}
+.foot b{color:var(--dim);font-weight:600}
+#ind{right:24px;bottom:12px;font:500 12px var(--mono);color:var(--faint);opacity:.55}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div class="abs eyebrow">SwathKeeper · sim-demonstrated, evidence-gated · why the 2026-08-25 take failed</div>
+  <h1>Why the flight failed: <em>geometry, not the dodge.</em></h1>
+
+  <!-- ===================== BEAT 1: footprint vs threat cylinder ===================== -->
+  <div id="geo" class="abs rv" data-beat="1">
+    <!-- scale: 1 m = 22 px; cylinder r = 12 m = 264 px; footprint 4.96 x 3.72 m = 109.1 x 81.8 px; centre (350,300) -->
+    <svg width="720" height="620" viewBox="0 0 720 620" aria-label="The 12 m threat cylinder seen from above, with the camera's 4.96 by 3.72 m footprint at its centre">
+      <circle class="cyl" cx="350" cy="300" r="264"/>
+      <!-- radius ray, down-right -->
+      <line class="ray" x1="350" y1="300" x2="536.7" y2="486.7"/>
+      <text class="lbl" x="452" y="422" text-anchor="start" transform="rotate(45 452 422)">12 m threat radius</text>
+      <!-- along-track half-footprint ray -->
+      <line class="ray a" x1="350" y1="300" x2="404.6" y2="300"/>
+      <!-- bird approaching along the lane from the left edge of the cylinder -->
+      <circle class="birdm" cx="86" cy="300" r="6"/>
+      <line class="ray" x1="98" y1="300" x2="290" y2="300"/>
+      <polygon class="birdm" points="290,294 302,300 290,306"/>
+      <text class="lbl dim" x="190" y="282" text-anchor="middle">bird_0 · 6.00 m/s</text>
+      <!-- footprint -->
+      <rect class="fp" x="295.4" y="259.1" width="109.1" height="81.8" rx="2"/>
+      <circle cx="350" cy="300" r="4" fill="#ffffff"/>
+      <text class="lbl" x="350" y="372" text-anchor="middle">camera footprint 4.96 × 3.72 m</text>
+      <text class="lbl dim" x="350" y="394" text-anchor="middle">2.48 m ahead — at 4.03 m below the drone</text>
+      <text class="lbl dim" x="350" y="588" text-anchor="middle" style="font-size:15px">±6 m vertical band · the policy's threat cylinder, seen from above</text>
+    </svg>
+  </div>
+  <div class="abs geocap rv" data-beat="1">
+    The camera points straight down, because that is what makes the crop map work. At this encounter's
+    <b>4.03 m</b> of vertical separation it images <b>4.96 × 3.72 m</b> of a threat cylinder <b>12 m</b> in radius —
+    <b>about 4 %</b> of the cross-section.
+    <span class="m">4.96 × 3.72 = 18.45 m² &nbsp;/&nbsp; π × 12.0² = 452.4 m² &nbsp;=&nbsp; 0.041</span>
+    <span class="m">on the flight: first sight <b>0.175 s</b> before closest approach · <b>0.000 s</b> by the time the policy could act</span>
+    <span class="spec">this encounter's depth — not a sensor spec</span>
+  </div>
+
+  <!-- ===================== BEATS 2–4: the speed ladder ===================== -->
+  <div id="ladder" class="abs">
+    <p class="lhead rv" data-beat="2">All three flights replayed through a jerk- and acceleration-limited model of the aircraft;
+      <b>every mission speed from 2 to 10 m/s swept</b> (whole-number rungs shown). Each bar: how far the best
+      escape gets before the bird arrives, under the most generous vehicle-limit assumption.</p>
+    <div class="cols rv" data-beat="2"><span>mission speed</span><span>escape flown before the bird arrives</span><span>warning · moved</span><span></span></div>
+
+    <!-- --w = moved / 3.00 m; min 0.4 % so the sliver is visible at all -->
+    <div class="rung first" data-beat="2" style="--i:0;"><span class="sp">10<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:0.41%"></span></div><span class="nums">lead <b>0.1550 s</b> · moved <b>0.0124 m</b></span><span class="tag">STRIKE</span></div>
+    <div class="rung" data-beat="2" style="--i:1;"><span class="sp">9<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:0.50%"></span></div><span class="nums">lead <b>0.1653 s</b> · moved <b>0.0151 m</b></span><span class="tag">STRIKE</span></div>
+    <div class="rung" data-beat="2" style="--i:2;"><span class="sp">8<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:0.62%"></span></div><span class="nums">lead <b>0.1771 s</b> · moved <b>0.0185 m</b></span><span class="tag">STRIKE</span></div>
+    <div class="rung" data-beat="2" style="--i:3;"><span class="sp">7<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:0.77%"></span></div><span class="nums">lead <b>0.1907 s</b> · moved <b>0.0231 m</b></span><span class="tag">STRIKE</span></div>
+    <div class="rung" data-beat="2" style="--i:4;"><span class="sp">6<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:0.98%"></span></div><span class="nums">lead <b>0.2066 s</b> · moved <b>0.0294 m</b></span><span class="tag">STRIKE</span></div>
+
+    <div class="rung" data-beat="3" style="--i:0;"><span class="sp">5<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:1.27%"></span></div><span class="nums">lead <b>0.2254 s</b> · moved <b>0.0382 m</b></span><span class="tag">STRIKE</span></div>
+    <div class="rung" data-beat="3" style="--i:1;"><span class="sp">4<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:1.69%"></span></div><span class="nums">lead <b>0.2479 s</b> · moved <b>0.0508 m</b></span><span class="tag">STRIKE</span></div>
+    <div class="rung" data-beat="3" style="--i:2;"><span class="sp">3<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:2.32%"></span></div><span class="nums">lead <b>0.2755 s</b> · moved <b>0.0697 m</b></span><span class="tag">STRIKE</span></div>
+
+    <div class="rung" data-beat="4" style="--i:0;"><span class="sp">2<small>m/s</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:3.30%"></span></div><span class="nums">lead <b>0.3099 s</b> · moved <b>0.0991 m</b></span><span class="tag">STRIKE</span></div>
+
+    <div class="rung hover" data-beat="5" style="--i:0;"><span class="sp">0<small>hover</small></span><div class="track"><span class="bar"></span><span class="fill" style="--w:7.59%"></span></div><span class="nums">lead <b>0.4132 s</b> · moved <b>0.2278 m</b></span><span class="tag">STRIKE</span></div>
+
+    <div class="verdict rv" data-beat="4"><b>No mission speed clears 3.00 m.</b> 0 of 81 rungs, on any of three vehicle-limit assumptions.
+      <code>speed_at_which_nadir_becomes_safe_mps: null · safe_speed_exists_in_2_10_mps: false · bar_m: 3.0</code></div>
+  </div>
+
+  <!-- ===================== BEAT 5: the two times ===================== -->
+  <div id="times" class="abs rv" data-beat="5">
+    <div class="time a"><div class="big">0.41 s</div>
+      <p><b>The most warning this camera can ever give</b> — even from a hover. The bird brings its own 6.00 m/s;
+        <code>2.480 m ÷ 6.00 m/s = 0.4132 s</code></p></div>
+    <div class="time b"><div class="big">1.25 s</div>
+      <p><b>The cheapest escape that clears 3.00 m</b> on this encounter — with the aircraft's own ANGLE_MAX
+        limit as the ceiling, nothing tunable beats it.</p></div>
+  </div>
+
+  <!-- ===================== BEAT 6: forward vision ===================== -->
+  <div id="fwd" class="abs rv" data-beat="6">
+    <h3>forward vision <b>To see far enough ahead at the speed flown: 17.8–38.7 m. Pointed at the crop: 2.48 m.</b></h3>
+    <!-- scale: 40 m over 1720 px = 43 px/m; have 2.48 m = 106.6 px; need 17.752 -> 38.748 m = 763.3 -> 1666.2 px -->
+    <div class="scale">
+      <div class="axis"></div>
+      <div class="tick" style="left:0"><span>0 m</span></div>
+      <div class="tick" style="left:430px"><span>10 m</span></div>
+      <div class="tick" style="left:860px"><span>20 m</span></div>
+      <div class="tick" style="left:1290px"><span>30 m</span></div>
+      <div class="tick" style="left:1720px"><span>40 m</span></div>
+      <span class="have" style="--w:106.6px"></span>
+      <span class="cap h" style="left:118px">2.48 m <small>what the downward camera has</small></span>
+      <span class="need" style="left:763.3px;--w:902.9px"></span>
+      <span class="pt" style="left:763.3px"><span>17.752 m · ANGLE_MAX ceiling</span></span>
+      <span class="pt" style="left:1171.8px"><span>27.25 m · GUIDED defaults</span></span>
+      <span class="pt r" style="left:1666.2px"><span>38.748 m · PosControl bare</span></span>
+      <span class="cap n" style="left:775px">17.8–38.7 m needed <small>at the flown speed (9.2 m/s in the study), by vehicle-limit assumption</small></span>
+    </div>
+  </div>
+
+  <div class="abs foot rv" data-beat="1"><b>eval/results/replay_point_mass_20260826T160218Z.json</b> — 81 speed points, swept from 2 to 10 m/s, each checked against every escape direction
+    and three vehicle-limit assumptions. Every closest approach scored by the same gate that failed the flight. Built entirely in simulation.</div>
+
+  <div id="ind" class="abs"></div>
+</div>
+
+<script>
+(function () {
+  var MAX = 6;
+  var NAMES = ['start', '1 · footprint vs cylinder', '2 · "Ten"', '3 · "Five"', '4 · "Two" + verdict',
+               '5 · hover: 0.41 s vs 1.25 s', '6 · forward vision'];
+  var stage = document.getElementById('stage'), ind = document.getElementById('ind');
+  var beat = Math.max(0, Math.min(MAX, parseInt(location.hash.slice(1), 10) || 0));
+
+  function fit() {
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  function apply() {
+    var els = document.querySelectorAll('[data-beat]');
+    for (var i = 0; i < els.length; i++) {
+      var on = parseInt(els[i].getAttribute('data-beat'), 10) <= beat;
+      els[i].classList.toggle('on', on);
+    }
+    ind.textContent = 'beat ' + beat + ' / ' + MAX + ' — ' + NAMES[beat];
+  }
+  function go(d) { beat = Math.max(0, Math.min(MAX, beat + d)); apply(); }
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'ArrowRight' || k === ' ' || k === 'Enter' || k === 'PageDown') { e.preventDefault(); go(1); }
+    else if (k === 'ArrowLeft' || k === 'Backspace' || k === 'PageUp') { e.preventDefault(); go(-1); }
+    else if (k === 'h' || k === 'H') { ind.hidden = !ind.hidden; }
+    else if (k === 'r' || k === 'R') { beat = 0; apply(); }
+  });
+  window.addEventListener('click', function () { go(1); });
+  window.addEventListener('contextmenu', function (e) { e.preventDefault(); go(-1); });
+
+  fit();
+  // apply on the next frame so the initial state renders before any transition starts
+  requestAnimationFrame(apply);
+})();
+</script>
+</body>
+</html>
