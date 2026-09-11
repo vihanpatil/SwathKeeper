@@ -1,0 +1,13 @@
+{
+ "schema_version": "1.1",
+ "kind": "live_flight_booking",
+ "written_utc": "2026-09-11T09:21:05Z",
+ "written_by": "scripts/fly_pipeline.sh up",
+ "booking": {
+  "path": "eval/results/booking_gate_20260907T064136Z.json",
+  "booked_speed_mps": 5.0,
+  "parameter": "WP_SPD"
+ },
+ "recipe_line": "param set WP_SPD 5.0",
+ "note": "the speed this bringup's fly recipe books, written BEFORE the flight; the FLOWN speed is the flight log's. Bind them with:  python3 scripts/check_live_flight_log.py <eval/results/live_flight_log_<UTC>.json> --booking eval/results/booking_gate_20260907T064136Z.json   (or lay the artifact down beside the log as <log-stem>.booking.json: cp eval/results/booking_gate_20260907T064136Z.json eval/results/<log-stem>.booking.json)"
+}

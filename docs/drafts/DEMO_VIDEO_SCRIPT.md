@@ -10,7 +10,7 @@
    portfolio piece, not a pitch; see `README.md`'s claims ceiling.
 4. Every spoken number is re-verified against its source artifact on the day (numbers have moved
    before — see item 4 in the footage-dependencies list below).
-5. The forward depth camera is described as **built and scored, never flown** if it's mentioned at
+5. The forward depth camera is described as **built, scored, flown once as a no-target wiring flight (2026-09-11) — never against a bird** if it's mentioned at
    all — it is not "documented growth path" any more (see `README.md`).
 
 **Status: DRAFT for review. Nothing recorded, nothing committed to the README.**

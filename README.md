@@ -243,10 +243,11 @@ fire-and-forget mode/setpoint command with no gate on achieved displacement. Tha
 engineering quarter here, if there is one, is closing that loop, not adding another sensor (see
 [What's next](#whats-next)).
 
-## Forward depth camera — built, scored, never flown
+## Forward depth camera — built, scored, flown once as a wiring flight
 
-The sensor the geometry finding put into scope now exists in sim, and it has never flown. Recording
-both facts is the point.
+The sensor the geometry finding put into scope now exists in sim and has flown once, on 2026-09-11,
+as a wiring flight with no target in the world. Recording what that flight did and did not prove is
+the point.
 
 **Commissioned (ADR-020).** A `gz-sim` `depth_camera` on its own nose-mounted aperture, separate
 from the nadir NDVI mount. Six commissioning gates (D1–D6) were measured live in a Docker session:
@@ -263,9 +264,16 @@ raise it — read that number's clutter robustness to **28 m only**; every rung 
 that render happens to be sky-backed, not clutter-tested, which is this world's geometry, not a
 property of the sensor.
 
-**Never flown.** The detection source is wired into the avoidance node behind a flag, but the
-one-command launcher can't pass it yet, and zero depth-camera flights exist. A parked, noiseless,
-single-target render is not a flight, and this repo doesn't call it one.
+**Flown once, no target (2026-09-11).** `scripts/fly_pipeline.sh node --detection-source depth` on a
+booked 5.0 m/s boustrophedon with all birds parked off-field. The wiring passed end to end: **5345 of
+5345** depth frames reached the segmenter, 0 dropped; **33,029** boxes, 98.7 % of them annotated as
+mapped canopies and correctly treated as non-threats; depth delivery **1.000** in both measured
+windows; ledger 720/0. The flight **failed its own pre-registered bar**: detector wall time p95
+12.98 ms passes the 25 ms bar, **max 141.16 ms fails the 100 ms bar**, so the log stands **INVALID**
+(a second cause, an "ambiguous truth track", is a checker gap for bird-less flights, recorded as owed).
+Delivery and pitch **at the booked speed are still unmeasured**: the cruise median was 4.27 m/s under
+the 5.0 m/s cap against a 4.5 m/s bar. The sensor has never seen a bird in the air (ADR-020 am. 6,
+ADR-021 am. 1).
 
 ## How this repo proves things
 

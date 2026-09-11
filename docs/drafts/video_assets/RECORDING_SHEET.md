@@ -31,7 +31,7 @@ is what the video shows. No "product", "customer", "field-ready", "essential" or
    narration; do not read it).
 4. Every spoken number is re-verified against its source artifact on the day (section 6 below; the
    CPA figures moved on 2026-08-26 when the vertex-only geometry was fixed).
-5. The forward depth camera is described as **built and scored, never flown** if it is mentioned at
+5. The forward depth camera is described as **built, scored, flown once as a no-target wiring flight (2026-09-11) — never against a bird** if it is mentioned at
    all. The narration as scripted does not mention it; shot 7 says "a forward-facing sensor is now
    in scope", which is correct as written.
 

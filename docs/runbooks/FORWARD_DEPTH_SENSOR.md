@@ -18,6 +18,10 @@ booked until §3 exits 0. One Docker session, ~20 minutes of gates, host quiet.
 > **STILL OWED, and it is a speed, not a gate: D5 and D6 were both measured in a window whose
 > median ground speed was 3.50 m/s, not the booked 5.0 m/s.** Delivery and pitch **at the booked
 > speed are UNMEASURED** and come off the dodge flight — the first flight that actually flies it.
+> *(2026-09-11: re-measured on the first depth flight — the P2 step-0 wiring flight, birds parked — at a
+> **4.27 m/s median / 5.24 p90** cruise under the 5.0 cap: D5 **1.000** in both windows (230/230, 374/374), D6
+> median 0.18°/0.00°, extreme **−13.29°**. The ≥ 4.5 m/s step-0 bar was NOT met, so "at 5.0" still stands
+> unmeasured; ADR-020 am. 6.)*
 > Numbers marked *(host)* are predictions to compare the render against; measured values are
 > called out inline with their date.
 >
@@ -660,7 +664,7 @@ names the artifact, because a gaps list nobody dispositions becomes a list nobod
   [`eval/results/depth_dataset_20260907/REPORT.md`](../../eval/results/depth_dataset_20260907/REPORT.md).
   Constants adopted by the pre-registered rules: **K 15, margin 1.5 m, min_area 10 px, open_iter 0,
   max_boxes 64**, `link_break` OFF.
-* **~~`avoidance_node` is not wired to it.~~ → CLOSED 2026-09-07, and it has NEVER FLOWN.**
+* **~~`avoidance_node` is not wired to it.~~ → CLOSED 2026-09-07; FLOWN ONCE 2026-09-11 as a no-target wiring flight (ADR-020 am. 6 / ADR-021 am. 1: wiring PASSED, runtime max 141.16 ms FAILED the 100 ms bar, log INVALID).**
   `--detect --detection-source depth` builds the segmenter behind the seam; default is still `ndvi`
   and every existing command line is unchanged. **~~OPEN: a depth flight log is UNSCOREABLE~~ →
   CLOSED the same night (P1, 2026-09-07 late):** `depth_blob` is in `DETECTOR_SOURCES` **together
@@ -714,7 +718,7 @@ names the artifact, because a gaps list nobody dispositions becomes a list nobod
   outside the measurement. On noise: it enters the `maximum_filter` as a max over K² samples, i.e.
   biased **upward** — it inflates the background and so pushes FP up rather than FN, the safer
   direction, but it is unquantified.
-* **OPEN — D5 and D6 are still 3.50 m/s numbers.** Delivery ratio and flight pitch **at the booked
+* **OPEN — D5 and D6 at the booked 5.0 m/s are STILL unmeasured (2026-09-11: re-measured at a 4.27 m/s median / 5.24 p90 cruise under the 5.0 cap — D5 1.000 in both windows, pitch median 0.18°/0.00°, extreme −13.29°; the step-0 bar of ≥ 4.5 m/s median was NOT met).** Previously 3.50 m/s numbers. Delivery ratio and flight pitch **at the booked
   5.0 m/s** remain unmeasured (§4, §5). The cheapest close is a scripted `test-flight` with the node
   on `--detection-source depth` and no birds driven — it also validates the wiring live
   (`camera_info` arrival, decode, in-container runtime counters) without being a take.

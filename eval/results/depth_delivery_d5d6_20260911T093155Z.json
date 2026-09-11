@@ -1,0 +1,92 @@
+{
+ "schema_version": "1.0",
+ "kind": "depth_delivery_d5d6_at_booked_speed",
+ "written_utc": "20260911T094500Z",
+ "flight": {
+  "log": "eval/results/step0_wiring_20260911/live_flight_log_20260911T094235Z.json (kept OUT of git: the log is INVALID -- see verdict -- and is not a breach record; sha256 below)",
+  "log_sha256": "bc8123e019d0d60a68a7fe8b0f33b028f0af2ec3570da73280f18e14a5e92b57",
+  "clip": "eval/results/clips/real_flight_20260911T092121Z",
+  "booking_artifact": "eval/results/booking_gate_20260907T064136Z.json",
+  "booking_sidecar": "eval/results/live_flight_booking_20260911T092105Z.json",
+  "recipe_speed_line": "param set WP_SPD 5.0",
+  "detection_source": "depth_blob",
+  "node_command": "scripts/fly_pipeline.sh node --detection-source depth",
+  "birds": "all three parked at (-200,-200/-190/-180, 50) by set_pose before takeoff, readback-verified; drive_birds gate loop killed; NO encounter by design",
+  "host": "quiet: the only other work on the Mac (R8 workflow) was stopped before takeoff; macOS Apple Silicon, Docker Desktop",
+  "kind_of_flight": "WIRING flight (pre-registration P2 step-0), human-flown from the MAVProxy prompt per ADR-013; NOT a dodge take"
+ },
+ "method": "in-container rclpy listener (/tmp/d5d6_depth_measure.py, committed as eval/measure_d5d6_depth.py): self-triggers on /ap/pose/filtered z > trigger; counts /fg/depth/image vs /fg/depth/camera_info over the window (D5 = image/camera_info); pitch = asin(2(wy-zx)) of the /ap/pose/filtered quaternion; ground speed from consecutive pose deltas",
+ "windows": [
+  {
+   "id": "w1_climbout",
+   "trigger_z_m": 8.0,
+   "window_s": 60.0,
+   "D5": {
+    "depth_frames": 230,
+    "camera_info_msgs": 230,
+    "delivery_ratio": 1.0,
+    "frame_rate_hz_from_stamps": 4.999999999998863
+   },
+   "D6": {
+    "pitch_deg_median": 0.18383830545452756,
+    "pitch_deg_min": -9.332429429902763,
+    "pitch_deg_max": 11.827168053492294,
+    "pitch_sign_note": "asin(2(wy - zx)); positive = nose up in this convention \u2014 check against a known climb",
+    "pose_samples": 1338
+   },
+   "speed": {
+    "ground_speed_mps_median": 4.256328625724023,
+    "ground_speed_mps_p90": 5.23854536274771,
+    "ground_speed_mps_max": 5.72497462551345,
+    "z_m_median": 15.0
+   },
+   "file_in_container": "/tmp/d5d6_depth_20260911T093155Z.json"
+  },
+  {
+   "id": "w2_cruise",
+   "trigger_z_m": 8.0,
+   "triggered_at_z_m": 15.0,
+   "window_s": 90.0,
+   "D5": {
+    "depth_frames": 374,
+    "camera_info_msgs": 374,
+    "delivery_ratio": 1.0,
+    "frame_rate_hz_from_stamps": 4.999999999998863
+   },
+   "D6": {
+    "pitch_deg_median": 0.003169709882496275,
+    "pitch_deg_min": -13.286278194412454,
+    "pitch_deg_max": 10.238475772037129,
+    "pitch_sign_note": "asin(2(wy - zx)); positive = nose up in this convention \u2014 check against a known climb",
+    "pose_samples": 2175
+   },
+   "speed": {
+    "ground_speed_mps_median": 4.272022215054065,
+    "ground_speed_mps_p90": 5.2384892641263345,
+    "ground_speed_mps_max": 5.725013623978201,
+    "z_m_median": 15.0
+   },
+   "file_in_container": "/tmp/d5d6_depth_20260911T093347Z.json"
+  }
+ ],
+ "verdicts": {
+  "D5_delivery": "1.000 in both windows (230/230 over 60 s; 374/374 over 90 s) at 5.0 Hz from stamps",
+  "D6_pitch": "median 0.18 deg (w1) / 0.00 deg (w2); extremes -9.33/+11.83 (w1), -13.29/+10.24 (w2). The -13.29 deg extreme EXCEEDS the previous whole-flight worst of -12.50 deg (ADR-020 am. 2) by 0.8 deg -- transient at a lane turn under the 5.0 m/s cap",
+  "speed": "median 4.256 (w1) / 4.272 (w2) m/s; p90 5.239 / 5.238; max 5.725. The cap held to within x1.10 (max 1.145x of 5.0 at one sample; p90 1.048x)",
+  "pre_registered_step0_bar": "window median >= 4.5 m/s, else D5/D6 'at the booked 5.0 m/s' stay UNMEASURED -- NOT MET (4.27 m/s). What IS measured: D5 = 1.000 and D6 as above at a 4.27 m/s median / 5.24 m/s p90 cruise under the 5.0 m/s cap. Do not quote these as 'at 5.0 m/s'.",
+  "log_verdict": "INVALID, exit 1, two causes: (1) pre-registered runtime bar: detect_wall_ms_max 141.160 ms > 100 ms (p95 12.978 ms PASSES 25 ms) over n=5345; (2) 'ambiguous truth track' -- no birds were driven so no applied log exists for this flight, and the checker has no way to be told 'bird-less flight, no truth'; two OLD applied logs overlap its sim-time window. (2) is a checker gap for bird-less flights, recorded; (1) is a real stall to investigate. Whole-flight ground speed median 3.707 m/s, p90 5.390, max 7.640 (1.528x booked; NOT gated -- medians are). Ledger 720 covered / 0 debt. 0 takeovers (no target in the world, by design)."
+ },
+ "in_flight_detector_counters_from_the_log": {
+  "depth_msgs_received": 5345,
+  "frames_detected_on": 5345,
+  "frames_with_detection": 2613,
+  "boxes_total": 33029,
+  "detections_near_known_obstacle": 32597,
+  "dropped_frame_shape_mismatch": 0,
+  "detect_wall_ms_p95": 12.978,
+  "detect_wall_ms_max": 141.16,
+  "detect_wall_ms_n": 5345,
+  "note": "98.7% of boxes were annotated as mapped clutter (canopies); no bird existed in the world; runtime p95 PASSES the 25 ms bar, max 141.16 ms FAILS the 100 ms bar (pre-registered ADR-021 sec 1.5) -- one or more frames over 5345 stalled; recorded, not softened"
+ },
+ "claims_ceiling": "sim-demonstrated, evidence-gated; one flight, one world, no target, human-flown"
+}

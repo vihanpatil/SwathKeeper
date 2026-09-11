@@ -60,8 +60,10 @@ v1 requeue mechanism").
    criterion 2 = RETIRE-ARM). **The second sensor that does exist is a forward-facing gz-sim
    `depth_camera`** on its own level (ADR-020): commissioned live 2026-09-06/07 (all six D-gates
    measured, booked to 46.0 m at 5.0 m/s) with a black-top-hat segmenter scored 7/7 on an
-   85-station cluttered render (ADR-021) — and it has **NEVER FLOWN**: no committed flight log
-   contains a `depth_blob` detection. Built, scored, unflown, and frozen there until a take exists.
+   85-station cluttered render (ADR-021) — flown ONCE on 2026-09-11 as a no-target wiring flight
+   (ADR-020 am. 6: delivery 1.000, 5345/5345 frames, 0 drops; runtime max 141.16 ms FAILED the 100 ms bar,
+   log INVALID; D5/D6 at 5.0 m/s still unmeasured). No committed log contains a `depth_blob` detection of a
+   bird. Built, scored, flown without a target, and frozen there until a flight with a target exists.
 3. **Perception:** classical blob detector directly on NDVI frames (ADR-003 — NDVI-direct beat the
    bar: per-bird-track FNR 0.000 on the fixed-seed clip; any learned model must beat the same
    harness before it earns a place). Trees are a **pre-known static-obstacle map** (ADR-001,
@@ -112,8 +114,8 @@ otherwise, this section wins (ADR-022).
 - **Replan and requeue do not exist** (see *The core guarantee*) — scoped out by ADR-002, not built.
 - **The control loop is open** (see Architecture §5): fire-and-forget commands, belief-based events,
   no live achieved-displacement gate.
-- **The depth sensor has never flown** (see Architecture §2): every depth number comes from parked,
-  noiseless renders.
+- **The depth sensor has flown once, with no target** (see Architecture §2): every SCORED depth number
+  comes from parked, noiseless renders; the one flight measured delivery and runtime only.
 - **Three live avoidance flights, three breaches** (see Priorities): two ACKNOWLEDGED exit 0, one
   **INVALID exit 1**, and the INVALID one stands.
 
