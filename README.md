@@ -136,7 +136,7 @@ not (see [What's next](#whats-next)) a product this repo is currently building t
 | Recording cadence | **5.0 Hz** flat, 100 % delivery on both bands (was 0.41 Hz — a Fast DDS shared-memory segment was the root cause) | that clip's `meta.json` |
 | Live↔offline equivalence | flight-logged obstacle positions reproduced to **1 µm** across SciPy 1.8.0 (air) / 1.13.1 (host), all 1301 in-window frames | ADR-009 am. 2 |
 | Monocular range estimator vs ground truth at closest approach | agrees to **3.3 mm** (0.0035 m vs 0.0067 m) — and is still refused as a gate, on purpose | ADR-013 am. 19 |
-| Automated tests | **1715 passed, 1 failed, 1 skipped, 0 xfail** (`python3 -m pytest tests -q`). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-09-07 — re-run and re-quote if you change the suite |
+| Automated tests | **1794 passed, 1 failed, 1 skipped, 0 xfail** (`python3 -m pytest tests -q`). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-09-11 — re-run and re-quote if you change the suite |
 
 Two caveats this repo refuses to round off. The −0.61 real-render detection threshold is
 **PROVISIONAL** — narrowed on 2026-08-26 across a 2.3× depth span (3.9 / 6.9 / 9.0 m), still open

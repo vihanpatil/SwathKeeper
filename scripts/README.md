@@ -152,6 +152,18 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   (2026-08-25: whole-flight 3.417 m/s passes, encounter 9.012 m/s = 1.80× booked fails). Optional for the NDVI survey, which needs no booking; on an avoidance take its absence
   prints a WARNING that the authorisation is unverified. Only an artifact that exited **0** may be
   bound — a `--sweep` or a config-sourced design check authorises nothing.
+  **`--no-birds`** (exclusive with `--truth`, ADR-020 am. 7) DECLARES a bird-less take — a wiring or
+  sensor shake-out flight, which has no `bird_drive_*_applied.jsonl` to name and would otherwise die
+  on *ambiguous truth track*. Truth resolution is skipped and the CPA/truth family prints
+  **`N/A (no birds driven)`** — never PASS, never a number, and the verdict reads `VALID (DECLARED
+  BIRD-LESS …)` so the strings CI reads say it too; every other gate stays live, so the 2026-09-11
+  wiring flight is still INVALID under it on its 141.160 ms runtime max alone. REFUSED on **six**
+  falsifiers: any avoidance event, a `detection` inside the flight's own threat cylinder (floored at
+  today's `PolicyParams()`), a `bird_drive_*` filename the log names, a `TRUTH_BINDINGS` pin, a bird
+  track written within ±30 min of the flight on the WALL clock, or a launcher bringup record that
+  armed the birds pane. **A bird the detector never saw leaves no trace here — the truth track is
+  the only evidence of a bird the log itself does not carry.** Bringup half:
+  `fly_pipeline.sh up --no-birds`, which records which pane list it built either way.
 - `check_sim_smoke.py` / `ci_sim_smoke.py` / `ci_sim_smoke.sh` — the headless CI smoke flight and
   its regression gate (ADR-008). **Unverified live** — the job stays `workflow_dispatch` until one
   green run (`docs/archive/SIM_CI.md`).

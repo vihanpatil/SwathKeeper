@@ -217,7 +217,8 @@ avoidance take (:1823), so the booking half works and the safety half does not.
 > 0 takeovers, ledger 720/0. D5 1.000 (230/230, 374/374). D6 median 0.18°/0.00°, extremes −13.29/+11.83°. Window
 > medians 4.256/4.272 m/s < 4.5 → D5/D6 at 5.0 stay UNMEASURED. Log INVALID: `detect_wall_ms_max` 141.160 > 100 ms
 > (p95 12.978 PASS) and "ambiguous truth track" (a CHECKER GAP: no bird-less/no-truth mode). Still owed before a
-> re-fly: (a) the no-truth checker mode, (b) the 141 ms stall investigation, (c) the two executor log fields.
+> re-fly: ~~(a) the no-truth checker mode~~ **DONE 2026-09-11 (ADR-020 am. 7: `--no-birds`, six falsifiers)**,
+> (b) the 141 ms stall investigation, (c) the two executor log fields.
 > Evidence: `eval/results/depth_delivery_d5d6_20260911T093155Z.json` (log kept out of git, sha256 inside).
 
 ### P3 — product-lead ratifications *(owner: product-lead; two open calls)*

@@ -36,7 +36,7 @@
 # Usage (host, repo root):
 #   scripts/fly_pipeline.sh [up|attach|status|birds|node|down|test-flight] [--dry-run]
 #                           [--gate-geometry] [--booking eval/results/booking_gate_<UTC>.json]
-#                           [--detection-source ndvi|depth]
+#                           [--detection-source ndvi|depth] [--no-birds]
 set -euo pipefail
 
 SESSION="swathkeeper"
@@ -58,6 +58,26 @@ CMD="up"
 DETECTION_SOURCE="ndvi"
 DETECTION_SOURCE_DEFAULT="ndvi"
 DETECTION_SOURCES="ndvi depth"
+
+# --- the DECLARED bird-less bringup (`up --no-birds`) -------------------------------------------
+# The birds pane fires drive_birds.py BY ITSELF once /ap/pose/filtered clears 10 m. That gate is
+# right for a survey or a dodge take and wrong for a WIRING flight: on 2026-09-11 the P2 step-0
+# depth take wanted nothing in front of the sensor, so the pane had to be killed by hand mid-bringup
+# (window + its in-container poll loop) while the vehicle was already on the pad. A flight whose
+# preparation includes "remember to kill a window" will one day include forgetting to.
+# `up --no-birds` simply does not open the pane -- there is nothing to fire and nothing to kill --
+# and records the declaration in the booking sidecar it already writes, so the take's own paperwork
+# says why no bird_drive log exists. The scoring half is `check_live_flight_log.py --no-birds`.
+# NOT a way to fly quietly: `birds` (the manual override) plus this flag is a refusal, and every
+# subcommand that does not compose the pane list refuses it rather than ignoring it.
+NO_BIRDS=0
+# The two values the booking sidecar's `birds` field takes, spelled here and read back by
+# `check_live_flight_log.launcher_birds_reason` (LAUNCHER_BIRDS_DECLARED / LAUNCHER_BIRDS_ARMED). It
+# says which pane list this bringup built WHATEVER the answer: a key written only for the bird-less
+# case would make "armed" and "written before 2026-09-11" the same absence, and the scoring
+# declaration would have nothing to be contradicted BY (QA, 2026-09-11).
+BIRDS_NONE_DECLARED="none (declared --no-birds)"
+BIRDS_ARMED="armed (altitude-gated drive_birds.py pane)"
 
 # --- the booking: the ONE speed a dodge take is authorised to fly (ADR-019 / ADR-020) ------------
 # scripts/predict_forward_lead.py authorises an avoidance take at ONE mission speed, and until
@@ -205,6 +225,13 @@ scripts/fly_pipeline.sh [SUBCOMMAND] [FLAGS]      (host side, macOS; needs tmux 
                     'depth' is ADR-021's forward segmenter: built, scored offline, NEVER FLOWN.
                     One flight has ONE detection source -- 'depth' DISARMS the NDVI detector, so
                     that take produces no in-air NDVI detection evidence. Only 'node' reads it.
+  --no-birds        (up only) do NOT open the birds window: no drive_birds.py, no altitude gate,
+                    nothing in front of the sensor. For a WIRING flight — the bringup the 2026-09-11
+                    depth step-0 take had to improvise by killing the pane by hand. The declaration
+                    goes into the booking sidecar, and the flight is scored with the matching
+                    'python3 scripts/check_live_flight_log.py <log> --no-birds'. Refused with the
+                    'birds' subcommand (they contradict) and on every command that does not build
+                    the pane list.
   --gate-geometry   also run scripts/verify_mount_geometry.sh after the bridge (one-time gate
                     after mount/world/georef changes; off by default — it launches its own world)
   --booking PATH    an eval/results/booking_gate_*.json from scripts/predict_forward_lead.py, whose
@@ -334,6 +361,8 @@ write_booking_sidecar() {
   mkdir -p "$REPO_ROOT/eval/results"
   BOOKING_PATH_REL="$BOOKING_PATH_REL" BOOKING_SPEED="$BOOKING_SPEED" \
   BOOKED_PARAM="$BOOKED_PARAM" BOOKING_WRITTEN="$(now_utc)" BOOKING_CMD="$CMD" \
+  BIRDS_DECLARED="$( (( NO_BIRDS )) && printf '%s' "$BIRDS_NONE_DECLARED" \
+                     || printf '%s' "$BIRDS_ARMED" )" \
   python3 - "$REPO_ROOT/$BOOKING_SIDECAR" <<'PY' || { warn "could not write $BOOKING_SIDECAR"; return 0; }
 import json, os, pathlib, sys
 
@@ -343,12 +372,19 @@ import json, os, pathlib, sys
 booking = {"path": os.environ["BOOKING_PATH_REL"],
            "booked_speed_mps": float(os.environ["BOOKING_SPEED"]),
            "parameter": os.environ["BOOKED_PARAM"]}
+# `birds` says which pane list this bringup built, ALWAYS -- "none (declared --no-birds)" or
+# "armed ...". The schema version does not move with it: 1.1 is a contract about the BOOKING (what a
+# reader must parse to know the authorised speed, `booking = {path, booked_speed_mps, parameter}`),
+# and this is an additive note about the bringup. ABSENCE now means exactly one thing, and the gate
+# reads it that way: a record written by a launcher older than 2026-09-11, which reconciles nothing.
+birds = os.environ.get("BIRDS_DECLARED") or None
 pathlib.Path(sys.argv[1]).write_text(json.dumps({
     "schema_version": "1.1",       # 1.0 carried `wpnav_speed_cms`, a parameter that does not exist
     "kind": "live_flight_booking",
     "written_utc": os.environ["BOOKING_WRITTEN"],
     "written_by": "scripts/fly_pipeline.sh %s" % os.environ["BOOKING_CMD"],
     "booking": booking,
+    **({"birds": birds} if birds else {}),
     "recipe_line": "param set %s %s" % (os.environ["BOOKED_PARAM"],
                                         os.environ["BOOKING_SPEED"]),
     # The flight log's stem is not knowable at bringup (the avoidance node stamps it when it dumps,
@@ -361,7 +397,13 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
              % (booking["path"], booking["path"])),
 }, indent=1) + "\n")
 PY
-  say "booking sidecar: $BOOKING_SIDECAR (the flight-log gate's --booking input)"
+  # NOT the gate's --booking input: `load_booking` refuses this file BY NAME (kind
+  # 'live_flight_booking') and points at the artifact it names. It is the pointer to that artifact,
+  # and since 2026-09-11 also the bringup's own record of whether birds were armed.
+  say "booking sidecar: $BOOKING_SIDECAR (names the artifact to pass as --booking)"
+  say "  ...and it records birds: $( (( NO_BIRDS )) && printf '%s' "$BIRDS_NONE_DECLARED" \
+                                     || printf '%s' "$BIRDS_ARMED" )"
+  return 0
 }
 
 # Print args instead of running them under --dry-run. Outer tmux quoting is elided in the printout;
@@ -732,8 +774,22 @@ EOF
   cat <<'EOF'
   Look for: ARMED, height 15, then "Reached command #N" marching through the lanes.
 
-BIRDS: the birds window fires drive_birds.py by itself once altitude > 10 m — nothing to do.
-  Manual override, only when airborne:  scripts/fly_pipeline.sh birds
+EOF
+  if (( NO_BIRDS )); then
+    printf '%s\n' \
+      "BIRDS: $BIRDS_NONE_DECLARED — there is no birds window in this session, so nothing fires at" \
+      "  10 m and there will be no eval/results/bird_drive_*_applied.jsonl for this take. Score it" \
+      "  with the matching declaration:" \
+      "      python3 scripts/check_live_flight_log.py <log> --no-birds" \
+      "  (the gate then prints 'N/A (no birds driven)' for the CPA/truth family and keeps every" \
+      "  other bar live). Changed your mind? Tear down and bring up again WITHOUT --no-birds; the" \
+      "  'birds' subcommand is refused for this session."
+  else
+    printf '%s\n' \
+      "BIRDS: the birds window fires drive_birds.py by itself once altitude > 10 m — nothing to do." \
+      "  Manual override, only when airborne:  scripts/fly_pipeline.sh birds"
+  fi
+  cat <<'EOF'
 
 KEEP THIS MAC QUIET while recording. Proven twice: with builds / test suites / parallel agents
   running, the bands drop frames independently, fusion pairing starves, and the recorder can lose
@@ -822,6 +878,17 @@ cmd_up() {
       printf '  DRY  recipe pane: booked line "param set %s %s" goes in ahead of the AUTO entry\n' \
         "$BOOKED_PARAM" "$BOOKING_SPEED"
       printf '  DRY  write eval/results/live_flight_booking_<UTC>.json (booking path + speed, for the flight-log gate)\n'
+      # Printed either way: the sidecar STATES which pane list this bringup built, and the flight-log
+      # gate reads it back, so a dry run must show the sentence it is going to be held to.
+      if (( NO_BIRDS )); then
+        printf '  DRY  sidecar records "birds": "%s"\n' "$BIRDS_NONE_DECLARED"
+      else
+        printf '  DRY  sidecar records "birds": "%s"\n' "$BIRDS_ARMED"
+      fi
+    elif (( NO_BIRDS )); then
+      # No booking, no sidecar (that rule is unchanged), so say where the declaration DOES land.
+      printf '  DRY  no booking given, so no sidecar is written — the declaration lives in the\n'
+      printf '  DRY  scoring command instead: check_live_flight_log.py <log> --no-birds\n'
     fi
   else
     print_fly_recipe >"$RECIPE_FILE"
@@ -854,10 +921,21 @@ cmd_up() {
   new_window ndvi "$(exec_line "$INNER_NDVI")"
   say "6/7 clip recorder (the evidence)"
   new_window record "$(exec_line "$INNER_RECORD")"
-  say "7/7 birds — altitude-gated, will not start before you arm and climb past 10 m"
-  new_window birds "$(exec_line "$INNER_BIRDS_WATCH")"
+  if (( NO_BIRDS )); then
+    # The pane is not opened at all -- not opened and killed, not opened and gated. There is nothing
+    # to fire at 10 m and nothing for a later `birds` to respawn (that subcommand is refused above).
+    say "7/7 birds — SKIPPED: $BIRDS_NONE_DECLARED. No birds window, no bird driver, no altitude"
+    say "    gate. Score this take with: check_live_flight_log.py <log> --no-birds"
+  else
+    say "7/7 birds — altitude-gated, will not start before you arm and climb past 10 m"
+    new_window birds "$(exec_line "$INNER_BIRDS_WATCH")"
+  fi
   run tmux select-window -t "$SESSION:sitl"
-  say "all panes up. Windows: gazebo bridge agent sitl(+recipe pane) ndvi record birds"
+  if (( NO_BIRDS )); then
+    say "all panes up. Windows: gazebo bridge agent sitl(+recipe pane) ndvi record (no birds)"
+  else
+    say "all panes up. Windows: gazebo bridge agent sitl(+recipe pane) ndvi record birds"
+  fi
   say "fly from the sitl window (recipe is in the pane beside it); tear down with: scripts/fly_pipeline.sh down"
   # test-flight drives the panes from here instead of handing them to a human, so it must not attach.
   if (( DRY_RUN || TESTFLIGHT )); then return 0; fi
@@ -1452,6 +1530,7 @@ main() {
                        [ $# -ge 2 ] || die "--detection-source needs one of: $DETECTION_SOURCES"
                        DETECTION_SOURCE=$2; shift ;;
       --detection-source=*) DETECTION_SOURCE=${1#--detection-source=} ;;
+      --no-birds)      NO_BIRDS=1 ;;
       -h|--help)       usage; exit 0 ;;
       up|attach|status|birds|node|down|test-flight) CMD=$1 ;;
       *) usage >&2; die "unknown argument: $1" ;;
@@ -1480,6 +1559,45 @@ main() {
   '$CMD' does not start the node. Nothing was run. The take's sensor is chosen here:
   scripts/fly_pipeline.sh node --detection-source $DETECTION_SOURCE"
     fi
+  fi
+
+  # `--no-birds` DECIDES A PANE LIST, so only the command that builds one may carry it. Refused
+  # rather than ignored, same doctrine as --detection-source: `node --no-birds` or `status
+  # --no-birds` can only mean the operator believes that command decides whether birds fly. It does
+  # not — `up` already opened (or did not open) the pane minutes earlier — and a flight brought up
+  # with birds and scored as bird-less is the one mistake this whole feature exists to prevent.
+  if (( NO_BIRDS )); then
+    case $CMD in
+      up) ;;
+      test-flight)
+        # `cmd_test_flight` DOES build the pane list (it calls `cmd_up`), so the refusal below would
+        # be a false sentence here. The real reason is narrower and stands on its own: this
+        # subcommand is the scripted REGRESSION gate, and its recorded bars -- 253 s, the birds at
+        # 15 m, the ledger it compares against -- were all measured with the pane armed. A bird-less
+        # variant would change what the gate measures without changing what it is compared to.
+        die "--no-birds is refused on 'test-flight': that subcommand is the scripted REGRESSION gate
+  and its recorded bars were measured with the birds pane armed, so a bird-less run of it would be
+  compared against evidence from a different flight. Nothing was run. Declare bird-less on a manual
+  bringup, which is where a wiring take is flown from anyway:
+      scripts/fly_pipeline.sh up --no-birds
+  and score the flight it produces with:
+      python3 scripts/check_live_flight_log.py <log> --no-birds" ;;
+      birds)
+        die "--no-birds and the 'birds' subcommand contradict each other: one declares that no bird
+  is driven on this flight, the other starts drive_birds.py right now, bypassing the altitude gate.
+  Nothing was run. Pick one — and if this session was brought up with --no-birds there is no 'birds'
+  window to respawn anyway." ;;
+      down)
+        # Teardown is never blocked by a flag (the --booking / --detection-source rule).
+        warn "--no-birds has no effect on 'down' (it opens no panes and declares nothing).
+  Tearing down anyway — teardown is never blocked by a flag." ;;
+      *)
+        die "--no-birds decides whether 'up' opens the birds window, and '$CMD' does not build the
+  pane list. Nothing was run. Declare it where it acts:
+      scripts/fly_pipeline.sh up --no-birds
+  and score the flight it produces with:
+      python3 scripts/check_live_flight_log.py <log> --no-birds" ;;
+    esac
   fi
 
   # The authorisation is resolved BEFORE anything else happens — before the tmux check, before
