@@ -715,8 +715,12 @@ class TestCli(Harness):
         test, and leave parsing / exit codes / the stdout-stderr split running unmodified."""
         real = checker.check_file
 
-        def isolated(path, truth=None, results_dir=None, booking=None):
-            return real(path, truth=truth, results_dir=self.dir, booking=booking)
+        def isolated(path, truth=None, results_dir=None, booking=None, no_birds=False):
+            # The shim MIRRORS `check_file`'s signature deliberately: a mock that accepts fewer
+            # arguments than the real function turns a flag the CLI now forwards into a TypeError
+            # here and into nothing at all in production.
+            return real(path, truth=truth, results_dir=self.dir, booking=booking,
+                        no_birds=no_birds)
 
         with mock.patch.object(checker, "check_file", isolated):
             return checker.main(argv)

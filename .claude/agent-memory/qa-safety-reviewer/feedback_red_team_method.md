@@ -158,3 +158,35 @@ this right: `.gitignore:117`), never in `docs/drafts/`.
 **How to apply:** when reviewing any doc for a claims ceiling, curl the published URL rather than
 assuming "drafts" means unpublished; and scan the whole published set, not just the changed file.
 
+
+**11. A sampling-based gate's COMPLETENESS claim is a measurement, not an argument.** When a round
+ships "we also sample X, so a Y shorter than the step cannot slip through" (ADR-022 am. 2, R8), the
+sentence is the finding to attack. Build an ANALYTIC ground truth for the same predicate (for a
+straight leg vs a cylinder: intersect the XY chord interval with the z-band interval — both are
+convex in the leg parameter, so it is exact and fast), then differential-test thousands of
+boundary-biased cases through the REAL input pipeline. On R8 that turned a confident prose claim
+into "57 of 2,500 sloped legs pass, worst 18.6 cm inside the exclusion cylinder", and the level-leg
+control (0/2,500) named the exact regime the claim fails in — the one the round had just added.
+**Why:** the builder's own graze test was a LEVEL leg, so it proved the mechanism worked in the one
+geometry where it could not fail. A hand-picked fixture cannot measure a rate.
+**How to apply:** any new gate with a step/tolerance/resolution constant — mutate that constant to
+an absurd value and see if ANY test dies. On R8, `SAMPLE_STEP_M` 0.5 -> 1e9 left all 22 tests green.
+
+
+**12. A DECLARATION's falsifier set is graded on ANTI-CORRELATION with the failure it guards.**
+Added 2026-09-11 (`--no-birds`, ADR-020 am. 7). When a flag lets an operator remove a ground-truth
+family from a safety verdict, the build will ship a list of "things that refuse the declaration" and
+that list will be the reviewed artifact. Do not check whether the falsifiers WORK (they did — 17/17
+mutants died). Check what they are all made of. Here all four read the DETECTOR's output — an
+avoidance event, a `detection` event, a named bird track, a reviewed pin — so every one of them goes
+silent in exactly the case the removed gate exists for: the bird the detector MISSED. Measured by
+taking the 0.0067 m strike log, deleting its detector-side events and zeroing `boxes_total` (= the
+artifact a total-FN flight writes by itself) and scoring it `--no-birds`: **VALID, exit 0**.
+**Why:** a falsifier list is written from the failures the team has SEEN, and this project has only
+ever seen the detector work. **How to apply:** for each falsifier ask "which subsystem writes this
+evidence?" If every answer is the same subsystem, the declaration is unfalsifiable whenever that
+subsystem fails — and the fix is a falsifier from a DIFFERENT source. Here: wall clock (the one
+clock Gazebo does not restart) separated the two cases by 3.5 min vs 16.5 days on the real
+artifacts. Second half of the same question: the falsifier's own CONSTANTS. `threat_cylinder` reads
+the flight's knobs verbatim, so shrinking `threat_radius_m` to 0.1 shrinks the falsifier —
+"a falsifier may not shrink with the flown knobs" is the rule, `max(flown, default)` is the fix.

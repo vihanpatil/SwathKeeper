@@ -35,9 +35,9 @@ python3 -m unittest discover -s tests/fieldguard_planning     # planning, safety
 ```
 
 ```
-Ran 329 tests in 103.830s
+Ran 346 tests in 121.421s
 FAILED (failures=1)                             # measured 2026-09-11 — the ONE deliberate red, see (b)
-Ran 1372 tests in 27.557s
+Ran 1450 tests in 33.743s
 OK (skipped=1)
 ```
 
@@ -59,7 +59,7 @@ python3 -m pytest tests -q
 ```
 
 ```
-1699 passed, 1 failed, 1 skipped in 133.42s     # measured 2026-09-11
+1794 passed, 1 failed, 1 skipped in 161.31s     # measured 2026-09-11
 ```
 
 **The 1 failure is expected and deliberate** — `tests/test_ci_evidence_gate.py` is red on the

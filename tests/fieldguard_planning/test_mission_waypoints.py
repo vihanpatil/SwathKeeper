@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from fieldguard_planning.mission_waypoints import (  # noqa: E402
-    latlon_to_enu, mission_xy_path, parse_qgc_wpl,
+    latlon_to_enu, mission_xy_path, mission_xyz_path, parse_qgc_wpl,
 )
 
 MISSION_PATH = REPO_ROOT / "config" / "missions" / "boustrophedon.waypoints"
@@ -75,6 +75,54 @@ class TestMissionXyPath(unittest.TestCase):
         self.assertEqual(len(self.path), 15)
         xs = sorted({round(e, 1) for e, n in self.path})
         self.assertEqual(xs, [0.0, 15.0, 30.0, 45.0, 60.0, 75.0])
+
+
+class TestMissionXyzPath(unittest.TestCase):
+    """The altitude-aware flattening the 3D mission geofence gate runs on (R8, ADR-022 am. 2)."""
+
+    def setUp(self):
+        self.items = parse_qgc_wpl(MISSION_PATH)
+        self.xyz = mission_xyz_path(self.items, HOME_LAT, HOME_LON)
+
+    def test_xy_is_exactly_what_mission_xy_path_returns(self):
+        """The 3D path must be the 2D path plus a z, not a second flattening: everything already
+        pinned about lane geometry (and every consumer of mission_xy_path) has to keep holding."""
+        self.assertEqual([(e, n) for e, n, _ in self.xyz],
+                         mission_xy_path(self.items, HOME_LAT, HOME_LON))
+
+    def test_altitudes_are_the_missions_own_relative_alts(self):
+        alts = [z for _, _, z in self.xyz]
+        self.assertEqual(alts[0], 0.0, msg="the home placeholder row is ON THE GROUND")
+        self.assertEqual(alts[1], 15.0, msg="NAV_TAKEOFF's alt is the climb target")
+        self.assertEqual(sorted(set(alts[1:-1])), [15.0], msg="the whole sweep cruises at 15 m")
+        self.assertEqual(alts[-1], 0.0, msg="NAV_RTL lands: the return leg is modelled as a descent")
+
+    def test_home_row_altitude_is_forced_to_the_ground(self):
+        """A home row carrying its MSL elevation (584 m here) must not be read as 584 m ABOVE it --
+        that would lift the whole first leg clear of every obstacle. Ground is the safe reading."""
+        bad = REPO_ROOT / "tests" / "fieldguard_planning" / "_msl_home.waypoints"
+        bad.write_text(MISSION_PATH.read_text().replace(
+            "0\t1\t0\t16\t0\t0\t0\t0\t-35.3632620\t149.1652370\t0.000000\t1",
+            "0\t1\t0\t16\t0\t0\t0\t0\t-35.3632620\t149.1652370\t584.000000\t1"))
+        try:
+            xyz = mission_xyz_path(parse_qgc_wpl(bad), HOME_LAT, HOME_LON)
+            self.assertEqual(xyz[0][2], 0.0)
+        finally:
+            bad.unlink()
+
+    def test_rejects_an_altitude_frame_it_cannot_convert(self):
+        """frame 3 (GLOBAL_RELATIVE_ALT) is the only frame this module can turn into the geofence's
+        z. A frame-0 (MSL) waypoint must raise, not be read as a relative altitude."""
+        bad = REPO_ROOT / "tests" / "fieldguard_planning" / "_msl_waypoint.waypoints"
+        bad.write_text(MISSION_PATH.read_text().replace(
+            "2\t0\t3\t16\t", "2\t0\t0\t16\t"))
+        try:
+            items = parse_qgc_wpl(bad)
+            mission_xy_path(items, HOME_LAT, HOME_LON)   # the XY path does not care: unchanged
+            with self.assertRaises(ValueError):
+                mission_xyz_path(items, HOME_LAT, HOME_LON)
+        finally:
+            bad.unlink()
 
 
 if __name__ == "__main__":

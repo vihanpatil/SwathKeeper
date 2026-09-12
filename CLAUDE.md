@@ -140,6 +140,6 @@ recorded in `docs/DECISIONS.md` as a tradeoff (that log is interview material).
 - **Standing freezes (ADR-022):** the **NDVI pipeline** is frozen (ADR-019 §7) and the **depth
   segmenter** is frozen until a depth flight exists — no more bars, no more design notes.
 - **`docs/DECISIONS.md` amendments are ≤ 10 lines, and no new ADR ships without a cut.**
-- **tests:src is capped at 3.70:1** (measured 2026-09-10 after the floor round: `src/fieldguard_planning/*.py`
-  6,771 lines vs `tests/**.{py,sh}` 25,049 — the round itself took it from 3.45; ADR-022 am. 1):
-  every new test file retires one until it falls.
+- **tests:src is capped at 3.70:1** (ADR-022 am. 1; baseline 2026-09-10: `src/fieldguard_planning/*.py`
+  6,771 vs `tests/**.{py,sh}` 25,049). **OVER THE CAP since 2026-09-11: 3.84** (6,854 vs 26,320 — R8 and the
+  `--no-birds` round added tests, no src). Every new test file retires one until it falls; the cap is not re-baselined.

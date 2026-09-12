@@ -80,12 +80,13 @@ Each entry:
   "pos_m": [15.0, 5.0, 0.0],     // ENU meters, ground-level (x,y,z=0)
   "obstacle_radius_m": 2.0,       // USE THIS for geofence exclusion (canopy radius + safety margin)
   "canopy_radius_m": 1.3,          // Gazebo collision/visual geometry only, not the geofence radius
-  "height_m": 3.5                   // approximate total tree height (trunk + canopy), not a tight bbox
+  "height_m": 3.8                   // total tree height as the world draws it (canopy sphere top);
+                                   //   the 3D geofence band is [z, z + height_m + vertical margin]
 }
 ```
 Read `obstacle_radius_m` for the exclusion radius, not `canopy_radius_m` — the latter is what the
 Gazebo model's collision sphere actually uses, the former already includes a safety margin on top.
-Tree height (3.5m) is well below `config/field_polygon.json`'s `mission_altitude_m` (15m), so the
+Tree height (`height_m` 3.8m) is well below `config/field_polygon.json`'s `mission_altitude_m` (15m), so the
 existing boustrophedon mission physically clears every tree — this is why "the mission flies through
 the world" held even before the avoidance loop existed. (The reactive-avoidance loop is now built and
 demonstrated live — see `docs/runbooks/AVOIDANCE_DEMO.md`; it adds its own 3D safety gate on top of this
@@ -176,17 +177,25 @@ Validated in this (non-Docker) session:
 - World-level plugins, `spherical_coordinates`, and the vehicle `<include>`/pose are copied
   verbatim from `ardupilot_gz`'s own `iris_runway.sdf`/`iris_with_gimbal` model (fetched and
   diffed against upstream during this session) — not hand-guessed.
-- **(Week 2, `flight-software-engineer`)** The mission's flight path checked numerically against
-  the geofence export with `scripts/check_mission_geofence.py` (uses the new
-  `src/fieldguard_planning/geofence.py` + `mission_waypoints.py`, stdlib-only, no Docker needed):
-  the mission regenerates byte-for-byte from the checked-in `config/` inputs (confirmed unchanged),
-  and **in the XY plane** the return leg of lane x=15 runs directly along tree row 0's centerline
-  (min clearance **-2.0 m**, i.e. 0 m lateral separation minus the 2.0 m `obstacle_radius_m`) —
-  every other leg clears by ≥3.0 m. This is expected and safe *only* because of the ≥11.5 m
-  vertical separation (15 m mission altitude − 3.5 m tree height); see
-  `docs/runbooks/SIM_BRINGUP.md`-style framing above. Flagged for Week 3-4: tree row 0 is already primed
-  to be the "always-clips-in-XY" case if avoidance work later needs a forced dodge scenario
-  (lower altitude / taller trees), whereas rows 1-2 sit 3-8 m off every lane by design.
+- **(Week 2, `flight-software-engineer`; made a 3D gate 2026-09-11, R8 / ADR-022 am. 2)** The
+  mission's flight path checked numerically against the geofence export with
+  `scripts/check_mission_geofence.py` (uses `src/fieldguard_planning/geofence.py` +
+  `mission_waypoints.py`, stdlib-only, no Docker needed): the mission regenerates byte-for-byte from
+  the checked-in `config/` inputs (confirmed unchanged), and **in the XY plane** the return leg of
+  lane x=15 runs directly along tree row 0's centerline (min clearance **-2.0 m**, i.e. 0 m lateral
+  separation minus the 2.0 m `obstacle_radius_m`) — every other leg clears by ≥3.0 m. That XY
+  overlap is **not** a violation, and the check no longer treats it as one: **vertical separation is
+  part of the same gate now**, not a separate claim made in prose. It samples every leg at its own
+  altitude and asks the executor's own `unsafe_obstacle_3d` whether any point is inside a tree's
+  cylinder (XY within `obstacle_radius_m` **and** z within `[z_m, z_m + height_m + 1.0 m]`), so the
+  committed mission passes with **exit 0** — leg 4 printing **-1.997 m** in XY and **+10.200 m**
+  above the **4.80 m** band top (3.8 m trees + the 1.0 m margin) — and any mission that descends
+  into that band, including mid-climb, fails it. "Samples every leg" is not the whole mechanism and
+  on its own would not be enough: on a leg that changes altitude, the stretch inside a tree can be
+  shorter than any sampling step, so the gate SOLVES each tree's in-volume window and samples it
+  directly (`scripts/check_mission_geofence.py` `volume_samples`). Tree row 0 stays the "always-clips-in-XY" case if
+  avoidance work ever needs a forced dodge scenario (lower altitude / taller trees), whereas rows
+  1-2 sit 3-8 m off every lane by design.
 
 **Now validated live** (2026-08-05 Week-3 gates, `docs/archive/WEEK3_VALIDATION.md`; 2026-08-18
 NDVI gates, `docs/runbooks/NDVI_VALIDATION.md`): `gz sim` loads this SDF end-to-end, the

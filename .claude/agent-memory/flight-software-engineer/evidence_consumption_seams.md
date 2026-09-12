@@ -1,6 +1,6 @@
 ---
 name: evidence-consumption-seams
-description: How to consume committed flight/NDVI evidence without re-deriving it — the gate functions to call, the joins that DO NOT exist (flight↔clip has no run id; schema-1 has no time axis), and the two things a flight log cannot answer (acquisition range, orientation)
+description: How to consume committed flight/NDVI evidence without re-deriving it — the gate functions to call, the declared bird-less mode (--no-birds), its SIX falsifiers and the missed-bird hole they cannot close, the joins that DO NOT exist (flight↔clip has no run id; schema-1 has no time axis), and the two things a flight log cannot answer (acquisition range, orientation)
 metadata:
   type: project
 ---
@@ -120,6 +120,87 @@ of them UNMEASURED. Two invariants worth not re-deriving:
   That gives an EXACT upper bound of `max_range_m × 1.2616 + 0.15` = **75.848 m** at the seam's
   60 m clip — no heading substitution needed, so it can never false-fire on a sound log.
 
+**A BIRD-LESS FLIGHT IS SCORED BY DECLARATION — `--no-birds` (2026-09-11, ADR-020 am. 7).**
+`check_file(path, ..., no_birds=True)` / `check_schema2(..., no_birds)`; the CLI flag is in an
+argparse mutually-exclusive group with `--truth` (exit 2 together). It exists because the 2026-09-11
+wiring flight drove no birds, so it had no applied log, and Gazebo's sim-time restart meant two OLD
+applied logs overlapped its window → `ambiguous truth track` → INVALID, with no way to say there was
+nothing to track. Under the flag `resolve_truth` is **not called at all** (a scan that ran and was
+ignored would still print its ambiguity), the CPA/truth family prints `NA_NO_BIRDS`
+(`"N/A (no birds driven)"`, spelled beside `NA_DEPTH`), and depth bar 3b swaps to
+`no_birds_range_error()`. Everything else stays live. **The falsifiers are the point and they live
+in `no_birds_refusal(log, path, results_dir)`, called from `check_file` BEFORE the schema dispatch**
+(so the legacy path is covered too). **SIX of them since the 2026-09-11 QA round** — 1-4 read the
+flight's own log, 5-6 do not, and that split is the whole point:
+1. any `TARGET_EVIDENCE_KINDS` event (`takeover/latch/relatch/maneuver/resume`);
+2. any `detection` inside the flight's OWN threat cylinder — `threat_cylinder(run)` reads
+   `run.policy_params` but is **FLOORED at `PolicyParams()` via `max()`** and says
+   `WIDENED to today's floor` when it bites. Unfloored it was a hole: on the real 2026-08-25 breach
+   log, `threat_radius_m = vertical_threat_m = 0.1` pushed four detections 3.4-4.1 m away "outside"
+   and the declaration stood, VALID exit 0. Do NOT floor it in `gate_knob_floors` instead — the two
+   ACKNOWLEDGED demo logs record NEITHER knob and would gain a new problem, moving a committed
+   verdict. `in_cylinder_detections` applies `AvoidancePolicy._threats`' exact `<=` on both axes,
+   and an UNPLACEABLE detection refuses too;
+3. a `bird_drive_*` filename anywhere in the log's JSON (`named_truth_files`);
+4. a `TRUTH_BINDINGS` pin;
+5. **THE WALL CLOCK (`no_birds_wall_clock_reasons`, `BIRD_TRACK_WALL_WINDOW_S = 1800 s`)** — any
+   `bird_drive_*` artifact in `results_dir` OR the log's own dir whose `written_utc` (sidecars) or
+   filename stamp (applied logs) sits within ±30 min of the flight log's own UTC stem. Gazebo
+   restarts SIM time near 0 every run; the wall clock does not. **Measured separations: the take
+   that DROVE birds 3.5 min from its track; the bird-less 2026-09-11 wiring take 23,802 min
+   (16.5 days); the two demo takes 228.8 / 164.4 min** — three orders of magnitude, so the window
+   has never been close. A track that cannot be PLACED in time (renamed, no stamp) refuses, and so
+   does a FLIGHT LOG whose own name carries no UTC stamp while tracks exist in scope;
+6. **the launcher's bringup record** (`launcher_birds_reason`): the newest
+   `live_flight_booking_*.json` stamped at-or-before the log and within 6 h. Since 2026-09-11 the
+   launcher ALWAYS writes `birds` — `LAUNCHER_BIRDS_DECLARED` or `LAUNCHER_BIRDS_ARMED`, the same
+   two strings `fly_pipeline.sh` spells (`BIRDS_NONE_DECLARED` / `BIRDS_ARMED`, pinned equal by
+   test). Armed ⇒ refuse; **absent ⇒ UNRECONCILED, never agreement** (that record predates the
+   field — which is exactly the real 2026-09-11 one). `launcher_birds_note` prints the reconciliation
+   either way, and WITHOUT the flag fires only when a record explicitly declared bird-less.
+**All three committed flight logs REFUSE it** — 63 / 29 / 9 threat-only events — so the mode cannot
+re-score recorded history.
+**THE HOLE THAT REMAINS, and it is printed on every run (QA 2026-09-11):** falsifiers 1-4 are
+DETECTOR-SIDE. `avoidance_executor._log_detection` returns unless `maneuver.triggering_detection` is
+set and `avoidance_policy.decide_multi` sets it only on the THREAT branch, so **a `detection` event
+exists only for a bird the policy already classified as an in-cylinder threat** (detection-vs-
+maneuver counts on the four real logs: 61/61, 19/19, 4/4, 0/0). A total false negative therefore
+writes exactly the log a bird-less flight writes — QA climbed that ladder to VALID exit 0 on the
+2026-08-25 log with no tampering beyond stripping what a blind detector never writes. Falsifier 5 is
+what refuses it now (14.5 min, even after renaming off the pin); a log renamed to a FAR-AWAY stamp
+still escapes, and that is forgery, not mis-declaration. **The applied-pose truth track is the only
+evidence of a bird the log itself does not carry.**
+**The verdict WORD carries the declaration** (`main`, not `check_file`): `VALID (DECLARED BIRD-LESS
+-- gt_cpa_m N/A (no birds driven))` per log and `PASS (N of M DECLARED BIRD-LESS: the 3.00 m
+clearance bar was NOT measured on those)` in the footer. Built from `args.no_birds`, so the no-flag
+path cannot reach it and byte-identity is structural.
+`no_birds_notes(depth, scanned)` takes the denominator sentence from
+`no_birds_denominators(log, path, results_dir)` — events, `detection` events, `boxes_total` that
+never reached the event log, named filenames, `TRUTH_BINDINGS` size, tracks scanned + nearest in
+minutes. On the real take that reads 6090 / 0 / 33,029 / 0 / 1 / 24 (nearest 23,802.1 min).
+**Measured verdict on the 2026-09-11 log under the flag: INVALID on `detect_wall_ms_max` 141.160 ms
+> 100 ms and NOTHING ELSE** (mutation-proved: set that counter to 19.402 and the same take is VALID;
+without the flag it carries TWO problems, the runtime max and the ambiguity).
+Launcher half: `fly_pipeline.sh up --no-birds` opens no birds pane (8 docker-exec payloads instead
+of 9) and the booking sidecar now ALWAYS carries `birds` (declared or armed) — still only when a
+booking was given, sidecar schema stays 1.1 (`booking = {path, booked_speed_mps, parameter}` is what
+1.1 contracts, so the field is additive). Refused with `birds`, refused on `test-flight` **for the
+right reason** (it DOES build the pane list — `cmd_test_flight` calls `cmd_up`; the real reason is
+that its regression bars were measured with the pane armed), and on every command that does not
+build the pane list; `down` warns, because teardown is never blocked by a flag.
+
+**TWO TRAPS WHEN CHANGING `check_file`'s SIGNATURE (both hit 2026-09-11):**
+* **Two test files mock it with a hand-written shim** whose parameter list must mirror the real one
+  — `TestCli.main`'s `isolated(path, truth=None, results_dir=None, booking=None, no_birds=False)` in
+  `test_check_live_flight_log_schema2.py` AND `test_check_live_flight_log_booking.py`. A new kwarg
+  that `main` forwards is a TypeError in 5 tests until both shims are updated.
+* **To prove byte-identity against HEAD, build a SYMLINK SHADOW TREE, not a renamed copy.** The gate
+  prints `scripts/{Path(__file__).name}` inside its own messages, so
+  `git show HEAD:... > scripts/.baseline.py` diffs on the filename and nothing else. Symlink
+  `src/ eval/ config/ docs/ sim/ tests/` and every other `scripts/*` into a tmp dir, drop HEAD's
+  `check_live_flight_log.py` in as itself, and run it from there: stdout + stderr + exit code come
+  out identical on the three committed logs.
+
 **The joins that DO NOT exist — do not invent them:**
 
 * **flight log ↔ NDVI clip.** No shared run id, no shared field. Sim time restarts near zero every
@@ -136,6 +217,33 @@ of them UNMEASURED. Two invariants worth not re-deriving:
 * Only maneuver events carry `verdict`, and it is always `"accepted"`. A REFUSAL is a separate
   `gate_reject` event followed by a `hold`; counting "refused maneuvers" off the maneuver kind
   returns zero on every log and always will.
+
+**The mission geofence gate (R8 CLOSED 2026-09-11, ADR-022 am. 2 + am. 3).**
+`scripts/check_mission_geofence.py` is a real CI gate now, not a printout: `main(argv) -> int`
+(0 PASS / 1 a leg enters a tree volume / 2 unreadable inputs or no legs) and
+`leg_report(geofence, i, p1, p2, margin_m, step_m) -> LegReport` are both importable in-process
+(`sys.path` + `import check_mission_geofence`). It takes its verdict from
+`GeofenceMap.unsafe_obstacle_3d` — the executor's own rule — over
+`mission_waypoints.mission_xyz_path` (per-point ENU + the item's relative altitude; home row forced
+to ground; a non-frame-3 altitude AND an unmodelled NAV command both raise → exit 2, because a
+dropped item joins two waypoints with a line the vehicle never flies). Committed mission: **PASS
+exit 0**, leg 4 **-1.997 m XY** against tree row 0 with **+10.200 m** over the **4.80 m** band top
+(z 0 + height_m 3.8 + margin 1.0). `|| true` is gone from ci.yml and
+`tests/test_ci_evidence_gate.py::TestMissionGeofenceGateIsArmed` runs the YAML block against a
+failing stub to keep it that way.
+
+**Where it samples is SOLVED, not stepped — `SAMPLE_STEP_M` is not the gate's resolution.** The
+first build sampled a 0.5 m grid plus each circle's entry/exit/closest; QA measured **57 false
+passes in 2,500 unsafe SLOPED legs** against it (level legs: 0 — which is exactly why a level-leg
+graze test passed for the whole build). On a leg that changes altitude the in-volume window is
+bounded by a **band crossing**, not the circle, so it is shorter than any step, and the circle
+samples sit on the boundary where `<=` is decided by float rounding. `volume_samples()` now
+intersects the XY chord window with the altitude-band window and samples the **midpoint** (strictly
+interior); `column_clearance()` makes the printed vertical clearance exact the same way (it used to
+be read off whatever samples the grid landed on — the false-pass leg printed **+0.005 m** where the
+truth is **-0.135 m**). Re-measured: **16 → 0** false passes, 0 false alarms.
+`geofence.DEFAULT_VERTICAL_MARGIN_M` is the ONE margin (executor re-exports it; policy, depth
+annotator and the gate all import it), and `height_m` is REQUIRED in the obstacle export.
 
 See [[node_topic_map]] for the ledger/control-parameter model and [[detection_seam]] for the
 schema-2 run block.

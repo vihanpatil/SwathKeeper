@@ -17,6 +17,14 @@ depth-log bars):
 * **The pin reads the value under test.** Every assertion spelled bar 7's requirement as
   `checker.NA_DEPTH`, so rewriting that constant to `"not applicable"` left the suite green.
 
+* **The fixture picks the one geometry where the mechanism cannot fail.** (2026-09-11, R8.) The
+  mission-geofence gate's adversarial test was a LEVEL leg grazing a tree for 0.4 m — shorter than
+  the sampling step, so it looked like a resolution test. It is not: on a level leg the in-volume
+  window can only end at the obstacle circle, which the gate sampled explicitly, so the test passed
+  by construction. Sloped legs, where the window is bounded by a canopy-band crossing and can be
+  arbitrarily short, false-passed **57 of 2,500**. Mutating `SAMPLE_STEP_M` 0.5 → 5.0 → 1e9 left the
+  whole suite green: the sole survivor of nine mutants.
+
 **Why:** these gates exist because a green verdict on a measurement nobody made is this project's
 recurring defect (`eval/score.py`, 2026-08-21). A test that cannot see its gate degrade is the same
 defect one level up.
@@ -26,5 +34,18 @@ defect one level up.
 list rather than the joined message blob, spell required literals as literals, and finish by
 mutating each new rule (`problems.append` → `notes.append`, the rule deleted) to confirm a named
 test dies. Beware `scripts/__pycache__` when mutating quickly — `time.sleep(1.1)` between writes.
+For anything sampled, mutate the RESOLUTION constant too (widen it 10x and 2e9x); if nothing goes
+red, the resolution is unguarded no matter how adversarial the fixture reads. And enumerate the
+geometries the mechanism can fail on before choosing the fixture — level/sloped, entering/leaving,
+inside/outside — rather than picking the one that is easiest to write down.
 
 Related: [[evidence_consumption_seams]].
+
+**A DEFAULT ARGUMENT THAT READS THE MODULE UNDER TEST FREEZES IT AT IMPORT — AND BREAKS THE RED RUN
+(2026-09-11).** `def record(self, birds=checker.LAUNCHER_BIRDS_ARMED, ...)` is evaluated when the
+class body runs, so against the PRE-FIX module it is an `AttributeError` at COLLECTION: the whole
+test file errors out and the red-first run reports one error instead of "25 red, 6 green, and here
+are the six controls". Use a sentinel (`ARMED = object()`) and resolve from the module inside the
+method. **Why:** the value of a red-first run is the per-test verdict — which new tests are red and
+which greens are the controls that must stay green. A collection error destroys exactly that.
+**How to apply:** any fixture default that names a constant in the code under test.
