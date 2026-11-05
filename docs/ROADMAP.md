@@ -1,6 +1,6 @@
 # SwathKeeper — Roadmap (living document)
 
-Owner: `product-lead`. Update at each `/standup`. History lives in `docs/BUILD_LOG.md`; decisions
+Owner: `lead`. Update at each `/standup`. History lives in `docs/BUILD_LOG.md`; decisions
 in `docs/DECISIONS.md`; this file is only ever **the current truth and what's next**.
 
 **Deadline status (2026-08-18):** the original ~7-8-week / Europe-trip hard stop is **dropped**
@@ -14,7 +14,7 @@ pre-registered evidence gates on other teams' logs; kill criterion 0 of 10), wit
 **drone-as-product deferred** behind that answer and hardware behind that. The wire program is CUT;
 NDVI and the depth segmenter are frozen. *Next up* below is that sequence and nothing else.
 
-## Where we are (2026-09-10)
+## Where we are (2026-11-05)
 
 One table, one date, one state per row. Where a row and any other document disagree, this row and
 `docs/SPEC.md` win (ADR-022). Claims ceiling on every line: **sim-demonstrated, evidence-gated**.
@@ -29,10 +29,31 @@ One table, one date, one state per row. Where a row and any other document disag
 | ADR-020 forward depth sensor | ✅ **COMMISSIONED live 2026-09-06/07** — all six D-gates measured, exit 0, and the booked speed is now enforced at both ends (am. 3) | **46.0 m bookable at 5.0 m/s**, margin 1.780×. **Asterisk: D5 and D6 were measured at a 3.50 m/s median ground speed**, so delivery and pitch at the booked 5.0 remain UNMEASURED |
 | ADR-021 depth segmenter | ✅ **SCORED 2026-09-07**; **FLOWN ONCE 2026-09-11** as a no-target wiring flight (ADR-021 am. 1: 5345/5345 frames, 0 drops, 33,029 boxes 98.7 % mapped, 0 takeovers; runtime p95 12.98 ms PASS, **max 141.16 ms FAILED** the 100 ms bar → log INVALID); **FROZEN** until a flight WITH a target exists | 7/7 pre-registered bars on **85 parked, noiseless stations**: FNR 0/49, merge 0/71, unmapped FP 0/8, range p95 0.1076 m. Cluttered acquisition **46.0 m** — clutter-backed evidence reads to **28 m** |
 | Scoring a depth flight log | ✅ **SCOREABLE since 2026-09-07** (P1), exercised on the 2026-09-11 wiring flight — which exposed a **checker gap: a bird-less flight has no truth track and the checker could not be told so (read "ambiguous truth track" → INVALID). CLOSED the same day (ADR-020 am. 7): `--no-birds` DECLARES it — truth resolution skipped, CPA/truth family prints `N/A (no birds driven)`, every other gate live, and the declaration REFUSED on six falsifiers: any avoidance event / in-cylinder detection (cylinder floored at today's `PolicyParams()`) / named bird track / `TRUTH_BINDINGS` pin / a bird track written within ±30 min on the WALL clock / a launcher bringup record that armed the pane. Its blind spot is printed: a bird the DETECTOR never saw leaves no trace in a log.** That log under the flag is still INVALID, on its 141.160 ms runtime max alone — `depth_blob` is in `DETECTOR_SOURCES` with seven pre-registered bars. *(The "a depth log is UNSCOREABLE" blocker is CLOSED; any doc still saying it is stale.)* | bar 5 will read **CENSORED** and bar 6 **UNMEASURED** until the executor logs the seam's longest-range detection and `static_map_hint` (P2) |
-| Evidence gates + CI | 🟡 `main` is red **by design** on the pre-registered half-acknowledgement — **plus two undeclared Linux-only failures** in `tests/test_build_dashboard_data.py` (a staleness check and a last-digit float compare). An undeclared red is how a real one hides | one declared red; steps 7-12 skipped behind it, including the seed-42 FNR regression |
-| Repo state | 🟡 `origin/main` is **`429a19f` (PR #34, the first depth flight's evidence)**; **PR #35** (`fix/r8-mission-geofence-3d` @ `eed8f2a`, the R8 3D gate) is open and merging; **`feat/no-truth-checker-mode`** stacks on `eed8f2a` with the ADR-020 am. 7 `--no-birds` diff, not yet pushed | push + PR after each chunk |
+| Evidence gates + CI | ✅ `main` is red **by design** on the pre-registered half-acknowledgement and on **nothing else** (re-verified 2026-11-05 on `main` and both open PRs). The two undeclared Linux-only reds in `tests/test_build_dashboard_data.py` were fixed 2026-09-11 (`4485e0a`); every step runs `if: always()` and the KNOWN_RED allowlist test asserts the failing set is exactly the declared one | two declared red steps (host-side suite's committed-evidence test; the committed-evidence checker, exit 1); allowlist step green |
+| Repo state | 🟡 **measured 2026-11-05:** `origin/main` is **`429a19f` (PR #34)**. **PR #35** (`fix/r8-mission-geofence-3d` @ `eed8f2a`, R8 closed) and **PR #36** (`feat/no-truth-checker-mode` @ `150412b`, ADR-020 am. 7 `--no-birds`) are **OPEN and MERGEABLE**, CI = exactly the declared reds; the owner merges them. **`feat/team-v2-resume`** stacks on `150412b` with the team v2 rebuild | owner merges #35 → #36, then this branch's PR |
 | Suite totals | one home: **`tests/README.md`** — re-run the three commands there, re-quote every quoter or none | *(deliberately not quoted here; five doc homes with no test enforcing them is how they went stale)* |
 | Open safety findings | ✅ **R8 CLOSED 2026-09-11** (ADR-022 am. 2, reviewed + corrected by am. 3) — the gate judges the flight path in **3D** with the executor's own `unsafe_obstacle_3d` (each tree's in-volume window SOLVED, not stepped — a 0.5 m sweep alone false-passed 16 of 1420 unsafe sloped legs; mutation-proved), the mission was **NOT re-planned**, and CI runs it as a real step — the `\|\| true` is gone | committed mission **PASS, exit 0**: leg 4 still **−1.997 m in XY**, REPORTED, with **+10.200 m** over the **4.80 m** band top (3.8 + 1.0) |
+
+### Resumed 2026-11-05 — what is true after 8 idle weeks
+
+Last engineering commit 2026-09-11; everything below was measured on 2026-11-05.
+
+- **CI on `main`:** exactly the declared reds (the host-side suite's committed-evidence test and the
+  committed-evidence checker step); the allowlist step is green.
+- **Pages is LIVE:** <https://vihanpatil.github.io/SwathKeeper/dashboard/> returns 200.
+- **tests:src 3.84** against the 3.70 cap — OVER, unchanged since 2026-09-11.
+- **Docker:** the `fieldguard-sim` container exited (137) about two weeks ago; the image
+  `fieldguard-sim:week1` (4.1 GB) is present.
+- **Owner-side, OPEN:** merge PR #35 and PR #36 (an automated merge was refused by policy on
+  2026-11-05); record the demo video (not recorded; `ffmpeg` is not installed on the host); the ten
+  conversations (ADR-022 step 3: **NOT STARTED**, the private tracker reads 0/10 logged, 0/10
+  interested; the kit exists).
+- **Engineering-side:** the team v2 rebuild (five agents, five skills, the `SessionStart` state
+  brief and the config-validating hook, both scripted under `.claude/hooks/` and pipe-tested; the owner wires them
+  into `.claude/settings.json` per `.claude/hooks/README.md`) landed on `feat/team-v2-resume`; the host Python is fixed —
+  `/usr/bin/python3` is the Xcode stub, so the project runs `.venv/bin/python` (uv, 3.12), and tests
+  need `.venv/bin` first on `PATH`.
+- **Direction (ADR-022 step 4, B vs C):** pending the owner's call.
 
 ### The 2026-08-25 take — what it measured (the system working)
 
@@ -76,10 +97,9 @@ flight exercises it — "landed offline" is a claim about the host suite, not ab
 | **GT-CPA** | the safety bar is now measured against the birds' **applied-pose ground truth**, read through the same functions the ADR-003 labels use. Monocular `detection_cpa_m` is demoted to a labelled estimator check and is never a gate. Legacy logs keep their verdict on a versioned branch — both historical breach logs still read ACKNOWLEDGED, byte-identical. Hardened 2026-08-24: `gt_cpa_m` is a segment (polyline) lower bound on **both** axes — a second pass joins each landed bird pose to the drone sub-segment its render window covers, so a bird driven through the drone *between* ticks is now a breach, not a 3.8 m PASS; a frozen clock is priced as a bird-motion debit **measured in seconds off the flight's own stamps** (at/over the bar the gate stands on the clock fault and reports `gt_cpa_gated_m NOT COMPUTED`); `--truth` no longer bypasses the ambiguous-take guard; a detector *rate* floor replaces the zero-check | the flight |
 | **The runbook** | `docs/runbooks/AVOIDANCE_REAL_DETECTION.md` — 7 panes + the 8th `--detect` shell, both preflights, evidence-first teardown, the exact `--truth` scoring line, and a pre-registered expectation | the flight |
 
-**Public `main` is `98096e8` (2026-09-07).** `feat/depth-segmenter` carries **5 unpushed commits**
-on top of it (booking enforcement, the segmenter, the node wiring, the docs, the P1 depth gates);
-the tree is clean. `main`'s CI is red by design on the pre-registered half-acknowledgement — see the
-*Evidence gates + CI* row above for the two undeclared reds beside it. **Suite totals live in
+**Repo pointer:** the *Repo state* row in the table above is the only live statement of where `main`
+and the open branches stand (the paragraph that used to sit here went stale twice). `main`'s CI is red by
+design on the pre-registered half-acknowledgement and on nothing else. **Suite totals live in
 `tests/README.md` and nowhere else**; re-run the three commands there rather than quoting a number
 from this file. Full narrative: `docs/BUILD_LOG.md`.
 
@@ -122,9 +142,9 @@ tree, the debris deleted, the honesty artifacts **widened** (all three breaches 
 INVALID verdict kept, the red CI declared *exactly*). New engineering is capped at the launcher's
 `--detection-source` flag and the source-comment truth pass. Nothing below opens before it lands.
 
-**2. Enable Pages, record the video.** `/dashboard` served at
-`https://vihanpatil.github.io/SwathKeeper/`; the finished script in
-`docs/drafts/DEMO_VIDEO_SCRIPT.md` recorded — fixing its "81 configurations" line first (81 is the
+**2. Enable Pages, record the video.** Pages **DONE** (measured 2026-11-05: `/dashboard` served at
+`https://vihanpatil.github.io/SwathKeeper/`, 200); the video is **OPEN**: the finished script in
+`docs/drafts/DEMO_VIDEO_SCRIPT.md` is still to be recorded, fixing its "81 configurations" line first (81 is the
 speed axis alone, not the grid).
 
 **3. The ten conversations — zero code.** ~10 ArduPilot/PX4 autonomy teams, university labs and

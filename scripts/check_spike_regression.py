@@ -11,7 +11,7 @@ hasn't regressed on the fixed seed-42 synthetic clip:
 
 per-bird-track FNR = fraction of birds NOT detected on at least one frame before closest approach
 (eval/score.py:14-15) -- the number qa-safety-reviewer/perception-ml-engineer care about most. On
-the pinned seed-42 clip this baseline is 0.0 (see .claude/agent-memory/devops-reliability-engineer
+the pinned seed-42 clip this baseline is 0.0 (see .claude/agent-memory/platform-engineer
 for the reference run). A nonzero value here means either the detector regressed or the harness/
 clip generation stopped being deterministic -- both are build-breaking for this portfolio repo.
 

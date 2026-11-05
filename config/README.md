@@ -6,7 +6,7 @@ Data-driven scenario + mission configuration so scenarios can be added without c
   (`scripts/gen_farm_world.py`) so they stay geometrically consistent.
 - `missions/` — mission / coverage parameters (`boustrophedon.waypoints`, QGC WPL 110).
 - `static_obstacles.json` — ADR-001 known-static-obstacle (tree) geofence export: hand-authored row
-  layout + generator-computed per-tree positions/radii. The contract `flight-software-engineer`'s
+  layout + generator-computed per-tree positions/radii. The contract `software-engineer`'s
   geofence/planner reads directly (schema documented in `sim/README.md`).
 - `birds/` — scripted dynamic bird trajectories (2-3 birds; MVP scope, not a flock). Per ADR-012 the
   birds are static SDF models: `scripts/gen_farm_world.py` spawns them at their first waypoint and

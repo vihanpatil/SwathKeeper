@@ -9,7 +9,7 @@ split these across separate ament packages (`fieldguard_perception` for the dete
 for interface contracts, `fieldguard_bringup` for launch files); that split remains a reasonable future
 refactor once the modules are promoted to colcon packages, but was not needed to demonstrate the loop.
 
-Owned primarily by `flight-software-engineer` and `perception-ml-engineer`; interfaces by `tech-lead`.
+Owned by `software-engineer`; interfaces by `lead`.
 
 ## `fieldguard_planning/` — the reactive-avoidance core (Weeks 2–4, DONE)
 

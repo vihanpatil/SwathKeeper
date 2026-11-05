@@ -29,6 +29,29 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   (`eval/results/testflight_gate_20260818T222031Z.json`) — what that run did and did not prove is
   in the verification note at the top of the runbook.
 
+**Session + gate helpers (run on the macOS HOST; bash 3.2-safe):**
+- `state.sh` — the one-screen "where are we" brief, ≤ 10 s, read-only, pure bash: branch + HEAD +
+  divergence + dirty count, days since `main`'s last commit, every open PR with its job-level CI
+  rollup (the planning job's red is **declared**; any OTHER failing job prints as an **UNDECLARED
+  RED** in caps, with the run ids for `gh run view <id>`), `main`'s last CI run, the Pages status
+  code, the `fieldguard-sim` container + image, `.venv` vs bare `python3` (the Xcode stub), the
+  outreach tracker's running count, tests:src vs the 3.70 cap, and the date in ROADMAP's
+  `## Where we are (…)` heading so a stale roadmap shows. Every section degrades to
+  `unavailable (<why>)`; only the gh/curl sections need the network. Used as the SessionStart hook
+  and as `/standup`'s injected context.
+- `gates.sh` — every **host-side** CI gate, locally: `validate-config`, `planning-and-eval` and
+  `docs-site` from `.github/workflows/ci.yml`, the same commands in the same order (`pip install`
+  becomes `uv pip install` into `.venv`, which it refuses to run without), each scored
+  `gate | result | expected`. Expected is PASS everywhere except the **two declared reds** — the
+  host-side suite failing on exactly `test_step_passes_on_the_committed_evidence`, and the
+  committed-log evidence step exiting 1 with exactly the 2026-08-25 take INVALID — while the
+  KNOWN_RED allowlist step passing is what proves the red set is the declared one. Adds two rows CI
+  lacks: tests:src ≤ 3.70 (OVER is a mismatch, never hidden) and "the gate outputs left the tree
+  untouched"; it refuses any writer whose outputs are not gitignored. Exit 0 iff every row matches.
+  Logs in `${TMPDIR:-/tmp}/swathkeeper_gates/<step>.log`; a scenario diff is left in place. A few
+  minutes, mostly the planning suite (its totals live in `tests/README.md` only). Not exercised:
+  `build-test-sim` and the Linux runner.
+
 **Docs site (run on the HOST; needs `python3 -m pip install markdown`):**
 - `build_docs_site.py` — renders `README.md`, `TIGER_TEAM_GUIDE.md` and every `docs/**/*.md` into
   `docs-site/` (gitignored, ~0.2 s, idempotent), styled in the **D · Heatmap Neutral** direction

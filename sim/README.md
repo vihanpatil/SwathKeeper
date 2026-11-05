@@ -1,6 +1,6 @@
 # Gazebo simulation assets
 
-Owned by `robotics-sim-engineer`. Scenario parameters are data-driven (`config/`) so scenarios can
+Owned by `platform-engineer`. Scenario parameters are data-driven (`config/`) so scenarios can
 be added without code changes — see [Regenerating the world](#regenerating-the-world).
 
 - `worlds/farmguard_field.sdf` — the custom farm world: bounded field polygon (green ground plane),

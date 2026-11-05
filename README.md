@@ -29,7 +29,7 @@ world it separates canopy from soil on four typed temperatures, not degrees of h
 
 **Dashboard** — flight replay, avoidance event log, NDVI overlay:
 [`vihanpatil.github.io/SwathKeeper/dashboard/`](https://vihanpatil.github.io/SwathKeeper/dashboard/)
-*(enable Pages in Settings → Pages → GitHub Actions if this 404s)*. Locally:
+*(live on GitHub Pages)*. Locally:
 `python3 -m http.server 8000` from the repo root, then open `/dashboard/`. **Demo video (2–3 min):**
 TODO — not yet recorded.
 
@@ -382,9 +382,9 @@ deliberately keep the old name — `fieldguard_planning`, the `/fg/*` topics, th
 container. That topic contract is live-verified, and renaming verified interfaces for cosmetics
 re-opens confirmed state for zero functional gain. If you see `fg_`, you're in the right place.
 
-Built by a Claude Code *tiger team*: nine specialized subagents (product, tech-lead, perception/ML,
-sim, flight software, devops, QA/safety, GTM, plus an executive council for direction-level calls),
-each owning its own gates. See [TIGER_TEAM_GUIDE.md](TIGER_TEAM_GUIDE.md).
+Built by a Claude Code *tiger team*: a five-agent Claude Code team (lead, software, platform,
+QA/safety, narrative) plus one orchestrating session, each lane owning its gates. See
+[TIGER_TEAM_GUIDE.md](TIGER_TEAM_GUIDE.md).
 
 ---
 

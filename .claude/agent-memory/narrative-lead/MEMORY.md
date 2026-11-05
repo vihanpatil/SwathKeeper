@@ -1,3 +1,7 @@
+Consolidated 2026-11-05 from gtm-narrative-lead (team v2); entries below keep their original dates and role names.
+
+# narrative-lead — memory index
+
 - [Headline metrics + sources](headline-metrics.md) — every quotable number as of the 2026-08-26 offline session, the file that proves it, and what may never be quoted (STALE on the breach count — see [[portfolio-decision-2026-09-10]])
 - [Safety asterisk + story bank](safety-asterisk-and-story-bank.md) — the strongest interview stories (pre-registered failure, no-safe-speed tripwire, self-catching gates) and who each lands with
 - [Resume bullet bank](resume-bullet-bank.md) — drafted `impact by approach` bullets with sources, plus the claims explicitly NOT earned yet
