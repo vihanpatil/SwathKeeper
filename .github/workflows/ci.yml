@@ -42,7 +42,7 @@ jobs:
   # tests ran first, ImportError'd on numpy, and this job was red for 12 days while the seed-42 FNR
   # safety gate never executed. Install-before-test is load-bearing; don't reorder.)
   # numpy+scipy are pinned in requirements-eval.txt to the exact versions verified locally on
-  # Python 3.12.12 (see .claude/agent-memory/devops-reliability-engineer for the reference run).
+  # Python 3.12.12 (see .claude/agent-memory/platform-engineer for the reference run).
   # ---------------------------------------------------------------------------
   planning-and-eval:
     name: Planning tests + eval spike harness (numpy/scipy)

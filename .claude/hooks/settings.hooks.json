@@ -1,0 +1,27 @@
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.sh",
+          "timeout": 30,
+          "statusMessage": "SwathKeeper state brief"
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/validate-team-config.sh",
+          "timeout": 60,
+          "statusMessage": "Validating team config"
+        }
+      ]
+    }
+  ]
+}

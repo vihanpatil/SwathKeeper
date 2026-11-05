@@ -34,3 +34,5 @@ never soften them to make a page read better.
 **Open, carried forward:** R8 — the committed coverage mission violates its own XY geofence by
 −1.997 m on leg 4 and CI runs the check `|| true`; recorded OPEN, owed a diff.
 Related: [[avoidance-take-blockers]], [[adr021-segmenter-design]], [[a-gate-is-only-as-true-as-its-scene]].
+
+**Superseded in part 2026-11-05** by ADR-022 am. 4: direction is C, the "zero code" market test became ten posts of a working tool — see [[direction-c-ruling-2026-11-05]].

@@ -92,7 +92,7 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
 ArduPilot/PX4 + a simulated camera (YOLOv8) + simulated LiDAR avoidance. Mine it for setup time;
 adapt, don't adopt wholesale.
 
-## Pinned versions (ADR-004; owned by robotics-sim-engineer + devops)
+## Pinned versions (ADR-004; owned by platform-engineer)
 ArduPilot's own documented/CI-tested stack; Docker on Ubuntu 22.04 (not supported natively on macOS).
 **The flying image is NOT SHA-pinned** (`sim/docker/Dockerfile` has none) — a document, not an artifact.
 - **Base OS**: Ubuntu 22.04 (jammy), in Docker Desktop
@@ -115,8 +115,8 @@ ArduPilot's own documented/CI-tested stack; Docker on Ubuntu 22.04 (not supporte
 
 ## Repo layout
 ```
-.claude/agents/     9 tiger-team subagents        docs/README.md      docs map: living/runbooks/history
-.claude/commands/   /standup session opener       docs/SPEC.md        system spec (living)
+.claude/agents/     5 team subagents              docs/README.md      docs map: living/runbooks/history
+.claude/skills/     5 skills (TIGER_TEAM_GUIDE §1) docs/SPEC.md        system spec (living)
 src/                Python planning core           docs/ROADMAP.md     current truth + what's next
 sim/                Gazebo worlds & models         docs/DECISIONS.md   ADR / tradeoff log
 config/             field polygon, missions, birds docs/BUILD_LOG.md   chronological narrative
@@ -126,15 +126,15 @@ tests/              regression + safety scenarios  TIGER_TEAM_GUIDE.md how to ru
 ```
 
 ## The tiger team (see TIGER_TEAM_GUIDE.md)
-Nine subagents in `.claude/agents/`: `product-lead`, `tech-lead`, `perception-ml-engineer`,
-`robotics-sim-engineer`, `flight-software-engineer`, `devops-reliability-engineer`,
-`qa-safety-reviewer`, `gtm-narrative-lead`, `exec-council`. Start a work session with `/standup`.
-**Escalation rule:** if two roles disagree, `product-lead` wins for v1 — and the disagreement is
-recorded in `docs/DECISIONS.md` as a tradeoff (that log is interview material).
+Five subagents (`.claude/agents/`): `lead`, `software-engineer`, `platform-engineer`,
+`qa-safety-reviewer`, `narrative-lead`, all preloading the `evidence-discipline` skill. Open with
+`/standup`; run `/gates` before any claim. **Escalation:** `lead` wins build-level calls (logged in
+`docs/DECISIONS.md`); critical calls go to the user.
 
 ## Working conventions
-- No "it works" without a metric or a reproducible scenario (perception-ml-engineer / qa-safety enforce).
+- No "it works" without a metric or a reproducible scenario (software-engineer / qa-safety enforce).
 - Every non-trivial architecture choice gets a one-line justification in `docs/DECISIONS.md`.
+- Host Python: `.venv/bin/python` (uv, 3.12); `/usr/bin/python3` is the Xcode stub. Tests need `.venv/bin` first on PATH.
 - Instrument the avoidance loop: log every detection, takeover, maneuver, resume and debt cell.
 - Keep sim runs reproducible (pinned versions, fixed seeds where possible) so eval numbers mean something.
 - **Standing freezes (ADR-022):** the **NDVI pipeline** is frozen (ADR-019 §7) and the **depth

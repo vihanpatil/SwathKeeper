@@ -1,3 +1,27 @@
+Consolidated 2026-11-05 from exec-council, product-lead, tech-lead (team v2); entries below keep their original dates and role names.
+
+# lead — memory index
+
+## From exec-council
+- [Ruling 002 — ag-avoidance push](ruling-002-ag-avoidance-push.md) — 2026-08-26 **RATIFIED WITH
+  AMENDMENTS A1–A3 (ADR-019)**: product-intent dual-track (claims capped "sim-demonstrated"); birds-first
+  working dodge on a forward DEPTH sensor (separate aperture, replay-specced); wires = mapped
+  infrastructure v1, no camera wire detection promised; booking gate = predictor must clear
+  3.00 m with 1.3x lead margin on guided_default before ANY re-fly; 6-7 sessions (range 5-10);
+  cuts: short-arm study dies, NDVI frozen, license decision booked for extraction time.
+- [Ruling 001 — founding re-evaluation](ruling-001-founding-reevaluation.md) — 2026-08-25: NOT a
+  hole, but value mislabeled (evidence culture + ledger are the asset; bird framing is proxy;
+  full-stack-wholesale <5 % odds → demonstrator-hybrid); actuation blind spot found (84 maneuvers,
+  0.5–4 % compliance, confound resolvable offline); next session = point-mass replay + cheap
+  honesty fixes, then ONE re-fly, then Week 7 immediately; tripwires inside. **RATIFIED by the
+  user 2026-08-25 — binding; recorded as ADR-016 + ROADMAP entries.**
+
+## From product-lead
+- [Phase](phase.md) — as of 2026-08-26: ADR-019's ag-avoidance push IS the program; forward depth sensor built but never rendered, commissioning + booking gate D4 next
+- [Scope guards](scope-guards.md) — standing "DO NOT ADD SCOPE, guard the exits" call + the recorded cuts (ADR-019's NDVI freeze, R4 promoted/re-scoped, R5 still out, no booking on a design number)
+
+## From tech-lead
+- [DIRECTION IS C 2026-11-05](project_direction-c-ruling-2026-11-05.md) — owner ruled C: build the gate tool, 10 posts, B deferred; ADR-022 **am. 4** (am. 2/3 are R8)
 - [ADR-022 DIRECTION RESET 2026-09-10](project_adr022-direction-reset.md) — portfolio floor → 10-conversation method market test → drone-as-product deferred; wire CUT; four standing freezes
 - [ADR-003 NDVI detection CLOSED](project_adr003-ndvi-detection.md) — ADOPT NDVI-direct on the real render (2026-08-23); −0.61 threshold still PROVISIONAL, no model justified
 - [Week-6 seam: ANSWERED](project_week6-detection-seam-open-questions.md) — binding calls 2026-08-24: gz clock end-to-end, GT-CPA vs applied-pose log, detector single-sourced to src/ + scipy in the image

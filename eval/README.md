@@ -1,6 +1,6 @@
 # Evaluation harness
 
-Owned by `perception-ml-engineer` (with `devops-reliability-engineer` for CI).
+Owned by `software-engineer` (with `platform-engineer` for CI).
 
 Runs scripted scenarios headless and emits metrics — no "it works" without a number:
 - detection precision / recall, **false-negative rate** (safety-critical)
