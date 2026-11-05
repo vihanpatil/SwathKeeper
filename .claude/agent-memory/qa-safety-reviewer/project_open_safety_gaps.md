@@ -2097,3 +2097,5 @@ bars 1/2/3a all still print their numbers. **A DETECTED near-miss cannot be laun
 cylinder complement's minimum 3D distance is `min(12, 6) = 6 m`, 2x the 3.00 m bar, so any detection
 close enough to breach is necessarily inside the cylinder — the hole in G203 is the missed detection
 and nothing else.
+
+## G211-G227 — see project_gates_tool_design_review_2026-11-05.md (2026-11-05, swathkeeper_gates design, pre-build)

@@ -217,7 +217,7 @@ fi
 # ===== rows CI lacks =============================================================================
 STEP_N=$((STEP_N + 1))
 echo "[gates] $STEP_N/$STEP_TOTAL tests:src ratio vs $RATIO_CAP cap"
-src_n="$(cat src/fieldguard_planning/*.py | wc -l | tr -d ' ')"
+src_n="$(find src -type f -name '*.py' -print0 | xargs -0 cat | wc -l | tr -d ' ')"  # src/**/*.py since ADR-022 am. 4
 tst_n="$(find tests -type f \( -name '*.py' -o -name '*.sh' \) -print0 | xargs -0 cat | wc -l | tr -d ' ')"
 ratio="$(awk -v t="$tst_n" -v s="$src_n" 'BEGIN { printf "%.2f", t / s }')"
 if awk -v r="$ratio" -v c="$RATIO_CAP" 'BEGIN { exit !(r + 0 <= c + 0) }'; then

@@ -168,13 +168,13 @@ else
 fi
 
 # --- tests:src ratio --------------------------------------------------------------------------------
-src_n="$(cat src/fieldguard_planning/*.py 2>/dev/null | wc -l | tr -d ' ')"
+src_n="$(find src -type f -name '*.py' -print0 2>/dev/null | xargs -0 cat 2>/dev/null | wc -l | tr -d ' ')"  # src/**/*.py since ADR-022 am. 4
 tst_n="$(find tests -type f \( -name '*.py' -o -name '*.sh' \) -print0 2>/dev/null | xargs -0 cat 2>/dev/null | wc -l | tr -d ' ')"
 if [ "${src_n:-0}" -gt 0 ] 2>/dev/null; then
   echo "tests:src: $(awk -v t="$tst_n" -v s="$src_n" -v c="$RATIO_CAP" \
     'BEGIN { r = t / s; printf "%.2f (%d / %d) vs cap %s -> %s", r, t, s, c, (r > c + 0 ? "OVER" : "under") }')"
 else
-  echo "tests:src: unavailable (no src/fieldguard_planning/*.py)"
+  echo "tests:src: unavailable (no src/**/*.py)"
 fi
 
 # --- ROADMAP freshness ------------------------------------------------------------------------------

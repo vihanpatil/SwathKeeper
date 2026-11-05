@@ -45,7 +45,8 @@ GROUPS: list[tuple[str, str, list[str]]] = [
     # only walks docs/**/*.md, so a non-Markdown path here would fail the listed-but-not-on-disk
     # check. docs/README.md links it instead, and the link checker resolves it to the real tree.
     ("Design notes", "Written BEFORE the build, kept as the thing the build was scored against.",
-     ["docs/design/DEPTH_SEGMENTER_DESIGN.md", "docs/design/DEPTH_SEGMENTER_ALGORITHM.md"]),
+     ["docs/design/DEPTH_SEGMENTER_DESIGN.md", "docs/design/DEPTH_SEGMENTER_ALGORITHM.md",
+      "docs/design/GATES_TOOL_DESIGN.md"]),
     ("History", "Records, deliberately frozen. Kept because live docs cite them.",
      ["docs/SPIKE_ndvi_vs_rgb.md", "docs/archive/NDVI_VALIDATION.md",
       "docs/archive/SIM_CI.md", "docs/archive/WEEK3_VALIDATION.md",

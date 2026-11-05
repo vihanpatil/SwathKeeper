@@ -57,6 +57,9 @@ thing the build was scored against; each one is superseded by its ADR, never by 
   that matters — the **constant-selection rules and the pass bars, pre-registered before a single
   frame was rendered**. Became **ADR-021** on 2026-09-07; read it beside the ADR to see what was
   predicted, what was measured, and the two places the render corrected the note.
+- [`design/GATES_TOOL_DESIGN.md`](design/GATES_TOOL_DESIGN.md) — the lead's pre-registered design for the
+  option-C evidence-gate tool (ADR-022 am. 4): package, flight-log contract, the 8-bar catalogue, exit codes,
+  allowlist and the pinned foreign logs. **Nothing built yet**; its ADR is written after it is scored.
 - [`design/DEPTH_SEGMENTER_ALGORITHM.md`](design/DEPTH_SEGMENTER_ALGORITHM.md) — perception's
   companion note on the prototype operator and the numbers that chose its constants. Written
   **concurrently and independently** of the design note above; the two arrived at the same core
