@@ -116,8 +116,10 @@ Bringup, generation, and eval helpers. Owned by devops + sim.
   the range was read through geometry the same run disproved. Exit 0 and 1 are the only codes that
   say anything about the mount; 4 (and 124/130/143) mean the run was never scored. See
   `docs/runbooks/FORWARD_DEPTH_SENSOR.md`.
-- `check_mission_geofence.py` — min XY clearance of the mission path vs. the tree geofence (exits 1 on
-  the documented, altitude-safe row-0 overlap — expected, not a failure).
+- `check_mission_geofence.py` — CI gate (R8, ADR-022 am. 2): the mission path vs. the tree geofence in
+  **3D**, using the executor's own `unsafe_obstacle_3d`. Reports min XY clearance per leg (the
+  documented row-0 overlap, -1.997 m, still prints) and the vertical clearance over each tree column;
+  exit 1 only if a leg actually enters a tree's volume, exit 2 on unreadable inputs.
 - `check_spike_regression.py` — CI gate: fails if the seed-42 per-bird-track FNR regresses, or frame FNR / precision slip past their calibrated floors (ADR-003).
 - `check_ndvi_bands.py` — ADR-007 Gate 2: samples the raw `/fg/sensor/nir/image` band and asserts
   canopy/soil/bird read back materially different, well-separated values (see

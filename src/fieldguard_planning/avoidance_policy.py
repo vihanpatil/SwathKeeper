@@ -55,7 +55,7 @@ from fieldguard_planning.avoidance_types import (
     Detection,
     DroneState,
 )
-from fieldguard_planning.geofence import GeofenceMap
+from fieldguard_planning.geofence import DEFAULT_VERTICAL_MARGIN_M, GeofenceMap
 
 XY = Tuple[float, float]
 ENU = Tuple[float, float, float]
@@ -111,7 +111,7 @@ class PolicyParams:
     # mean not dodging a bird we are on top of -- and hold-and-climb was NOT chosen (ADR-009: bird z
     # is the estimate we cannot trust).
     degenerate_range_m: float = 1.0
-    vertical_margin_m: float = 1.0      # passed to is_safe_3d (canopy band buffer)
+    vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M   # the canopy band buffer, ONE home
     alt_min_m: float = 2.0              # altitude envelope floor (is_safe_3d alt_bounds)
     alt_max_m: float = 30.0             # altitude envelope ceiling
     field_margin_m: float = 1.0         # inward margin from the field polygon boundary for a setpoint

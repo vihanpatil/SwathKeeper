@@ -158,3 +158,16 @@ this right: `.gitignore:117`), never in `docs/drafts/`.
 **How to apply:** when reviewing any doc for a claims ceiling, curl the published URL rather than
 assuming "drafts" means unpublished; and scan the whole published set, not just the changed file.
 
+
+**11. A sampling-based gate's COMPLETENESS claim is a measurement, not an argument.** When a round
+ships "we also sample X, so a Y shorter than the step cannot slip through" (ADR-022 am. 2, R8), the
+sentence is the finding to attack. Build an ANALYTIC ground truth for the same predicate (for a
+straight leg vs a cylinder: intersect the XY chord interval with the z-band interval — both are
+convex in the leg parameter, so it is exact and fast), then differential-test thousands of
+boundary-biased cases through the REAL input pipeline. On R8 that turned a confident prose claim
+into "57 of 2,500 sloped legs pass, worst 18.6 cm inside the exclusion cylinder", and the level-leg
+control (0/2,500) named the exact regime the claim fails in — the one the round had just added.
+**Why:** the builder's own graze test was a LEVEL leg, so it proved the mechanism worked in the one
+geometry where it could not fail. A hand-picked fixture cannot measure a rate.
+**How to apply:** any new gate with a step/tolerance/resolution constant — mutate that constant to
+an absurd value and see if ANY test dies. On R8, `SAMPLE_STEP_M` 0.5 -> 1e9 left all 22 tests green.

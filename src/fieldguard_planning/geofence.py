@@ -11,11 +11,13 @@ lets the Week 3-4 avoidance loop distinguish "known tree, already excluded from 
 "unplanned dynamic obstacle, needs a reactive avoid" -- it does NOT itself do any avoidance or
 replanning (that's Week 3-4 scope, out of bounds here per ADR-002).
 
-Exclusion is checked in the XY (east/north) plane only. Z is deliberately not part of the geofence
-query: `sim/README.md` documents that tree canopy height (3.5 m) sits well below
-`config/field_polygon.json`'s `mission_altitude_m` (15 m) by design, so vertical separation is a
-separate, already-satisfied constraint -- see `scripts/check_mission_geofence.py` for where that
-gets confirmed numerically for the current mission, rather than baked as an assumption in here.
+Two exclusion queries live here and they answer different questions. The XY ones
+(`point_clearance` / `segment_clearance`) answer "is this inside a tree's exclusion column?" and are
+what a lane-vs-row-spacing check wants. `unsafe_obstacle_3d` / `is_safe_3d` add the canopy band and
+are THE safety rule: the executor vets every GUIDED setpoint with them (ADR-006), and since
+2026-09-11 `scripts/check_mission_geofence.py` gates the committed mission with the same call rather
+than asserting vertical separation in prose (R8, ADR-022 am. 2). Whoever changes the band changes
+both at once, which is the point.
 
 Dependency: stdlib only (json, math, dataclasses) plus `geom.py`, which is itself stdlib-only --
 deliberate, so tests run without a venv/ROS 2 environment (see this project's Week 2
@@ -34,6 +36,14 @@ from .geom import point_segment_distance_xy
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_STATIC_OBSTACLES = REPO_ROOT / "config" / "static_obstacles.json"
+
+# THE canopy-band buffer, metres added above a tree's `height_m` before a point counts as clear
+# (see `unsafe_obstacle_3d`). It lives here, with the rule that uses it, and everything that has an
+# opinion about it imports it: `avoidance_executor.DEFAULT_VERTICAL_MARGIN_M` (re-exported for its
+# existing importers), `avoidance_policy.PolicyParams.vertical_margin_m`,
+# `depth_detect.geofence_annotator` and `scripts/check_mission_geofence.py`. It used to be four
+# independent `1.0` literals that happened to agree, which is not the same as agreeing.
+DEFAULT_VERTICAL_MARGIN_M = 1.0
 
 
 @dataclass(frozen=True)
@@ -62,7 +72,11 @@ class Obstacle:
             z_m=float(z),
             obstacle_radius_m=float(d["obstacle_radius_m"]),
             canopy_radius_m=float(d.get("canopy_radius_m", d["obstacle_radius_m"])),
-            height_m=float(d.get("height_m", 0.0)),
+            # REQUIRED, no default: `height_m` is half of the 3D rule below, and a defaulted 0.0
+            # turns every tree into a margin-tall stub that a mission at 3 m flies clean through --
+            # silently, with the band formula still printed. A missing height is "we could not tell",
+            # and that is a KeyError (exit 2 in the gate), never a PASS.
+            height_m=float(d["height_m"]),
         )
 
 
@@ -145,7 +159,7 @@ class GeofenceMap:
 
     # --- 3D safety gate (Weeks 3-4 avoidance) --------------------------------
     # The XY queries above answer "is this point in a tree's exclusion column?" -- correct for the
-    # cruise mission, which flies at 15 m well above the 3.5 m canopy (that's WHY lane x=15 can pass
+    # cruise mission, which flies at 15 m well above the 3.8 m canopy (that's WHY lane x=15 can pass
     # straight over tree row 0 in XY, min clearance -2.0 m, and still be safe). But an avoidance
     # maneuver may DESCEND, so its setpoint must be vetted in 3D: unsafe only if it is inside a tree's
     # actual volume (XY within obstacle_radius_m AND z within the canopy band + a vertical margin).
@@ -156,7 +170,7 @@ class GeofenceMap:
     def unsafe_obstacle_3d(
         self,
         point_enu: Tuple[float, float, float],
-        vertical_margin_m: float = 1.0,
+        vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M,
     ) -> Optional[Obstacle]:
         """The tree whose 3D volume contains `point_enu`, or None if the point clears all trees in 3D.
 
@@ -174,7 +188,7 @@ class GeofenceMap:
     def is_safe_3d(
         self,
         point_enu: Tuple[float, float, float],
-        vertical_margin_m: float = 1.0,
+        vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M,
         alt_bounds: Optional[Tuple[float, float]] = None,
     ) -> bool:
         """True iff `point_enu` (world-ENU metres) is a safe GUIDED setpoint: outside every tree's 3D

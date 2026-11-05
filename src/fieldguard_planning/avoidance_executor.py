@@ -133,14 +133,15 @@ from typing import Dict, List, Optional, Protocol, Sequence, Tuple, runtime_chec
 
 from .avoidance_types import AvoidanceManeuver, Decision, DroneState
 from .coverage import CELL_COVERED, CELL_DEBT, CoverageCell, coverage_from_path
-from .geofence import GeofenceMap
+from .geofence import DEFAULT_VERTICAL_MARGIN_M, GeofenceMap
 
 # Flight-mode strings as they appear in the event log / ADR-006. Not an enum on purpose: the real
 # ROS 2 adapter will pass these straight through to ardupilot_msgs/ModeSwitch, which is string-typed.
 MODE_AUTO = "AUTO"
 MODE_GUIDED = "GUIDED"
 
-DEFAULT_VERTICAL_MARGIN_M = 1.0  # matches geofence.is_safe_3d default
+# DEFAULT_VERTICAL_MARGIN_M is imported from .geofence (its one home, next to the rule that
+# applies it) and re-exported here, because this is where the flight side reads it from.
 
 # Setpoint-latch escape hatch: how far a NEW policy setpoint must sit from the currently latched one
 # before the executor believes the threat actually moved and re-latches (rather than treating the

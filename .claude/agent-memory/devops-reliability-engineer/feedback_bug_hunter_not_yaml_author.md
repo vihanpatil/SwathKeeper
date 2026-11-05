@@ -17,9 +17,11 @@ before writing/editing `.github/workflows/ci.yml`:
    `eval/results/spike_scores.json` byte-for-byte across two independent regenerations — this is
    what justified the fixed-seed regression assertion in `scripts/check_spike_regression.py`).
 4. Don't blindly chain new scripts with `set -euo pipefail`: read exit-code semantics first. Found
-   one script (`scripts/check_mission_geofence.py`) that returns 1 by design on a
-   documented-safe finding, not an error — see [[known_ci_flake_check_mission_geofence]]. Wiring it
-   into CI without noticing would have made the build permanently red for a non-bug.
+   one script (`scripts/check_mission_geofence.py`) that returned 1 by design on a documented-safe
+   XY finding; wiring it into CI without noticing would have made the build permanently red for a
+   non-bug. That was worked around with `|| true` — the wrong end. **Fixed at the source
+   2026-09-11** (ADR-022 am. 2/3): the gate is 3D, exits 0 on the committed mission, and CI runs it
+   armed — see [[mission_geofence_gate_is_armed]]. The habit stands; the example is retired.
 5. Validate workflow YAML with `actionlint` (installed via `brew install actionlint` when not
    present) rather than only a bare `yaml.safe_load` — catches schema-level mistakes a plain parse
    misses.

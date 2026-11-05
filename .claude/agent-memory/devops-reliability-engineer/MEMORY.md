@@ -1,6 +1,6 @@
 - [CI pipeline structure & verified commands](project_ci_pipeline.md) — job map incl. the if-always + KNOWN_RED rework and pages.yml, local repro commands, install-free root (2026-09-10)
 - [Owner's 2026-09-10 direction call](project_portfolio_decision_20260910.md) — portfolio first, market-test the METHOD, wire program cut, delete aggressively, honesty artifacts widened
-- [check_mission_geofence.py exit-1-by-design flake](known_ci_flake_check_mission_geofence.md) — why it's `|| true` in CI, when to revisit
+- [Mission-geofence gate is ARMED](mission_geofence_gate_is_armed.md) — a real CI gate since 2026-09-11 (3D verdict, exit 0 on the committed mission); never re-add `|| true`
 - [Where pinned versions live](reference_pinned_versions.md) — CLAUDE.md vs requirements-eval.txt vs validate-config's unpinned pyyaml
 - [Bug-hunter-not-YAML-author working style](feedback_bug_hunter_not_yaml_author.md) — always run locally in a matching venv before writing CI steps; never claim green without proof
 - [Doc claims get measured too](feedback_docs_claims_get_measured.md) — reproduce the reader's env, quote real stdout, re-check handed-down facts against DECISIONS.md

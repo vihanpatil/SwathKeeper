@@ -137,5 +137,32 @@ of them UNMEASURED. Two invariants worth not re-deriving:
   `gate_reject` event followed by a `hold`; counting "refused maneuvers" off the maneuver kind
   returns zero on every log and always will.
 
+**The mission geofence gate (R8 CLOSED 2026-09-11, ADR-022 am. 2 + am. 3).**
+`scripts/check_mission_geofence.py` is a real CI gate now, not a printout: `main(argv) -> int`
+(0 PASS / 1 a leg enters a tree volume / 2 unreadable inputs or no legs) and
+`leg_report(geofence, i, p1, p2, margin_m, step_m) -> LegReport` are both importable in-process
+(`sys.path` + `import check_mission_geofence`). It takes its verdict from
+`GeofenceMap.unsafe_obstacle_3d` — the executor's own rule — over
+`mission_waypoints.mission_xyz_path` (per-point ENU + the item's relative altitude; home row forced
+to ground; a non-frame-3 altitude AND an unmodelled NAV command both raise → exit 2, because a
+dropped item joins two waypoints with a line the vehicle never flies). Committed mission: **PASS
+exit 0**, leg 4 **-1.997 m XY** against tree row 0 with **+10.200 m** over the **4.80 m** band top
+(z 0 + height_m 3.8 + margin 1.0). `|| true` is gone from ci.yml and
+`tests/test_ci_evidence_gate.py::TestMissionGeofenceGateIsArmed` runs the YAML block against a
+failing stub to keep it that way.
+
+**Where it samples is SOLVED, not stepped — `SAMPLE_STEP_M` is not the gate's resolution.** The
+first build sampled a 0.5 m grid plus each circle's entry/exit/closest; QA measured **57 false
+passes in 2,500 unsafe SLOPED legs** against it (level legs: 0 — which is exactly why a level-leg
+graze test passed for the whole build). On a leg that changes altitude the in-volume window is
+bounded by a **band crossing**, not the circle, so it is shorter than any step, and the circle
+samples sit on the boundary where `<=` is decided by float rounding. `volume_samples()` now
+intersects the XY chord window with the altitude-band window and samples the **midpoint** (strictly
+interior); `column_clearance()` makes the printed vertical clearance exact the same way (it used to
+be read off whatever samples the grid landed on — the false-pass leg printed **+0.005 m** where the
+truth is **-0.135 m**). Re-measured: **16 → 0** false passes, 0 false alarms.
+`geofence.DEFAULT_VERTICAL_MARGIN_M` is the ONE margin (executor re-exports it; policy, depth
+annotator and the gate all import it), and `height_m` is REQUIRED in the obstacle export.
+
 See [[node_topic_map]] for the ledger/control-parameter model and [[detection_seam]] for the
 schema-2 run block.

@@ -32,7 +32,7 @@ One table, one date, one state per row. Where a row and any other document disag
 | Evidence gates + CI | 🟡 `main` is red **by design** on the pre-registered half-acknowledgement — **plus two undeclared Linux-only failures** in `tests/test_build_dashboard_data.py` (a staleness check and a last-digit float compare). An undeclared red is how a real one hides | one declared red; steps 7-12 skipped behind it, including the seed-42 FNR regression |
 | Repo state | 🟡 `origin/main` is **`222f562` (2026-09-11, PR #32 merged)**; PR #33 (`chore/adr020-am5-and-video-assets`) open; `evidence/depth-step0-flight-20260911` carries the first depth flight's evidence, unpushed | push + PR after each chunk |
 | Suite totals | one home: **`tests/README.md`** — re-run the three commands there, re-quote every quoter or none | *(deliberately not quoted here; five doc homes with no test enforcing them is how they went stale)* |
-| Open safety findings | 🔴 **R8** — the committed coverage mission violates its own XY geofence by **−1.997 m** on leg 4, waived on altitude, and CI runs the check `\|\| true`. Owed a diff (ADR-022) | `scripts/check_mission_geofence.py` exits 1 today |
+| Open safety findings | ✅ **R8 CLOSED 2026-09-11** (ADR-022 am. 2, reviewed + corrected by am. 3) — the gate judges the flight path in **3D** with the executor's own `unsafe_obstacle_3d` (each tree's in-volume window SOLVED, not stepped — a 0.5 m sweep alone false-passed 16 of 1420 unsafe sloped legs; mutation-proved), the mission was **NOT re-planned**, and CI runs it as a real step — the `\|\| true` is gone | committed mission **PASS, exit 0**: leg 4 still **−1.997 m in XY**, REPORTED, with **+10.200 m** over the **4.80 m** band top (3.8 + 1.0) |
 
 ### The 2026-08-25 take — what it measured (the system working)
 
@@ -193,6 +193,9 @@ _(product-lead records cuts here with date + reason — interview material.)_
   own XY geofence by **−1.997 m** on leg 4 and CI runs the check `|| true`. The altitude waiver
   (15.0 m vs 3.5 m trees) is sound and the gate is still disarmed — an XY geofence that cannot fail
   is not one. Owed a mission-or-radius diff, and it did not happen on 2026-09-10.
+  **CLOSED 2026-09-11** (ADR-022 am. 2 + am. 3): the gate is 3D, CI runs it armed, the mission was
+  not re-planned — and the 3.5 m tree height quoted above is the superseded export value; the world
+  draws **3.8 m** (`sim/README.md`, `config/static_obstacles.json`).
 - **2026-08-26 — Ruling 002 ratified with amendments (ADR-019): the short `test_2lane` arm is
   RETIRED OUTRIGHT, ALL NDVI work is FROZEN for the avoidance push, and the doc long-tail + R5
   move behind the wire demo.** Paid for: the forward depth sensor + birds-first working dodge +

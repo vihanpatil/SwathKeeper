@@ -166,16 +166,29 @@ jobs:
           python3 scripts/gen_farm_world.py \
             --obstacles-out /tmp/smoke_static_obstacles.json \
             --world-out /tmp/smoke_farm_world.sdf
-          # check_mission_geofence.py intentionally exits 1 when it finds the documented, EXPECTED
-          # XY-only overlap at leg 4 (safe: >11m of vertical separation at mission altitude -- see
-          # the script's own docstring / sim/README.md), so the real invocation below cannot be
-          # gated on its exit code. It used to be `|| true` on its OWN, which made the step
-          # unfailable: a syntax error, a bad import, or a deleted CLI flag all still "passed"
-          # (2026-08-18 audit finding). Split in two: --help is the REAL gate (argparse exits 0, so
-          # it only succeeds if the module imports and the parser still builds), and the
-          # business-logic exit 1 stays tolerated -- and only that.
+          # --help is the import/CLI smoke for the mission-geofence gate (argparse exits 0 only if
+          # the module imports and the parser still builds); the gate itself runs in its own step
+          # below, where its exit code decides the build.
           python3 scripts/check_mission_geofence.py --help > /dev/null
-          python3 scripts/check_mission_geofence.py || true
+
+      - name: Gate the committed mission against the tree geofence in 3D
+        if: always()
+        run: |
+          set -euo pipefail
+          # R8, closed 2026-09-11 (ADR-022 amendment 2). This ran as
+          # `python3 scripts/check_mission_geofence.py || true` from 2026-08-18: the script judged XY
+          # ONLY, the committed mission's lane at x=15 flies straight down tree row 0 (-1.997 m), so
+          # it exited 1 on a flight that is safe at 15 m -- and its exit code had to be thrown away.
+          # An XY geofence that cannot fail is not one. The script now judges the flight path in 3D
+          # with the executor's own geofence.unsafe_obstacle_3d (XY inside obstacle_radius_m AND z
+          # inside the canopy band + the 1.0 m vertical margin), samples every leg at 0.5 m --
+          # takeoff climb and RTL descent included -- still PRINTS the XY overlap on every run, and
+          # exits 0 on the committed mission (leg 4: -1.997 m in XY, +10.200 m over the 4.80 m band
+          # top). So the exit code gates from here: 1 = a leg enters a tree's volume, 2 = the
+          # mission or the obstacle map could not be read. The mission itself is NOT re-planned --
+          # every committed flight log flew it. tests/test_ci_evidence_gate.py::
+          # TestMissionGeofenceGateIsArmed runs this block against a failing stub to keep it armed.
+          python3 scripts/check_mission_geofence.py
 
       - name: Regenerate spike clip (fixed seed 42 -- the reproducibility regression)
         if: always()

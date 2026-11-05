@@ -91,6 +91,7 @@ from collections import deque
 from typing import Callable, List, Optional, Sequence, Tuple
 
 from .avoidance_types import Detection
+from .geofence import DEFAULT_VERTICAL_MARGIN_M
 from .clip_recorder import STALE_PAIR_BOUND_S, nearest_rank_p95
 from .ndvi_georef import CameraIntrinsics, pixel_to_camera_ray, rotate_body_to_world
 
@@ -113,7 +114,9 @@ StaticMapAnnotator = Callable[[Vec3], Optional[str]]
 SOURCE_TAG = "depth_blob"
 
 
-def geofence_annotator(gmap, vertical_margin_m: float = 1.0) -> StaticMapAnnotator:
+def geofence_annotator(gmap,
+                       vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M
+                       ) -> StaticMapAnnotator:
     """A `StaticMapAnnotator` over an existing `geofence.GeofenceMap` -- the SAME
     `unsafe_obstacle_3d` volume test the executor's setpoint backstop already runs, so the
     annotation and the vetting can never disagree about where a tree is."""
