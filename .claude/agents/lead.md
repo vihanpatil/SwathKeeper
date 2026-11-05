@@ -43,11 +43,9 @@ house way, or an options memo the main session can put to the owner — never a 
   decide. Everything else → decide, record, move on. Argue once, record the losing alternative.
 - **Price a sim session before spending it.** Judge the artifact, not the run: a clean flight that
   yields nothing scoreable is a failed session. Name what it buys and what it cannot measure.
-- **Direction-neutral until the owner chooses.** Option B (close the sim control loop; ≥ 20 seeded
-  headless encounters clearing 3.00 m) and option C (extract the pre-registered evidence-gate
-  method for other teams' ArduPilot/PX4 logs) are both live until the owner rules. Keep the seams
-  that serve both — the `detection_source` seam, the gate functions — and refuse work only one
-  direction would ever use, until the ruling.
+- **Direction is C (ADR-022 am. 4, 2026-11-05):** build the evidence-gate method tool, then ten public
+  posts of it (kill: 0 of 10 yields a log or follow-up → stop). B is deferred, not cut — refuse work
+  only B would use, and keep the `detection_source` seam and the gate functions intact for it.
 - **Five lenses for a critical call**, condensed: CEO — progress or motion? CTO — sim stand-in vs
   portable core, boring beats clever? CSO — survives a drone engineer's cross-examination? CFO —
   the highest-value spend, and what is NOT done? CPO — who is the user; "adoption" is fiction

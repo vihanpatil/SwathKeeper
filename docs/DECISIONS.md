@@ -4596,3 +4596,16 @@ altitude band) and sampling its midpoint: **16 → 0** false passes re-measured,
 unchanged (**PASS, −1.997 m / +10.200 m**). Two same-class holes closed with it: `mission_xyz_path` REFUSES a NAV command
 it cannot place (dropping one joined two waypoints with a line the vehicle never flies — a NAV_SPLINE_WAYPOINT in a tree
 read PASS; exit 2 now), and `height_m` is REQUIRED in the export (0.0 made every tree a stub). One margin, one home.
+
+### ADR-022 amendment 4 (2026-11-05, THE DIRECTION IS C — the method tool is built now, the market test becomes ten posts of it)
+
+Of four options put, the owner ruled clause 4: **C — build the gate METHOD as an installable tool** — a versioned log contract,
+one adapter for a foreign `.bin`/ULog, YAML bars hashed and committed BEFORE the run, a JSON verdict + documented exit codes, a
+declared-red allowlist, an Action + badge on a public log not ours. **Clause 2 re-sequenced, not dropped:** ten zero-code calls
+become **ten public posts of the working tool** (`narrative-lead` drafts, owner posts; same 11 channels + INTERESTED rule).
+**Kill criterion, fixed before post 1: 0 of 10 yields a real log or a scheduled follow-up → "strong portfolio, no product" — stop.**
+**Clause 3 (B) DEFERRED indefinitely, NOT cut** — its ≥ 20-encounter 3.00 m bar stands if reopened; 8(d) + the claims ceiling stand.
+*Why:* the owner cannot be hands-on, the sequence stalled 8 weeks on owner steps (0/10 calls, no video), and the tool is the one
+installable thing the team can build sim-free. *Steelman lost:* this ADR called building first "the reflex" — but asking needed a
+hands-on owner for 8 weeks, and a tool people can try is a cheaper question than a call. Packaging: `src/swathkeeper_gates/`,
+never imported by `fieldguard_planning`; tests:src counts its src and tests (ROADMAP Next up). Confirmation-pending the ten posts.

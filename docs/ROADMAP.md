@@ -12,7 +12,9 @@ nothing gets added to scope without something else being cut in the same breath,
 **portfolio floor first**, then a **market test of the METHOD** (~10 conversations about running
 pre-registered evidence gates on other teams' logs; kill criterion 0 of 10), with
 **drone-as-product deferred** behind that answer and hardware behind that. The wire program is CUT;
-NDVI and the depth segmenter are frozen. *Next up* below is that sequence and nothing else.
+NDVI and the depth segmenter are frozen. **Re-sequenced 2026-11-05 (ADR-022 am. 4): the owner ruled C** — the
+team builds the method as an installable tool now, the market test becomes ten public posts of it (same kill criterion
+shape), and B is deferred indefinitely, not cut. *Next up* below is that sequence and nothing else.
 
 ## Where we are (2026-11-05)
 
@@ -30,7 +32,7 @@ One table, one date, one state per row. Where a row and any other document disag
 | ADR-021 depth segmenter | ✅ **SCORED 2026-09-07**; **FLOWN ONCE 2026-09-11** as a no-target wiring flight (ADR-021 am. 1: 5345/5345 frames, 0 drops, 33,029 boxes 98.7 % mapped, 0 takeovers; runtime p95 12.98 ms PASS, **max 141.16 ms FAILED** the 100 ms bar → log INVALID); **FROZEN** until a flight WITH a target exists | 7/7 pre-registered bars on **85 parked, noiseless stations**: FNR 0/49, merge 0/71, unmapped FP 0/8, range p95 0.1076 m. Cluttered acquisition **46.0 m** — clutter-backed evidence reads to **28 m** |
 | Scoring a depth flight log | ✅ **SCOREABLE since 2026-09-07** (P1), exercised on the 2026-09-11 wiring flight — which exposed a **checker gap: a bird-less flight has no truth track and the checker could not be told so (read "ambiguous truth track" → INVALID). CLOSED the same day (ADR-020 am. 7): `--no-birds` DECLARES it — truth resolution skipped, CPA/truth family prints `N/A (no birds driven)`, every other gate live, and the declaration REFUSED on six falsifiers: any avoidance event / in-cylinder detection (cylinder floored at today's `PolicyParams()`) / named bird track / `TRUTH_BINDINGS` pin / a bird track written within ±30 min on the WALL clock / a launcher bringup record that armed the pane. Its blind spot is printed: a bird the DETECTOR never saw leaves no trace in a log.** That log under the flag is still INVALID, on its 141.160 ms runtime max alone — `depth_blob` is in `DETECTOR_SOURCES` with seven pre-registered bars. *(The "a depth log is UNSCOREABLE" blocker is CLOSED; any doc still saying it is stale.)* | bar 5 will read **CENSORED** and bar 6 **UNMEASURED** until the executor logs the seam's longest-range detection and `static_map_hint` (P2) |
 | Evidence gates + CI | ✅ `main` is red **by design** on the pre-registered half-acknowledgement and on **nothing else** (re-verified 2026-11-05 on `main` and both open PRs). The two undeclared Linux-only reds in `tests/test_build_dashboard_data.py` were fixed 2026-09-11 (`4485e0a`); every step runs `if: always()` and the KNOWN_RED allowlist test asserts the failing set is exactly the declared one | two declared red steps (host-side suite's committed-evidence test; the committed-evidence checker, exit 1); allowlist step green |
-| Repo state | 🟡 **measured 2026-11-05:** `origin/main` is **`429a19f` (PR #34)**. **PR #35** (`fix/r8-mission-geofence-3d` @ `eed8f2a`, R8 closed) and **PR #36** (`feat/no-truth-checker-mode` @ `150412b`, ADR-020 am. 7 `--no-birds`) are **OPEN and MERGEABLE**, CI = exactly the declared reds; the owner merges them. **`feat/team-v2-resume`** stacks on `150412b` with the team v2 rebuild | owner merges #35 → #36, then this branch's PR |
+| Repo state | 🟡 **measured 2026-11-05:** `origin/main` is **`429a19f` (PR #34)**. **PR #35** (`fix/r8-mission-geofence-3d` @ `eed8f2a`, R8 closed) and **PR #36** (`feat/no-truth-checker-mode` @ `150412b`, ADR-020 am. 7 `--no-birds`) are **OPEN and MERGEABLE**, CI = exactly the declared reds; the owner merges them. **PR #37** (`feat/team-v2-resume` @ `2878e6e`, team v2) is **OPEN** and stacks on #36; the 2026-11-05 C ruling (ADR-022 am. 4) lands as a second commit on that branch | owner merges #35 → #36 → #37 |
 | Suite totals | one home: **`tests/README.md`** — re-run the three commands there, re-quote every quoter or none | *(deliberately not quoted here; five doc homes with no test enforcing them is how they went stale)* |
 | Open safety findings | ✅ **R8 CLOSED 2026-09-11** (ADR-022 am. 2, reviewed + corrected by am. 3) — the gate judges the flight path in **3D** with the executor's own `unsafe_obstacle_3d` (each tree's in-volume window SOLVED, not stepped — a 0.5 m sweep alone false-passed 16 of 1420 unsafe sloped legs; mutation-proved), the mission was **NOT re-planned**, and CI runs it as a real step — the `\|\| true` is gone | committed mission **PASS, exit 0**: leg 4 still **−1.997 m in XY**, REPORTED, with **+10.200 m** over the **4.80 m** band top (3.8 + 1.0) |
 
@@ -53,7 +55,8 @@ Last engineering commit 2026-09-11; everything below was measured on 2026-11-05.
   into `.claude/settings.json` per `.claude/hooks/README.md`) landed on `feat/team-v2-resume`; the host Python is fixed —
   `/usr/bin/python3` is the Xcode stub, so the project runs `.venv/bin/python` (uv, 3.12), and tests
   need `.venv/bin` first on `PATH`.
-- **Direction (ADR-022 step 4, B vs C):** pending the owner's call.
+- **Direction (ADR-022 step 4, B vs C): RULED C by the owner, 2026-11-05** — the method tool is built now and the market
+  test becomes ten public posts of it; B deferred indefinitely, not cut (**ADR-022 amendment 4**; *Next up* below).
 
 ### The 2026-08-25 take — what it measured (the system working)
 
@@ -130,39 +133,39 @@ from this file. Full narrative: `docs/BUILD_LOG.md`.
   +0.85…+0.92. Parallax fill vs sample poverty are both consistent. It would matter for the NDVI
   product, not just for the check.
 
-## Next up, in order (the ADR-022 sequence, 2026-09-10)
+## Next up, in order (option C — ADR-022 am. 4, 2026-11-05)
 
-**0. The owner's two calls, then push.** (a) ~~confirm or overturn~~ **ADR-020 amendment 4 — CONFIRMED 2026-09-11, with am. 5's forward-looking rule: no depth-camera dodge is booked until the segmenter is re-scored on a tall-obstacle world with clutter at ≥ 33.6 m** (owed only if the deferred loop path is pursued); the original call: — the P5
-ruling that cluttered acquisition is 46.0 m on the pre-registered definition, so the invalidation
-clause did not fire; (b) choose a **LICENSE** (Apache-2 / BSL / AGPL — it decides who may evaluate
-this repo tomorrow). Then push `feat/depth-segmenter` and open its PR.
+**Packaging (lead, build-level, 2026-11-05).** The tool is a NEW package, `src/swathkeeper_gates/`, pip-installable on its own
+(one `pyproject.toml` that declares it and nothing else; stdlib + PyYAML). Dependencies run one way: it may reuse the existing
+gate functions, `fieldguard_planning` never imports it, and nothing under `scripts/` becomes a dependency of the wheel — so a
+stranger's `pip install` pulls no ROS, no Gazebo, no drone. The name touches no ADR-011 identifier. **tests:src (cap 3.70, OVER at
+3.84):** the new package's src and its tests both count, so every step below lands its src before its tests grow — the ratio
+must fall, and the cap is not re-baselined.
 
-**1. The portfolio floor lands** — this refactor: the five state documents reconciled to the measured
-tree, the debris deleted, the honesty artifacts **widened** (all three breaches disclosed, the
-INVALID verdict kept, the red CI declared *exactly*). New engineering is capped at the launcher's
-`--detection-source` flag and the source-comment truth pass. Nothing below opens before it lands.
+**Owner-side, still open (none blocks the team):** merge PRs #35 → #36 → #37; `sudo xcodebuild -license accept`; wire the hooks
+per `.claude/hooks/README.md`. ADR-020 am. 4 is CONFIRMED (2026-09-11), the LICENSE is Apache-2.0, Pages is LIVE. The demo video
+is now **OPTIONAL** — the script in `docs/drafts/DEMO_VIDEO_SCRIPT.md` stays unrecorded until wanted (fix its "81 configurations"
+line first: 81 is the speed axis alone, not the grid).
 
-**2. Enable Pages, record the video.** Pages **DONE** (measured 2026-11-05: `/dashboard` served at
-`https://vihanpatil.github.io/SwathKeeper/`, 200); the video is **OPEN**: the finished script in
-`docs/drafts/DEMO_VIDEO_SCRIPT.md` is still to be recorded, fixing its "81 configurations" line first (81 is the
-speed axis alone, not the grid).
+**The C sequence — every item executable by the team without the owner, except the posting in 6:**
+1. **Design note + contract** (`lead`): a versioned flight-log contract (what a log must carry for a gate to read it, and what
+   the verdict prints when it does not — "could not tell" never scores green), the package layout above, the exit-code table.
+2. **One adapter for a real log we did not write** (`software-engineer`): ArduPilot `.bin` or PX4 ULog → the contract, run on a
+   public log, its parse yield reported with a denominator.
+3. **YAML bars + pre-registration hash + JSON verdict + exit codes:** bars in YAML, their hash committed BEFORE the run and
+   checked at it; a JSON verdict (today **no gate emits JSON**) with documented exit codes.
+4. **Declared-red allowlist as a tool feature:** the house KNOWN_RED rule — the failing set must equal the declared set, exactly.
+5. **GitHub Action + badge**, demonstrated on a public repo/log we did not write.
+6. **The ten posts** — drafted by `narrative-lead`, QA-checked, posted by the owner (minutes each), the same 11 public channels in
+   the private kit, its INTERESTED rule unchanged. **Kill criterion, fixed before the first post: 0 of 10 posts yields a real log
+   or a scheduled follow-up → "strong portfolio, no product" — stop.**
 
-**3. The ten conversations — zero code.** ~10 ArduPilot/PX4 autonomy teams, university labs and
-Part-108-minded integrators, on one question: would you run a **pre-registered evidence gate on your
-own flight logs**? **Kill criterion, fixed before the first call: 0 of 10 interested → "strong
-portfolio, no product."** Stop there; the portfolio is the deliverable and option B stays a personal
-quarter.
+Claims ceiling unchanged: **sim-demonstrated, evidence-gated** for the drone; the tool claims nothing beyond what its own
+verdicts print.
 
-**4. Then ONE branch — C or B, never both.**
+### Deferred indefinitely, NOT cut: option B (close the loop in sim) — kept as written in case it is reopened
 
-**(C) Extract the method** — taken if ≥1 of 10 says yes. First three steps:
-1. a versioned flight-log contract plus one adapter for a log we did not write (ArduPilot `.bin` or
-   PX4 ULog → schema);
-2. gate bars in YAML, the pre-registration hash committed **before** the flight, a JSON verdict and
-   documented exit codes — today **no gate emits JSON**;
-3. a GitHub Action + badge, demonstrated on a repo we did not write.
-
-**(B) Close the loop in sim** — taken only if the owner declares the drone the product. First three:
+If reopened, its first three steps:
 1. closed-loop executor: `/ap/mode` and `ready_for_external_control` fed back into the state machine,
    `commanded_vs_achieved_m` logged per maneuver, and a **designed** achieved-displacement gate (the
    naive lateral metric is wrong-axis — the 2026-08-26 replay measured that already);
@@ -172,12 +175,12 @@ quarter.
    Linux box at RTF ≥ 1, ≥20 seeded encounters a night.
 
 **B's kill criterion, written before its day one: if ≥20 seeded headless encounters cannot clear
-3.00 m, the drone is not the product** — say so in the README and fall back to (C) or stop.
+3.00 m, the drone is not the product** — say so in the README and stop. Hardware stays behind B.
 
 **B's terminal event is the pre-registered dodge take** (also the R4 re-fly, and the flight that
 finally measures delivery + pitch at the booked 5.0 m/s): `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`
 §1a for the depth-source shell, `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` for the bars.
-It is **NOT YET FLYABLE** — P2 (step-0 FLOWN 2026-09-11 and FAILED its own runtime-max bar; the ~~no-truth checker mode~~ is **DONE 2026-09-11, ADR-020 am. 7** (`--no-birds`, both halves: checker + `fly_pipeline.sh up`); still owed: the 141 ms stall investigation, the two executor log fields, then a step-0 re-fly), P3 (two
+It is **NOT YET FLYABLE** — the ADR-020 am. 5 tall-obstacle re-score (clutter at ≥ 33.6 m) gates its booking; P2 (step-0 FLOWN 2026-09-11 and FAILED its own runtime-max bar; the ~~no-truth checker mode~~ is **DONE 2026-09-11, ADR-020 am. 7** (`--no-birds`, both halves: checker + `fly_pipeline.sh up`); still owed: the 141 ms stall investigation, the two executor log fields, then a step-0 re-fly), P3 (two
 product-lead ratifications) and P4 (container state) are open. **If it breaches:** write the
 `<log-stem>.SAFETY_FINDING.md` marker and **do NOT add the pin** — acknowledgement takes both halves,
 the marker *and* the stem in `ACKNOWLEDGED_BREACH_STEMS`, a reviewed diff on the safety gate (§6a),
@@ -197,6 +200,13 @@ pinned list is meant to stay two long.
 ## Cut / deferred log
 _(product-lead records cuts here with date + reason — interview material.)_
 
+- **2026-11-05 — THE DIRECTION IS C (ADR-022 am. 4, owner ruling): option B is DEFERRED INDEFINITELY, NOT cut;**
+  its kill criterion (≥ 20 seeded headless encounters clearing 3.00 m) stands if it is ever reopened, and hardware stays
+  behind it. **ADR-022 clause 2's "zero code written during it" is SUPERSEDED** by amendment 4: the ten conversations
+  become ten public posts of a working tool, kill criterion fixed before the first post (0 of 10 yields a real log or a
+  scheduled follow-up → stop). **The demo video is demoted to OPTIONAL.** Paid for: B's three engineering steps and its
+  dodge take leave the active sequence; NDVI and the depth segmenter stay frozen. Why: the owner cannot be hands-on, and
+  the ADR-022 sequence stalled 8 weeks on owner-side steps (0/10 conversations, video unrecorded).
 - **2026-09-10 — DIRECTION RESET (ADR-022): the ADR-019 WIRE PROGRAM is CUT** — items 3-4 (the
   mapped-catenary scenario and the wire demo take) and the A2 reconnaissance stretch goal, recorded
   as **ADR-019 amendment 1**. Two of the ratified 6-7 sessions, stacked behind a centerpiece dodge

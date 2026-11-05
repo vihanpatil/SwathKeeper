@@ -21,6 +21,7 @@ Consolidated 2026-11-05 from exec-council, product-lead, tech-lead (team v2); en
 - [Scope guards](scope-guards.md) — standing "DO NOT ADD SCOPE, guard the exits" call + the recorded cuts (ADR-019's NDVI freeze, R4 promoted/re-scoped, R5 still out, no booking on a design number)
 
 ## From tech-lead
+- [DIRECTION IS C 2026-11-05](project_direction-c-ruling-2026-11-05.md) — owner ruled C: build the gate tool, 10 posts, B deferred; ADR-022 **am. 4** (am. 2/3 are R8)
 - [ADR-022 DIRECTION RESET 2026-09-10](project_adr022-direction-reset.md) — portfolio floor → 10-conversation method market test → drone-as-product deferred; wire CUT; four standing freezes
 - [ADR-003 NDVI detection CLOSED](project_adr003-ndvi-detection.md) — ADOPT NDVI-direct on the real render (2026-08-23); −0.61 threshold still PROVISIONAL, no model justified
 - [Week-6 seam: ANSWERED](project_week6-detection-seam-open-questions.md) — binding calls 2026-08-24: gz clock end-to-end, GT-CPA vs applied-pose log, detector single-sourced to src/ + scipy in the image
