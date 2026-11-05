@@ -141,5 +141,6 @@ Five subagents (`.claude/agents/`): `lead`, `software-engineer`, `platform-engin
   segmenter** is frozen until a depth flight exists — no more bars, no more design notes.
 - **`docs/DECISIONS.md` amendments are ≤ 10 lines, and no new ADR ships without a cut.**
 - **tests:src is capped at 3.70:1** (ADR-022 am. 1; baseline 2026-09-10: `src/fieldguard_planning/*.py`
-  6,771 vs `tests/**.{py,sh}` 25,049). **OVER THE CAP since 2026-09-11: 3.84** (6,854 vs 26,320 — R8 and the
-  `--no-birds` round added tests, no src). Every new test file retires one until it falls; the cap is not re-baselined.
+  6,771 vs `tests/**.{py,sh}` 25,049; the src side is `src/**/*.py` since ADR-022 am. 4, 2026-11-05).
+  **OVER THE CAP since 2026-09-11: 3.84** (6,854 vs 26,320 — R8 and the `--no-birds` round added tests, no src).
+  Every new test file retires one until it falls; the cap is not re-baselined.

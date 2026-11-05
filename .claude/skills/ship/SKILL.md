@@ -12,7 +12,7 @@ Ship the current branch as a PR. Target: $ARGUMENTS. Stop and report at the firs
    `tests/README.md` with `.venv/bin/python` and re-quote the totals at ALL three homes —
    `tests/README.md`, the `README.md` evidence table, `SETUP.md` §(b) — or at none.
    `tests/test_suite_totals_one_home.py` enforces it; run it.
-3. **tests:src ratio.** Measure `src/fieldguard_planning/*.py` lines vs `tests/**.{py,sh}` lines
+3. **tests:src ratio.** Measure `src/**/*.py` lines (ADR-022 am. 4) vs `tests/**.{py,sh}` lines
    against the 3.70 cap (OVER at 3.84 since 2026-09-11). If this branch adds a test file, name the
    test file it retires; no new test file ships without one.
 4. **Roadmap.** `docs/ROADMAP.md` "Repo state" row names this branch, its head, and its PR as they
