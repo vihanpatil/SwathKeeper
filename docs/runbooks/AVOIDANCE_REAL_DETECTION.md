@@ -293,6 +293,20 @@ this flight's **bird ground truth**: `eval/results/bird_drive_<UTC>_applied.json
 `set_pose` call that actually landed. That file is the input to the safety gate in §5 — without it
 the flight cannot be scored. Manual override, only when airborne: `scripts/fly_pipeline.sh birds`.
 
+**A WIRING flight wants none of that: add `--no-birds` to the `up` line above.** It opens no birds
+pane at all — nothing fires at 10 m, nothing to kill mid-bringup (2026-09-11 had to kill the window
+*and* its in-container poll loop by hand), and no `bird_drive_*_applied.jsonl` is written, which is
+the honest state for a take with nothing in front of the sensor. The bringup **records which pane
+list it built**, always: the booking sidecar carries `"birds": "none (declared --no-birds)"` or
+`"armed (altitude-gated drive_birds.py pane)"`, and §5's gate **reads it back** — a take brought up
+with birds and scored `--no-birds` is refused by its own paperwork. It is refused together with the
+`birds` subcommand, on `test-flight` (the scripted regression gate's bars were measured with the
+pane armed) and on every command that does not build the pane list. Do **not** use it for a dodge
+take: no birds means no truth track, and no truth track means no `gt_cpa_m` — the bar a dodge take
+exists to clear. **And the limitation that outlives the flag: a bird the detector never saw leaves
+no trace in the flight log at all; the truth track is the only evidence of a bird the log itself
+does not carry.**
+
 **Shell 8 — the avoidance node with the real detector.** Historically a plain `docker exec` and
 **not** a `fly_pipeline.sh` pane: the node writes its flight log in a `finally` after `rclpy.spin`,
 and teardown's `pkill` would destroy the evidence the flight exists to produce. ADR-013's own rule is
@@ -493,6 +507,34 @@ evidence out of the tree to get past the scan (one forgotten restore is a lost t
 *(The `birds` pane also prints the exact `--truth` line on its own Ctrl-C, including the sim window
 the truth track covers — but `down` kills the session a few seconds later, so read it then or use
 the command above.)*
+
+**A BIRD-LESS FLIGHT IS SCORED WITH `--no-birds` INSTEAD OF `--truth`** (ADR-020 am. 7, 2026-09-11).
+A wiring take (§1's `up --no-birds`) drove no birds, so there is no applied log to name and the
+overlap scan can only report the *other* takes' tracks as ambiguous — which is what made the
+2026-09-11 depth flight unscoreable. `--no-birds` **declares** that: truth resolution is skipped
+entirely and the CPA/truth family prints `N/A (no birds driven)` — never PASS, never a number, and
+the verdict block says `truth: none (declared --no-birds)` so a reader can tell a declaration from a
+measurement — and so does the verdict line itself: `VALID (DECLARED BIRD-LESS — gt_cpa_m N/A (no
+birds driven))`, with the footer counting how many of the scored takes never measured the 3.00 m
+bar. **Every other gate stays live**: ledger, clock, stamps, detector-ran, the depth counter/runtime
+bars, the booked speed, R2/R3, the schema. The 2026-09-11 log under this flag is still **INVALID, on
+its 141.160 ms `detect_wall_ms_max` and nothing else**. It is **REFUSED** — INVALID, naming the
+reason, nothing scored — on **six** falsifiers: any takeover/latch/relatch/maneuver/resume event, a
+`detection` inside the flight's own threat cylinder (read from `run.policy_params` but **floored at
+today's `PolicyParams()`**, so a shrunken cylinder cannot shrink the falsifier), a `bird_drive_*`
+filename the log names itself, a stem pinned in `TRUTH_BINDINGS`, **a `bird_drive_*` artifact
+written within ±30 min of this flight's own UTC stamp** (the wall clock is the one clock Gazebo does
+not restart: 3.5 min on the take that drove birds, 16.5 days on the bird-less one), and **a launcher
+bringup record saying the pane was armed**. All three committed flight logs refuse it. It is
+mutually exclusive with `--truth` (argparse, exit 2), and a detection *outside* the cylinder (a
+mapped canopy) is allowed — a depth wiring flight boxes tens of thousands of those.
+
+**What the flag cannot see, printed on every run:** falsifiers 1–4 are detector-side — the executor
+writes a `detection` event only for a detection the policy already classified as an in-cylinder
+threat — so **a bird the detector never saw leaves no trace in the log**, and a total false negative
+writes exactly the log a bird-less flight writes. Falsifiers 5–6 are the answer available without a
+truth track, and they are proximity and paperwork, not separation. The gate prints that sentence,
+plus the denominators each falsifier scanned, in the `truth: none (declared --no-birds)` note.
 
 **Gate 1 — safety, on the flight log (schema 2):**
 ```bash

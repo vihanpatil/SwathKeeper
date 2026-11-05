@@ -227,10 +227,10 @@ class Harness(unittest.TestCase):
         applied.write_text("".join(json.dumps(r) + "\n" for r in records))
         return applied
 
-    def check(self, log, truth=None, name="live_flight_log_TEST.json"):
+    def check(self, log, truth=None, name="live_flight_log_TEST.json", no_birds=False):
         p = self.dir / name
         p.write_text(json.dumps(log))
-        return checker.check_file(p, truth=truth, results_dir=self.dir)
+        return checker.check_file(p, truth=truth, results_dir=self.dir, no_birds=no_birds)
 
     def green(self, log=None, truth_pos=DET_POS):
         """The take everything else is a mutation of: a clean depth flight with bird ground truth."""
@@ -1156,6 +1156,681 @@ class TestTheRunbookDoesNotTellAnOperatorToScoreNothing(unittest.TestCase):
 
     def test_the_claim_it_makes_about_the_code_is_true(self):
         self.assertIn(checker.DET_DEPTH_BLOB, checker.DETECTOR_SOURCES)
+
+
+# ================================================================================================
+# 14. THE DECLARED BIRD-LESS FLIGHT -- `--no-birds` (2026-09-11, ADR-020 am. 6's checker gap)
+# ================================================================================================
+# THE GAP, MEASURED ON A REAL TAKE. The P2 step-0 depth flight drove no birds by design, so no
+# `bird_drive_*_applied.jsonl` was ever written for it -- and because Gazebo sim time restarts near
+# 0 every run, two OLD applied logs overlapped its window. The gate printed "ambiguous truth track"
+# and INVALID, with no way to be told there was nothing to track. "We could not tell" and "there was
+# nothing to tell" had landed on the same verdict.
+#
+# WHAT THESE TESTS MUST PROVE, and the order matters: first that the flag CLOSES the gap, then that
+# it cannot LAUNDER anything. A mode that turns an INVALID log green is worse than the gap it fixes,
+# so every falsifier gets a fixture that fails the gate under test -- the takeover, the in-cylinder
+# detection, the self-named truth file, the reviewed pin -- plus the one that matters most: the real
+# 2026-09-11 log, still INVALID under the flag, on its runtime bar and nothing else.
+NO_BIRDS_PROCEED = "no in-cylinder threat"
+
+
+def birdless_events(n=len(PATH)):
+    """A wiring flight's whole event log: one `proceed` per tick and nothing else.
+
+    Shaped after the real 2026-09-11 take, whose 6090 events were `proceed` x6089 plus one
+    `divert_audit_summary` -- no takeover, no maneuver, no detection, because nothing was ever in
+    the cylinder."""
+    return [{"seq": i, "tick": i + 1, "kind": "proceed", "position_enu": list(PATH[i]),
+             "reason": NO_BIRDS_PROCEED,
+             "debug": {"n_detections": 0, "threat_radius_m": PolicyParams().threat_radius_m,
+                       "vertical_threat_m": PolicyParams().vertical_threat_m}}
+            for i in range(n)]
+
+
+def birdless_depth_log(extra_events=(), **over):
+    return depth_log(events=list(birdless_events()) + list(extra_events), **over)
+
+
+class NoBirdsHarness(Harness):
+    # THE FIXTURE FLIES UNDER A REAL UTC STEM, and that is now load-bearing: falsifier 5 places this
+    # take on the WALL clock (the one clock Gazebo does not restart) and a log whose NAME carries no
+    # stamp cannot be separated in time from the bird tracks beside it -- a refusal of its own
+    # (TestTheWallClockFalsifier). `avoidance_node` always writes `live_flight_log_<UTC>.json`.
+    # 2026-09-11T09:42:35Z is the real wiring take's stamp; the stale tracks below are 16.5 days
+    # from it, which is the separation the whole mode leans on.
+    NAME = "live_flight_log_20260911T094235Z.json"
+
+    def check(self, log, truth=None, name=None, no_birds=False):
+        return super().check(log, truth=truth, name=name or self.NAME, no_birds=no_birds)
+
+    def two_stale_truths(self):
+        """The 2026-09-11 situation, reproduced: two applied logs from OTHER takes overlapping this
+        flight's sim window. Sim time restarts near 0 every run, so overlap is the default, not the
+        exception -- which is why the scan can only ever report ambiguity here."""
+        self.write_truth(bird_parked_at(PARKED), stamp="20260823T073836Z")
+        self.write_truth(bird_parked_at(PARKED), stamp="20260825T210030Z")
+
+    def na_lines(self, text_lines):
+        return [m for m in text_lines if checker.NA_NO_BIRDS in m]
+
+    def assertRefused(self, result, needle):
+        text = self.assertInvalid(result, "--no-birds REFUSED")
+        self.assertIn(needle, text)
+        # A refused declaration scores NOTHING -- no gate may report on a fiction.
+        self.assertNotIn(checker.NA_NO_BIRDS, text)
+        return text
+
+
+class TestTheGapItCloses(NoBirdsHarness):
+    def test_without_the_flag_a_birdless_take_is_INVALID_on_ambiguity(self):
+        """The bug, pinned first: this log is honest, complete and unscoreable."""
+        self.two_stale_truths()
+        self.assertInvalid(self.check(birdless_depth_log()), "ambiguous truth track")
+
+    def test_with_the_flag_the_same_log_is_VALID(self):
+        self.two_stale_truths()
+        text = self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+        self.assertNotIn("ambiguous truth track", text)
+        self.assertNotIn("no truth track", text)
+
+    def test_the_verdict_block_says_a_DECLARATION_produced_the_N_A_lines(self):
+        """(e) of the design: a reader must be able to tell a declaration from a measurement."""
+        self.two_stale_truths()
+        _status, messages = self.check(birdless_depth_log(), no_birds=True)
+        self.assertIn("truth: none (declared --no-birds)", " ".join(messages))
+
+    def test_every_CPA_family_line_says_N_A_in_those_words_and_none_of_them_PASSES(self):
+        self.two_stale_truths()
+        _status, messages = self.check(birdless_depth_log(), no_birds=True)
+        na = self.na_lines(messages)
+        # FIVE, and the count is the assertion: the declaration itself, gt_cpa_m, the
+        # truth-coverage denominators, depth bar 3b (the truth-referenced range error) and the
+        # DEPTH BARS MEASURED summary that has to agree with 3b. A sixth means a gate started
+        # printing N/A that was never in the truth family; four means one stopped.
+        self.assertEqual(len(na), 5, msg="\n".join(na))
+        for line in na:
+            # "Never a PASS" is this gate's house phrase for exactly this situation, so the
+            # assertion is that no N/A line CLAIMS one -- strip the disclaimer, then no PASS may
+            # remain anywhere in the sentence.
+            self.assertNotIn("PASS", re.sub(r"[Nn]ever (a )?PASS", "", line))
+        joined = " ".join(na)
+        for needle in ("gt_cpa_m", "truth coverage", "RANGE ERROR", "DEPTH BARS MEASURED"):
+            self.assertIn(needle, joined)
+
+    def test_gt_cpa_m_is_never_given_a_NUMBER(self):
+        """`N/A`, not `0.0000 m`. A zero would read as a breach; any number would be invented."""
+        self.two_stale_truths()
+        _status, messages = self.check(birdless_depth_log(), no_birds=True)
+        self.assertEqual([], [m for m in messages if re.search(r"gt_cpa_(gated_)?m\s+-?[\d.]", m)])
+
+    def test_the_NDVI_arm_of_the_family_names_the_estimator_check_too(self):
+        """A bird-less take on the NADIR detector is scored by the same flag, and prints one line
+        the depth arm does not: the monocular estimator check and the in-cylinder missed-detection
+        signal. Both are measured against the truth track, so both are N/A here."""
+        depth_notes = checker.no_birds_notes(True, "falsifiers scanned: (fixture)")
+        ndvi_notes = checker.no_birds_notes(False, "falsifiers scanned: (fixture)")
+        self.assertEqual(len(ndvi_notes), len(depth_notes) + 1)
+        self.assertIn("detection_cpa_m", ndvi_notes[-1])
+        for line in ndvi_notes:
+            self.assertIn(checker.NA_NO_BIRDS, line)
+
+    def test_the_depth_bar_summary_calls_3b_N_A_rather_than_UNMEASURED(self):
+        """One word for one fact: UNMEASURED means the evidence could have been there."""
+        self.two_stale_truths()
+        _status, messages = self.check(birdless_depth_log(), no_birds=True)
+        (summary,) = [m for m in messages if m.startswith("DEPTH BARS MEASURED")]
+        self.assertIn(f"bar {checker.DEPTH_BAR_NEEDS_TRUTH}: {checker.NA_NO_BIRDS}", summary)
+        self.assertIn("bar 5 acquisition: UNMEASURED", summary)      # still a live bar, untouched
+
+
+class TestEveryOtherGateStaysLive(NoBirdsHarness):
+    """(c) of the design. The flag skips the truth join and NOTHING else -- proved by making each
+    surviving gate FAIL under the flag, which is the only way to know it still bites."""
+
+    def setUp(self):
+        super().setUp()
+        self.two_stale_truths()
+
+    def test_the_runtime_max_bar_still_fails(self):
+        log = birdless_depth_log(
+            detector=real_depth_block({"detect_wall_ms_max": 141.16}))
+        self.assertInvalid(self.check(log, no_birds=True), "DETECT WALL TIME OVER BAR")
+
+    def test_the_detect_rate_floor_still_fails(self):
+        log = birdless_depth_log(detector=real_depth_block(
+            {"frames_detected_on": 0, "dropped_no_intrinsics": 1200, "frames_with_detection": 0,
+             "boxes_total": 0}))
+        self.assertInvalid(self.check(log, no_birds=True), "DEPTH DETECTOR NEVER RAN")
+
+    def test_the_frame_shape_bar_still_fails(self):
+        log = birdless_depth_log(detector=real_depth_block(
+            {"frames_detected_on": 1190, "dropped_frame_shape_mismatch": 9}))
+        self.assertInvalid(self.check(log, no_birds=True), "FRAME SHAPE MISMATCH")
+
+    def test_the_clock_gate_still_fails(self):
+        log = birdless_depth_log()
+        log["run"]["clock"]["source"] = "wall"
+        self.assertInvalid(self.check(log, no_birds=True), "clock")
+
+    def test_the_ledger_invariant_still_fails(self):
+        log = birdless_depth_log()
+        log["coverage_ledger"] = [dict(r, status="debt") for r in LEDGER]
+        self.assertInvalid(self.check(log, no_birds=True), "debt")
+
+    def test_the_booked_speed_gate_still_fails(self):
+        booking = self.dir / "booking_gate_TEST.json"
+        booking.write_text(json.dumps(json.loads(
+            (REPO_ROOT / "eval" / "results" / "booking_gate_20260907T064136Z.json").read_text())))
+        # PATH is 1.0 m per 0.2 s tick = 5.0 m/s at cruise; halve the booked speed and the same
+        # flight is twice its authorisation.
+        rep = json.loads(booking.read_text())
+        rep["encounter"]["mission_speed_mps"] = 2.0
+        booking.write_text(json.dumps(rep))
+        p = self.dir / self.NAME
+        p.write_text(json.dumps(birdless_depth_log()))
+        status, messages = checker.check_file(p, results_dir=self.dir, booking=booking,
+                                              no_birds=True)
+        self.assertEqual(status, checker.INVALID, " ".join(messages))
+        self.assertIn("FLOWN FASTER THAN BOOKED", " ".join(messages))
+
+    def test_a_stale_acknowledgement_marker_is_still_a_defect(self):
+        p = self.dir / self.NAME
+        p.write_text(json.dumps(birdless_depth_log()))
+        (self.dir / self.NAME.replace(".json", ".SAFETY_FINDING.md")).write_text("# finding\n")
+        status, messages = checker.check_file(p, results_dir=self.dir, no_birds=True)
+        self.assertEqual(status, checker.INVALID, " ".join(messages))
+        self.assertIn("stale acknowledgement marker", " ".join(messages))
+
+
+class TestTheDeclarationIsRefusable(NoBirdsHarness):
+    """(d) of the design: the four falsifiers that read THIS FLIGHT'S LOG. A declaration nothing can
+    contradict is a hole -- and so is one that only the detector can contradict, which is why
+    falsifiers 5 and 6 have classes of their own below."""
+
+    def setUp(self):
+        super().setUp()
+        self.two_stale_truths()
+
+    def test_a_takeover_event_refuses_it(self):
+        takeover = {"seq": 99, "tick": 2, "kind": "takeover", "reason": "divert",
+                    "from_mode": "AUTO", "to_mode": "GUIDED", "wp_index_at_takeover": 3,
+                    "track_id": None}
+        text = self.assertRefused(self.check(birdless_depth_log([takeover]), no_birds=True),
+                                  "`takeover` at tick 2")
+        self.assertIn("takeover x1", text)
+
+    def test_every_threat_only_event_kind_refuses_it(self):
+        """One fixture per kind, so a kind quietly dropped from the list is a red test."""
+        for kind in checker.TARGET_EVIDENCE_KINDS:
+            with self.subTest(kind=kind):
+                ev = {"seq": 99, "tick": 3, "kind": kind, "track_id": None}
+                self.assertRefused(self.check(birdless_depth_log([ev]), no_birds=True),
+                                   f"`{kind}` at tick 3")
+
+    def test_a_proceed_only_log_is_NOT_refused(self):
+        """The other half of the pin above: the kinds that a bird-less flight legitimately writes
+        must not refuse it, or the flag would be unusable on the flight it was built for."""
+        self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+
+    def test_a_detection_INSIDE_the_threat_cylinder_refuses_it(self):
+        pp = PolicyParams()
+        inside = (DRONE_AT_DET[0] + pp.threat_radius_m - 2.0, DRONE_AT_DET[1], CRUISE_Z)
+        text = self.assertRefused(
+            self.check(birdless_depth_log([detection_event(pos=inside)]), no_birds=True),
+            "INSIDE the policy's own threat cylinder")
+        self.assertIn("run.policy_params", text)
+
+    def test_a_canopy_at_30_m_and_11_m_below_is_ALLOWED(self):
+        """The case the flag exists for: the 2026-09-11 take boxed 33,029 mapped canopies and every
+        one of them fell outside the cylinder. If that refused the declaration, no depth wiring
+        flight could ever be declared bird-less."""
+        canopy = (DRONE_AT_DET[0] + 30.0, DRONE_AT_DET[1], CRUISE_Z - 11.0)
+        self.assertValid(self.check(birdless_depth_log([detection_event(pos=canopy)]),
+                                    no_birds=True))
+
+    def test_the_cylinder_boundary_is_inclusive_exactly_as_the_policy_is(self):
+        """`AvoidancePolicy._threats` tests `<=` on both axes; so does this."""
+        pp = PolicyParams()
+        on_the_rim = (DRONE_AT_DET[0] + pp.threat_radius_m, DRONE_AT_DET[1],
+                      CRUISE_Z + pp.vertical_threat_m)
+        self.assertRefused(self.check(birdless_depth_log([detection_event(pos=on_the_rim)]),
+                                      no_birds=True),
+                           "INSIDE the policy's own threat cylinder")
+
+    def test_a_detection_the_gate_cannot_PLACE_refuses_it(self):
+        """Unplaceable is not outside. "We could not tell" may not clear a declaration."""
+        unplaceable = dict(detection_event(), position_enu=None)
+        self.assertRefused(self.check(birdless_depth_log([unplaceable]), no_birds=True),
+                           "cannot PLACE")
+
+    def test_a_truth_FILENAME_anywhere_in_the_log_refuses_it(self):
+        log = birdless_depth_log()
+        log["note"] = "flown against bird_drive_20260825T210030Z_applied.jsonl"
+        self.assertRefused(self.check(log, no_birds=True), "names bird ground-truth file(s)")
+
+    def test_a_stem_pinned_in_TRUTH_BINDINGS_refuses_it(self):
+        """A reviewed diff already joined that take to a bird track; a command-line word does not
+        get to overrule it -- the same doctrine that stops `--truth` overriding a binding."""
+        (stem,) = list(checker.TRUTH_BINDINGS)[:1]
+        self.assertRefused(self.check(birdless_depth_log(), name=f"{stem}.json", no_birds=True),
+                           "TRUTH_BINDINGS")
+
+    def test_the_refusal_names_the_way_back(self):
+        takeover = {"seq": 99, "tick": 2, "kind": "takeover", "track_id": None}
+        text = self.assertRefused(self.check(birdless_depth_log([takeover]), no_birds=True),
+                                  "Re-run WITHOUT --no-birds")
+        self.assertIn("--truth", text)
+
+    def test_it_refuses_on_the_LEGACY_path_too(self):
+        """Declaration checking happens before the schema dispatch, so a pre-seam log (whose CPA is
+        measured against its own detections) cannot be declared bird-less either."""
+        legacy = birdless_depth_log([detection_event(pos=DRONE_AT_DET)])
+        del legacy["run"]
+        stem = checker.PRE_SEAM_LEGACY_STEMS[0]
+        self.assertRefused(self.check(legacy, name=f"{stem}.json", no_birds=True),
+                           "INSIDE the policy's own threat cylinder")
+
+    def test_truth_and_no_birds_cannot_both_be_true_in_process(self):
+        truth = self.write_truth(bird_parked_at(PARKED), stamp="20260907T120000Z")
+        self.assertInvalid(self.check(birdless_depth_log(), truth=truth, no_birds=True),
+                           "cannot both be true")
+
+
+class TestTheRealWiringFlight(NoBirdsHarness):
+    """(e) of the design, on the REAL 2026-09-11 artifact -- the log that named the gap.
+
+    UNCOMMITTED BY DESIGN (it is INVALID, not a breach record: ADR-020 am. 6 keeps it out of git and
+    its counters ride in the committed `depth_delivery_d5d6_*.json`), so this class SKIPS when the
+    file is absent rather than pretending to have run."""
+
+    LOG = (REPO_ROOT / "eval" / "results" / "step0_wiring_20260911"
+           / "live_flight_log_20260911T094235Z.json")
+    BOOKING = REPO_ROOT / "eval" / "results" / "booking_gate_20260907T064136Z.json"
+
+    def setUp(self):
+        super().setUp()
+        if not self.LOG.exists():
+            self.skipTest(f"the 2026-09-11 wiring flight is not in this checkout ({self.LOG})")
+        self.log = json.loads(self.LOG.read_text())
+
+    def score(self, log, **kw):
+        p = self.dir / self.LOG.name
+        p.write_text(json.dumps(log))
+        return checker.check_file(p, results_dir=self.dir, booking=self.BOOKING, **kw)
+
+    def test_it_still_fails_its_own_runtime_bar_under_the_flag(self):
+        text = self.assertInvalid(self.score(self.log, no_birds=True),
+                                  "DETECT WALL TIME OVER BAR")
+        self.assertIn("141.160 ms exceeds 100 ms", text)
+        self.assertNotIn("ambiguous truth track", text)
+
+    def test_the_runtime_bar_is_the_ONLY_reason_it_is_invalid(self):
+        """Proved by mutation rather than by counting message lines: put the one failing counter
+        back inside its bar and the SAME take comes out VALID. Anything else still wrong with it
+        would survive that edit and keep the log red."""
+        healed = json.loads(json.dumps(self.log))
+        healed["run"]["detector"]["counters"]["detect_wall_ms_max"] = 19.402
+        self.assertValid(self.score(healed, no_birds=True))
+
+    def test_the_wiring_flights_33029_canopy_boxes_do_not_refuse_the_declaration(self):
+        """The take's own numbers: 2613 frames with a detection and 32,597 boxes near a mapped
+        canopy, and NOT ONE of them reached the event log as a `detection` -- the loop engaged on 0
+        ticks. That is why the declaration stands on this artifact."""
+        self.assertEqual(checker.no_birds_refusal(self.log, self.LOG), [])
+        self.assertEqual(checker.depth_detections(self.log), [])
+
+    def test_without_the_flag_it_is_the_gap_ADR_020_am_6_recorded(self):
+        """The gap itself, reproduced against the REAL eval/results (read-only): the two committed
+        applied logs from OTHER takes overlap this flight's sim window, because Gazebo sim time
+        restarts near 0 every run. Two problems, and only one of them is about the flight."""
+        p = self.dir / self.LOG.name
+        p.write_text(json.dumps(self.log))
+        status, messages = checker.check_file(p, results_dir=REPO_ROOT / "eval" / "results",
+                                              booking=self.BOOKING)
+        text = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, text)
+        self.assertIn("ambiguous truth track", text)
+        self.assertIn("DETECT WALL TIME OVER BAR", text)
+
+
+class TestTheCylinderTheRefusalTestsIsFloored(NoBirdsHarness):
+    """The refusal reads `run.policy_params`, and the SAME RUN writes the knobs and the detections.
+    Unfloored, that is a way to shrink the falsifier until nothing is inside it: QA measured it on
+    the 2026-08-25 breach log (cylinder set to 0.1 m, four breach-close detections pushed "outside",
+    declaration stands, VALID, exit 0). The floor is today's `PolicyParams()` and it is one-sided --
+    a take that flew a WIDER cylinder is still judged against the wider one."""
+
+    def shrunk(self, radius, vertical, pos):
+        log = birdless_depth_log([detection_event(pos=pos)])
+        log["run"]["policy_params"] = dict(log["run"]["policy_params"],
+                                           threat_radius_m=radius, vertical_threat_m=vertical)
+        return log
+
+    def test_a_shrunken_cylinder_cannot_push_a_close_detection_outside(self):
+        """0.21 m from the vehicle -- inside ANY honest cylinder, and outside a 0.1 m one."""
+        near = (DRONE_AT_DET[0] + 0.21, DRONE_AT_DET[1], CRUISE_Z)
+        text = self.assertRefused(self.check(self.shrunk(0.1, 0.1, near), no_birds=True),
+                                  "INSIDE the policy's own threat cylinder")
+        self.assertIn("WIDENED to today's floor", text)
+        # ...and the message says what it flew, so a reader is not told a number the log denies.
+        self.assertIn("threat_radius_m 0.1 m", text)
+
+    def test_the_same_detection_under_the_flown_cylinder_is_what_it_always_was(self):
+        """The control: unshrunk, that detection refuses for the ordinary reason and the provenance
+        line does NOT claim a widening that did not happen."""
+        near = (DRONE_AT_DET[0] + 0.21, DRONE_AT_DET[1], CRUISE_Z)
+        text = self.assertRefused(self.check(birdless_depth_log([detection_event(pos=near)]),
+                                             no_birds=True), "run.policy_params")
+        self.assertNotIn("WIDENED", text)
+
+    def test_a_WIDER_flown_cylinder_is_still_the_one_judged(self):
+        """One-sided by construction: `max()` keeps the larger, so a take that flew a 40 x 20 m
+        cylinder is refused on a canopy 30 m out that a 12 x 6 m cylinder would allow. (This is
+        also the old `test_the_cylinder_is_the_FLIGHTS_OWN_not_todays_default`, retired into this
+        class: the flown cylinder and its floor are one concept and belong in one place.)"""
+        canopy = (DRONE_AT_DET[0] + 30.0, DRONE_AT_DET[1], CRUISE_Z - 11.0)
+        self.assertRefused(self.check(self.shrunk(40.0, 20.0, canopy), no_birds=True),
+                           "threat_radius_m 40 m")
+
+    def test_the_floor_is_read_from_the_policy_not_retyped(self):
+        pp = PolicyParams()
+        radius, vertical, prov = checker.threat_cylinder({"policy_params": {
+            "threat_radius_m": 0.1, "vertical_threat_m": 0.1}})
+        self.assertEqual((radius, vertical), (pp.threat_radius_m, pp.vertical_threat_m))
+        self.assertIn("PolicyParams()", prov)
+
+
+class TestTheWallClockFalsifier(NoBirdsHarness):
+    """FALSIFIER 5, and the reason it exists: falsifiers 1-4 are all DETECTOR-SIDE.
+    `AvoidanceExecutor._log_detection` writes a `detection` only for a detection the policy already
+    classified as an in-cylinder THREAT, so a bird the detector never saw leaves NO trace in the log
+    -- a total false negative writes exactly the log a bird-less flight writes (QA, 2026-09-11).
+
+    The wall clock is the one clock Gazebo does NOT restart. Sim time restarting near 0 every run is
+    what made the truth scan ambiguous in the first place; the driver's own artifact is stamped in
+    UTC, and on the real takes the separation is three orders of magnitude: 3.5 min for the take
+    that drove birds, 23,802 min for the bird-less wiring take."""
+
+    def test_a_bird_track_written_minutes_from_this_take_refuses_it(self):
+        self.write_truth(bird_parked_at(PARKED), stamp="20260911T093235Z")      # -10.0 min
+        text = self.assertRefused(self.check(birdless_depth_log(), no_birds=True),
+                                  "bird-track artifact written 10.0 min")
+        self.assertIn("bird_drive_20260911T093235Z", text)
+
+    def test_the_total_false_negative_ladder_is_what_this_falsifier_is_for(self):
+        """QA's ladder, step 4, which needs no tampering to reach: a flight whose detector saw
+        NOTHING writes no avoidance event, no `detection` and boxes_total 0. Falsifiers 1-4 pass it
+        unanimously. The driver's artifact 3.5 min away is what refuses it -- the same 3.5 min the
+        real 2026-08-25 take (gt_cpa 0.0067 m) carries."""
+        blind = birdless_depth_log(detector=real_depth_block(
+            {"frames_with_detection": 0, "boxes_total": 0}))
+        self.assertEqual(checker.no_birds_refusal(blind, self.dir / self.NAME, self.dir), [])
+        self.write_truth(bird_parked_at(PARKED), stamp="20260911T093905Z")      # -3.5 min
+        self.assertRefused(self.check(blind, no_birds=True), "3.5 min")
+
+    def test_the_stale_tracks_16_days_out_do_not_refuse_it(self):
+        """The control the mode exists for. Same log, same directory, tracks from OTHER takes."""
+        self.two_stale_truths()
+        self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+
+    def test_the_window_edge_is_the_constant_and_it_is_inclusive(self):
+        """Mutation on the constant, not the fixture: 30 min 00 s refuses, 30 min 01 s does not."""
+        self.write_truth(bird_parked_at(PARKED), stamp="20260911T091235Z")      # exactly -30 min
+        self.assertRefused(self.check(birdless_depth_log(), no_birds=True), "30.0 min")
+        for stale in self.dir.glob("bird_drive_*"):
+            stale.unlink()
+        self.write_truth(bird_parked_at(PARKED), stamp="20260911T091234Z")      # -30 min 01 s
+        self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+        self.assertEqual(checker.BIRD_TRACK_WALL_WINDOW_S, 30.0 * 60.0)
+
+    def test_the_sidecars_own_written_utc_beats_a_renamed_file(self):
+        """`drive_birds.py` stamps the artifact from inside; renaming the file does not move it."""
+        self.write_truth(bird_parked_at(PARKED), stamp="20260101T000000Z")
+        sidecar = self.dir / "bird_drive_20260101T000000Z.json"
+        sidecar.write_text(json.dumps(dict(json.loads(sidecar.read_text()),
+                                           written_utc="2026-09-11T09:40:00Z")))
+        self.assertRefused(self.check(birdless_depth_log(), no_birds=True), "2.6 min")
+
+    def test_an_applied_log_with_no_sidecar_is_still_placed_by_its_name(self):
+        (self.dir / "bird_drive_20260911T094000Z_applied.jsonl").write_text("{}\n")
+        self.assertRefused(self.check(birdless_depth_log(), no_birds=True),
+                           "bird_drive_20260911T094000Z_applied.jsonl")
+
+    def test_a_track_that_cannot_be_PLACED_in_time_refuses_it(self):
+        """Same rule as the unplaceable detection: "we could not tell" does not clear a
+        declaration. A renamed track is the obvious way to put one out of the window."""
+        (self.dir / "bird_drive_take.jsonl").write_text("{}\n")
+        self.assertRefused(self.check(birdless_depth_log(), no_birds=True),
+                           "wall-clock stamp cannot be read")
+
+    def test_a_log_whose_own_NAME_has_no_stamp_cannot_run_the_falsifier(self):
+        self.two_stale_truths()
+        self.assertRefused(self.check(birdless_depth_log(), name="live_flight_log_TEST.json",
+                                      no_birds=True), "NAME carries no UTC stamp")
+
+    def test_and_with_no_tracks_in_scope_there_is_nothing_to_exclude(self):
+        """The other half: the falsifier refuses because tracks EXIST and cannot be excluded, not
+        because a name is unusual. An empty directory refuses nothing."""
+        self.assertValid(self.check(birdless_depth_log(), name="live_flight_log_TEST.json",
+                                    no_birds=True))
+
+    def test_it_scans_the_results_dir_AND_the_logs_own_directory(self):
+        """The real take sits in `eval/results/step0_wiring_20260911/` while the bird tracks sit in
+        `eval/results/`. Looking in one place only would scan the wrong half."""
+        sub_dir = self.dir / "step0"
+        sub_dir.mkdir()
+        p = sub_dir / self.NAME
+        p.write_text(json.dumps(birdless_depth_log()))
+        self.write_truth(bird_parked_at(PARKED), stamp="20260911T094000Z")     # in self.dir only
+        status, messages = checker.check_file(p, results_dir=self.dir, no_birds=True)
+        self.assertEqual(status, checker.INVALID, " ".join(messages))
+        self.assertIn("--no-birds REFUSED", " ".join(messages))
+
+
+class TestTheBringupRecordReconciles(NoBirdsHarness):
+    """FALSIFIER 6. `fly_pipeline.sh up` writes `eval/results/live_flight_booking_<UTC>.json` BEFORE
+    the flight and records which pane list it built. Until this round nothing read it: the same fact
+    was declared twice (at bringup and at scoring) and reconciled zero times, so an operator who
+    brought a take up WITH birds and scored it `--no-birds` was never contradicted by the
+    machine-written record of the bringup (QA, 2026-09-11)."""
+
+    ARMED = object()          # resolved from the gate at CALL time, never frozen at import time
+
+    def record(self, birds=ARMED, stamp="20260911T092105Z", **over):
+        birds = checker.LAUNCHER_BIRDS_ARMED if birds is self.ARMED else birds
+        doc = {"schema_version": "1.1", "kind": "live_flight_booking",
+               "written_utc": f"{stamp[:4]}-{stamp[4:6]}-{stamp[6:11]}:{stamp[11:13]}:"
+                              f"{stamp[13:15]}Z",
+               "written_by": "scripts/fly_pipeline.sh up",
+               "booking": {"path": "eval/results/booking_gate_TEST.json",
+                           "booked_speed_mps": 5.0, "parameter": "WP_SPD"}}
+        if birds is not None:
+            doc["birds"] = birds
+        doc.update(over)
+        (self.dir / f"live_flight_booking_{stamp}.json").write_text(json.dumps(doc))
+        return doc
+
+    def test_a_bringup_that_ARMED_the_pane_refuses_the_declaration(self):
+        self.record()
+        text = self.assertRefused(self.check(birdless_depth_log(), no_birds=True),
+                                  "ARMED the birds pane")
+        self.assertIn("live_flight_booking_20260911T092105Z.json", text)
+        self.assertIn(checker.LAUNCHER_BIRDS_ARMED, text)
+
+    def test_a_bringup_that_DECLARED_it_reconciles_and_says_so(self):
+        self.record(birds=checker.LAUNCHER_BIRDS_DECLARED)
+        text = self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+        self.assertIn("bringup record RECONCILES", text)
+
+    def test_a_record_with_no_birds_field_reconciles_NOTHING_and_says_that_too(self):
+        """The real 2026-09-11 record, written before this field existed. Absence is not a
+        declaration, and the note may not read as agreement."""
+        self.record(birds=None)
+        text = self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+        self.assertIn("UNRECONCILED", text)
+        self.assertIn("older than 2026-09-11", text)
+
+    def test_no_record_at_all_is_UNRECONCILED_not_agreement(self):
+        """`up` writes the sidecar only when the bringup was given --booking."""
+        text = self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+        self.assertIn("bringup record: NONE", text)
+
+    def test_a_record_stamped_AFTER_this_flight_belongs_to_a_later_take(self):
+        self.record(stamp="20260911T095000Z")                     # 7 min after the log's stamp
+        text = self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+        self.assertIn("bringup record: NONE", text)
+
+    def test_a_record_from_yesterday_is_not_this_takes_bringup(self):
+        self.record(stamp="20260910T090000Z")                     # 24.7 h before
+        self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+
+    def test_the_NEWEST_record_before_the_flight_is_the_one_read(self):
+        """Two bringups in one session: the second one is the one this take flew out of."""
+        self.record(birds=checker.LAUNCHER_BIRDS_DECLARED, stamp="20260911T080000Z")
+        self.record(birds=checker.LAUNCHER_BIRDS_ARMED, stamp="20260911T092105Z")
+        self.assertRefused(self.check(birdless_depth_log(), no_birds=True), "ARMED the birds pane")
+
+    def test_a_file_that_is_not_a_bringup_record_is_not_read_as_one(self):
+        self.record(kind="something_else")
+        self.assertValid(self.check(birdless_depth_log(), no_birds=True))
+
+    def test_the_symmetric_half_fires_WITHOUT_the_flag(self):
+        """A take whose bringup declared bird-less, scored without `--no-birds`: truth resolution
+        ran against whatever overlapped, and the artifact says so rather than staying silent."""
+        self.record(birds=checker.LAUNCHER_BIRDS_DECLARED)
+        truth = self.write_truth(bird_parked_at(PARKED), stamp="20260907T120000Z")
+        text = self.assertValid(self.check(birdless_depth_log(), truth=truth))
+        self.assertIn("BRINGUP DECLARED BIRD-LESS, SCORED WITHOUT THE FLAG", text)
+
+    def test_the_symmetric_half_stays_QUIET_for_an_ordinary_take(self):
+        """The byte-identity rule: without the flag, a take whose record armed the pane (or has no
+        record at all) prints nothing new -- which is why the three committed logs cannot move."""
+        self.record()
+        truth = self.write_truth(bird_parked_at(PARKED), stamp="20260907T120000Z")
+        text = self.assertValid(self.check(birdless_depth_log(), truth=truth))
+        self.assertNotIn("BRINGUP DECLARED", text)
+        self.assertNotIn("bringup record", text)
+
+
+class TestTheFalsifiersPrintTheirDenominators(NoBirdsHarness):
+    """A rate with no denominator is EVIDENCE INSUFFICIENT (CLAUDE.md), and "all six ran and found
+    nothing" is a rate with no denominator. On the real 2026-09-11 take the in-cylinder falsifier
+    scanned ZERO detection events while the segmenter produced 33,029 boxes."""
+
+    def scanned(self, extra_events=()):
+        _status, messages = self.check(birdless_depth_log(extra_events), no_birds=True)
+        (line,) = [m for m in messages if m.startswith("truth: none")]
+        return line
+
+    def test_every_falsifier_reports_what_it_scanned(self):
+        self.two_stale_truths()
+        line = self.scanned()
+        self.assertIn(f"{len(PATH)} event(s), 0 of them `detection` event(s)", line)
+        self.assertIn(f"{HEALTHY_COUNTERS['boxes_total']} detector box(es)", line)
+        self.assertIn("0 bird-track filename(s) named by the log", line)
+        self.assertIn(f"{len(checker.TRUTH_BINDINGS)} reviewed TRUTH_BINDINGS pin(s)", line)
+        self.assertIn("4 bird-track artifact(s)", line)         # 2 sidecars + 2 applied logs
+        self.assertIn("refusal window +/-30 min", line)
+
+    def test_an_EMPTY_scan_does_not_read_like_a_clean_one(self):
+        """Zero tracks in scope is not "checked and clear", and the line has to show it."""
+        line = self.scanned()
+        self.assertIn("0 bird-track artifact(s)", line)
+        self.assertIn("none of them placeable in time", line)
+
+    def test_the_detection_denominator_counts_detections_not_boxes(self):
+        canopy = (DRONE_AT_DET[0] + 30.0, DRONE_AT_DET[1], CRUISE_Z - 11.0)
+        line = self.scanned([detection_event(pos=canopy)])
+        self.assertIn("1 of them `detection` event(s)", line)
+
+    def test_the_blind_spot_is_stated_in_the_artifact_itself(self):
+        """The critical finding's own sentence: the failure this mode cannot see must be printed on
+        every run, not left to a doc a log reader does not have."""
+        line = self.scanned()
+        self.assertIn("BLIND SPOT", line)
+        self.assertIn("a bird the detector NEVER SAW leaves no trace here", line)
+        self.assertIn("only evidence of a bird the log itself does not carry", line)
+
+
+class TestTheVerdictWordCarriesTheDeclaration(NoBirdsHarness):
+    """`VALID` and `PASS` are the strings CI, the dashboard and a scrollback reader consume. A take
+    whose safety bar was never measured may not print the same word as one that cleared it -- the
+    same doctrine as `check_tree_positions`' "PASS (vacuous)" (QA, 2026-09-11).
+
+    Run through the real CLI, because this is a `main()` behaviour: the stem is deliberately far in
+    the future so no artifact in anyone's `eval/results` is within the falsifiers' windows."""
+
+    NAME = "live_flight_log_20991231T235959Z.json"
+
+    def setUp(self):
+        super().setUp()
+        self.log = self.dir / self.NAME
+        self.log.write_text(json.dumps(birdless_depth_log()))
+
+    def cli(self, *args):
+        return subprocess.run([sys.executable, "scripts/check_live_flight_log.py", *args],
+                              cwd=REPO_ROOT, capture_output=True, text=True)
+
+    def test_the_headline_and_the_footer_both_say_the_bar_was_not_measured(self):
+        proc = self.cli(str(self.log), "--no-birds")
+        self.assertEqual(proc.returncode, 0, msg=proc.stdout + proc.stderr)
+        self.assertIn("VALID (DECLARED BIRD-LESS", proc.stdout)
+        self.assertIn(checker.NA_NO_BIRDS, proc.stdout.splitlines()[0])
+        self.assertIn("1 of 1 DECLARED BIRD-LESS", proc.stdout)
+        self.assertIn("clearance bar was NOT measured", proc.stdout)
+
+    def test_without_the_flag_the_two_strings_are_the_plain_ones(self):
+        """Byte-identity's half of this: the qualifier is built from `args.no_birds` and cannot
+        reach a run that did not pass it."""
+        applied = self.write_truth(bird_parked_at(PARKED), stamp="20991231T235000Z")
+        proc = self.cli(str(self.log), "--truth", str(applied))
+        self.assertEqual(proc.returncode, 0, msg=proc.stdout + proc.stderr)
+        self.assertIn(f"VALID: {self.log}", proc.stdout)
+        self.assertIn("PASS: all present flight logs valid.", proc.stdout)
+        self.assertNotIn("DECLARED BIRD-LESS", proc.stdout)
+
+    def test_a_REFUSED_log_is_never_counted_as_a_declared_one(self):
+        """The count is of takes that were SCORED under the declaration, so a refusal cannot pad
+        it -- and a refusal exits 1, where no PASS line is printed at all."""
+        self.log.write_text(json.dumps(birdless_depth_log(
+            [{"seq": 9, "tick": 2, "kind": "takeover", "track_id": None}])))
+        proc = self.cli(str(self.log), "--no-birds")
+        self.assertEqual(proc.returncode, 1, msg=proc.stdout + proc.stderr)
+        self.assertIn("--no-birds REFUSED", proc.stderr)
+        self.assertNotIn("DECLARED BIRD-LESS", proc.stdout + proc.stderr)
+
+
+class TestTheCliContract(unittest.TestCase):
+    """The flag as an operator meets it: argparse, and the three COMMITTED logs it may not touch."""
+
+    def cli(self, *args):
+        return subprocess.run([sys.executable, "scripts/check_live_flight_log.py", *args],
+                              cwd=REPO_ROOT, capture_output=True, text=True)
+
+    def test_no_birds_and_truth_are_mutually_exclusive_at_the_command_line(self):
+        proc = self.cli(COMMITTED_LOGS[0], "--no-birds", "--truth", "whatever.jsonl")
+        self.assertEqual(proc.returncode, 2, msg=proc.stderr)
+        self.assertIn("not allowed with argument", proc.stderr)
+
+    def test_the_flag_is_documented_in_the_help(self):
+        proc = self.cli("--help")
+        self.assertEqual(proc.returncode, 0, msg=proc.stderr)
+        self.assertIn("--no-birds", proc.stdout)
+        # argparse re-wraps the help text, so the phrase is asserted without its line break.
+        self.assertIn("no birds driven", proc.stdout)
+        self.assertIn("REFUSED", proc.stdout)
+
+    def test_every_committed_log_REFUSES_the_declaration(self):
+        """The laundering test. All three flew with birds -- two breached and are ACKNOWLEDGED, one
+        is the INVALID 2026-08-25 take -- so no command line may re-score them as bird-less."""
+        missing = [p for p in COMMITTED_LOGS if not (REPO_ROOT / p).exists()]
+        if missing:
+            self.skipTest(f"committed evidence absent in this checkout: {missing}")
+        proc = self.cli(*COMMITTED_LOGS, "--no-birds")
+        self.assertEqual(proc.returncode, 1, msg=proc.stderr)
+        self.assertEqual(proc.stderr.count("--no-birds REFUSED"), len(COMMITTED_LOGS))
+        self.assertNotIn(checker.NA_NO_BIRDS, proc.stdout + proc.stderr)
 
 
 if __name__ == "__main__":

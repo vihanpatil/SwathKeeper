@@ -2025,3 +2025,75 @@ mission; tree `height_m` 3.8 traces to the SDF canopy sphere (centre 2.500 + rad
 fails / 4.81 m passes and `4.799999` / `4.800001` straddle correctly; unreadable mission, MSL frame
 and missing obstacle file are exit 2; `|| true` gone and HEAD had no such step; the mutation test
 kills an inline re-derivation of the rule; no test function was deleted anywhere in the diff.
+
+**G203-G210 (2026-09-11) — THE `--no-birds` DECLARED BIRD-LESS MODE** (`feat/no-truth-checker-mode`
+@ eed8f2a + the uncommitted diff; ADR-020 am. 7). Closes a real gap the 2026-09-11 wiring flight
+named. The build is strong: 17/17 of my mutants died (12 checker, 5 launcher), the three committed
+logs are byte-identical without the flag and all three REFUSE it, dashboard `--check` FRESH.
+
+- **G203 (CRITICAL) — all four falsifiers are DETECTOR-SIDE, so the mode is blind in exactly the
+  direction the gt-CPA bar exists for: the MISSED bird.** `_log_detection` fires only when
+  `maneuver.triggering_detection` is set, and `avoidance_policy.decide_multi` sets it only on the
+  threat branch — so a `detection` event exists ONLY for a bird the policy already classified as an
+  in-cylinder threat (counts match exactly on all four real logs: 61/61, 19/19, 4/4, 0/0). A flight
+  on which the detector never saw the bird writes zero takeovers, zero detections, names no track
+  and (once copied off its pinned stem) hits no `TRUTH_BINDINGS` pin. **Measured:** the 2026-08-25
+  log — gt_cpa **0.0067 m**, a real strike, INVALID + CI-red by design — with its detection/maneuver
+  events removed and `boxes_total` set to 0 (i.e. the artifact a total-FN flight writes naturally,
+  detector running on 1301/1302 frames) scores **VALID, exit 0, "PASS: all present flight logs
+  valid."** under `--no-birds`. No doc states this. **Two fixes, both verified available:** (a) a
+  FIFTH falsifier on WALL CLOCK — the one clock Gazebo does not restart: nearest
+  `eval/results/bird_drive_<UTC>.json` to the flight log's own UTC stem is **−3.5 min** for the take
+  that drove birds (08-25) and **−23,802 min (16.5 days)** for the 2026-09-11 bird-less take; the
+  two demo takes are +228.8 / −164.4 min. A ±30 min window separates them perfectly and is free on
+  the take the mode must support. (b) reconcile against the launcher's own record (see G205).
+- **G204 (MAJOR) — the refusal's own cylinder is UNFLOORED, and `gate_knob_floors` floors three
+  other knobs.** `threat_cylinder()` reads `run.policy_params` verbatim. Set `threat_radius_m` /
+  `vertical_threat_m` to 0.1 (a cylinder 30x smaller than the 3.00 m clearance bar) and the 08-25
+  log's four detections at 0.21 m / 3.43 m fall "outside", the declaration stands, **VALID exit 0**;
+  nothing objects, because those two knobs are not in `gate_knob_floors`' list. **Fix PROVEN** (do
+  NOT add them to `gate_knob_floors` — the two ACKNOWLEDGED demo logs record NEITHER knob and would
+  gain a new problem, moving a committed verdict): widen inside `threat_cylinder` only —
+  `max(flown, PolicyParams() default)` per axis, provenance string says it widened. Measured:
+  shrunk fixture -> REFUSED, real wiring log unchanged (1 problem), 422 checker tests green, the
+  existing 40x20 "flight's own cylinder" test still passes (max() keeps the larger).
+- **G205 (MAJOR) — the bringup declaration and the scoring declaration never meet.** `fly_pipeline.sh
+  up --no-birds` writes `"birds": "none (declared --no-birds)"` into
+  `eval/results/live_flight_booking_<UTC>.json`, and `check_live_flight_log.load_booking` **refuses
+  that file BY NAME** (`kind == "live_flight_booking"` -> "the LAUNCHER'S bringup record ... Pass the
+  artifact it names instead"). Nothing reads the key. So a take brought up WITH birds and scored
+  `--no-birds` is never contradicted by the machine-written record of the same fact.
+- **G206 (MAJOR) — the verdict word launders the declaration.** A declared bird-less take prints
+  `VALID: <path> (covered=720 debt=0 ...)` and `PASS: all present flight logs valid.` — the two
+  strings CI and a reader consume — with `gt_cpa_m: N/A (no birds driven)` and `DEPTH BARS MEASURED:
+  0 of 4` buried in the notes. The repo's own doctrine is the opposite: `check_tree_positions.py:173`
+  prints `PASS (vacuous)` IN THE VERDICT WORD and the same checker prints `R2/R3 PASS (vacuous)`.
+  Fix: carry the declaration into the headline and the footer.
+- **G207 (MINOR) — "Its four falsifiers all ran and found nothing" has no denominator.** On the real
+  2026-09-11 log the in-cylinder falsifier scanned **0 detection events** while the take produced
+  33,029 boxes; the builder's own test asserts `depth_detections(log) == []`. Print the denominators.
+- **G208 (MINOR) — `DODGE_TAKE_PREREGISTRATION_20260907.md:219-220` still lists "(a) the no-truth
+  checker mode" as owed before a re-fly**; `ROADMAP.md:160` says DONE. The prereg is the doc that
+  decides whether the dodge take is flyable. (Same family as G199.)
+- **G209 (MINOR) — the `test-flight --no-birds` refusal message is factually wrong.**
+  "'test-flight' does not build the pane list" — `cmd_test_flight` calls `cmd_up`, which is the pane
+  builder. Fail-SAFE (it refuses), but a test now pins the wrong sentence.
+- **G210 (MINOR) — ADR-020 am. 7 is 11 body lines vs the <=10 rule** (builder reported 10); and
+  tests:src went **3.715 -> 3.790** with `src/fieldguard_planning` unchanged at 6,854 lines. HEAD was
+  already over the 3.70 cap (G200); this is the second consecutive round to push it, and still no
+  test enforces the numeric cap.
+
+**Verified GOOD in this round (do not re-litigate):** 17/17 mutants killed (checker: the refusal
+kind-list, `NA_NO_BIRDS` -> PASS, argparse exclusivity, `<=` -> `<` on the rim, cylinder-from-
+defaults, refusal disabled, bar 3b -> measured, legacy-path skip, `named_truth_files` scoped to
+`run`, in-process `--truth` refusal, the declaration note dropped, unplaceable allowed; launcher:
+flag as no-op, pane opened anyway, sidecar key dropped, subcommand refusals removed, recipe
+paragraph). Three committed logs byte-identical on stdout+stderr+exit vs
+`git show HEAD:scripts/check_live_flight_log.py` (2 ACKNOWLEDGED exit 0, 1 INVALID exit 1) and all
+three REFUSE the flag with 0 `N/A` lines. `build_dashboard_data.py --check` FRESH 11/11. The real
+2026-09-11 log under the flag: exactly ONE problem (`detect_wall_ms_max` 141.160 > 100 ms), five
+`N/A (no birds driven)` lines, none reading PASS; ledger 720/0, clock, booking ratio 0.741 and depth
+bars 1/2/3a all still print their numbers. **A DETECTED near-miss cannot be laundered**: the
+cylinder complement's minimum 3D distance is `min(12, 6) = 6 m`, 2x the 3.00 m bar, so any detection
+close enough to breach is necessarily inside the cylinder — the hole in G203 is the missed detection
+and nothing else.

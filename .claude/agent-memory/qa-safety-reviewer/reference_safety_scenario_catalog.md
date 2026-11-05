@@ -636,3 +636,46 @@ then `gate.main(["--mission", p])` returns the exit code — so exit codes are t
   re-derived inline; `chord_samples` removed; margin literal instead of the import; geofence band
   `<=` -> `<`; `mission_xyz_path` forced to cruise altitude; `SAMPLE_STEP_M` 0.5 -> 5.0 / 1e9;
   exit 2 -> exit 0. **8 killed, 1 survivor: the step size (both variants).**
+
+## The `--no-birds` declared-bird-less layer (ADR-020 am. 7, reviewed 2026-09-11)
+
+`scripts/check_live_flight_log.py --no-birds` + `scripts/fly_pipeline.sh up --no-birds`. The mode
+skips truth resolution entirely and prints `N/A (no birds driven)` on the CPA/truth family.
+
+**The real fixture** (read-only, gitignored, never commit): the 2026-09-11 P2 step-0 wiring flight at
+`eval/results/step0_wiring_20260911/live_flight_log_20260911T094235Z.json`, booking
+`eval/results/booking_gate_20260907T064136Z.json`. Without the flag it carries TWO problems
+(`detect_wall_ms_max` 141.160 > 100 ms + `ambiguous truth track` naming
+`bird_drive_2026082{3T073836Z,5T210030Z}_applied.jsonl`); with the flag, ONE. Its `events` are
+`proceed` x6089 + one `divert_audit_summary` — **zero `detection` events**, which is why the
+declaration stands on it.
+
+**The laundering ladder (rebuild in ~2 min, all in scratch, never in `eval/results`):** copy
+`live_flight_log_20260825T210402Z.json` (gt_cpa 0.0067 m) and score each with `--no-birds`:
+(1) verbatim -> REFUSED (events + in-cylinder detections + `TRUTH_BINDINGS` stem);
+(2) renamed stem -> REFUSED (the pin is stem-keyed, a rename drops it);
+(3) strip `takeover/latch/relatch/maneuver/resume` -> REFUSED on the 4 detections;
+(4) strip `detection` too and zero `boxes_total`/`frames_with_detection` -> **VALID, exit 0**. Step 4
+is the artifact a total-false-negative flight writes naturally — that is G203.
+(5) restore the events but set `policy_params.threat_radius_m/vertical_threat_m` to 0.1 ->
+**VALID, exit 0** — that is G204.
+
+**Byte-identity harness (no flag) without touching the worktree:** build a shadow tree in scratch —
+symlink `src eval config sim tests docs dashboard` and every `scripts/*` EXCEPT the checker, then
+write `git show HEAD:scripts/check_live_flight_log.py` into `<shadow>/scripts/`. `REPO_ROOT` is
+`Path(__file__).resolve().parent.parent`, so a renamed copy would diff on the gate's own
+`scripts/{__file__.name}` messages; the symlink shadow does not. Pass ABSOLUTE log paths (the default
+glob prints the shadow's own path in stderr).
+
+**Mutation harness for this layer:** mutate `scripts/check_live_flight_log.py` / `fly_pipeline.sh`
+IN PLACE from a scratch pristine copy inside a `try/finally` that restores and re-checks md5, and run
+`test_check_live_flight_log_{depth,booking,schema2}.py` (377 tests, ~4.5 s) or `test_fly_pipeline.py`
+(123 tests, ~19 s). 17 mutants, **17 killed** — this layer's tests are real. Mutants worth reusing:
+`TARGET_EVIDENCE_KINDS` minus one kind; `NA_NO_BIRDS` -> `"PASS (...)"`; `--no-birds` out of the
+argparse mutually-exclusive group; the cylinder `<=` -> `<`; `threat_cylinder` forced to defaults;
+`no_birds_refusal` -> `[]`; `no_birds_range_error` -> measured; refusal moved after the schema
+dispatch; `named_truth_files` scoped to `run`; the launcher flag parsed as `:`.
+
+**Suite baselines in this tree:** `pytest tests -q` = 4 failed / 1759 passed / 1 skipped (254 s) —
+the declared red plus TWO stale-totals tests and `test_known_red_allowlist` as their knock-on;
+`unittest discover -s tests/fieldguard_planning` = Ran 1420, OK (skipped=1), 52 s.

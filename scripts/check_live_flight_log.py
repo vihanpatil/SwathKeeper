@@ -137,6 +137,7 @@ Usage:
     python3 scripts/check_live_flight_log.py <log> \
         --truth eval/results/bird_drive_<stamp>_applied.jsonl \
         --booking eval/results/booking_gate_<stamp>.json          # a dodge take
+    python3 scripts/check_live_flight_log.py <log> --no-birds     # a bird-less wiring flight
 
 STDLIB ONLY, deliberately: this runs as a CI step that needs nothing but `src/` importable, and the
 whole truth-track path (`scripts/drive_birds.py`, `eval/annotate_real_clip.py`) is stdlib too. Do
@@ -145,8 +146,10 @@ not let numpy/scipy leak into the gate.
 import argparse
 import json
 import math
+import re
 import statistics
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 
@@ -1403,6 +1406,14 @@ def _bar(n: int) -> str:
 
 # The words bar 7 requires, spelled once. A test greps every NDVI-family line for exactly this.
 NA_DEPTH = "N/A (depth take)"
+# ...and the words a DECLARED bird-less flight requires, for the same reason and spelled the same
+# way. See the `--no-birds` section further down for what a declaration is and what falsifies one;
+# the constant lives up here because the depth tail below prints it. A test greps for it exactly.
+NA_NO_BIRDS = "N/A (no birds driven)"
+# The ONE depth bar that needs a bird (P1 bar 3b, the truth-referenced range error). Named once and
+# consumed twice -- by the bar's own note and by the DEPTH BARS MEASURED summary -- so the two can
+# never disagree about whether it read UNMEASURED or N/A.
+DEPTH_BAR_NEEDS_TRUTH = "3b range error"
 # `DepthDetectionSource.counters()` -- the whole contract, because a counter that is ABSENT is not a
 # counter that is zero, and these are the only evidence the depth detector ran at all.
 DEPTH_DETECTOR_COUNTER_KEYS = (
@@ -2270,6 +2281,18 @@ def depth_range_error(log, truth, report) -> Tuple[List[str], List[str], bool]:
             f"was written in (0.1076 m over 63 matches). A depth camera that cannot hold half a "
             f"metre is being read as a measurement when it is an estimate. {_bar(3)}")
     return problems, notes, True
+
+
+def no_birds_range_error() -> Tuple[List[str], List[str], bool]:
+    """P1 bar 3b under `--no-birds` -- the ONE depth bar that needs a bird.
+
+    Bars 1, 2, 3a and 7 read counters and declarations; bars 4, 5 and 6 read the flight's own
+    events; only 3b joins to the truth track, so only 3b changes here. It keeps its pre-registered
+    quote and its "never a PASS", and it does NOT tell the operator to pass `--truth`: there is no
+    applied log to pass, which is the whole reason the flag exists."""
+    return [], [f"RANGE ERROR {NA_NO_BIRDS}: no bird was driven on this flight (declared "
+                f"--no-birds), so the {DEPTH_RANGE_ERROR_BAR_M:g} m range bar has nothing to "
+                f"compare a measured range against. Never a PASS. [{_bar(3)}]"], False
 
 
 def depth_na_notes(report: Optional[dict], seen: Sequence[int]) -> List[str]:
@@ -3311,9 +3334,475 @@ def resolve_truth(log_path: Path, run, truth_arg: Optional[Path] = None,
     return truth, []
 
 
+# ------------------------------------------------- the DECLARED bird-less flight (`--no-birds`)
+# A WIRING FLIGHT HAS NO TRUTH TRACK, AND THAT IS NOT THE SAME AS A MISSING ONE. The P2 step-0 depth
+# flight of 2026-09-11 drove NO birds by design -- they were parked off-field and `drive_birds.py`
+# never ran -- so no `bird_drive_*_applied.jsonl` was written for it. Gazebo sim time restarts near
+# 0 every run, so two OLD applied logs overlapped its window anyway, `resolve_truth` reported
+# "ambiguous truth track", and the take came out INVALID with no way to say "there was nothing to
+# track". That is a CHECKER GAP, booked as such in ADR-020 amendment 6: the gate could not tell
+# "we did not look" from "there was nothing to look at", and those are not the same claim either.
+#
+# `--no-birds` is a DECLARATION, not a measurement. Under it truth resolution is SKIPPED (no
+# candidate search, no ambiguity, no binding), and every gate that needs a bird prints
+# `N/A (no birds driven)` -- never PASS, never a number. EVERYTHING ELSE STAYS LIVE: ledger, clock,
+# stamps, detector-ran, the depth counter/runtime bars, the booked speed, R2/R3, the schema. That is
+# the whole design constraint -- the 2026-09-11 log is still INVALID under this flag, on its own
+# `detect_wall_ms_max` bar, and a mode that turns an INVALID log green would be a laundering mode
+# rather than a scoring one.
+#
+# SIX THINGS THE DECLARATION CANNOT SURVIVE, because a FALSE declaration is the only way this flag
+# could hide a breach. The first four are evidence, in the log itself, that something WAS in front
+# of the vehicle:
+#   1. an avoidance event the loop only writes for a threat (takeover / latch / relatch / maneuver /
+#      resume) -- the executor cannot reach any of them without a policy maneuver;
+#   2. a `detection` event inside the policy's OWN threat cylinder, tested with the same inequality
+#      `AvoidancePolicy._threats` uses, on the cylinder THIS flight recorded. A detection outside it
+#      is allowed on purpose: the depth seam boxes mapped canopies all flight long (33,029 of them
+#      on 2026-09-11) and a wiring flight is largely a record of exactly that;
+#   3. a `bird_drive_*[_applied].jsonl` filename the log ITSELF names anywhere in its JSON -- a
+#      flight that recorded its own bird track did not fly without birds;
+#   4. a stem pinned in `TRUTH_BINDINGS` -- a reviewed diff already says which bird track belongs to
+#      this take, and a command-line declaration may not overrule a reviewed pin (the same doctrine
+#      that makes `--truth` unable to override a binding).
+# ...and the last two do NOT read the flight log at all, which is the whole point of them:
+#   5. THE WALL CLOCK -- a `bird_drive_*` artifact written within +/-30 min of this flight's own UTC
+#      stamp (`no_birds_wall_clock_reasons`). Gazebo restarts SIM time near 0 every run, which is
+#      what made the truth scan ambiguous in the first place; the wall clock does not restart, so
+#      "the driver ran minutes from this take" is checkable without the detector's help.
+#   6. THE BRINGUP RECORD -- `eval/results/live_flight_booking_<UTC>.json`, written by
+#      `fly_pipeline.sh up` BEFORE the flight, which since 2026-09-11 records whether the birds pane
+#      was armed. A declaration typed at scoring time does not overrule the machine-written record
+#      of the bringup (`launcher_birds_reason`).
+# None of the six is a measurement of separation, and they are not claimed to be: they are the
+# falsifiers of the declaration. What the flag GIVES UP is the gt-CPA gate, which is why the verdict
+# block says the N/A lines came from a declaration and names it.
+#
+# THE BLIND SPOT, STATED ONCE HERE AND PRINTED ON EVERY RUN (QA, 2026-09-11). Falsifiers 1-4 are all
+# DETECTOR-SIDE: `AvoidanceExecutor._log_detection` writes a `detection` event only for a detection
+# the policy already classified as an in-cylinder THREAT, so a bird the detector NEVER SAW leaves no
+# trace in the artifact at all -- a total false negative writes exactly the log a bird-less flight
+# writes. That is the direction the gt-CPA bar exists for, and the applied-pose truth track is the
+# ONLY evidence of a bird the log itself does not carry. Falsifiers 5 and 6 are the answer available
+# without one, and they are proximity/paperwork tests rather than measurements: they can say "a bird
+# driver ran next to this take", never "nothing was in the air".
+# (`NA_NO_BIRDS`, the words every one of those lines prints, lives beside `NA_DEPTH` above -- the
+# depth tail needs it, and one constant may not have two homes.)
+#
+# Event kinds `AvoidanceExecutor` can only reach through a policy maneuver against a threat.
+# `proceed`, `hold`, `gate_reject`, `debt` and `divert_audit_summary` are deliberately NOT here:
+# a proceed is the no-threat tick, and a hold/gate_reject without a triggering detection is the
+# geofence backstop, which a bird-less flight can legitimately hit.
+TARGET_EVIDENCE_KINDS = ("takeover", "latch", "relatch", "maneuver", "resume")
+# `bird_drive_<stamp>.json` / `bird_drive_<stamp>_applied.jsonl`, as `drive_birds.py` names them.
+TRUTH_FILE_RE = re.compile(r"bird_drive_[0-9A-Za-z]+(?:_applied)?\.jsonl?")
+
+
+def named_truth_files(log) -> List[str]:
+    """Every `bird_drive_*[_applied].jsonl` filename this log names, anywhere in its own JSON.
+
+    Walked iteratively over keys AND values: a flight log is a few MB of nested lists and the
+    filename could arrive in a field nobody has written yet (a future `run.truth_track`, a
+    hand-added note). The question is "does this artifact name a bird track", and the honest way to
+    ask it is of the whole document rather than of one key."""
+    found = set()
+    stack = [log]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            stack.extend(node.keys())
+            stack.extend(node.values())
+        elif isinstance(node, (list, tuple)):
+            stack.extend(node)
+        elif isinstance(node, str):
+            found.update(TRUTH_FILE_RE.findall(node))
+    return sorted(found)
+
+
+# +/-30 min, on the WALL clock. Measured on the real artifacts (2026-09-11): the take that DROVE
+# birds sits 3.5 min from its own track, the bird-less wiring take 23,802 min (16.5 days) from the
+# nearest one, and the two demo takes 228.8 / 164.4 min. Three orders of magnitude of separation, so
+# the window is chosen wide enough to cover a bringup-to-log gap (21.5 min on 2026-09-11) and small
+# enough that it has never had to be argued about.
+BIRD_TRACK_WALL_WINDOW_S = 1800.0
+# A bringup precedes the flight log it produces by minutes to hours (2026-09-11: 21.5 min). A record
+# stamped AFTER the log belongs to a later take and is not read at all.
+LAUNCHER_RECORD_WINDOW_S = 6 * 3600.0
+# The two values `fly_pipeline.sh write_booking_sidecar` writes into `birds`. A record with NO
+# `birds` key was written by a launcher older than 2026-09-11 and reconciles NOTHING -- absence is
+# not a declaration, and the gate says so rather than reading it either way.
+LAUNCHER_BIRDS_DECLARED = "none (declared --no-birds)"
+LAUNCHER_BIRDS_ARMED = "armed (altitude-gated drive_birds.py pane)"
+UTC_STAMP_RE = re.compile(r"\d{8}T\d{6}Z")
+
+
+def utc_of(text) -> Optional[datetime]:
+    """The UTC instant in `text`, from a `<...>_20260911T094235Z.json` stem or a
+    `2026-09-11T09:21:05Z` field. `None` when there is none to read -- never "now", never the file's
+    mtime: a copied file carries a new mtime and the same claim."""
+    if not isinstance(text, str):
+        return None
+    m = UTC_STAMP_RE.search(text.replace("-", "").replace(":", ""))
+    if m is None:
+        return None
+    try:
+        return datetime.strptime(m.group(0), "%Y%m%dT%H%M%SZ")
+    except ValueError:
+        return None
+
+
+def evidence_dirs(path: Path, results_dir: Path) -> List[Path]:
+    """Where a take's sibling artifacts live: the results dir the gate scans AND the log's own
+    directory. The 2026-09-11 wiring log sits in `eval/results/step0_wiring_20260911/` while the
+    bird tracks sit in `eval/results/`, so looking in one place only would scan the wrong half."""
+    dirs: List[Path] = []
+    seen = set()
+    for d in (Path(results_dir), Path(path).parent):
+        try:
+            key = d.resolve()
+        except OSError:                                        # pragma: no cover - unreadable path
+            continue
+        if d.is_dir() and key not in seen:
+            seen.add(key)
+            dirs.append(d)
+    return dirs
+
+
+def bird_track_artifacts(dirs: Sequence[Path]) -> List[Tuple[str, Optional[datetime]]]:
+    """Every `bird_drive_*` file in `dirs` as (name, wall-clock stamp).
+
+    The stamp comes from the sidecar's own `written_utc` when the file is a readable JSON sidecar
+    (that is what `drive_birds.py` records) and from the filename otherwise -- the applied logs are
+    half a megabyte of JSONL and are not read for a timestamp their name already carries."""
+    out: List[Tuple[str, Optional[datetime]]] = []
+    for d in dirs:
+        for p in sorted(d.glob("bird_drive_*")):
+            stamp = None
+            if p.suffix == ".json":
+                try:
+                    doc = json.loads(p.read_text())
+                    stamp = utc_of(doc.get("written_utc")) if isinstance(doc, dict) else None
+                except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+                    stamp = None
+            out.append((p.name, stamp if stamp is not None else utc_of(p.name)))
+    return out
+
+
+def no_birds_wall_clock_reasons(path: Path, results_dir: Path) -> List[str]:
+    """FALSIFIER 5: a bird driver that ran next to this take, on the one clock Gazebo does not
+    restart. `[]` = no bird-track artifact is close enough in wall-clock time to contradict the
+    declaration.
+
+    Three ways to be refused, and they are different facts. A track INSIDE the window is evidence
+    birds were driven on this flight. A track whose stamp cannot be read is a track that cannot be
+    excluded -- and "we could not tell" may not clear a declaration, the same rule the truth join
+    and the unplaceable detection live by. A FLIGHT LOG whose name carries no UTC stamp puts every
+    track in that second class at once (`avoidance_node` always writes `live_flight_log_<UTC>.json`,
+    so an unstamped one has been renamed)."""
+    dirs = evidence_dirs(path, results_dir)
+    tracks = bird_track_artifacts(dirs)
+    if not tracks:
+        return []
+    flight = utc_of(Path(path).name)
+    where = ", ".join(str(d) for d in dirs)
+    if flight is None:
+        return [f"{len(tracks)} bird-track artifact(s) sit in {where} and this log's NAME carries no "
+                f"UTC stamp ({Path(path).name}), so none of them can be excluded in WALL-CLOCK time "
+                f"-- `avoidance_node` writes `live_flight_log_<UTC>.json`, so a log without one has "
+                f"been renamed. Score it under its own name, or bind the track with --truth"]
+    reasons = []
+    unstamped = sorted(name for name, stamp in tracks if stamp is None)
+    if unstamped:
+        reasons.append(f"bird-track artifact(s) in {where} whose wall-clock stamp cannot be read "
+                       f"({', '.join(unstamped[:3])}{'...' if len(unstamped) > 3 else ''}) -- an "
+                       f"artifact that cannot be placed in time cannot be excluded from this take")
+    near = sorted(((abs((stamp - flight).total_seconds()), name, stamp)
+                   for name, stamp in tracks if stamp is not None
+                   and abs((stamp - flight).total_seconds()) <= BIRD_TRACK_WALL_WINDOW_S))
+    for dt_s, name, stamp in near[:3]:
+        reasons.append(
+            f"a bird-track artifact written {dt_s / 60.0:.1f} min from this flight's own wall-clock "
+            f"stamp ({name}, {stamp:%Y-%m-%dT%H:%M:%SZ} vs {flight:%Y-%m-%dT%H:%M:%SZ}; window "
+            f"+/-{BIRD_TRACK_WALL_WINDOW_S / 60.0:.0f} min) -- Gazebo restarts SIM time near 0 every "
+            f"run, which is why the truth scan cannot tell these apart, but the WALL clock does not "
+            f"restart: a driver that ran that close to this take drove birds on it")
+    if len(near) > 3:
+        reasons.append(f"...and {len(near) - 3} further bird-track artifact(s) inside the window")
+    return reasons
+
+
+def launcher_record(path: Path, results_dir: Path) -> Tuple[Optional[str], Optional[str],
+                                                            Optional[datetime]]:
+    """FALSIFIER 6's input: (record name, its `birds` field, its stamp) for the newest
+    `live_flight_booking_*.json` written at or before this flight's stamp and within
+    `LAUNCHER_RECORD_WINDOW_S` of it -- the bringup this take was flown out of.
+
+    The launcher writes that file only when the bringup was given `--booking`, so its ABSENCE means
+    nothing at all and is reported as "unreconciled" rather than read either way. Same for a record
+    with no `birds` key: those were written before 2026-09-11 and carry no statement to reconcile."""
+    flight = utc_of(Path(path).name)
+    if flight is None:
+        return None, None, None
+    best: Optional[Tuple[datetime, str, Optional[str]]] = None
+    for d in evidence_dirs(path, results_dir):
+        for p in sorted(d.glob("live_flight_booking_*.json")):
+            try:
+                doc = json.loads(p.read_text())
+            except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+                continue
+            if not isinstance(doc, dict) or doc.get("kind") != "live_flight_booking":
+                continue
+            stamp = utc_of(doc.get("written_utc")) or utc_of(p.name)
+            if stamp is None:
+                continue
+            delta = (flight - stamp).total_seconds()
+            if not (0.0 <= delta <= LAUNCHER_RECORD_WINDOW_S):
+                continue
+            birds = doc.get("birds")
+            if best is None or stamp > best[0]:
+                best = (stamp, p.name, birds if isinstance(birds, str) else None)
+    if best is None:
+        return None, None, None
+    return best[1], best[2], best[0]
+
+
+def launcher_birds_reason(path: Path, results_dir: Path) -> Optional[str]:
+    """FALSIFIER 6: the bringup record says the birds pane was ARMED. `None` = nothing to contradict
+    (no record in the window, or one that carries no statement about birds)."""
+    name, birds, stamp = launcher_record(path, results_dir)
+    if name is None or birds is None or birds == LAUNCHER_BIRDS_DECLARED:
+        return None
+    return (f"the launcher's own bringup record for this take ({name}, written "
+            f"{stamp:%Y-%m-%dT%H:%M:%SZ}) records `birds: {birds!r}` -- the bringup that produced "
+            f"this flight ARMED the birds pane, and a declaration typed at SCORING time does not "
+            f"overrule the machine-written record of the BRINGUP. One of the two is wrong; the gate "
+            f"does not get to choose which")
+
+
+def launcher_birds_note(path: Path, results_dir: Path, no_birds: bool) -> Optional[str]:
+    """The bringup record read the OTHER way: what the two declarations say to each other.
+
+    Under `--no-birds` it reports whether the bringup agrees, is silent, or was never written --
+    because a declaration that reconciles against a machine-written record is worth more than one
+    that does not, and a reader must be able to tell those apart. WITHOUT the flag it fires only
+    when a record explicitly declared the take bird-less: that take's truth resolution just ran
+    anyway, which is either a missing flag or a wrong record."""
+    name, birds, stamp = launcher_record(path, results_dir)
+    if not no_birds:
+        if name is not None and birds == LAUNCHER_BIRDS_DECLARED:
+            return (f"BRINGUP DECLARED BIRD-LESS, SCORED WITHOUT THE FLAG: {name} records `birds: "
+                    f"{birds!r}` at {stamp:%Y-%m-%dT%H:%M:%SZ}, but --no-birds was not passed, so "
+                    f"truth resolution ran against whatever tracks overlap this flight's sim "
+                    f"window. If the bringup record is right, score this take with --no-birds; if "
+                    f"it is wrong, the take's paperwork is wrong.")
+        return None
+    if name is None:
+        return ("bringup record: NONE within "
+                f"{LAUNCHER_RECORD_WINDOW_S / 3600.0:.0f} h before this flight's stamp, so the "
+                f"declaration is UNRECONCILED -- `fly_pipeline.sh up` writes "
+                f"`live_flight_booking_<UTC>.json` only when the bringup was given --booking.")
+    if birds is None:
+        return (f"bringup record: {name} ({stamp:%Y-%m-%dT%H:%M:%SZ}) carries no `birds` field -- "
+                f"written by a launcher older than 2026-09-11, so it says nothing about whether the "
+                f"pane was armed and the declaration stays UNRECONCILED.")
+    return (f"bringup record RECONCILES: {name} ({stamp:%Y-%m-%dT%H:%M:%SZ}) already recorded "
+            f"`birds: {birds!r}` at bringup, minutes before the flight -- the same declaration, "
+            f"made by the launcher rather than at scoring time.")
+
+
+def no_birds_denominators(log, path: Path, results_dir: Path) -> str:
+    """WHAT THE SIX FALSIFIERS SCANNED -- with denominators, because a clean scan and an EMPTY scan
+    print the same word otherwise (CLAUDE.md: a rate with no denominator is EVIDENCE INSUFFICIENT).
+
+    On the real 2026-09-11 wiring take the in-cylinder falsifier scanned ZERO detection events while
+    the segmenter produced 33,029 boxes, and the first cut of this note said only "all four ran and
+    found nothing"."""
+    events = log.get("events") if isinstance(log, dict) else None
+    events = events if isinstance(events, list) else []
+    run = log.get("run") if isinstance(log, dict) else None
+    detector = run.get("detector") if isinstance(run, dict) else None
+    counters = detector.get("counters") if isinstance(detector, dict) else None
+    boxes = _num(counters.get("boxes_total")) if isinstance(counters, dict) else None
+    dirs = evidence_dirs(path, results_dir)
+    tracks = bird_track_artifacts(dirs)
+    flight = utc_of(Path(path).name)
+    deltas = [abs((stamp - flight).total_seconds()) for _, stamp in tracks
+              if stamp is not None and flight is not None]
+    nearest = (f"nearest {min(deltas) / 60.0:,.1f} min away"
+               if deltas else "none of them placeable in time")
+    return (f"falsifiers scanned: {len(events)} event(s), {len(depth_detections(log))} of them "
+            f"`detection` event(s); "
+            + ("no boxes_total counter in this log" if boxes is None else
+               f"{int(boxes)} detector box(es) that never reached the event log (a `detection` is "
+               f"written only for a detection the policy classified as an in-cylinder THREAT)")
+            + f"; {len(named_truth_files(log))} bird-track filename(s) named by the log; "
+              f"{len(TRUTH_BINDINGS)} reviewed TRUTH_BINDINGS pin(s); {len(tracks)} bird-track "
+              f"artifact(s) in {', '.join(str(d) for d in dirs) or '(no readable directory)'} "
+              f"({nearest}, refusal window "
+              f"+/-{BIRD_TRACK_WALL_WINDOW_S / 60.0:.0f} min).")
+
+
+def threat_cylinder(run) -> Tuple[float, float, str]:
+    """`(threat_radius_m, vertical_threat_m, provenance)` -- the cylinder the refusal tests, which
+    is the LARGER of the one this take flew and today's default.
+
+    Read from `run.policy_params`, because a take flown with a WIDER cylinder must be judged against
+    the one it flew. FLOORED at `PolicyParams()`, because a falsifier may not shrink with the knobs
+    it falsifies: the same run writes both the knobs and the detections, so a log recording
+    `threat_radius_m 0.1` would push a detection 0.21 m from the vehicle "outside" a cylinder 30x
+    smaller than the 3.00 m clearance bar the declaration protects, and the declaration would stand
+    (QA, 2026-09-11 -- measured on the 2026-08-25 breach log). The widening lives HERE rather than in
+    `gate_knob_floors` because only the refusal may use it: the two ACKNOWLEDGED demo logs record
+    NEITHER knob, and flooring them there would add a new problem to a committed verdict. A log with
+    no usable block falls back to `PolicyParams()` and SAYS SO, because a silent fallback is how a
+    refusal ends up measured against the wrong cylinder."""
+    defaults = PolicyParams()
+    floor_r, floor_v = float(defaults.threat_radius_m), float(defaults.vertical_threat_m)
+    pp = run.get("policy_params") if isinstance(run, dict) else None
+    if isinstance(pp, dict):
+        radius, vertical = _num(pp.get("threat_radius_m")), _num(pp.get("vertical_threat_m"))
+        if radius is not None and vertical is not None:
+            wide, tall = max(radius, floor_r), max(vertical, floor_v)
+            if (wide, tall) == (radius, vertical):
+                return wide, tall, "run.policy_params"
+            return wide, tall, (
+                f"run.policy_params WIDENED to today's floor -- this log records threat_radius_m "
+                f"{radius:g} m / vertical_threat_m {vertical:g} m, below the {floor_r:g} m / "
+                f"{floor_v:g} m PolicyParams() default, and a falsifier does not shrink with the "
+                f"knobs it is falsifying")
+    return (floor_r, floor_v,
+            "PolicyParams() defaults -- this log records no usable run.policy_params")
+
+
+def in_cylinder_detections(log, run) -> List[str]:
+    """Reasons, one per `detection` event that a bird-less flight cannot explain.
+
+    Two of them. INSIDE THE CYLINDER: the same inequality `AvoidancePolicy._threats` applies
+    (horizontal range <= `threat_radius_m` AND |dz| <= `vertical_threat_m`), so the refusal and the
+    policy cannot disagree about what a threat is. UNPLACEABLE: an event with no position, or none
+    on its tick's flown point, cannot be shown to be outside -- and "we could not tell" may not
+    clear a declaration, which is the same rule the truth join lives by.
+
+    `depth_detections` is the reader for every `detection` event whatever the detector wrote it
+    (its name is where it was first needed, not what it reads): position, the drone's own recorded
+    point on that tick, and the 3D range between them."""
+    radius, vertical, prov = threat_cylinder(run)
+    reasons: List[str] = []
+    for det in depth_detections(log):
+        pos, drone, tick = det["position_enu"], det["drone_enu"], det["tick"]
+        if pos is None or drone is None:
+            reasons.append(
+                f"a `detection` event at tick {tick} this gate cannot PLACE (no position_enu, or no "
+                f"flown point on that tick), so it cannot be shown to be outside the threat "
+                f"cylinder -- an unplaceable detection does not clear a declaration")
+            continue
+        hrange = math.hypot(pos[0] - drone[0], pos[1] - drone[1])
+        dz = abs(pos[2] - drone[2])
+        if hrange <= radius and dz <= vertical:
+            reasons.append(
+                f"a `detection` event at tick {tick} sitting {hrange:.3f} m horizontally and "
+                f"{dz:.3f} m vertically from the drone -- INSIDE the policy's own threat cylinder "
+                f"(threat_radius_m {radius:g} m, vertical_threat_m {vertical:g} m, from {prov})")
+    return reasons
+
+
+def no_birds_refusal(log, path: Path, results_dir: Path = RESULTS_DIR) -> List[str]:
+    """Why this log may NOT be declared bird-less. `[]` = the declaration stands.
+
+    ONE message, naming every falsifier found, because an operator who mis-declared a take wants the
+    whole list rather than the first item of it. The verdict is INVALID and the log is NOT scored
+    further: gates run under a declaration this log contradicts would be a verdict on a fiction.
+
+    Falsifiers 5 and 6 need `results_dir` -- they read the take's SIBLING artifacts (the bird tracks
+    and the launcher's bringup record) rather than the log, which is what makes them the only two
+    that a detector blind spot cannot silence."""
+    run = log.get("run") if isinstance(log, dict) else None
+    run = run if isinstance(run, dict) else {}
+    reasons: List[str] = []
+
+    counts: Dict[str, int] = {}
+    first: Optional[dict] = None
+    for ev in (log.get("events") or []):
+        if isinstance(ev, dict) and ev.get("kind") in TARGET_EVIDENCE_KINDS:
+            counts[ev["kind"]] = counts.get(ev["kind"], 0) + 1
+            if first is None:
+                first = ev
+    if first is not None:
+        reasons.append(
+            f"{sum(counts.values())} avoidance event(s) the loop can only write for a THREAT "
+            f"({', '.join(f'{k} x{n}' for k, n in sorted(counts.items()))}) -- first: `"
+            f"{first.get('kind')}` at tick {first.get('tick')}")
+
+    hits = in_cylinder_detections(log, run)
+    reasons.extend(hits[:3])
+    if len(hits) > 3:
+        reasons.append(f"...and {len(hits) - 3} further detection event(s) of the same kind")
+
+    named = named_truth_files(log)
+    if named:
+        reasons.append(f"the log itself names bird ground-truth file(s) ({', '.join(named)}) -- a "
+                       f"flight that recorded its own bird track drove birds")
+
+    stem = Path(path).stem
+    if stem in TRUTH_BINDINGS:
+        reasons.append(f"{stem!r} is pinned to {TRUTH_BINDINGS[stem]} in TRUTH_BINDINGS in "
+                       f"scripts/{Path(__file__).name} -- a reviewed diff already says which bird "
+                       f"track belongs to this take, and a command-line declaration does not "
+                       f"overrule a reviewed pin")
+
+    reasons.extend(no_birds_wall_clock_reasons(Path(path), results_dir))
+    launcher = launcher_birds_reason(Path(path), results_dir)
+    if launcher is not None:
+        reasons.append(launcher)
+
+    if not reasons:
+        return []
+    return ["--no-birds REFUSED: this log carries evidence that something WAS in front of the "
+            "vehicle, so it cannot be declared a bird-less flight -- " + "; ".join(reasons)
+            + ". Nothing below was scored: gates run under a declaration the artifact contradicts "
+              "would be a verdict on a fiction. Re-run WITHOUT --no-birds (with --truth <applied "
+              "log> if this take had one) to score it properly."]
+
+
+def no_birds_notes(depth: bool, scanned: str) -> List[str]:
+    """The CPA/truth family, under a declaration that there was nothing to measure it against.
+
+    Every line says `N/A (no birds driven)` in those words -- never PASS, never a number -- and the
+    first one says WHY: a declaration produced them, what its falsifiers scanned (`scanned`, from
+    `no_birds_denominators`), and what none of them can see."""
+    notes = [
+        f"truth: none (declared --no-birds) -- truth resolution was SKIPPED for this flight: no "
+        f"candidate search, no ambiguity, no bound applied log. The {NA_NO_BIRDS} lines below come "
+        f"from a DECLARATION, not from a measurement, and are worth exactly what the declaration "
+        f"is. Its six falsifiers all ran and found nothing (an avoidance event, a detection inside "
+        f"the threat cylinder, a bird-track filename this log names, a reviewed TRUTH_BINDINGS pin, "
+        f"a bird track written within "
+        f"{BIRD_TRACK_WALL_WINDOW_S / 60.0:.0f} min of this flight on the WALL clock, a bringup "
+        f"record that armed the birds pane); none of them measures separation. "
+        f"BLIND SPOT, stated: a bird the detector NEVER SAW leaves no trace here -- the first four "
+        f"read this flight's own log, where a `detection` appears only for a policy-classified "
+        f"threat, so a total false negative writes the same log a bird-less flight writes. The "
+        f"applied-pose truth track is the only evidence of a bird the log itself does not carry; "
+        f"the last two falsifiers are proximity and paperwork, not separation. {scanned}",
+        f"gt_cpa_m -- THE safety bar, the flown path against the birds' applied-pose truth: "
+        f"{NA_NO_BIRDS}. Never a PASS and never a number: a flight with no bird in the world "
+        f"measured nothing about separation from one, so this take does not clear the "
+        f"{min_bird_clearance_m():.2f} m bar and is not claimed to.",
+        f"truth coverage / truth poses scored / answered_from_spawn: {NA_NO_BIRDS} -- no "
+        f"applied-pose track covers this flight's ticks, so the join has no denominators to report.",
+    ]
+    if not depth:
+        notes.append(
+            f"detection_cpa_m (the monocular estimator check) and the bird-inside-the-cylinder "
+            f"missed-detection signal: {NA_NO_BIRDS} -- both are measured AGAINST the truth track, "
+            f"and the estimator was never a gate in the first place.")
+    return notes
+
+
 def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
                   results_dir: Path = RESULTS_DIR,
-                  booking_arg: Optional[Path] = None) -> Tuple[str, List[str]]:
+                  booking_arg: Optional[Path] = None,
+                  no_birds: bool = False) -> Tuple[str, List[str]]:
     """The gates a schema-2 (real-flight) log must pass. Returns (verdict, messages).
 
     `problems` is what makes a log INVALID and is NEVER acknowledgeable by a marker file: a marker
@@ -3339,6 +3828,12 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
     b_problems, b_notes = gate_booked_speed(log, run, path, booking_arg)
     problems.extend(b_problems)
     notes.extend(b_notes)
+    # THE OTHER DECLARATION ABOUT THIS TAKE, written by the launcher at bringup minutes before the
+    # flight. Read whether or not `--no-birds` was passed: two declarations of the same fact that
+    # are never reconciled are one declaration typed twice (QA, 2026-09-11).
+    launcher_note = launcher_birds_note(path, results_dir, no_birds)
+    if launcher_note is not None:
+        notes.append(launcher_note)
 
     bar = min_bird_clearance_m()
     freeze_debit = freeze_debit_m(adv["frozen_window_s"])      # 0.0 unless the axis stalled
@@ -3389,9 +3884,18 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
         # which camera saw it. What differs is everything DOWNSTREAM of it -- the estimator check
         # (an apparent-size ray vs a measured range) and the missed-detection scoping (a downward
         # footprint vs a forward frustum) -- so those live in the two tails below, not in here.
-        truth, truth_problems = resolve_truth(path, run, truth_arg, results_dir)
-        problems.extend(truth_problems)
+        truth: Optional[TruthTrack] = None
         report: Optional[dict] = None
+        if no_birds:
+            # DECLARED bird-less: skip the resolution entirely rather than resolve-and-forgive. A
+            # candidate scan that ran and was ignored would still print its ambiguity, which is the
+            # exact noise this mode exists to remove. The falsifiers already ran in `check_file`;
+            # what they SCANNED is printed here, because an empty scan and a clean one otherwise
+            # print the same sentence.
+            notes.extend(no_birds_notes(depth, no_birds_denominators(log, path, results_dir)))
+        else:
+            truth, truth_problems = resolve_truth(path, run, truth_arg, results_dir)
+            problems.extend(truth_problems)
         if truth is not None:
             pp = PolicyParams()
             report = ground_truth_cpa(log.get("flown_path_enu") or [],
@@ -3494,7 +3998,9 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
             # second half, the truth join above (`truth`/`report` are None when it failed, and the
             # bar then prints UNMEASURED rather than passing on nothing).
             scored: List[Tuple[str, bool]] = []
-            for label, gate in (("3b range error", depth_range_error(log, truth, report)),
+            range_gate = (no_birds_range_error() if no_birds
+                          else depth_range_error(log, truth, report))
+            for label, gate in ((DEPTH_BAR_NEEDS_TRUTH, range_gate),
                                 ("5 acquisition", gate_depth_acquisition(log, run)),
                                 ("4 frustum", gate_depth_frustum(log, run)),
                                 ("6 static map", gate_depth_static_map(log, run))):
@@ -3508,10 +4014,17 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
             # count is the honest half of that (QA 2026-09-07). Whether a take flown under a BOOKING
             # with no encounter in it should be AMBIGUOUS rather than VALID is a safety-vs-scope
             # call and belongs to product-lead, not to a gate written overnight.
+            def bar_status(label: str, ok: bool) -> str:
+                if ok:
+                    return "measured"
+                # UNMEASURED means the evidence could have been there and was not. Under a bird-less
+                # declaration bar 3b's evidence could NOT have been there, so it says so in the
+                # summary too -- one word for one fact, wherever it is printed.
+                return NA_NO_BIRDS if (no_birds and label == DEPTH_BAR_NEEDS_TRUTH) else "UNMEASURED"
+
             notes.append(
                 f"DEPTH BARS MEASURED: {sum(1 for _, ok in scored if ok)} of {len(scored)} -- "
-                + "; ".join(f"bar {label}: {'measured' if ok else 'UNMEASURED'}"
-                            for label, ok in scored)
+                + "; ".join(f"bar {label}: {bar_status(label, ok)}" for label, ok in scored)
                 + ". Measured = the bar had the evidence it needs and reached a verdict on it; "
                   "UNMEASURED is never a PASS. These four need the flight's own encounter events "
                   "(and, for 3b, a truth track); bars 1, 2, 3a and 7 read counters and "
@@ -3599,12 +4112,22 @@ def validate_flight_log(log) -> List[str]:
 
 def check_file(path: Path, truth: Optional[Path] = None,
                results_dir: Path = RESULTS_DIR,
-               booking: Optional[Path] = None) -> Tuple[str, List[str]]:
+               booking: Optional[Path] = None,
+               no_birds: bool = False) -> Tuple[str, List[str]]:
     """Validate one path -> (SKIP|VALID|INVALID|ACKNOWLEDGED, messages). For VALID the messages are
     the headline numbers (CLAUDE.md: no 'it works' without a metric); for INVALID the numbers come
-    first and the problems after -- the metric is printed whatever the verdict."""
+    first and the problems after -- the metric is printed whatever the verdict.
+
+    `no_birds` is the operator's DECLARATION that this flight drove no birds (see the `--no-birds`
+    section above). It is checked HERE, once, for every log on every path -- schema-2 and legacy --
+    because a declaration is about the artifact, not about which gate happens to read it."""
     if not path.exists():
         return SKIP, [f"{path} absent -- nothing to validate"]
+    if no_birds and truth is not None:
+        return INVALID, [
+            "--no-birds declares this flight drove no birds and --truth binds it to a bird track: "
+            "the two cannot both be true. `main` refuses the combination at the command line "
+            "(argparse, exit 2); this is the same refusal for an in-process caller."]
     try:
         log = json.loads(path.read_text())
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
@@ -3621,6 +4144,13 @@ def check_file(path: Path, truth: Optional[Path] = None,
     rb_problem = run_block_problem(log, path)
     if rb_problem:
         return INVALID, [headline, rb_problem]
+    # THE DECLARATION IS CHECKED BEFORE THE DISPATCH, so it covers the legacy path too: a pre-seam
+    # log's CPA is measured against its own detections, and declaring one of those bird-less while
+    # it carries an in-cylinder detection would be the same lie on a different gate.
+    if no_birds:
+        refusal = no_birds_refusal(log, path, results_dir)
+        if refusal:
+            return INVALID, [headline] + refusal
     version = schema_version(log)
     if version is not None:
         if version < GATED_SCHEMA_VERSION:
@@ -3629,7 +4159,7 @@ def check_file(path: Path, truth: Optional[Path] = None,
                              f"{GATED_SCHEMA_VERSION}. There is no schema-1 flight log: a run "
                              f"block claiming an older version is a downgrade out of the "
                              f"R2/R3/clock/ground-truth-CPA gates, not a legacy artifact."]
-        status, messages = check_schema2(path, log, truth, results_dir, booking)
+        status, messages = check_schema2(path, log, truth, results_dir, booking, no_birds)
         return status, [f"{headline} | {messages[0]}"] + messages[1:]
 
     # A BOOKING CANNOT BE BOUND TO A LEGACY LOG. Pre-seam logs carry no `run` block, so they have no
@@ -3683,12 +4213,28 @@ def main(argv=None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("logs", type=Path, nargs="*",
                     help="flight-log JSONs to validate (default: eval/results/*flight_log*.json)")
-    ap.add_argument("--truth", type=Path, default=None,
+    # WHICH BIRD TRACK, or NONE AT ALL -- and never both. `--truth` names the track; `--no-birds`
+    # declares there was none to name. A command line that said both would be asking the gate to
+    # score a flight against a bird the same command line says did not exist.
+    truth_group = ap.add_mutually_exclusive_group()
+    truth_group.add_argument("--truth", type=Path, default=None,
                     help="bird ground-truth track (eval/results/bird_drive_<stamp>_applied.jsonl) "
                          "for schema-2 logs flown with the real detector. Applies to EVERY log "
                          "named on this command line -- pass one flight at a time. Omitted: a "
                          "flight pinned in TRUTH_BINDINGS uses its bound track; any other "
                          "auto-discovers by sim-time overlap and refuses on 0 or >1 matches.")
+    truth_group.add_argument("--no-birds", action="store_true",
+                    help="DECLARE that no bird was driven on this flight (a wiring or sensor "
+                         "shake-out take, birds parked). Truth resolution is skipped entirely and "
+                         "the CPA/truth family prints '" + NA_NO_BIRDS + "' -- never PASS, never a "
+                         "number, and the verdict line SAYS SO. Every other gate stays live and "
+                         "unchanged, so a bird-less take is still judged on its own bars. REFUSED "
+                         "(INVALID) if the log carries any avoidance event, a detection inside the "
+                         "threat cylinder, a bird-track filename or a TRUTH_BINDINGS pin -- or if a "
+                         "bird track was written within 30 min of this flight on the WALL clock, or "
+                         "the launcher's bringup record says the birds pane was armed. A bird the "
+                         "DETECTOR never saw leaves no trace in the log: only the truth track can "
+                         "show that one. Applies to EVERY log on this command line.")
     ap.add_argument("--booking", type=Path, default=None,
                     help="the booking-gate artifact that AUTHORISED this take "
                          "(eval/results/booking_gate_<UTC>.json, from scripts/"
@@ -3707,9 +4253,17 @@ def main(argv=None) -> int:
               "nothing to validate (eval/results/ is gitignored; exit 0).")
         return 0
 
-    n_invalid = n_acknowledged = 0
+    # THE DECLARATION RIDES IN THE VERDICT WORD, not only in the notes. `VALID` and `PASS` are the
+    # two strings CI, the dashboard and a scrollback reader consume, and a take whose safety bar was
+    # never measured may not print the same word as one that cleared it -- the same doctrine as
+    # `check_tree_positions`' "PASS (vacuous)" and this file's own "R2/R3 PASS (vacuous)" notes.
+    declared = f" (DECLARED BIRD-LESS -- gt_cpa_m {NA_NO_BIRDS})" if args.no_birds else ""
+    n_invalid = n_acknowledged = n_declared = 0
     for path in paths:
-        status, messages = check_file(path, truth=args.truth, booking=args.booking)
+        status, messages = check_file(path, truth=args.truth, booking=args.booking,
+                                      no_birds=args.no_birds)
+        if args.no_birds and status in (VALID, ACKNOWLEDGED):
+            n_declared += 1
         if status == INVALID:
             n_invalid += 1
             print(f"[check_live_flight_log] INVALID: {path}", file=sys.stderr)
@@ -3719,13 +4273,14 @@ def main(argv=None) -> int:
             # stderr, own word, own counter: an acknowledged safety finding must never read like a
             # pass in a scrollback or a CI log.
             n_acknowledged += 1
-            print(f"[check_live_flight_log] ACKNOWLEDGED SAFETY FINDING: {path}", file=sys.stderr)
+            print(f"[check_live_flight_log] ACKNOWLEDGED SAFETY FINDING{declared}: {path}",
+                  file=sys.stderr)
             for m in messages:
                 print(f"    - {m}", file=sys.stderr)
         elif status == SKIP:
             print(f"[check_live_flight_log] SKIP: {messages[0]}")
         else:
-            print(f"[check_live_flight_log] VALID: {path} ({messages[0]})")
+            print(f"[check_live_flight_log] VALID{declared}: {path} ({messages[0]})")
             # Every measured number, not just the headline: a schema-2 log's GT-CPA, truth
             # coverage rate and estimator error are the point of the flight, and a metric nobody
             # prints is a metric nobody reads.
@@ -3738,13 +4293,16 @@ def main(argv=None) -> int:
               "closest-approach breach); do not keep/commit it as the demo artifact.",
               file=sys.stderr)
         return 1
+    unmeasured = (f" ({n_declared} of {len(paths)} DECLARED BIRD-LESS: the "
+                  f"{min_bird_clearance_m():.2f} m clearance bar was NOT measured on those)"
+                  if n_declared else "")
     if n_acknowledged:
-        print(f"[check_live_flight_log] PASS WITH {n_acknowledged} ACKNOWLEDGED SAFETY FINDING(S): "
-              f"{len(paths) - n_acknowledged} of {len(paths)} log(s) clean. The acknowledged log(s) "
-              f"above are kept as recorded history and are NOT evidence of a safe flight.",
-              file=sys.stderr)
+        print(f"[check_live_flight_log] PASS WITH {n_acknowledged} ACKNOWLEDGED SAFETY "
+              f"FINDING(S){unmeasured}: {len(paths) - n_acknowledged} of {len(paths)} log(s) clean. "
+              f"The acknowledged log(s) above are kept as recorded history and are NOT evidence of "
+              f"a safe flight.", file=sys.stderr)
         return 0
-    print("[check_live_flight_log] PASS: all present flight logs valid.")
+    print(f"[check_live_flight_log] PASS{unmeasured}: all present flight logs valid.")
     return 0
 
 

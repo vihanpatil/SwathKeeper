@@ -677,6 +677,20 @@ names the artifact, because a gaps list nobody dispositions becomes a list nobod
   `static_map_hint` is not carried into the log — one field on that event, or a max-range counter on
   `DepthDetectionSource`, closes both. (`gate_booked_speed` treats `depth_blob` as an avoidance
   take: authorisation is not scoring.)
+  **~~OPEN: a BIRD-LESS take cannot be scored at all~~ → CLOSED 2026-09-11 (ADR-020 am. 7).** The
+  2026-09-11 wiring flight drove no birds, so it had no applied-pose log and the overlap scan
+  reported *other* takes' tracks: `ambiguous truth track` → INVALID, with no way to say there was
+  nothing to track. `scripts/check_live_flight_log.py --no-birds` is that way — a **declaration**
+  (mutually exclusive with `--truth`): truth resolution is skipped, the CPA/truth family prints
+  `N/A (no birds driven)` (never PASS, never a number) **in the verdict line too**
+  (`VALID (DECLARED BIRD-LESS ...)`), **every other gate stays live**, and the declaration is REFUSED
+  on **six** falsifiers: any avoidance event, any `detection` inside the threat cylinder (floored at
+  today's `PolicyParams()`), a `bird_drive_*` filename the log names, a `TRUTH_BINDINGS` pin, a bird
+  track written within ±30 min of this flight on the WALL clock, or a launcher bringup record that
+  armed the birds pane. **Its blind spot is stated in the artifact: a bird the detector never saw
+  leaves no trace in the log — only the truth track can show that one.** Bringup half:
+  `scripts/fly_pipeline.sh up --no-birds` (no birds pane at all). The 2026-09-11 log under the flag
+  is still INVALID — on its 141.160 ms `detect_wall_ms_max` and nothing else, which is the point.
 * **The depth camera is NOISELESS** — gz-sensors' own default, kept rather than guessed at, and
   recorded as a transfer gap (proposed TG-6) beside `eval/point_mass.py`'s unmodelled dynamics. It
   makes the sensor optimistic in the same direction the plant model already is.

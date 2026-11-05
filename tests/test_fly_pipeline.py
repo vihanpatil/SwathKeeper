@@ -1094,6 +1094,183 @@ class TestEvidenceYieldFloor(LauncherTestCase):
                 self.assertIn("cannot read the yield", self.floor(frames, cells))
 
 
+class TestNoBirdsBringup(BookingTestCase):
+    """`up --no-birds` — the DECLARED bird-less bringup (2026-09-11, ADR-020 amendment 6).
+
+    Why it exists: the birds pane fires `drive_birds.py` by itself once the vehicle clears 10 m.
+    That is right for a survey or a dodge take and wrong for a WIRING flight, and on 2026-09-11 the
+    depth step-0 take had to improvise — kill the tmux window AND the poll loop it had already
+    started inside the container, by hand, with the vehicle on the pad. A bringup whose preparation
+    includes "remember to kill a window" will one day include forgetting to, and the flight it
+    produces is a bird flight scored as a bird-less one.
+
+    The other half of the feature is `check_live_flight_log.py --no-birds`
+    (tests/fieldguard_planning/test_check_live_flight_log_depth.py §14); this class covers the
+    launcher: the pane is not opened, the declaration is recorded, and every command that does not
+    build the pane list refuses the flag instead of ignoring it.
+    """
+
+    DECLARED = "none (declared --no-birds)"
+    ARMED = "armed (altitude-gated drive_birds.py pane)"
+
+    def dry_up(self, *args):
+        result = self.run_script("--dry-run", "up", *args)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        return result.stdout
+
+    @staticmethod
+    def payloads(out):
+        return [ln.split("bash -c '", 1)[1].rsplit("'", 1)[0]
+                for ln in out.splitlines() if "docker exec -it" in ln]
+
+    def test_the_birds_pane_is_not_opened_at_all(self):
+        """Not opened-and-killed, not opened-and-gated: one fewer pane than the default bringup,
+        and `drive_birds.py` is in none of the panes that DO come up."""
+        default, declared = self.dry_up(), self.dry_up("--no-birds")
+        self.assertEqual(len(self.payloads(default)), 9)   # the count TestDryRunUpPlan pins
+        self.assertEqual(len(self.payloads(declared)), 8)
+        # The bird driver is not named ANYWHERE in the declared plan -- not as a pane, not as a
+        # deferred step, not in the prose. (The birds pane's payload is multi-line, so counting
+        # `docker exec` lines alone would not have seen it.)
+        self.assertIn("drive_birds.py --rate 2", default)
+        self.assertNotIn("drive_birds.py", declared)
+
+    def test_the_default_bringup_is_completely_unchanged(self):
+        """The flag is opt-in and costs the normal path nothing — payload for payload."""
+        head = subprocess.run(["git", "show", "HEAD:scripts/fly_pipeline.sh"], cwd=str(REPO_ROOT),
+                              capture_output=True, text=True)
+        if head.returncode != 0:                           # a checkout without git history
+            self.skipTest("git show HEAD:scripts/fly_pipeline.sh unavailable")
+        previous = self.tmpdir / "fly_pipeline_head.sh"
+        previous.write_text(head.stdout)
+        before = subprocess.run(["bash", str(previous), "--dry-run", "up"], cwd=str(REPO_ROOT),
+                                capture_output=True, text=True,
+                                env=dict(os.environ, TMPDIR=str(self.tmpdir)))
+        self.assertEqual(self.payloads(before.stdout), self.payloads(self.dry_up()))
+
+    def test_it_tells_the_operator_the_pane_is_gone_and_how_to_score_the_take(self):
+        out = self.dry_up("--no-birds")
+        self.assertIn(self.DECLARED, out)
+        self.assertIn("check_live_flight_log.py <log> --no-birds", out)
+        self.assertIn("(no birds)", out)                   # the window list it prints at the end
+
+    def test_the_recipe_pane_says_no_bird_track_will_exist(self):
+        """The recipe is what a human reads at the MAVProxy prompt. Under the declaration it must
+        not still say "the birds window fires drive_birds.py by itself" — there is no window."""
+        result = self.source_and_run('NO_BIRDS=1\nprint_fly_recipe\n')
+        self.assertIn(f"BIRDS: {self.DECLARED}", result.stdout)
+        self.assertIn("bird_drive_*_applied.jsonl", result.stdout)
+        self.assertNotIn("fires drive_birds.py by itself", result.stdout)
+        self.assertIn("--no-birds", result.stdout)
+
+    def test_the_recipes_MAVProxy_lines_are_untouched_by_the_declaration(self):
+        """It changes which panes exist, never what is typed into the vehicle."""
+        plain = self.source_and_run('print_fly_recipe\n').stdout
+        declared = self.source_and_run('NO_BIRDS=1\nprint_fly_recipe\n').stdout
+        self.assertEqual(self.recipe_from(plain), self.recipe_from(declared))
+        self.assertEqual(self.recipe_from(plain), runbook_fly_lines())
+
+    def test_the_sidecar_records_the_declaration(self):
+        self.source_and_run('NO_BIRDS=1\nBOOKING_PATH_REL="%s"\nBOOKING_SPEED="5.0"\nCMD="up"\n'
+                            "write_booking_sidecar\n" % BOOKING)
+        (path,) = sorted((self.tmpdir / "eval" / "results").glob("live_flight_booking_*.json"))
+        doc = json.loads(path.read_text())
+        self.assertEqual(doc["birds"], self.DECLARED)
+        # ...and the booking half of the file is byte-for-byte what it always was: this is a note
+        # about the bringup, not a change to what authorised the flight.
+        self.assertEqual(doc["booking"], {"path": BOOKING, "booked_speed_mps": 5.0,
+                                          "parameter": BOOKED_PARAM})
+        self.assertEqual(doc["recipe_line"], BOOKED_LINE)
+
+    def test_a_normal_bringups_sidecar_says_the_pane_was_ARMED(self):
+        """The key is written WHATEVER the answer (QA, 2026-09-11). Written only for the bird-less
+        case, "armed" and "this record predates the field" would be the same absence, and the
+        SCORING declaration would have nothing to be contradicted by. The schema version does not
+        move: 1.1 is a contract about `booking`, and this is an additive note about the bringup."""
+        self.source_and_run('BOOKING_PATH_REL="%s"\nBOOKING_SPEED="5.0"\nCMD="up"\n'
+                            "write_booking_sidecar\n" % BOOKING)
+        (path,) = sorted((self.tmpdir / "eval" / "results").glob("live_flight_booking_*.json"))
+        doc = json.loads(path.read_text())
+        self.assertEqual(doc["birds"], self.ARMED)
+        self.assertEqual(doc["schema_version"], "1.1")
+        self.assertEqual(doc["booking"], {"path": BOOKING, "booked_speed_mps": 5.0,
+                                          "parameter": BOOKED_PARAM})
+
+    def test_the_two_strings_are_the_ones_the_GATE_reads(self):
+        """The reconciliation is a cross-file contract: the launcher writes these words and
+        `check_live_flight_log.launcher_birds_reason` refuses anything that is not the first of
+        them. A rename on either side would silently stop the gate from ever refusing."""
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        sys.path.insert(0, str(REPO_ROOT / "src"))
+        import check_live_flight_log as checker                      # noqa: E402
+        self.assertEqual(checker.LAUNCHER_BIRDS_DECLARED, self.DECLARED)
+        self.assertEqual(checker.LAUNCHER_BIRDS_ARMED, self.ARMED)
+        script = SCRIPT.read_text()
+        self.assertIn('BIRDS_NONE_DECLARED="%s"' % self.DECLARED, script)
+        self.assertIn('BIRDS_ARMED="%s"' % self.ARMED, script)
+
+    def test_the_dry_run_names_where_the_declaration_lands_either_way(self):
+        booked = self.dry_up("--no-birds", "--booking", BOOKING)
+        self.assertIn('sidecar records "birds": "%s"' % self.DECLARED, booked)
+        # ...and a BOOKED bringup without the flag says what it will record instead: the sidecar
+        # states the pane list either way, and the gate reads that sentence back.
+        self.assertIn('sidecar records "birds": "%s"' % self.ARMED,
+                      self.dry_up("--booking", BOOKING))
+        unbooked = self.dry_up("--no-birds")
+        self.assertIn("no booking given, so no sidecar is written", unbooked)
+        self.assertIn("check_live_flight_log.py <log> --no-birds", unbooked)
+
+    def test_the_birds_subcommand_and_the_flag_are_a_refusal(self):
+        """They contradict: one says no bird is driven, the other starts the driver right now."""
+        result = self.run_script("--dry-run", "birds", "--no-birds", shims=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("contradict each other", result.stderr)
+        self.assertEqual(self.shim_calls(), [])
+
+    def test_every_command_that_does_not_build_the_pane_list_refuses_it(self):
+        for subcommand in ("node", "status", "attach"):
+            with self.subTest(subcommand=subcommand):
+                result = self.run_script("--dry-run", subcommand, "--no-birds", shims=True)
+                self.assertNotEqual(result.returncode, 0, msg=result.stdout)
+                self.assertIn("does not build the", result.stderr)
+                self.assertIn("up --no-birds", result.stderr)
+        self.assertEqual(self.shim_calls(), [])
+
+    def test_test_flight_refuses_it_for_the_reason_it_really_refuses_it(self):
+        """`cmd_test_flight` DOES build the pane list -- it calls `cmd_up` -- so the message above
+        would be a false sentence here (QA, 2026-09-11). The true reason is narrower: test-flight is
+        the scripted REGRESSION gate and its recorded bars were measured with the pane armed."""
+        result = self.run_script("--dry-run", "test-flight", "--no-birds", shims=True)
+        self.assertNotEqual(result.returncode, 0, msg=result.stdout)
+        self.assertIn("scripted REGRESSION gate", result.stderr)
+        self.assertNotIn("does not build the", result.stderr)
+        self.assertIn("up --no-birds", result.stderr)
+        self.assertEqual(self.shim_calls(), [])
+        # ...and the claim that message rests on: test-flight really does compose the pane list.
+        body = SCRIPT.read_text().split("\ncmd_test_flight() {", 1)[1].split("\n}", 1)[0]
+        self.assertIn("cmd_up", body)
+
+    def test_teardown_is_never_blocked_by_the_flag(self):
+        """Same exception the booking and --detection-source make: a flag may not stand between a
+        flown take and the flight log `down` waits for."""
+        result = self.run_script("--dry-run", "down", "--no-birds")
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("no effect on 'down'", result.stderr)
+
+    def test_a_dry_run_with_the_flag_still_changes_nothing(self):
+        self.run_script("--dry-run", "up", "--no-birds", shims=True)
+        self.assertEqual(self.shim_calls(), [])
+        self.assertEqual(sorted(p.name for p in self.tmpdir.iterdir()), ["shims"])
+
+    def test_the_scoring_flag_it_advertises_really_exists(self):
+        """The launcher tells the operator to score the take with `--no-birds`. If that flag were
+        renamed, this bringup would hand out a command that exits 2 at the end of a booked take."""
+        proc = subprocess.run([sys.executable, "scripts/check_live_flight_log.py", "--help"],
+                              cwd=str(REPO_ROOT), capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, msg=proc.stderr)
+        self.assertIn("--no-birds", proc.stdout)
+
+
 class TestBenchTransportArm(unittest.TestCase):
     """scripts/bench_transport.sh measures the SAME stack the flight flies, and it does that by
     reading the launcher's payload strings rather than retyping them. If the launcher renames a

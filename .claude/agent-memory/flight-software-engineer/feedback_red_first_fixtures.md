@@ -40,3 +40,12 @@ geometries the mechanism can fail on before choosing the fixture — level/slope
 inside/outside — rather than picking the one that is easiest to write down.
 
 Related: [[evidence_consumption_seams]].
+
+**A DEFAULT ARGUMENT THAT READS THE MODULE UNDER TEST FREEZES IT AT IMPORT — AND BREAKS THE RED RUN
+(2026-09-11).** `def record(self, birds=checker.LAUNCHER_BIRDS_ARMED, ...)` is evaluated when the
+class body runs, so against the PRE-FIX module it is an `AttributeError` at COLLECTION: the whole
+test file errors out and the red-first run reports one error instead of "25 red, 6 green, and here
+are the six controls". Use a sentinel (`ARMED = object()`) and resolve from the module inside the
+method. **Why:** the value of a red-first run is the per-test verdict — which new tests are red and
+which greens are the controls that must stay green. A collection error destroys exactly that.
+**How to apply:** any fixture default that names a constant in the code under test.

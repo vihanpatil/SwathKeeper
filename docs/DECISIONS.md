@@ -4558,6 +4558,19 @@ the 100 ms bar of §1.5 — a real stall on ≥ 1 frame, cause **uninvestigated*
 **confirmation-pending**: nothing was in front of the sensor in the air, so FNR, range, acquisition and frustum read
 UNMEASURED (**0 of 4 depth bars**), and the ADR-022 8(d) freeze stands until a flight WITH a target exists.
 
+### ADR-020 amendment 7 (2026-09-11, the no-truth CHECKER GAP amendment 6 booked is CLOSED): a bird-less flight is DECLARED, falsifiably
+
+`check_live_flight_log.py --no-birds` (exclusive with `--truth`) DECLARES a take drove no birds: truth resolution is
+SKIPPED (no scan, no `ambiguous truth track`) and the CPA/truth family prints **`N/A (no birds driven)`** — never PASS,
+never a number — in the notes AND in the verdict words CI reads (`VALID (DECLARED BIRD-LESS …)`, `PASS (N of M …)`).
+Every other gate stays live; the 3 committed logs are byte-identical without it and REFUSE it. SIX falsifiers: an
+avoidance event; a `detection` inside the flight's OWN threat cylinder, FLOORED at `PolicyParams()` (a falsifier may
+not shrink with its own knobs); a `bird_drive_*` filename the log names; a `TRUTH_BINDINGS` pin; a bird track within
+±30 min on the WALL clock Gazebo does not restart (3.5 vs 23,802 min measured); and `up`'s bringup record, which now
+always states whether the pane was armed. BLIND SPOT, printed with denominators: 1–4 are detector-side, so a bird the
+DETECTOR never saw leaves no trace; only a truth track shows one. The 2026-09-11 log stays INVALID on
+`detect_wall_ms_max` 141.160 > 100 ms alone (mutation-proved).
+
 ### ADR-022 amendment 2 (2026-09-11, R8 CLOSED): the mission geofence is judged in 3D, and CI is armed
 
 `scripts/check_mission_geofence.py` no longer answers a question the mission cannot pass. It flattens the mission
