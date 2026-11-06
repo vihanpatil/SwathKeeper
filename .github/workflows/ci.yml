@@ -57,6 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           pip install -r requirements-eval.txt
+          pip install -e '.[ardupilot]'
 
       - name: Planning test suite
         run: |

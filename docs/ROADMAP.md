@@ -32,7 +32,8 @@ One table, one date, one state per row. Where a row and any other document disag
 | ADR-021 depth segmenter | ✅ **SCORED 2026-09-07**; **FLOWN ONCE 2026-09-11** as a no-target wiring flight (ADR-021 am. 1: 5345/5345 frames, 0 drops, 33,029 boxes 98.7 % mapped, 0 takeovers; runtime p95 12.98 ms PASS, **max 141.16 ms FAILED** the 100 ms bar → log INVALID); **FROZEN** until a flight WITH a target exists | 7/7 pre-registered bars on **85 parked, noiseless stations**: FNR 0/49, merge 0/71, unmapped FP 0/8, range p95 0.1076 m. Cluttered acquisition **46.0 m** — clutter-backed evidence reads to **28 m** |
 | Scoring a depth flight log | ✅ **SCOREABLE since 2026-09-07** (P1), exercised on the 2026-09-11 wiring flight — which exposed a **checker gap: a bird-less flight has no truth track and the checker could not be told so (read "ambiguous truth track" → INVALID). CLOSED the same day (ADR-020 am. 7): `--no-birds` DECLARES it — truth resolution skipped, CPA/truth family prints `N/A (no birds driven)`, every other gate live, and the declaration REFUSED on six falsifiers: any avoidance event / in-cylinder detection (cylinder floored at today's `PolicyParams()`) / named bird track / `TRUTH_BINDINGS` pin / a bird track written within ±30 min on the WALL clock / a launcher bringup record that armed the pane. Its blind spot is printed: a bird the DETECTOR never saw leaves no trace in a log.** That log under the flag is still INVALID, on its 141.160 ms runtime max alone — `depth_blob` is in `DETECTOR_SOURCES` with seven pre-registered bars. *(The "a depth log is UNSCOREABLE" blocker is CLOSED; any doc still saying it is stale.)* | bar 5 will read **CENSORED** and bar 6 **UNMEASURED** until the executor logs the seam's longest-range detection and `static_map_hint` (P2) |
 | Evidence gates + CI | ✅ `main` is red **by design** on the pre-registered half-acknowledgement and on **nothing else** (re-verified 2026-11-05 on `main` and both open PRs). The two undeclared Linux-only reds in `tests/test_build_dashboard_data.py` were fixed 2026-09-11 (`4485e0a`); every step runs `if: always()` and the KNOWN_RED allowlist test asserts the failing set is exactly the declared one | two declared red steps (host-side suite's committed-evidence test; the committed-evidence checker, exit 1); allowlist step green |
-| Repo state | 🟡 **measured 2026-11-05:** `origin/main` is **`429a19f` (PR #34)**. **PR #35** (`fix/r8-mission-geofence-3d` @ `eed8f2a`, R8 closed) and **PR #36** (`feat/no-truth-checker-mode` @ `150412b`, ADR-020 am. 7 `--no-birds`) are **OPEN and MERGEABLE**, CI = exactly the declared reds; the owner merges them. **PR #37** (`feat/team-v2-resume` @ `2878e6e`, team v2) is **OPEN** and stacks on #36; the 2026-11-05 C ruling (ADR-022 am. 4) lands as a second commit on that branch | owner merges #35 → #36 → #37 |
+| Evidence-gate tool (option C, **ADR-023**) | ✅ **BUILT + SCORED 2026-11-05** — `src/swathkeeper_gates/` (pip package `swathkeeper-gates`, ArduPilot DataFlash adapter only; PX4 CUT from v0.1), after two QA rounds (G228–G265, all closed) and three fix rounds; **uncommitted on `feat/gates-tool-build`, goes up as PR #39**; CI line unrun until then | three public logs, none ours: Tarot X4 `gates: pass · 8/8 measured (post-hoc)` exit 0; ArduPlane `fail · 1/5` exit 1 (B5 no-fix, 263/263 rows); pymavlink test.BIN `could not tell · 3/6` exit 1. src **1,319** lines (budget 950), tests **869** / 55, 0 skips, **121/121** mutants killed |
+| Repo state | 🟡 **measured 2026-11-05:** **PRs #35–#38 ALL MERGED 2026-11-05**; `main` = **`5a31261`** (merge of PR #38, the gates-tool design). The step-2 build (ADR-023) is uncommitted on `feat/gates-tool-build` and **goes up as PR #39**; the owner merges | owner merges #39 |
 | Suite totals | one home: **`tests/README.md`** — re-run the three commands there, re-quote every quoter or none | *(deliberately not quoted here; five doc homes with no test enforcing them is how they went stale)* |
 | Open safety findings | ✅ **R8 CLOSED 2026-09-11** (ADR-022 am. 2, reviewed + corrected by am. 3) — the gate judges the flight path in **3D** with the executor's own `unsafe_obstacle_3d` (each tree's in-volume window SOLVED, not stepped — a 0.5 m sweep alone false-passed 16 of 1420 unsafe sloped legs; mutation-proved), the mission was **NOT re-planned**, and CI runs it as a real step — the `\|\| true` is gone | committed mission **PASS, exit 0**: leg 4 still **−1.997 m in XY**, REPORTED, with **+10.200 m** over the **4.80 m** band top (3.8 + 1.0) |
 
@@ -43,11 +44,12 @@ Last engineering commit 2026-09-11; everything below was measured on 2026-11-05.
 - **CI on `main`:** exactly the declared reds (the host-side suite's committed-evidence test and the
   committed-evidence checker step); the allowlist step is green.
 - **Pages is LIVE:** <https://vihanpatil.github.io/SwathKeeper/dashboard/> returns 200.
-- **tests:src 3.84** against the 3.70 cap — OVER, unchanged since 2026-09-11.
+- **tests:src 3.84** against the 3.70 cap — OVER, unchanged since 2026-09-11. *(Later the same day: **3.33**, UNDER, with the
+  gates tool — by dilution, not by retiring a test; 3.97 over `fieldguard_planning` alone. ADR-023.)*
 - **Docker:** the `fieldguard-sim` container exited (137) about two weeks ago; the image
   `fieldguard-sim:week1` (4.1 GB) is present.
-- **Owner-side, OPEN:** merge PR #35 and PR #36 (an automated merge was refused by policy on
-  2026-11-05); record the demo video (not recorded; `ffmpeg` is not installed on the host); the ten
+- **Owner-side, OPEN:** ~~merge PR #35 and PR #36~~ (an automated merge was refused by policy on
+  2026-11-05; **DONE: #35–#38 all merged 2026-11-05**); record the demo video (not recorded; `ffmpeg` is not installed on the host); the ten
   conversations (ADR-022 step 3: **NOT STARTED**, the private tracker reads 0/10 logged, 0/10
   interested; the kit exists).
 - **Engineering-side:** the team v2 rebuild (five agents, five skills, the `SessionStart` state
@@ -138,24 +140,27 @@ from this file. Full narrative: `docs/BUILD_LOG.md`.
 **Packaging (lead, build-level, 2026-11-05).** The tool is a NEW package, `src/swathkeeper_gates/`, pip-installable on its own
 (one `pyproject.toml` that declares it and nothing else; stdlib + PyYAML). Dependencies run one way: it may reuse the existing
 gate functions, `fieldguard_planning` never imports it, and nothing under `scripts/` becomes a dependency of the wheel — so a
-stranger's `pip install` pulls no ROS, no Gazebo, no drone. The name touches no ADR-011 identifier. **tests:src (cap 3.70, OVER at
-3.84):** the new package's src and its tests both count, so every step below lands its src before its tests grow — the ratio
-must fall, and the cap is not re-baselined.
+stranger's `pip install` pulls no ROS, no Gazebo, no drone. The name touches no ADR-011 identifier. **tests:src (cap 3.70):** the new package's src and its tests both count, so every step below lands its src before its tests grow — the ratio
+must fall, and the cap is not re-baselined. **After step 2: 27,189 / 8,173 = 3.33, UNDER — by dilution** (over
+`src/fieldguard_planning/*.py` alone 27,189 / 6,854 = 3.97, up from 3.84); no test file was retired (ADR-023).
 
-**Owner-side, still open (none blocks the team):** merge PRs #35 → #36 → #37; `sudo xcodebuild -license accept`; wire the hooks
+**Owner-side, still open (none blocks the team):** merge **PR #39** (the step-2 build; #35–#38 merged 2026-11-05); `sudo xcodebuild -license accept`; wire the hooks
 per `.claude/hooks/README.md`. ADR-020 am. 4 is CONFIRMED (2026-09-11), the LICENSE is Apache-2.0, Pages is LIVE. The demo video
 is now **OPTIONAL** — the script in `docs/drafts/DEMO_VIDEO_SCRIPT.md` stays unrecorded until wanted (fix its "81 configurations"
 line first: 81 is the speed axis alone, not the grid).
 
 **The C sequence — every item executable by the team without the owner, except the posting in 6:**
-1. **Design note + contract** (`lead`): a versioned flight-log contract (what a log must carry for a gate to read it, and what
-   the verdict prints when it does not — "could not tell" never scores green), the package layout above, the exit-code table.
-2. **One adapter for a real log we did not write** (`software-engineer`): ArduPilot `.bin` or PX4 ULog → the contract, run on a
-   public log, its parse yield reported with a denominator.
-3. **YAML bars + pre-registration hash + JSON verdict + exit codes:** bars in YAML, their hash committed BEFORE the run and
-   checked at it; a JSON verdict (today **no gate emits JSON**) with documented exit codes.
-4. **Declared-red allowlist as a tool feature:** the house KNOWN_RED rule — the failing set must equal the declared set, exactly.
-5. **GitHub Action + badge**, demonstrated on a public repo/log we did not write.
+
+**Steps 1–4 — ✅ DONE 2026-11-05 by one package (ADR-023):** the design note + contract (step 1,
+`docs/design/GATES_TOOL_DESIGN.md`, now the pre-registration); one adapter for a real log we did not write (ArduPilot
+DataFlash; PX4 ULog CUT from v0.1); YAML bars + pre-registration hash + JSON verdict + exit codes; the declared-red allowlist
+as a tool feature. Scored on three public logs (`examples/*/verdict.json`). Uncommitted on `feat/gates-tool-build` →
+**PR #39**, the owner merges. Two steps remain:
+
+5. **GitHub Action + badge** (`platform-engineer`), demonstrated on a public log we did not write, **plus a CI job that fetches
+   the three logs by sha256** (`examples/*/SOURCE.json`) and diffs `results[*].{verdict,n}` against `examples/*/verdict.json`,
+   so a `should` bar sliding PASS → EI is caught. Keep `requires-python>=3.12` until CI tests another interpreter. Owed
+   alongside it, not instead of it: ADR-023's G257 v1.1 call (Dp-rise as a hole — measured cost: Tarot B7 EI → `could not tell`).
 6. **The ten posts** — drafted by `narrative-lead`, QA-checked, posted by the owner (minutes each), the same 11 public channels in
    the private kit, its INTERESTED rule unchanged. **Kill criterion, fixed before the first post: 0 of 10 posts yields a real log
    or a scheduled follow-up → "strong portfolio, no product" — stop.**
@@ -200,6 +205,12 @@ pinned list is meant to stay two long.
 ## Cut / deferred log
 _(product-lead records cuts here with date + reason — interview material.)_
 
+- **2026-11-05 — option C step 2 BUILT (ADR-023): the PX4 ULog adapter leaves v0.1, with its `[px4]` extra.** The design
+  carried it as a stretch; the src was already 1,319 lines against a 950 budget without it, and an unscored adapter would be
+  a green over nothing. A ULog now refuses exit 2, naming the missing adapter; the two pinned ULogs in design §8 stay pinned.
+  Reopen on demand: a post that yields a PX4 log or follow-up. **Also cut:** the LOG_DISARMED arming-inference note (G252 —
+  the initial arming state stays ABSENT under rule 4) and the **Plane B7 bar** (G243 — author-constructed after seeing the
+  MODE rows, so its FAIL was a fact about the bars, not the vehicle). Paid for: the tool ships on ArduPilot alone.
 - **2026-11-05 — THE DIRECTION IS C (ADR-022 am. 4, owner ruling): option B is DEFERRED INDEFINITELY, NOT cut;**
   its kill criterion (≥ 20 seeded headless encounters clearing 3.00 m) stands if it is ever reopened, and hardware stays
   behind it. **ADR-022 clause 2's "zero code written during it" is SUPERSEDED** by amendment 4: the ten conversations

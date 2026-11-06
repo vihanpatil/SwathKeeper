@@ -49,3 +49,11 @@ are the six controls". Use a sentinel (`ARMED = object()`) and resolve from the 
 method. **Why:** the value of a red-first run is the per-test verdict — which new tests are red and
 which greens are the controls that must stay green. A collection error destroys exactly that.
 **How to apply:** any fixture default that names a constant in the code under test.
+
+**A MUTANT RUN NEEDS A FRESH BYTECODE CACHE, NOT A SLEEP (2026-11-05).** A same-size edit within one
+second can be served from a stale `.pyc` (CPython keys it on mtime seconds + size), so a mutant can
+"survive" without ever running. Run each mutant's test with `PYTHONPYCACHEPREFIX=<fresh tempdir>` (inherited
+by subprocess CLI tests too), restore from a byte copy in `finally`, and assert sha256 before == after.
+Also check WHY a mutant went red: one that zeroes n reds the clean-PASS line first (EI on n < min_n),
+which is the neighbouring-bar confound again: mutate the narrowest thing (the polygon segment check,
+not the whole segment block). Runner shape: 55 mutants, one named test each, table out (step 2 report).

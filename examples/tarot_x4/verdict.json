@@ -1,0 +1,585 @@
+{
+ "schema": "swathkeeper-verdict/1.0",
+ "contract": "swathkeeper-flightlog/1.0",
+ "tool": {
+  "version": "0.1.0",
+  "python": "3.12.12",
+  "deps": {
+   "PyYAML": "6.0.3",
+   "pymavlink": "2.4.50"
+  }
+ },
+ "source": {
+  "path": "2024-08-05 18-48-54.bin",
+  "sha256": "a4dc00507cc8448c0ce320279e70040de3af3439dd4c3dd5363a7fa388609108",
+  "size_bytes": 5197824,
+  "format": "ardupilot-dataflash",
+  "adapter": "ardupilot",
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.5.5",
+  "hardware": "Pixhawk6X",
+  "absent": {},
+  "duration_s": 141.900922,
+  "records_decoded": 99521,
+  "record_counts": {
+   "AHR2": 1420,
+   "ARM": 1,
+   "ATT": 1420,
+   "AUXF": 1,
+   "BARO": 2838,
+   "BAT": 1419,
+   "CAND": 1,
+   "CANS": 142,
+   "CTRL": 1419,
+   "CTUN": 1419,
+   "DCM": 1419,
+   "DSF": 141,
+   "DU32": 142,
+   "EAHR": 1419,
+   "EV": 9,
+   "FILE": 667,
+   "FMT": 179,
+   "FMTU": 179,
+   "FTN": 39,
+   "FTN1": 1419,
+   "FTN2": 4257,
+   "FTNS": 1380,
+   "GPA": 709,
+   "GPS": 709,
+   "HEAT": 142,
+   "IMU": 10641,
+   "IOMC": 135,
+   "ISBD": 7080,
+   "ISBH": 221,
+   "MAG": 2838,
+   "MAV": 142,
+   "MCU": 1419,
+   "MODE": 2,
+   "MOTB": 1420,
+   "MSG": 28,
+   "MULT": 15,
+   "OF": 2792,
+   "ORGN": 2,
+   "PARM": 1210,
+   "PM": 14,
+   "POS": 1420,
+   "POWR": 1419,
+   "PSCD": 1420,
+   "PSCE": 1183,
+   "PSCN": 1183,
+   "RATE": 1420,
+   "RCI2": 1421,
+   "RCIN": 1421,
+   "RCO2": 1420,
+   "RCOU": 1420,
+   "RFND": 2838,
+   "RSSI": 1420,
+   "SRTL": 10,
+   "STAK": 1405,
+   "TERR": 142,
+   "TSYN": 15,
+   "UBX1": 29,
+   "UBX2": 29,
+   "UNIT": 36,
+   "VER": 1,
+   "VIBE": 4260,
+   "XKF1": 2840,
+   "XKF2": 2840,
+   "XKF3": 2840,
+   "XKF4": 2840,
+   "XKF5": 1420,
+   "XKFS": 2840,
+   "XKQ": 2840,
+   "XKT": 56,
+   "XKV1": 284,
+   "XKV2": 284,
+   "XKY0": 2838,
+   "XKY1": 2838
+  },
+  "log_gpst_start": {
+   "t_s": 709.393645,
+   "gps_week": 2326,
+   "gps_ms": 146952600,
+   "label": "GPS time, not UTC: the 18 s leap offset is not applied"
+  }
+ },
+ "integrity": {
+  "bytes_skipped": 10,
+  "bytes_skipped_interior": 0,
+  "bytes_skipped_trailing": 10,
+  "holes": [],
+  "dsf_dropped_max": 15,
+  "dsf_rows": 141,
+  "drop_intervals": [
+   [
+    709.278081,
+    710.1837,
+    15
+   ]
+  ],
+  "drops_known_until_s": 850.516509,
+  "reason": null
+ },
+ "streams": {
+  "position": {
+   "state": "PRESENT",
+   "source": "POS (Lat, Lng, Alt, RelHomeAlt)",
+   "reason": null,
+   "note": "2 RelHomeAlt samples before home was set (first ORGN Type 1 at t=709.379 s): not a value",
+   "n": 1420,
+   "instances": {
+    "0": {
+     "n": 1420,
+     "t_first": 709.278678,
+     "t_last": 851.179003,
+     "median_period_s": 0.099999,
+     "max_gap_s": 0.10035
+    }
+   },
+   "absent_columns": {}
+  },
+  "velocity": {
+   "state": "PRESENT",
+   "source": "GPS by I (Spd)",
+   "reason": null,
+   "note": null,
+   "n": 709,
+   "instances": {
+    "0": {
+     "n": 709,
+     "t_first": 709.393645,
+     "t_last": 850.993619,
+     "median_period_s": 0.200001,
+     "max_gap_s": 0.221403
+    }
+   },
+   "absent_columns": {}
+  },
+  "gnss": {
+   "state": "PRESENT",
+   "source": "GPS by I (Status, NSats, HDop, GWk, GMS)",
+   "reason": null,
+   "note": null,
+   "n": 709,
+   "instances": {
+    "0": {
+     "n": 709,
+     "t_first": 709.393645,
+     "t_last": 850.993619,
+     "median_period_s": 0.200001,
+     "max_gap_s": 0.221403
+    }
+   },
+   "absent_columns": {}
+  },
+  "battery": {
+   "state": "PRESENT",
+   "source": "BAT by Inst (Volt, Curr)",
+   "reason": null,
+   "note": null,
+   "n": 1419,
+   "instances": {
+    "0": {
+     "n": 1419,
+     "t_first": 709.373748,
+     "t_last": 851.173457,
+     "median_period_s": 0.099999,
+     "max_gap_s": 0.100361
+    }
+   },
+   "absent_columns": {}
+  },
+  "ekf": {
+   "state": "PRESENT",
+   "source": "XKF4 by C (SV, SP, SH, SM)",
+   "reason": null,
+   "note": null,
+   "n": 2840,
+   "instances": {
+    "0": {
+     "n": 1420,
+     "t_first": 709.278081,
+     "t_last": 851.178134,
+     "median_period_s": 0.1,
+     "max_gap_s": 0.100126
+    },
+    "1": {
+     "n": 1420,
+     "t_first": 709.278081,
+     "t_last": 851.178134,
+     "median_period_s": 0.1,
+     "max_gap_s": 0.100126
+    }
+   },
+   "absent_columns": {}
+  },
+  "mode": {
+   "state": "PRESENT",
+   "source": "MODE (ModeNum, Rsn)",
+   "reason": null,
+   "note": null,
+   "n": 2,
+   "instances": {
+    "0": {
+     "n": 2,
+     "t_first": 709.379182,
+     "t_last": 732.93622,
+     "median_period_s": 23.557038,
+     "max_gap_s": 23.557038
+    }
+   },
+   "absent_columns": {},
+   "windows": [
+    [
+     709.379182,
+     732.93622,
+     "ALT_HOLD"
+    ],
+    [
+     732.93622,
+     851.179004,
+     "LOITER"
+    ]
+   ]
+  },
+  "arming": {
+   "state": "PRESENT",
+   "source": "ARM (ArmState)",
+   "reason": null,
+   "note": null,
+   "n": 1,
+   "instances": {
+    "0": {
+     "n": 1,
+     "t_first": 836.27354,
+     "t_last": 836.27354,
+     "median_period_s": 0.0,
+     "max_gap_s": 0.0
+    }
+   },
+   "absent_columns": {},
+   "armed_intervals": [],
+   "absent_before_s": 836.27354
+  },
+  "events": {
+   "state": "EMPTY",
+   "source": "ERR (Subsys, ECode)",
+   "reason": "zero ERR rows: EMPTY per AP_Logger::Write_Error -> WriteCriticalBlock (cited at tag Copter-4.5.5). File backend only; silent gates are caught by the gap rule because they stop every stream; the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.5.5) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "home": {
+   "state": "PRESENT",
+   "lat": 53.6373341,
+   "lon": 9.9316843,
+   "alt_amsl_m": 8.96
+  },
+  "fence": {
+   "state": "PRESENT",
+   "fence_type": 7,
+   "circle_radius_m": 150.0,
+   "alt_max_rel_home_m": 120.0,
+   "polygon_bit": true,
+   "note": "FENCE_TYPE polygon bit set: not judged (v1 reads no FNCE)"
+  },
+  "params": {
+   "state": "PRESENT",
+   "n": 1197
+  }
+ },
+ "bars": {
+  "path": "bars.yaml",
+  "sha256": "77aacca459cfe3ecc97dcbba2657856cb64ef2b049f27bd31b2686811922c2c2",
+  "schema": "swathkeeper-bars/1.0"
+ },
+ "prereg": {
+  "status": "HASH_MATCH",
+  "sidecar": "bars.yaml.prereg.json",
+  "sidecar_sha256": "1ffa2d14985aed1d1531f925f8f5feaa2b35d09adfa5d40aaa2e29005fdb5725",
+  "bars_sha256": "77aacca459cfe3ecc97dcbba2657856cb64ef2b049f27bd31b2686811922c2c2",
+  "bars_sha256_registered": "77aacca459cfe3ecc97dcbba2657856cb64ef2b049f27bd31b2686811922c2c2",
+  "log_sha256_pinned": "a4dc00507cc8448c0ce320279e70040de3af3439dd4c3dd5363a7fa388609108",
+  "post_hoc": true,
+  "written_utc_untrusted": "2026-11-06T02:21:18+00:00"
+ },
+ "allowlist": {
+  "path": null,
+  "sha256": null,
+  "run_date_utc": "2026-11-06",
+  "declared": [],
+  "red": [],
+  "matched": [],
+  "undeclared": [],
+  "vacuous": [],
+  "expired": []
+ },
+ "exit_code": 0,
+ "badge": "gates: pass \u00b7 8/8 measured (post-hoc)",
+ "refusal": null,
+ "results": [
+  {
+   "id": "alt_floor",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 0.014676248654723167,
+   "bar": {
+    "channel": "position.alt_rel_home_m",
+    "bound": "floor",
+    "limit": -10.0
+   },
+   "n": 1418,
+   "min_n": 100,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "n=1418; worst 0.0146762 on instance 0 at t=709.479 s, 1 window(s); instances present [0]; position: 2 RelHomeAlt samples before home was set (first ORGN Type 1 at t=709.379 s): not a value; 2 sample(s) excluded, not values; 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "provenance": {
+    "text": "B1, AUTHOR-CHOSEN: never more than 10 m below home. The value is the logged FENCE_ALT_MIN (-10), which this vehicle did NOT enforce (FENCE_TYPE 7 lacks the min-altitude bit 8). min_n 100 = 10 s of POS at its logged 10 Hz.",
+    "param": "FENCE_ALT_MIN"
+   },
+   "param_in_log": {
+    "name": "FENCE_ALT_MIN",
+    "values": [
+     -10.0
+    ]
+   }
+  },
+  {
+   "id": "speed_ceiling_loiter",
+   "kind": "series_bound",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 2.4210000038146973,
+   "bar": {
+    "channel": "velocity.groundspeed_mps",
+    "bound": "ceiling",
+    "limit": 12.5
+   },
+   "n": 591,
+   "min_n": 50,
+   "scope": {
+    "armed": null,
+    "modes": [
+     "LOITER"
+    ]
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "n=591; worst 2.421 on instance 0 at t=780.194 s, 1 window(s); instances present [0]; mode unknown for 0.101 s before the first MODE row (<= 1.0 s: left out of the scope); 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "provenance": {
+    "text": "B2: log PARM LOIT_SPEED 1250 cm/s = 12.5 m/s, the Loiter speed the vehicle flew; WPNAV_SPEED governs neither AltHold nor Loiter and AltHold has no speed parameter, so there is no AltHold bar. Every GPS.Spd sample of every instance in LOITER. min_n 50 = 10 s of GPS at its logged 5 Hz.",
+    "param": "LOIT_SPEED"
+   },
+   "param_in_log": {
+    "name": "LOIT_SPEED",
+    "values": [
+     1250.0
+    ]
+   }
+  },
+  {
+   "id": "battery_floor",
+   "kind": "series_bound",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 23.48213005065918,
+   "bar": {
+    "channel": "battery.voltage_v",
+    "bound": "floor",
+    "limit": 18.6
+   },
+   "n": 1419,
+   "min_n": 100,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "n=1419; worst 23.4821 on instance 0 at t=808.474 s, 1 window(s); instances present [0]; 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "provenance": {
+    "text": "B3: log PARM BATT_LOW_VOLT 18.6 V applied INSTANTANEOUSLY to every BAT sample of every pack, stricter than the firmware's failsafe, which acts only after BATT_LOW_TIMER 10 s (BATT_FS_VOLTSRC 0 = raw volts). min_n 100 = 10 s of BAT at 10 Hz.",
+    "param": "BATT_LOW_VOLT"
+   },
+   "param_in_log": {
+    "name": "BATT_LOW_VOLT",
+    "values": [
+     18.600000381469727
+    ]
+   }
+  },
+  {
+   "id": "ekf_vel_ceiling",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 0.11,
+   "bar": {
+    "channel": "ekf.vel_ratio",
+    "bound": "ceiling",
+    "limit": 0.8
+   },
+   "n": 2840,
+   "min_n": 200,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0,
+    1
+   ],
+   "worst_instance": 1,
+   "gaps": [],
+   "note": "n=2840; worst 0.11 on instance 1 at t=780.678 s, 1 window(s); instances present [0, 1]; 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "provenance": {
+    "text": "B4, AUTHOR-CHOSEN: XKF4.SV <= 0.8 on every logged core. 0.8 equals the logged FS_EKF_THRESH, but what SV means against FS_EKF_THRESH is uncited (design \u00a711.1 item 5): this is not the firmware's EKF failsafe. min_n 200 = 10 s of XKF4 at 10 Hz on each of two cores.",
+    "param": "FS_EKF_THRESH"
+   },
+   "param_in_log": {
+    "name": "FS_EKF_THRESH",
+    "values": [
+     0.800000011920929
+    ]
+   }
+  },
+  {
+   "id": "gnss_quality",
+   "kind": "gnss_quality",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 0.0,
+   "bar": {
+    "fix_min": 3,
+    "sats_min": 6,
+    "max_outage_s": 0
+   },
+   "n": 709,
+   "min_n": 50,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=709; every row in scope qualifies; 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "provenance": {
+    "text": "B5, AUTHOR-CHOSEN: every GPS row of every instance has fix >= 3 (3D) and >= 6 satellites (max_outage_s 0 = every row). min_n 50 = 10 s of GPS at 5 Hz."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "geofence",
+   "kind": "containment",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 115.74321413040161,
+   "bar": {
+    "source": "log"
+   },
+   "n": 1419,
+   "min_n": 100,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "n=1419; minimum signed margin of the samples and judged segments 115.743 m (altitude above home) at t=784.779 s; FENCE_TYPE polygon bit set: not judged (v1 reads no FNCE); position: 2 RelHomeAlt samples before home was set (first ORGN Type 1 at t=709.379 s): not a value; 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "provenance": {
+    "text": "B6: the log's own fence, FENCE_ENABLE 1, FENCE_TYPE 7: a 150 m cylinder about home (FENCE_RADIUS) and 120 m above home (FENCE_ALT_MAX), on every POS sample and segment. The polygon bit (4) is printed as not judged (v1 reads no FNCE). The owner's template (24_safety_setup.param) says 350 m, commented \"start with a 150m fence radius\": cited as intent only. min_n 100 segments = 10 s of POS.",
+    "param": "FENCE_RADIUS"
+   },
+   "param_in_log": {
+    "name": "FENCE_RADIUS",
+    "values": [
+     150.0
+    ]
+   }
+  },
+  {
+   "id": "mode_transitions",
+   "kind": "mode_transitions",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 0,
+   "bar": {
+    "allowed": [
+     [
+      "*",
+      "STABILIZE"
+     ],
+     [
+      "*",
+      "ALT_HOLD"
+     ],
+     [
+      "*",
+      "LOITER"
+     ]
+    ]
+   },
+   "n": 1,
+   "min_n": 1,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=1; every observed transition is allowed; the startup row <start> -> ALT_HOLD is judged but not counted in n; mode unknown for 0.101 s before the first MODE row (<= 1.0 s: left out of the scope); 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "provenance": {
+    "text": "B7: every observed transition enters a mode of the log's own FLTMODE1-6 = 0,0,2,2,5,5 = {STABILIZE, ALT_HOLD, LOITER}. From \"*\" (any mode, or <start>) is exact here: a path through any other mode fails on entering it. min_n 1: one observed transition is a measurement."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "no_errors",
+   "kind": "no_events",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 0,
+   "bar": {
+    "kinds": [
+     "error"
+    ]
+   },
+   "n": 140.333,
+   "min_n": 60,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=140.333; 0 event(s) []; drop-free 140.333 s (excluded: Dp rose in [(709.278081, 710.1837)], log holes, and after the last DSF row at 850.516509 s); events EMPTY: zero ERR rows: EMPTY per AP_Logger::Write_Error -> WriteCriticalBlock (cited at tag Copter-4.5.5). File backend only; silent gates are caught by the gap rule because they stop every stream; the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.5.5) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+   "provenance": {
+    "text": "B8, AUTHOR-CHOSEN: zero ERR rows in drop-free logging. Zero ERR rows is measurable (EMPTY, not ABSENT) only because the adapter cites AP_Logger at tag Copter-4.5.5: ERR is a critical block whose only losses are counted in DSF.Dp. min_n 60 = one minute of drop-free log."
+   },
+   "param_in_log": null
+  }
+ ]
+}

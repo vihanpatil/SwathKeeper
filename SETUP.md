@@ -35,8 +35,8 @@ python3 -m unittest discover -s tests/fieldguard_planning     # planning, safety
 ```
 
 ```
-Ran 346 tests in 121.421s
-FAILED (failures=1)                             # measured 2026-09-11 — the ONE deliberate red, see (b)
+Ran 401 tests in 100.739s
+FAILED (failures=1)                             # measured 2026-11-05 — the ONE deliberate red, see (b)
 Ran 1450 tests in 33.743s
 OK (skipped=1)
 ```
@@ -55,11 +55,12 @@ are the invariant, not the count.)* **The first command's one failure is expecte
 
 ```bash
 python3 -m pip install -r requirements-eval.txt   # numpy 2.5.1, scipy 1.18.0, markdown 3.9
+python3 -m pip install -e '.[ardupilot]'            # the evidence-gate tool + PyYAML + pymavlink 2.4.50 (ADR-023; what CI does)
 python3 -m pytest tests -q
 ```
 
 ```
-1794 passed, 1 failed, 1 skipped in 161.31s     # measured 2026-09-11
+1849 passed, 1 failed, 1 skipped in 131.63s     # measured 2026-11-05
 ```
 
 **The 1 failure is expected and deliberate** — `tests/test_ci_evidence_gate.py` is red on the

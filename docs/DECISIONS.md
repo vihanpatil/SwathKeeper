@@ -4609,3 +4609,120 @@ become **ten public posts of the working tool** (`narrative-lead` drafts, owner 
 installable thing the team can build sim-free. *Steelman lost:* this ADR called building first "the reflex" — but asking needed a
 hands-on owner for 8 weeks, and a tool people can try is a cheaper question than a call. Packaging: `src/swathkeeper_gates/`,
 never imported by `fieldguard_planning`; tests:src counts its src and tests (ROADMAP Next up). Confirmation-pending the ten posts.
+
+## ADR-023: The evidence-gate tool is `swathkeeper-gates` 0.1 — one ArduPilot DataFlash adapter, eight bars over five kinds, a JSON verdict whose fourth word "could not tell" never scores green — BUILT and SCORED on three public logs we did not fly   (2026-11-05, status: ACCEPTED — lead, build-level: option C step 2 (ADR-022 am. 4), scored against `docs/design/GATES_TOOL_DESIGN.md` rev 2 after two QA rounds (G228–G265, every finding accepted and closed) and three fix rounds; **confirmation-pending** the first CI run (the workflow line is unrun until PR #39) and step 5's job that fetches the three logs by sha256 and diffs `results[*].{verdict,n}`; the ten posts confirm ADR-022 am. 4, not this entry)
+
+**The one sentence.** `pip install -e '.[ardupilot]'`, then `swathkeeper-gates prereg` and `run` take a stranger's `.bin`
+and a YAML file of bars hashed before the run, and write a JSON verdict and an exit code; on the three public logs it
+has run on it prints **`pass · 8/8`**, **`fail · 1/5`** and **`could not tell · 3/6`** (all `(post-hoc)`), and
+every one of those words is re-derivable by hand from raw pymavlink.
+
+**Context — measured 2026-11-05.** The design note (rev 2, QA G211–G227) pre-registered the package, the flight-log
+contract `swathkeeper-flightlog/1.0`, the bars schema `swathkeeper-bars/1.0`, the verdict `swathkeeper-verdict/1.0`,
+the §5 exit table, the declared-red rule and the pinned logs. This entry records what the build measured against it.
+The design body is NOT edited: it stays the pre-registration, and every delta lives here.
+
+**What was built.** `src/swathkeeper_gates/` — `__init__`, `contract`, `bars`, `allowlist`, `verdict`, `cli`,
+`adapters/__init__`, `adapters/ardupilot` — **1,319 src lines** (design budget ≤ 950 without PX4). **869 test lines**
+in four files, `tests/test_gates_{adapter,bars,verdict,cli}.py` (budget ≤ 950): **55 tests, zero skips**, every one
+red-first; **121 shadow-copy mutants, 121 killed by the named assertion** (QA's kill rule: an `AssertionError` in the
+named test, never an incidental `KeyError`). Unit tests write their own synthetic DataFlash with `struct` and never
+read a real log. `pyproject.toml` declares `swathkeeper-gates` and nothing else (setuptools ≥ 61; `PyYAML>=6.0.3,<7`;
+extra `[ardupilot]` = `pymavlink==2.4.50`; `requires-python >=3.12`; console script `swathkeeper-gates`). CI gains one
+line, `pip install -e '.[ardupilot]'` in `planning-and-eval`. `fieldguard_planning` never imports the package (an AST
+scan in `test_gates_cli.py` checks both directions).
+
+**Scored — three committed example dirs** (`examples/<name>/`: `SOURCE.json` {url, sha256, size_bytes, licence},
+`bars.yaml`, `bars.yaml.prereg.json` pinned to the log so every verdict reads `(post-hoc)`, `verdict.json`; no
+third-party log committed, upstream basenames, no host paths; verdicts written 2026-11-06T02:21 UTC = 2026-11-05 local):
+
+| Log (none ours) | Verdict | Per bar |
+|---|---|---|
+| **Tarot X4** — ArduCopter V4.5.5, Pixhawk6X, 141.9 s, sha256 `a4dc0050…9108` | `gates: pass · 8/8 measured (post-hoc)`, **exit 0** | B1 alt floor −10 m PASS n 1418, min **0.0147 m** (2 pre-home samples excluded); B2 LOITER ≤ 12.5 m/s PASS n 591, max **2.421**; B3 ≥ 18.6 V PASS n 1419, min **23.48**; B4 EKF vel ratio ≤ 0.8 PASS n 2840, max **0.11** (cores 0, 1); B5 fix ≥ 3, sats ≥ 6 PASS n 709; B6 150 m cylinder + 120 m alt PASS n 1419 segments, margin **115.743 m** (altitude-limited); B7 PASS n 1 (ALT_HOLD→LOITER); B8 no ERR PASS n **140.333** drop-free s |
+| **ArduPlane `00000001.BIN`** — V4.7.0-beta5, 52.7 s, no fix, no POS | `gates: fail · 1/5 measured (post-hoc)`, **exit 1** | B5 **FAIL** n 263: one 52.72 s no-fix run on instance 1 — the one measured real-log finding. B1/B4/B6/B8 EI (no POS; EKF SS 0 on all 2638 rows → ekf ABSENT; fence disabled; V4.7 outside the ERR citation) |
+| **pymavlink `test.BIN`** — ArduPlane V3.8.2-dev, 0.97 s of contract records | `gates: could not tell · 3/6 measured (post-hoc)`, **exit 1** | B3/B4/B5 PASS; B1 EI (armed scope, no ARM row), B7 EI (n 0: one startup MODE row is not a transition), B8 (must) EI |
+
+Every Tarot bar carries the note "15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged
+across". **No Tarot bar is blind** (its bars header says so and why: a draft run printed six of the eight values).
+QA re-derived B1–B6 and B8 independently with raw pymavlink: all agree to 3 dp.
+
+**Decisions (lead, build-level; the alternative each beat in one clause).**
+- **D1 — PX4 out of v0.1.** A ULog refuses exit 2, naming the missing adapter. *Lost:* ship the stretch adapter now —
+  the src was already over budget without it, and an unscored adapter is a green over nothing.
+- **D2 — `pyproject.toml` and the CI line ship in step 2.** *Lost:* defer packaging to step 5 — the tests would then
+  either fail to import (an undeclared red) or hide behind `skipUnless`.
+- **D3 — the ERR citation rule (below).** *Lost:* EMPTY on every firmware (inference), or on Copter only (narrower than the shared write path).
+- **D4 — mode names exact, per pymavlink's table, for the vehicle resolved from the MSG/VER firmware string only.**
+  *Lost:* DFReader's `mav_type`, which defaults to Plane.
+- **D5 — old logs without `I`/`Inst`/`C` read as instance 0, NKF9 as EKF2 core 1.** *Lost:* NKF4 only (drops a core).
+- **D6 — B6 is equirectangular ENU about home (else the polygon's first vertex), Δlon wrapped.** *Lost:* an unwrapped Δlon,
+  under which a track 300 m outside a fence straddling lon 180 read PASS +100 m (G232).
+- **D7 — three example dirs, not one.** *Lost:* the demo alone — it cannot show a FAIL or a `could not tell`.
+- **D8 — red-first with shadow-copy mutants, the repo never mutated.** *Lost:* trusting a green suite — in round 1,
+  18 of QA's 26 mutants survived 42/42 green tests.
+- **D9 — unit tests never read the real logs.** *Lost:* fixture logs in `tests/` — the logs are GPL-3.0/LGPL-3.0
+  against this repo's Apache-2.0, and the design commits no third-party log. The real-log gate is step 5's CI job.
+
+**The firmware citation (design §11 item 1, sub-items 1–2), settled 2026-11-05 by a source read at tag Copter-4.5.5.**
+*ARM is event-only:* `AP_Arming::arm()/disarm()` → `Log_Write_Arm/Disarm`. Under `LOG_DISARMED=0` the arm-event row
+is refused because `set_vehicle_armed(true)` runs after the write — which explains the Tarot's lone disarm row — but
+the initial arming state stays **ABSENT** (rule 4; 15 s persistence windows exist). *ERR:* `AP_Logger::Write_Error` →
+`WriteCriticalBlock` → `AP_Logger_File::_WritePrioritisedBlock`; the only counted losses are `_dropped` = `DSF.Dp`, and
+the uncounted silent gates stop every stream. **Ruling (lead):** zero ERR rows read **EMPTY** only for a release-form
+`V4.5.<n>` firmware string (no `-dev`/`-beta`/`-rc`) with PARM `LOG_BACKEND_TYPE` logged, constant and == 1, for any
+vehicle — the write path is in shared `libraries/`, but it is cited at Copter-4.5.5 only; otherwise **ABSENT**.
+Items 3–8 remain uncited except as the design demoted them.
+
+**Design amendments taken from QA** (stated here; the design body is the pre-registration and is not rewritten):
+exit 0 / `pass` needs ≥ 1 **must** PASS (G241). Every byte skip (a DFReader offset jump) is a hole of any length,
+printed as interior vs trailing bytes (G229). `velocity` keeps GPS Status ≥ 3 rows only and `ekf` keeps SS ≠ 0 rows
+only; a fully filtered instance stays EMPTY so the gap rule names it (G230/G256). NA only when no hole or unknown-mode
+stretch touches the base range (G233). A > 1.0 s stretch before the first MODE row → EI for mode-scoped bars and B7
+(G234/G258). B7's n counts real transitions; `<start>→first` is judged, not counted (G235). Strict decimal numerals;
+non-finite → EI (G236/G237). `RelHomeAlt` before the first ORGN Type 1 row is not a value (G240). **`log_holes` = byte
+holes ∪ the INTERSECTION of the fired gaps across `position`/`gnss`/`battery`** (G260, corrected by the orchestrator
+after a byte-only reading was found to break D3's premise): a hole in every raw stream at once is the logger, a hole
+in one is that sensor, and the intersection is what makes the citation's "silent gates stop every stream" hold; with
+no raw stream PRESENT, B7/B8 read EI. Prereg status words MALFORMED / LOG_MISMATCH. A bars file declaring a newer
+contract minor refuses. The YAML key is `alt_max_rel_home_m`. The Plane B7 bar is DROPPED (G243, the cut below).
+
+**Deviations from the design, plainly.** (1) **src 1,319 vs the 950 budget.** QA (G252) judged the overrun
+load-bearing: the strict-loader schema, the fixed decision order, segment geometry, byte-hole location, channel
+filters, window merging. (2) `test.BIN` resolves to **ArduPlane** from its MSG banner (it has no VER). That follows
+the design's MSG/VER rule and departs only from the step-2 brief, which expected ABSENT. (3) §8 quotes `test.BIN` at
+1.05 s; its measured `duration_s` is 0.974661 (G261). `attitude`, `mission`, the FNCE polygon, quantiles and
+`per_window` stay cut, as the design said.
+
+**Open items and remaining risk** (QA's remaining-risk statement, in spirit). **G257:** DSF.Dp-rise intervals are
+excluded by B8 only (pre-registered §3.3). MODE rows are critical blocks and can be lost only through those counted
+drops, so a MODE row lost inside a Dp rise is invisible to B7 and to every mode-scoped bar; every result prints the
+note. **v1.1 call, owed:** treat a Dp rise as a hole; its measured cost on the Tarot is B7 EI → `could not tell`.
+A truncated log reads as a shorter flight (QA m2: 58 % of the Tarot's bytes reads `pass 8/8`); only post-hoc pinning
+ties a verdict to a file. DataFlash has no checksum: a corrupted record with an intact header decodes as values,
+flagged only beside a byte hole. **Never run:** a real EKF2-with-`C` log, a multi-home log, a mid-flight Dp rise,
+`LOG_BACKEND_TYPE` ≠ 1, any Python but 3.12, the CI workflow change.
+
+**Public wording.** Design §10's sentence for the posts must add "and, in a draft run, every measured value" to
+what was seen before the bars were written (no Tarot bar is blind). "The one real-log FAIL shown" stays true: the
+ArduPlane log, no GNSS fix, 263/263 rows, now that its B7 is dropped. `narrative-lead` owns the README section and
+the posts at step 6.
+
+**Cut (recorded in `docs/ROADMAP.md`'s cut log the same day).** The **PX4 ULog adapter leaves v0.1** with its `[px4]`
+extra (the design's stretch; the two pinned ULogs in §8 stay pinned, unused). The **LOG_DISARMED arming-inference
+note is cut** (G252): the citation explains the lone disarm row, and rule 4 keeps the initial state ABSENT. The
+**Plane B7 bar is dropped** (G243): it was author-constructed after seeing the MODE rows (STABILIZE entered on a GCS
+command), so its FAIL was a fact about the bars, not the vehicle.
+
+**tests:src — under the cap by dilution, said both ways.** `tests/**.{py,sh}` 27,189 / `src/**/*.py` 8,173 = **3.33**,
+UNDER 3.70 for the first time since 2026-09-11 — because ADR-022 am. 4 counts the new src, not because a test was
+retired (none was; the four new files add exactly the 869 lines). Over `src/fieldguard_planning/*.py` alone it is
+27,189 / 6,854 = **3.97**, up from 3.84. The cap is not re-baselined.
+
+**Consequences.** ROADMAP's C steps 1–4 are DONE by this one package (adapter; YAML bars + prereg + JSON verdict + exit
+codes; the declared-red allowlist). Step 5 (`platform-engineer`): a GitHub Action + badge, and a CI job that fetches
+the three logs by sha256 and diffs `results[*].{verdict,n}` against `examples/*/verdict.json`; `requires-python>=3.12`
+until CI tests another interpreter. Step 6: the ten posts. This work goes up as PR #39; the owner merges.
+
+Owner / roles: lead (this record, D1–D9, the ERR ruling); software-engineer (the build, three fix rounds);
+qa-safety-reviewer (G228–G265, the independent re-derivation, the sign-off condition "SHIP once G255/G256 land
+red-first, G261 copy fixed, G257 in the ADR" — met); orchestrator (G260's correction); narrative-lead (step 6).

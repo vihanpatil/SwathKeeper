@@ -1,0 +1,427 @@
+{
+ "schema": "swathkeeper-verdict/1.0",
+ "contract": "swathkeeper-flightlog/1.0",
+ "tool": {
+  "version": "0.1.0",
+  "python": "3.12.12",
+  "deps": {
+   "PyYAML": "6.0.3",
+   "pymavlink": "2.4.50"
+  }
+ },
+ "source": {
+  "path": "00000001.BIN",
+  "sha256": "28dcbac522ceb75eee10f6af37b0d6e342c1dc79e2be1a9f766fe18a14336766",
+  "size_bytes": 1933312,
+  "format": "ardupilot-dataflash",
+  "adapter": "ardupilot",
+  "vehicle": "ArduPlane",
+  "firmware": "ArduPlane V4.7.0-beta5",
+  "hardware": "MatekH743",
+  "absent": {},
+  "duration_s": 52.719983,
+  "records_decoded": 48341,
+  "record_counts": {
+   "AETR": 1318,
+   "AOA": 527,
+   "ARM": 1,
+   "ARSP": 527,
+   "ATT": 1319,
+   "BARD": 527,
+   "BARO": 527,
+   "BAT": 527,
+   "CANS": 51,
+   "CTUN": 1318,
+   "DCM": 528,
+   "DSF": 51,
+   "EV": 1,
+   "FILE": 615,
+   "FMT": 182,
+   "FMTU": 188,
+   "GPA": 263,
+   "GPS": 263,
+   "IMU": 5276,
+   "MAV": 208,
+   "MAVC": 22,
+   "MCU": 527,
+   "MODE": 3,
+   "MSG": 40,
+   "MULT": 15,
+   "NTUN": 1318,
+   "PARM": 1304,
+   "PIDP": 1319,
+   "PIDR": 1319,
+   "PM": 11,
+   "POWR": 527,
+   "RAD": 53,
+   "RCI2": 1318,
+   "RCIN": 1318,
+   "RCO2": 1318,
+   "RCOU": 1318,
+   "RSSI": 1318,
+   "RTC": 1,
+   "STAK": 508,
+   "STAT": 263,
+   "UART": 265,
+   "UNIT": 38,
+   "VER": 1,
+   "VIBE": 2636,
+   "XKF1": 2637,
+   "XKF2": 2637,
+   "XKF3": 2637,
+   "XKF4": 2638,
+   "XKF5": 1319,
+   "XKFS": 2637,
+   "XKQ": 2637,
+   "XKT": 20,
+   "XKV1": 101,
+   "XKV2": 101
+  },
+  "log_gpst_start": null
+ },
+ "integrity": {
+  "bytes_skipped": 51,
+  "bytes_skipped_interior": 0,
+  "bytes_skipped_trailing": 51,
+  "holes": [],
+  "dsf_dropped_max": 0,
+  "dsf_rows": 51,
+  "drop_intervals": [],
+  "drops_known_until_s": 80.375996,
+  "reason": null
+ },
+ "streams": {
+  "position": {
+   "state": "ABSENT",
+   "source": "POS (Lat, Lng, Alt, RelHomeAlt)",
+   "reason": "no POS rows",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "velocity": {
+   "state": "ABSENT",
+   "source": "GPS by I (Spd)",
+   "reason": "0 of 263 GPS rows measured anything: no 3D fix (Status < 3)",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "gnss": {
+   "state": "PRESENT",
+   "source": "GPS by I (Status, NSats, HDop, GWk, GMS)",
+   "reason": null,
+   "note": null,
+   "n": 263,
+   "instances": {
+    "1": {
+     "n": 263,
+     "t_first": 28.415643,
+     "t_last": 80.955597,
+     "median_period_s": 0.200004,
+     "max_gap_s": 0.399991
+    }
+   },
+   "absent_columns": {}
+  },
+  "battery": {
+   "state": "PRESENT",
+   "source": "BAT by Inst (Volt, Curr)",
+   "reason": null,
+   "note": null,
+   "n": 527,
+   "instances": {
+    "0": {
+     "n": 527,
+     "t_first": 28.476101,
+     "t_last": 81.075836,
+     "median_period_s": 0.099995,
+     "max_gap_s": 0.100634
+    }
+   },
+   "absent_columns": {}
+  },
+  "ekf": {
+   "state": "ABSENT",
+   "source": "XKF4 by C (SV, SP, SH, SM)",
+   "reason": "0 of 2638 XKF4 rows measured anything: EKF reported no solution (SS 0)",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "mode": {
+   "state": "PRESENT",
+   "source": "MODE (ModeNum, Rsn)",
+   "reason": null,
+   "note": null,
+   "n": 3,
+   "instances": {
+    "0": {
+     "n": 3,
+     "t_first": 29.696061,
+     "t_last": 63.455792,
+     "median_period_s": 16.879865,
+     "max_gap_s": 28.379957
+    }
+   },
+   "absent_columns": {},
+   "windows": [
+    [
+     29.696061,
+     35.075835,
+     "FBWA"
+    ],
+    [
+     35.075835,
+     63.455792,
+     "TAKEOFF"
+    ],
+    [
+     63.455792,
+     81.135415,
+     "STABILIZE"
+    ]
+   ]
+  },
+  "arming": {
+   "state": "PRESENT",
+   "source": "ARM (ArmState)",
+   "reason": null,
+   "note": null,
+   "n": 1,
+   "instances": {
+    "0": {
+     "n": 1,
+     "t_first": 70.31564,
+     "t_last": 70.31564,
+     "median_period_s": 0.0,
+     "max_gap_s": 0.0
+    }
+   },
+   "absent_columns": {},
+   "armed_intervals": [],
+   "absent_before_s": 70.31564
+  },
+  "events": {
+   "state": "ABSENT",
+   "source": "ERR (Subsys, ECode)",
+   "reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V4.7.0-beta5) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "home": {
+   "state": "ABSENT",
+   "reason": "0 distinct ORGN Type 1 rows (v1 judges one fixed home)"
+  },
+  "fence": {
+   "state": "ABSENT",
+   "reason": "fence disabled (FENCE_ENABLE 0)"
+  },
+  "params": {
+   "state": "PRESENT",
+   "n": 1302
+  }
+ },
+ "bars": {
+  "path": "bars.yaml",
+  "sha256": "2ec29842ab4903e80363cbc76f4a5452ced16d8e27f38f247e26e528ebe688f3",
+  "schema": "swathkeeper-bars/1.0"
+ },
+ "prereg": {
+  "status": "HASH_MATCH",
+  "sidecar": "bars.yaml.prereg.json",
+  "sidecar_sha256": "91d609e34f018acab8707447611cfde5ce6e016d82c29747828c3685716775bd",
+  "bars_sha256": "2ec29842ab4903e80363cbc76f4a5452ced16d8e27f38f247e26e528ebe688f3",
+  "bars_sha256_registered": "2ec29842ab4903e80363cbc76f4a5452ced16d8e27f38f247e26e528ebe688f3",
+  "log_sha256_pinned": "28dcbac522ceb75eee10f6af37b0d6e342c1dc79e2be1a9f766fe18a14336766",
+  "post_hoc": true,
+  "written_utc_untrusted": "2026-11-06T02:21:19+00:00"
+ },
+ "allowlist": {
+  "path": null,
+  "sha256": null,
+  "run_date_utc": "2026-11-06",
+  "declared": [],
+  "red": [
+   [
+    "gnss_quality",
+    "FAIL"
+   ],
+   [
+    "no_errors",
+    "EVIDENCE_INSUFFICIENT"
+   ]
+  ],
+  "matched": [],
+  "undeclared": [
+   [
+    "gnss_quality",
+    "FAIL"
+   ],
+   [
+    "no_errors",
+    "EVIDENCE_INSUFFICIENT"
+   ]
+  ],
+  "vacuous": [],
+  "expired": []
+ },
+ "exit_code": 1,
+ "badge": "gates: fail \u00b7 1/5 measured (post-hoc)",
+ "refusal": null,
+ "results": [
+  {
+   "id": "alt_floor",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "channel": "position.alt_rel_home_m",
+    "bound": "floor",
+    "limit": -10.0
+   },
+   "n": 0,
+   "min_n": 100,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; position ABSENT: no POS rows",
+   "provenance": {
+    "text": "B1, AUTHOR-CHOSEN as on the demo: never more than 10 m below home, the logged FENCE_ALT_MIN (-10). This log has no POS rows, so the design predicts EVIDENCE_INSUFFICIENT. min_n 100 = 10 s at 10 Hz.",
+    "param": "FENCE_ALT_MIN"
+   },
+   "param_in_log": {
+    "name": "FENCE_ALT_MIN",
+    "values": [
+     -10.0
+    ]
+   }
+  },
+  {
+   "id": "ekf_vel_ceiling",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "channel": "ekf.vel_ratio",
+    "bound": "ceiling",
+    "limit": 0.8
+   },
+   "n": 0,
+   "min_n": 200,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; ekf ABSENT: 0 of 2638 XKF4 rows measured anything: EKF reported no solution (SS 0)",
+   "provenance": {
+    "text": "B4, AUTHOR-CHOSEN as on the demo: XKF4.SV <= 0.8 (the logged FS_EKF_THRESH; SV against it is uncited, design \u00a711.1 item 5) on every core. min_n 200 = 10 s at 10 Hz on two cores.",
+    "param": "FS_EKF_THRESH"
+   },
+   "param_in_log": {
+    "name": "FS_EKF_THRESH",
+    "values": [
+     0.800000011920929
+    ]
+   }
+  },
+  {
+   "id": "gnss_quality",
+   "kind": "gnss_quality",
+   "severity": "must",
+   "verdict": "FAIL",
+   "measured": 52.71977199999999,
+   "bar": {
+    "fix_min": 3,
+    "sats_min": 6,
+    "max_outage_s": 0
+   },
+   "n": 263,
+   "min_n": 50,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    1
+   ],
+   "worst_instance": 1,
+   "gaps": [],
+   "note": "n=263; 1 non-qualifying run(s); longest 52.720 s on instance 1 from t=28.416 s",
+   "provenance": {
+    "text": "B5, AUTHOR-CHOSEN as on the demo: every GPS row of every instance has fix >= 3 and >= 6 satellites (max_outage_s 0 = every row). The design predicts FAIL on measured no-fix rows (\u00a78). min_n 50."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "geofence",
+   "kind": "containment",
+   "severity": "should",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "source": "log"
+   },
+   "n": 0,
+   "min_n": 100,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+   "provenance": {
+    "text": "B6: the log's own fence. FENCE_ENABLE is 0 here and there are no POS or ORGN rows, so the design predicts EVIDENCE_INSUFFICIENT. min_n 100 segments.",
+    "param": "FENCE_RADIUS"
+   },
+   "param_in_log": {
+    "name": "FENCE_RADIUS",
+    "values": [
+     300.0
+    ]
+   }
+  },
+  {
+   "id": "no_errors",
+   "kind": "no_events",
+   "severity": "must",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "kinds": [
+     "error"
+    ]
+   },
+   "n": 0,
+   "min_n": 60,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V4.7.0-beta5) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+   "provenance": {
+    "text": "B8, AUTHOR-CHOSEN as on the demo: zero ERR rows in drop-free logging. The ERR citation is at ArduPilot 4.5.x and this log is V4.7, so zero ERR rows is ABSENT and the bar cannot be measured. min_n 60."
+   },
+   "param_in_log": null
+  }
+ ]
+}

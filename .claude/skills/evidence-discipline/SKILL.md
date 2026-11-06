@@ -44,8 +44,8 @@ is a constant, and nothing compares commanded to achieved displacement.
 ## Standing freezes (ADR-022)
 - NDVI pipeline FROZEN (ADR-019 §7). Depth segmenter FROZEN until a flight WITH a target exists.
 - `docs/DECISIONS.md` amendments are ≤ 10 lines; no new ADR ships without a recorded cut.
-- tests:src capped at **3.70:1**; OVER at **3.84** since 2026-09-11. Every new test file retires
-  one until it falls; the cap is never re-baselined.
+- tests:src capped at **3.70:1**; **3.33 since 2026-11-05, UNDER** by dilution from the gates tool's src (ADR-023; it was OVER at 3.84 from 2026-09-11). Every new test file retires
+  one while the ratio is over the cap; the cap is never re-baselined.
 
 ## Naming (ADR-011)
 Never rename `fieldguard_planning`, `fg_` / `/fg/*`, `farmguard_field.sdf`, or the `fieldguard-sim`

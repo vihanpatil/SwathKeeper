@@ -46,7 +46,7 @@ implement *before* you start.
   mutate the resolution constant too. A pin that reads its own constant pins nothing.
 - Metrics before "it works": precision/recall, per-bird-track FNR (false negatives are safety
   bugs, reported separately), lead time, coverage completeness — each with its denominator.
-- The tests:src cap (3.70, OVER at 3.84) applies to you first: prefer extending an existing test
+- The tests:src cap (3.70; 3.33 since 2026-11-05, by dilution) applies to you first: prefer extending an existing test
   file; a new one names the file it retires.
 - Demo and recording flights stay human-flown (ADR-013); you never book or fly one.
 

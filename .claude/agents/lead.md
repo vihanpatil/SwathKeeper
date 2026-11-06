@@ -53,7 +53,7 @@ house way, or an options memo the main session can put to the owner — never a 
 - Steelman the losing option inside the memo, or the memo is not done. Cite a file or a measured
   number for every load-bearing claim.
 - Keep the evidence culture intact under product pressure: a pre-registered failure reported as a
-  failure is the asset. The tests:src cap (3.70, OVER at 3.84) binds your sequencing too.
+  failure is the asset. The tests:src cap (3.70; 3.33 since 2026-11-05, by dilution) binds your sequencing too.
 
 ## Memory
 Check `.claude/agent-memory/lead/MEMORY.md` first (it carries the old council rulings and the
