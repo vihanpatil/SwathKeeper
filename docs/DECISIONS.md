@@ -4730,12 +4730,12 @@ red-first, G261 copy fixed, G257 in the ADR" — met); orchestrator (G260's corr
 ### ADR-023 amendment 1 (2026-11-05, OPTION C STEP 5 BUILT — the Action, the badge, the reproduction job; the floor drops to 3.10 because CI now tests it)
 
 `.github/actions/swathkeeper-gates/` (composite, `run.sh`) runs `swathkeeper-gates run` on a caller's log + bars, installs the tool from its own
-checkout (same ref as the action), writes outputs `exit-code` / `badge` / `verdict` BEFORE exiting with the tool's own code: 1 and 2 fail the step,
-no input softens that (`continue-on-error` is the caller's visible choice). `ci.yml` job `gates-tool` (py3.10 + py3.12, every step `if: always()`):
-the 55 unit tests; the Action on the Tarot log (must PASS, badge verbatim) and the ArduPlane log (must FAIL the step — asserted); and
-`scripts/check_gates_examples.py` over the three `examples/*/SOURCE.json` logs — `curl -fL` into a fresh temp dir, sha256 + size vs the pin
-(mismatch = hard FAIL, both hashes printed, tool NOT run), sidecar HASH_MATCH (post-hoc), `results[*].{id,verdict,n}` + badge + exit diffed against
-the committed verdict (`measured` drift printed, not gated), the README's `examples/tarot_x4/badge.svg` re-rendered (`scripts/render_gates_badge.py`,
-stdlib, deterministic) and diffed. Armed red-first in `tests/test_ci_evidence_gate.py` (no new file; tests:src 3.37). **Measured:** all three verdicts,
-badges, exit codes and measured values reproduce on 3.10.21 and 3.12.12 → `requires-python = ">=3.10"` (design §1's condition; a test pins the floor to
-the lowest matrix leg). **Not claimed:** it fetches only the three pinned logs; green = the committed verdicts REPRODUCE today, not that any vehicle is safe. **G257 stays OPEN for lead + owner before step 6:** a Dp rise as a hole flips the Tarot badge to `could not tell`.
+checkout (same ref as the action), writes outputs `exit-code` / `badge` / `verdict` BEFORE exiting with the tool's own code on every path — 1 and
+2 fail the step, no input softens that, a stale file at `--out` is removed first (G268), a missing or line-broken input refuses with outputs (G269/70).
+`ci.yml` job `gates-tool` (py3.10 + py3.12, every step `if: always()`): the 55 unit tests; the Action on the Tarot log (must PASS, badge verbatim) and
+the ArduPlane log (must FAIL the step — asserted, and the assertion bodies are executed by a test); `scripts/check_gates_examples.py` over the three
+`examples/*/SOURCE.json` logs — url must be a 40-hex-commit https raw.githubusercontent.com pin, `curl -f` https-only into a fresh temp dir, sha256 +
+size vs the pin (mismatch = hard FAIL, both hashes printed, tool NOT run), SOURCE/sidecar/verdict bound by hash to the same log, bars AND sidecar (G267),
+then the **WHOLE fresh verdict diffed leaf by leaf** (363/262/286 leaves; four excluded and printed: `source.path`, `tool.python`, `tool.deps.PyYAML`,
+`allowlist.run_date_utc`) — QA G266 measured that the design's pre-registered `results[*].{verdict,n}` diff left 337 of 363 Tarot leaves unwatched, so
+that pre-registration is widened here, not kept. `examples/tarot_x4/badge.svg` (`scripts/render_gates_badge.py`, stdlib, deterministic; only `pass` is green) is re-rendered from the fresh badge and diffed. **Measured:** every leaf reproduces on 3.10.21 and 3.12.12 → `requires-python = ">=3.10"` (design §1's condition; a test pins the floor to the lowest matrix leg). Armed red-first in `tests/test_ci_evidence_gate.py` (no new file): QA round 1 (G266–G276) found 17 of 38 shadow mutants surviving; all are killed by name now. **Not claimed:** it fetches only the three pinned logs; green = the committed verdicts REPRODUCE today, not that any vehicle is safe. **G257 stays OPEN for lead + owner before step 6:** a Dp rise as a hole flips the Tarot badge to `could not tell`.

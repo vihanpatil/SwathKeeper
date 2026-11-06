@@ -7,18 +7,25 @@
 `examples/<name>/SOURCE.json`'s url into a fresh temp dir (this script NEVER fetches; design §8: no third-party
 log is committed, and a unit test never downloads). For each example directory, in this order, every step printed:
 
-  1. the fetched bytes must hash to SOURCE.json's sha256 at its size_bytes -- any mismatch is a hard FAIL that
+  1. SOURCE.json's url must be a commit-pinned https://raw.githubusercontent.com/<owner>/<repo>/<40-hex sha>/ path
+     (a branch, a short sha or another host is a FAIL: the pin is the fixture), and across the examples the pinned
+     sha256s must be distinct (two dirs holding one log would count as two reproductions);
+  2. the fetched bytes must hash to SOURCE.json's sha256 at its size_bytes -- any mismatch is a hard FAIL that
      prints both hashes, and the tool is NOT run on those bytes;
-  2. SOURCE.json, the pinned sidecar `bars.yaml.prereg.json` and the committed verdict must name the SAME log
-     sha256, and the sidecar's bars_sha256 must be sha256(bars.yaml) -- so the fresh run can only read
-     HASH_MATCH (post-hoc); a sidecar re-registered after the fact fails here, not silently as NOT_REGISTERED;
-  3. `swathkeeper-gates run` (the console script on PATH, as a stranger would run it) judges the fetched log
+  3. SOURCE.json, the pinned sidecar `bars.yaml.prereg.json` and the committed verdict must name the SAME log
+     sha256; the sidecar's bars_sha256, the verdict's `bars.sha256` and `prereg.bars_sha256_registered` must all be
+     sha256(bars.yaml), and the verdict's `prereg.sidecar_sha256` must be sha256(the committed sidecar) -- so an
+     edited bars file with a re-registered sidecar (QA G267) fails HERE, by name, before any run;
+  4. `swathkeeper-gates run` (the console script on PATH, as a stranger would run it) judges the fetched log
      against the committed bars.yaml, its exit code captured as a VALUE (1 is the correct verdict on two of the
-     three logs), and the fresh verdict must read prereg HASH_MATCH, post_hoc, badge `(post-hoc)`;
-  4. results[*].{id, verdict, n}, badge and exit_code are diffed against the committed verdict.json -- the
-     pre-registered diff (design §9), so a `should` bar sliding PASS -> EVIDENCE_INSUFFICIENT is a red, not a
-     footnote. A `measured` value that moved while verdict and n held is PRINTED as drift and not gated;
-  5. if `badge.svg` is committed beside the verdict, a fresh render of the FRESH badge must equal it byte for byte.
+     three logs); a refusal is a FAIL, and the fresh verdict must read prereg HASH_MATCH, post_hoc, `(post-hoc)`;
+  5. the WHOLE fresh verdict is diffed, leaf by leaf, against the committed verdict.json -- every result's
+     verdict, n AND measured value, every bar limit, the integrity block, the streams map, the badge, the exit
+     code (QA G266: the pre-registered `results[*].{verdict,n}` diff let 337 of 363 Tarot leaves drift unseen).
+     Exactly four leaves are EXCLUDED and printed instead, because they differ by construction between the
+     committing host and a CI leg: `source.path` (the fetched basename), `tool.python` (3.10 and 3.12 both
+     run), `tool.deps.PyYAML` (a range pin, not an instrument -- design §1) and `allowlist.run_date_utc`;
+  6. if `badge.svg` is committed beside the verdict, a fresh render of the FRESH badge must equal it byte for byte.
 
 Denominator first: the number of example directories is printed and zero is a FAIL. Exit 0 iff every example
 reproduces; 1 on any FAIL; 2 when it could not judge at all (no --fetched dir, tool not on PATH). stdlib only.
@@ -28,6 +35,7 @@ nothing from `fieldguard_planning` (ADR-023: the two packages never meet).
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -39,6 +47,14 @@ from render_gates_badge import render_svg  # noqa: E402
 
 TAG = "[gates-examples]"
 BADGE_LABELS = {"tarot_x4": "tarot_x4 · public log"}   # the README badge; other examples carry no SVG today
+PINNED_URL = re.compile(r"^https://raw\.githubusercontent\.com/[\w.-]+/[\w.-]+/[0-9a-f]{40}/.+")
+EXCLUDED = {                      # leaf -> why it may differ (printed on every run, never diffed)
+    "source.path": "the fetched file's basename",
+    "tool.python": "the interpreter -- the job runs 3.10 and 3.12",
+    "tool.deps.PyYAML": "a range pin, not an instrument (design §1)",
+    "allowlist.run_date_utc": "today",
+}
+ABSENT = object()
 
 
 def sha256_of(path: Path) -> str:
@@ -49,12 +65,41 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
-def short(sha: str) -> str:
-    return f"{sha[:8]}…{sha[-4:]}" if len(sha) == 64 else repr(sha)
+def short(sha) -> str:
+    return f"{sha[:8]}…{sha[-4:]}" if isinstance(sha, str) and len(sha) == 64 else repr(sha)
 
 
-def key(verdict: dict):
-    return [(r.get("id"), r.get("verdict"), r.get("n")) for r in verdict.get("results", [])]
+def leaves(obj, prefix=""):
+    """Every scalar in a JSON document as (dotted path, value); list items as [i]."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            yield from leaves(v, f"{prefix}.{k}" if prefix else str(k))
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            yield from leaves(v, f"{prefix}[{i}]")
+    else:
+        yield prefix, obj
+
+
+def leaf_diff(committed, fresh):
+    """[(path, committed value, fresh value)] over the union of leaves, excluding EXCLUDED. Absent is a difference."""
+    a, b = dict(leaves(committed)), dict(leaves(fresh))
+    return [(k, a.get(k, ABSENT), b.get(k, ABSENT)) for k in sorted(set(a) | set(b))
+            if k not in EXCLUDED and a.get(k, ABSENT) != b.get(k, ABSENT)]
+
+
+def _val(v):
+    return "<absent>" if v is ABSENT else repr(v)
+
+
+def _result_id(verdict, path):
+    m = re.match(r"results\[(\d+)\]", path)
+    if m:
+        try:
+            return f" (bar {verdict['results'][int(m.group(1))]['id']!r})"
+        except (KeyError, IndexError, TypeError):
+            pass
+    return ""
 
 
 def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
@@ -69,14 +114,21 @@ def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
 
     try:
         source = json.loads((example / "SOURCE.json").read_text())
-        sidecar = json.loads((example / "bars.yaml.prereg.json").read_text())
+        sidecar_bytes = (example / "bars.yaml.prereg.json").read_bytes()
+        sidecar = json.loads(sidecar_bytes)
         committed = json.loads((example / "verdict.json").read_text())
         bars_bytes = (example / "bars.yaml").read_bytes()
     except (OSError, ValueError) as e:
         fail(f"cannot read the committed example: {e}")
         return False
 
-    # 1. the fetched bytes
+    # 1. the pin itself
+    url = source.get("url")
+    if not isinstance(url, str) or not PINNED_URL.match(url):
+        fail(f"SOURCE.json url is not a commit-pinned raw.githubusercontent.com path (40-hex sha, https): {url!r}")
+        return False
+
+    # 2. the fetched bytes
     fetched = fetched_dir / f"{name}.bin"
     if not fetched.is_file():
         fail(f"no fetched log at {fetched} (the fetch step did not deliver this example's bytes)")
@@ -84,29 +136,37 @@ def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
     got, size = sha256_of(fetched), fetched.stat().st_size
     if got != source.get("sha256") or size != source.get("size_bytes"):
         fail(f"fetched bytes do NOT match SOURCE.json -- sha256 fetched {got} ({size} B) vs pinned "
-             f"{source.get('sha256')} ({source.get('size_bytes')} B) from {source.get('url')}. Not judged.")
+             f"{source.get('sha256')} ({source.get('size_bytes')} B) from {url}. Not judged.")
         return False
     log(f"{TAG} {name}: fetched {size} B, sha256 {short(got)} == SOURCE.json")
 
-    # 2. the three pins agree, and the sidecar binds this bars.yaml
-    pinned = {"SOURCE.json": source.get("sha256"), "sidecar log_sha256": sidecar.get("log_sha256"),
-              "verdict.json source.sha256": (committed.get("source") or {}).get("sha256")}
-    if len(set(pinned.values())) != 1:
-        fail("the committed pins disagree about WHICH log this is: " + ", ".join(f"{k} {short(v or '')}" for k, v in pinned.items()))
+    # 3. the pins agree with each other, and with the committed verdict (G267)
+    pinned_log = {"SOURCE.json": source.get("sha256"), "sidecar log_sha256": sidecar.get("log_sha256"),
+                  "verdict.json source.sha256": (committed.get("source") or {}).get("sha256")}
+    if len(set(pinned_log.values())) != 1:
+        fail("the committed pins disagree about WHICH log this is: " + ", ".join(f"{k} {short(v)}" for k, v in pinned_log.items()))
     bars_sha = hashlib.sha256(bars_bytes).hexdigest()
-    if sidecar.get("bars_sha256") != bars_sha:
-        fail(f"the sidecar registered bars sha256 {short(sidecar.get('bars_sha256') or '')} but bars.yaml is {short(bars_sha)} "
-             f"-- the run would refuse (prereg MISMATCH); re-registering silently is not an option here")
+    vprereg = committed.get("prereg") or {}
+    pinned_bars = {"sha256(bars.yaml)": bars_sha, "sidecar bars_sha256": sidecar.get("bars_sha256"),
+                   "verdict.json bars.sha256": (committed.get("bars") or {}).get("sha256"),
+                   "verdict.json prereg.bars_sha256_registered": vprereg.get("bars_sha256_registered")}
+    if len(set(pinned_bars.values())) != 1:
+        fail("the committed bars.yaml is not the one the verdict was judged under (an edit + a re-registered sidecar "
+             "is exactly this): " + ", ".join(f"{k} {short(v)}" for k, v in pinned_bars.items()))
+    side_sha = hashlib.sha256(sidecar_bytes).hexdigest()
+    if vprereg.get("sidecar_sha256") != side_sha:
+        fail(f"the committed sidecar (sha256 {short(side_sha)}) is not the one the verdict recorded "
+             f"({short(vprereg.get('sidecar_sha256'))}): the sidecar was re-registered after the verdict")
     if not ok:
         return False
-    log(f"{TAG} {name}: sidecar binds bars {short(bars_sha)} and log {short(got)}; committed verdict exit {committed.get('exit_code')} "
-        f"'{committed.get('badge')}' by python {committed.get('tool', {}).get('python')} "
-        f"deps {committed.get('tool', {}).get('deps')}")
+    log(f"{TAG} {name}: SOURCE.json, sidecar and verdict agree -- log {short(got)}, bars {short(bars_sha)}, sidecar {short(side_sha)}; "
+        f"committed exit {committed.get('exit_code')} '{committed.get('badge')}' by python {(committed.get('tool') or {}).get('python')} "
+        f"deps {(committed.get('tool') or {}).get('deps')}")
 
-    # 3. the fresh run
+    # 4. the fresh run
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "verdict.json"
-        proc = subprocess.run([tool, "run", "--log", str(fetched), "--bars", str(example / "bars.yaml"), "--out", str(out)],
+        proc = subprocess.run([tool, "run", f"--log={fetched}", f"--bars={example / 'bars.yaml'}", f"--out={out}"],
                               capture_output=True, text=True)
         if not out.is_file():
             fail(f"{tool} exit {proc.returncode} wrote no verdict to --out.\nstdout: {proc.stdout}\nstderr: {proc.stderr}")
@@ -117,36 +177,31 @@ def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
             fail(f"the fresh verdict is not JSON: {e}")
             return False
     rc = proc.returncode
-    log(f"{TAG} {name}: {Path(tool).name} exit {rc}, badge '{fresh.get('badge')}', python {fresh.get('tool', {}).get('python')} "
-        f"deps {fresh.get('tool', {}).get('deps')}")
+    log(f"{TAG} {name}: {Path(tool).name} exit {rc}, badge '{fresh.get('badge')}', python {(fresh.get('tool') or {}).get('python')} "
+        f"deps {(fresh.get('tool') or {}).get('deps')}")
     if fresh.get("refusal"):
         fail(f"the fresh run REFUSED: {fresh['refusal']}")
     prereg = fresh.get("prereg") or {}
     if prereg.get("status") != "HASH_MATCH" or not prereg.get("post_hoc") or not str(fresh.get("badge", "")).endswith("(post-hoc)"):
         fail(f"the fresh run did not bind to the pinned sidecar: prereg {prereg.get('status')}, post_hoc {prereg.get('post_hoc')}, "
              f"badge '{fresh.get('badge')}' (expected HASH_MATCH, post_hoc, '… (post-hoc)')")
+    if rc != committed.get("exit_code"):
+        fail(f"the PROCESS exited {rc} but the committed verdict says exit_code {committed.get('exit_code')} "
+             f"(the CLI's exit is part of the contract, not only the JSON)")
 
-    # 4. the pre-registered diff
-    if rc != committed.get("exit_code") or fresh.get("exit_code") != committed.get("exit_code"):
-        fail(f"exit code: process {rc} / verdict {fresh.get('exit_code')} vs committed {committed.get('exit_code')}")
-    if fresh.get("badge") != committed.get("badge"):
-        fail(f"badge: fresh '{fresh.get('badge')}' vs committed '{committed.get('badge')}'")
-    fk, ck = key(fresh), key(committed)
-    if len(fk) != len(ck):
-        fail(f"{len(fk)} results fresh vs {len(ck)} committed: {[i for i, _, _ in fk]} vs {[i for i, _, _ in ck]}")
-    for f, c in zip(fk, ck):
-        if f != c:
-            fail(f"result {c[0]!r}: committed {c[1]} n={c[2]} -> fresh {f[0]!r} {f[1]} n={f[2]}")
-    for f, c in zip(fresh.get("results", []), committed.get("results", [])):
-        if f.get("id") == c.get("id") and (f.get("verdict"), f.get("n")) == (c.get("verdict"), c.get("n")) \
-                and f.get("measured") != c.get("measured"):
-            log(f"{TAG} DRIFT {name}: {c['id']} measured committed {c.get('measured')} -> fresh {f.get('measured')} "
-                f"(verdict and n unchanged; not gated -- the pre-registered diff is results[*].{{verdict,n}})")
-    if ok:
-        log(f"{TAG} {name}: {len(ck)}/{len(ck)} results identical -- "
-            + ", ".join(f"{i} {v} n={n}" for i, v, n in ck))
+    # 5. the whole verdict, leaf by leaf
+    a, b = dict(leaves(committed)), dict(leaves(fresh))
+    for k, why in EXCLUDED.items():
+        log(f"{TAG} {name}: not diffed -- {k} committed {_val(a.get(k, ABSENT))} / fresh {_val(b.get(k, ABSENT))} ({why})")
+    diffs = leaf_diff(committed, fresh)
+    for path, cv, fv in diffs:
+        fail(f"{path}{_result_id(committed, path)}: committed {_val(cv)} -> fresh {_val(fv)}")
+    if not diffs:
+        results = committed.get("results") or []
+        log(f"{TAG} {name}: {len(a)} leaves identical ({len(EXCLUDED)} excluded) -- "
+            + ", ".join(f"{r.get('id')} {r.get('verdict')} n={r.get('n')} measured={r.get('measured')}" for r in results))
 
-    # 5. the committed badge, if any
+    # 6. the committed badge, if any
     svg = example / "badge.svg"
     if svg.is_file():
         want = render_svg(BADGE_LABELS.get(name, "swathkeeper-gates"), str(fresh.get("badge")))
@@ -177,10 +232,22 @@ def main(argv=None) -> int:
     if not tool:
         log(f"{TAG} REFUSED: `swathkeeper-gates` is not on PATH -- pip install -e '.[ardupilot]' first", file=sys.stderr)
         return 2
+    # the pinned logs must be distinct files (G271): two dirs over one log are one reproduction, not two
+    shas = {}
+    for e in examples:
+        try:
+            shas.setdefault(json.loads((e / "SOURCE.json").read_text()).get("sha256"), []).append(e.name)
+        except (OSError, ValueError) as err:
+            log(f"{TAG} FAIL {e.name}: cannot read SOURCE.json: {err}", file=sys.stderr)
+            return 1
+    dupes = {s: n for s, n in shas.items() if len(n) > 1}
+    if dupes:
+        log(f"{TAG} FAIL: the same pinned log sha256 under more than one example dir: {dupes}", file=sys.stderr)
+        return 1
     results = {e.name: check_example(e, fetched, tool, log) for e in examples}
     good = sum(results.values())
     if good == len(results):
-        log(f"{TAG} {good}/{len(results)} examples reproduce their committed verdict. exit 0")
+        log(f"{TAG} {good}/{len(results)} examples reproduce their committed verdict, every leaf. exit 0")
         return 0
     log(f"{TAG} {good}/{len(results)} examples reproduce; FAILED: {[n for n, r in results.items() if not r]}. exit 1", file=sys.stderr)
     return 1

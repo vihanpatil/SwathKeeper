@@ -55,8 +55,9 @@ def render_svg(label: str, message: str) -> str:
     lw = text_width_px(label) + 10          # 5 px padding each side
     mw = text_width_px(message) + 10
     width = lw + mw
-    title = escape(f"{label}: {message}")
-    lab, msg = escape(label), escape(message)
+    q = {'"': "&quot;"}                      # the title sits inside aria-label="…": saxutils.escape alone leaves quotes
+    title = escape(f"{label}: {message}", q)
+    lab, msg = escape(label, q), escape(message, q)
     # shields.io's "flat" template, values in tenths (transform scale(.1)) as shields writes them.
     lx, mx = (lw / 2) * 10, (lw + mw / 2) * 10
     ltl, mtl = (lw - 10) * 10, (mw - 10) * 10

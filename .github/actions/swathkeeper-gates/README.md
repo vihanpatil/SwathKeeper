@@ -25,6 +25,10 @@ its amendment 1 in `docs/DECISIONS.md`.
 | `badge` | the verdict's badge string, e.g. `gates: pass · 8/8 measured (post-hoc)`; `gates: refused` on exit 2 |
 | `verdict` | the path of the JSON verdict (the `out` input) |
 
+**Two runner facts to know.** The Action runs `actions/setup-python` for `python-version` (default 3.12), so a job that already
+set up a different Python sees it change for later steps — pass the same version. GitHub does not enforce a composite input's
+`required: true`; `run.sh` checks `log`, `bars` and `out` itself and refuses (exit 2, outputs written) when one is empty.
+
 **What it does not claim.** A green step means *this* log (by sha256, in the verdict) met every bar in *these*
 bars (by sha256) that could be measured, under the parser versions the verdict records. It fetches nothing: the
 caller provides the log and the bars. It is not a flight-safety assessment of any vehicle. A badge that reads

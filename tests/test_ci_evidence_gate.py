@@ -38,6 +38,7 @@ import json
 import math
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -359,21 +360,28 @@ class TestScenarioFixturesAreGated(unittest.TestCase):
 # ================================================================================================
 GATES_JOB = "gates-tool"
 REPRO_STEP = "Re-fetch the three pinned public logs"           # the step whose `run: |` body is executed below
+DEMO_FETCH_STEP = "Fetch the two demo logs"
+TAROT_ASSERT_STEP = "outputs equal the committed demo verdict"
+PLANE_ASSERT_STEP = "and it did fail"
 ACTION_DIR = REPO_ROOT / ".github" / "actions" / "swathkeeper-gates"
-DESIGN_EXAMPLES = ("plane_nofix", "pymavlink_test_bin", "tarot_x4")   # design §8 / ADR-023 D7: three, by name
+# design §8 / ADR-023 D7: three public logs, by name AND by sha256. A changed pin is a reviewed diff here.
+DESIGN_EXAMPLES = {
+    "plane_nofix": "28dcbac522ceb75eee10f6af37b0d6e342c1dc79e2be1a9f766fe18a14336766",
+    "pymavlink_test_bin": "a51f040b2ad7f55185c1da5705f226f51469b86562c4ff76d05c99e0e52c2bf4",
+    "tarot_x4": "a4dc00507cc8448c0ce320279e70040de3af3439dd4c3dd5363a7fa388609108",
+}
+PINNED_URL = re.compile(r"^https://raw\.githubusercontent\.com/[\w.-]+/[\w.-]+/[0-9a-f]{40}/.+")
 TAROT_BADGE = "gates: pass · 8/8 measured (post-hoc)"                 # the README badge, verbatim (ADR-023)
 TAROT_LABEL = "tarot_x4 · public log"                                  # scripts/check_gates_examples.BADGE_LABELS
-FAKE_RESULTS = (("alt_floor", "PASS", 100, 1.5), ("speed_ceiling", "PASS", 50, 2.0),
-                ("no_errors", "EVIDENCE_INSUFFICIENT", 0, None))
 FAKE_BADGE = "gates: pass · 2/3 measured (post-hoc)"
 
 STUB_CURL = """#!/bin/bash
-# stub curl for the reproduction step: `curl -fsSL --retry N --retry-delay N -o <path> <url>`
+# stub curl for the reproduction step: `curl -fsSL --proto '=https' --proto-redir '=https' --retry N --retry-delay N -o <path> <url>`
 out=""; url=""
 while [ $# -gt 0 ]; do
   case "$1" in
     -o) out="$2"; shift 2;;
-    --retry|--retry-delay|--max-time) shift 2;;
+    --retry|--retry-delay|--max-time|--proto|--proto-redir) shift 2;;
     -*) shift;;
     *) url="$1"; shift;;
   esac
@@ -385,10 +393,12 @@ cp "$src" "$out"
 """
 
 STUB_TOOL = """#!{python}
-# stub swathkeeper-gates: writes $STUB_VERDICTS/<example dir name>.json to --out and exits with its exit_code
+# stub swathkeeper-gates for the reproduction step: writes $STUB_VERDICTS/<example dir name>.json to --out and
+# exits with its exit_code ($STUB_PROCESS_EXIT overrides the process exit alone)
 import json, os, sys
 a = sys.argv[1:]
-bars, out = a[a.index("--bars") + 1], a[a.index("--out") + 1]
+bars = next(x[len("--bars="):] for x in a if x.startswith("--bars="))
+out = next(x[len("--out="):] for x in a if x.startswith("--out="))
 name = os.path.basename(os.path.dirname(os.path.abspath(bars)))
 with open(os.environ["STUB_LOG"], "a") as f:
     f.write("tool " + name + "\\n")
@@ -396,7 +406,19 @@ with open(os.path.join(os.environ["STUB_VERDICTS"], name + ".json")) as f:
     v = json.load(f)
 with open(out, "w") as f:
     json.dump(v, f)
-sys.exit(v["exit_code"])
+sys.exit(int(os.environ.get("STUB_PROCESS_EXIT", v["exit_code"])))
+"""
+
+STUB_RUN_TOOL = """#!{python}
+# stub swathkeeper-gates for run.sh: records argv, writes a minimal verdict (or not), exits {code}
+import json, os, sys
+a = sys.argv[1:]
+if os.environ.get("STUB_ARGS"):
+    open(os.environ["STUB_ARGS"], "w").write("\\n".join(a))
+out = next((x[len("--out="):] for x in a if x.startswith("--out=")), None)
+if {write} and out:
+    open(out, "w").write(json.dumps({{"badge": {badge!r}, "exit_code": {code}}}))
+sys.exit({code})
 """
 
 
@@ -404,18 +426,30 @@ def _sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
-def _fake_verdict(log_sha, results=FAKE_RESULTS, badge=FAKE_BADGE, exit_code=0, status="HASH_MATCH", post_hoc=True):
-    return {"schema": "swathkeeper-verdict/1.0", "tool": {"version": "0.1.0", "python": "3.12.12", "deps": {}},
-            "source": {"sha256": log_sha}, "prereg": {"status": status, "post_hoc": post_hoc},
-            "results": [{"id": i, "verdict": v, "n": n, "measured": m} for i, v, n, m in results],
-            "badge": badge, "exit_code": exit_code, "refusal": None}
+def _fake_verdict(log_sha, bars_sha, sidecar_sha):
+    """Shaped like a real swathkeeper-verdict/1.0 where the checker looks: pins, prereg, results with every leaf."""
+    results = (("alt_floor", "PASS", 100, 1.5, "must", -10.0), ("speed_ceiling", "PASS", 50, 2.0, "should", 12.5),
+               ("no_errors", "EVIDENCE_INSUFFICIENT", 0, None, "should", 0))
+    return {"schema": "swathkeeper-verdict/1.0", "contract": "swathkeeper-flightlog/1.0",
+            "tool": {"version": "0.1.0", "python": "3.12.12", "deps": {"PyYAML": "6.0.3", "pymavlink": "2.4.50"}},
+            "source": {"path": "upstream-name.bin", "sha256": log_sha, "size_bytes": 1234},
+            "integrity": {"bytes_skipped": 0, "dsf_dropped_max": 15, "holes": []},
+            "streams": {"position": {"state": "PRESENT", "n": 100}},
+            "bars": {"path": "bars.yaml", "sha256": bars_sha, "schema": "swathkeeper-bars/1.0"},
+            "prereg": {"status": "HASH_MATCH", "sidecar": "bars.yaml.prereg.json", "sidecar_sha256": sidecar_sha,
+                       "bars_sha256": bars_sha, "bars_sha256_registered": bars_sha, "log_sha256_pinned": log_sha, "post_hoc": True},
+            "results": [{"id": i, "verdict": v, "n": n, "measured": m, "severity": sev, "bar": {"limit": lim}, "note": None}
+                        for i, v, n, m, sev, lim in results],
+            "allowlist": {"path": None, "run_date_utc": "2026-11-05", "declared": [], "undeclared": []},
+            "exit_code": 0, "badge": FAKE_BADGE, "refusal": None}
 
 
-def _gates_tree(tmp: Path, names=("alpha", "beta", "gamma"), fresh=None, corrupt=(), tool=True):
+def _gates_tree(tmp: Path, names=("alpha", "beta", "gamma"), fresh=None, corrupt=(), tool=True, url=None):
     """A temp repo with `names` fake example dirs, the REAL scripts/, and stub `curl` + `swathkeeper-gates` on PATH.
 
     Each example's committed verdict is `_fake_verdict`; the stub tool writes `fresh[name]` (default: identical).
-    `corrupt` names examples whose fetched bytes differ from the SOURCE.json pin. Returns the env for the step."""
+    `corrupt` names examples whose fetched bytes have ONE BIT flipped at the same size (a size check alone must
+    not kill the sha256 mutant). Returns the env for the step; the committed files are under tmp/examples/."""
     bin_ = tmp / "bin"
     bin_.mkdir()
     os.symlink(REPO_ROOT / "scripts", tmp / "scripts")
@@ -428,15 +462,18 @@ def _gates_tree(tmp: Path, names=("alpha", "beta", "gamma"), fresh=None, corrupt
         ex.mkdir(parents=True)
         log_bytes = (b"\xa3\x95 fixture " + name.encode()) * 64
         bars = f"schema: swathkeeper-bars/1.0\ncontract: swathkeeper-flightlog/1.0\nbars: [{name}]\n".encode()
-        (logs / f"{name}.bin").write_bytes(log_bytes + (b"!" if name in corrupt else b""))
-        (ex / "SOURCE.json").write_text(json.dumps({"url": f"https://example.invalid/logs/{name}.bin",
-                                                    "sha256": _sha(log_bytes), "size_bytes": len(log_bytes),
-                                                    "licence": "test fixture"}))
+        fetched = bytearray(log_bytes)
+        if name in corrupt:
+            fetched[-1] ^= 0x01
+        (logs / f"{name}.bin").write_bytes(bytes(fetched))
+        (ex / "SOURCE.json").write_text(json.dumps({
+            "url": url or f"https://raw.githubusercontent.com/example/fixtures/{'a' * 40}/logs/{name}.bin",
+            "sha256": _sha(log_bytes), "size_bytes": len(log_bytes), "licence": "test fixture"}))
         (ex / "bars.yaml").write_bytes(bars)
-        (ex / "bars.yaml.prereg.json").write_text(json.dumps({"schema": "swathkeeper-prereg/1.0", "bars_sha256": _sha(bars),
-                                                              "tool_version": "0.1.0", "written_utc": "2026-11-05T00:00:00+00:00",
-                                                              "log_sha256": _sha(log_bytes)}))
-        committed = _fake_verdict(_sha(log_bytes))
+        sidecar = json.dumps({"schema": "swathkeeper-prereg/1.0", "bars_sha256": _sha(bars), "tool_version": "0.1.0",
+                              "written_utc": "2026-11-05T00:00:00+00:00", "log_sha256": _sha(log_bytes)}).encode()
+        (ex / "bars.yaml.prereg.json").write_bytes(sidecar)
+        committed = _fake_verdict(_sha(log_bytes), _sha(bars), _sha(sidecar))
         (ex / "verdict.json").write_text(json.dumps(committed))
         (verdicts / f"{name}.json").write_text(json.dumps((fresh or {}).get(name, committed)))
     (bin_ / "curl").write_text(STUB_CURL)
@@ -455,12 +492,40 @@ def _run_repro_step(tmp: Path, env):
                           capture_output=True, text=True, timeout=120)
 
 
+def _code_lines(text: str):
+    """The non-comment lines of a shell body or a YAML file: a word in a comment must not satisfy a check."""
+    return "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("#"))
+
+
+def _fresh(**over):
+    """A fresh verdict for example `beta`, equal to the committed one but for `over` (dotted keys allowed)."""
+    v = _fake_verdict("", "", "")                       # pins are patched in by _apply below
+    return ("beta", over)
+
+
 class TestGatesReproductionStepIsArmed(unittest.TestCase):
     """The REAL ci.yml step body, in a tree where curl and the tool are stubs: the question is not whether the tool
-    judges well (tests/test_gates_*.py) but whether THIS step can go red for each thing it claims to catch. The
-    one artifact that would pass it while the verdicts are wrong is a fetched log with the pinned sha256 whose
-    committed verdict was wrong on the day it was committed -- which is why ADR-023 has QA's independent
-    re-derivation of every Tarot number, and why this test cannot replace it."""
+    judges well (tests/test_gates_*.py) but whether THIS step can go red for each thing it claims to catch.
+
+    After QA round 1 (G266/G267) the checker diffs the WHOLE verdict and binds the committed bars + sidecar to the
+    verdict by hash, so the artifact that still passes it is a committed verdict that was wrong on the day it was
+    committed under the same bars, sidecar and log -- which is why ADR-023 has QA's independent re-derivation of
+    every Tarot number, and why this test cannot replace it."""
+
+    def _committed(self, tmp, name="beta"):
+        return json.loads((Path(tmp) / "examples" / name / "verdict.json").read_text())
+
+    def _with_fresh(self, mutate):
+        """Build a tree, derive `beta`'s fresh verdict from its committed one via `mutate(verdict)`, run the step."""
+        tmp = tempfile.mkdtemp()
+        try:
+            env = _gates_tree(Path(tmp))
+            v = self._committed(tmp)
+            mutate(v)
+            (Path(tmp) / "stub_verdicts" / "beta.json").write_text(json.dumps(v))
+            return _run_repro_step(Path(tmp), env), (Path(tmp) / "stub.log").read_text()
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def test_control_three_identical_examples_are_green_and_the_denominator_is_printed(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -469,37 +534,106 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
             ran = (Path(tmp) / "stub.log").read_text()
         self.assertEqual(proc.returncode, 0, msg=f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
         self.assertIn("committed gate examples matched: 3", proc.stdout)
-        self.assertIn("3/3 examples reproduce", proc.stdout)
+        self.assertIn("3/3 examples reproduce their committed verdict, every leaf", proc.stdout)
         self.assertEqual(ran.count("tool "), 3, msg=f"the tool must run once per example:\n{ran}")
 
-    def test_every_drift_the_pre_registered_diff_names_turns_the_step_red(self):
-        """One mutation per subTest, each applied to the FRESH verdict only; the step must fail and NAME it."""
-        base = _fake_verdict("")
-        slid = json.loads(json.dumps(base))
-        slid["results"][1]["verdict"] = "EVIDENCE_INSUFFICIENT"           # the `should` bar sliding PASS -> EI (design §9)
-        n_moved = json.loads(json.dumps(base))
-        n_moved["results"][0]["n"] = 99
-        badge_moved = dict(base, badge="gates: pass · 3/3 measured (post-hoc)")
-        exit_moved = dict(base, exit_code=1)
-        unbound = dict(base, prereg={"status": "NOT_REGISTERED", "post_hoc": False},
-                       badge="gates: pass · 2/3 measured (unregistered)")
-        extra = json.loads(json.dumps(base))
-        extra["results"].append({"id": "extra_bar", "verdict": "PASS", "n": 1, "measured": 0})
-        for why, fresh, names in ((" a should bar slid PASS -> EI", slid, ("speed_ceiling", "EVIDENCE_INSUFFICIENT")),
-                                  ("n moved", n_moved, ("alt_floor", "99")),
-                                  ("the badge moved", badge_moved, ("badge", "3/3")),
-                                  ("the exit code moved", exit_moved, ("exit code",)),
-                                  ("the sidecar was not bound", unbound, ("HASH_MATCH",)),
-                                  ("a result was added", extra, ("4 results",))):
-            with self.subTest(why=why), tempfile.TemporaryDirectory() as tmp:
-                env = _gates_tree(Path(tmp), fresh={"beta": fresh})
-                proc = _run_repro_step(Path(tmp), env)
+    def test_every_leaf_that_moves_in_the_fresh_verdict_turns_the_step_red(self):
+        """One mutation per subTest, applied to the FRESH verdict only; the step must fail and NAME the leaf.
+        The first six are the pre-registered {verdict,n,badge,exit} diff; the rest are QA G266's survivors."""
+        def set_(path, value):
+            def m(v):
+                cur = v
+                for k in path[:-1]:
+                    cur = cur[k]
+                cur[path[-1]] = value
+            return m
+
+        def refusal(v):
+            v.update(refusal="internal error, no verdict: parser", results=[], exit_code=2, badge="gates: refused")
+
+        cases = (("a should bar slid PASS -> EI", set_(("results", 1, "verdict"), "EVIDENCE_INSUFFICIENT"), ("results[1].verdict", "speed_ceiling")),
+                 ("n moved", set_(("results", 0, "n"), 99), ("results[0].n", "99")),
+                 ("the badge moved", set_(("badge",), "gates: pass · 3/3 measured (post-hoc)"), ("badge", "3/3")),
+                 ("the exit code moved", set_(("exit_code",), 1), ("exit_code",)),
+                 ("the sidecar was not bound", lambda v: v.update(prereg=dict(v["prereg"], status="NOT_REGISTERED", post_hoc=False),
+                                                                badge="gates: pass · 2/3 measured (unregistered)"), ("HASH_MATCH",)),
+                 ("a result was added", lambda v: v["results"].append({"id": "extra_bar", "verdict": "PASS", "n": 1}), ("results[3]",)),
+                 ("measured moved (G266)", set_(("results", 1, "measured"), 12.4), ("results[1].measured", "12.4")),
+                 ("a bar limit moved (G266)", set_(("results", 1, "bar", "limit"), 99), ("results[1].bar.limit",)),
+                 ("a severity moved (G266)", set_(("results", 0, "severity"), "should"), ("results[0].severity",)),
+                 ("a note appeared (G266)", set_(("results", 2, "note"), "made up"), ("results[2].note",)),
+                 ("integrity erased (G266, G257's evidence)", set_(("integrity", "dsf_dropped_max"), 0), ("integrity.dsf_dropped_max",)),
+                 ("the bars hash zeroed (G266)", set_(("bars", "sha256"), "0" * 64), ("bars.sha256",)),
+                 ("a stream state moved (G266)", set_(("streams", "position", "state"), "ABSENT"), ("streams.position.state",)),
+                 ("the fresh run refused", refusal, ("REFUSED",)))
+        for why, mutate, tokens in cases:
+            with self.subTest(why=why):
+                proc, _ = self._with_fresh(mutate)
                 self.assertNotEqual(proc.returncode, 0, msg=f"[{why}] the step stayed GREEN.\nstdout: {proc.stdout}")
-                for token in names:
-                    self.assertIn(token, proc.stdout + proc.stderr, msg=f"[{why}] the red does not name the drift")
-                self.assertIn("FAIL beta", proc.stdout + proc.stderr)
-                self.assertIn("2/3 examples reproduce", proc.stdout + proc.stderr,
+                out = proc.stdout + proc.stderr
+                for token in tokens:
+                    self.assertIn(token, out, msg=f"[{why}] the red does not name the drift:\n{out}")
+                self.assertIn("FAIL beta", out)
+                self.assertIn("2/3 examples reproduce", out,
                               msg="the other two must still be judged and counted: one red does not blind the rest")
+
+    def test_the_process_exit_is_checked_not_only_the_json(self):
+        """A CLI that printed the right JSON but exited 0 on a FAIL would pass the diff alone (QA G273)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            env = _gates_tree(Path(tmp))
+            proc = _run_repro_step(Path(tmp), {**env, "STUB_PROCESS_EXIT": "1"})
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("PROCESS exited 1", proc.stdout + proc.stderr)
+
+    def test_a_committed_file_edited_after_the_verdict_is_red_before_the_tool_runs(self):
+        """The committed side: bars, sidecar, SOURCE.json and verdict must agree by hash, or nothing is judged."""
+        def bars_edited(tmp):
+            with open(tmp / "examples" / "beta" / "bars.yaml", "ab") as f:
+                f.write(b"# loosened\n")
+
+        def bars_edited_and_reregistered(tmp):             # QA G267: the one that passed round 0
+            bars_edited(tmp)
+            side = tmp / "examples" / "beta" / "bars.yaml.prereg.json"
+            doc = json.loads(side.read_text())
+            doc["bars_sha256"] = _sha((tmp / "examples" / "beta" / "bars.yaml").read_bytes())
+            side.write_text(json.dumps(doc))
+
+        def sidecar_rewritten_same_hashes(tmp):
+            side = tmp / "examples" / "beta" / "bars.yaml.prereg.json"
+            side.write_text(json.dumps(json.loads(side.read_text()), indent=2))   # same pins, other bytes
+
+        def verdict_points_at_another_log(tmp):
+            v = tmp / "examples" / "beta" / "verdict.json"
+            doc = json.loads(v.read_text())
+            doc["source"]["sha256"] = "b" * 64
+            v.write_text(json.dumps(doc))
+
+        def url_is_a_branch(tmp):
+            src = tmp / "examples" / "beta" / "SOURCE.json"
+            doc = json.loads(src.read_text())
+            doc["url"] = "https://raw.githubusercontent.com/example/fixtures/main/logs/beta.bin"
+            src.write_text(json.dumps(doc))
+
+        def url_is_not_https(tmp):
+            src = tmp / "examples" / "beta" / "SOURCE.json"
+            doc = json.loads(src.read_text())
+            doc["url"] = "file:///etc/beta.bin"
+            src.write_text(json.dumps(doc))
+
+        for why, mutate, token in (("bars.yaml edited, sidecar stale", bars_edited, "bars"),
+                                   ("bars.yaml edited AND sidecar re-registered (G267)", bars_edited_and_reregistered, "re-registered"),
+                                   ("sidecar rewritten with the same pins", sidecar_rewritten_same_hashes, "sidecar"),
+                                   ("verdict names another log", verdict_points_at_another_log, "WHICH log"),
+                                   ("url pins a branch, not a commit", url_is_a_branch, "commit-pinned"),
+                                   ("url is not https", url_is_not_https, "commit-pinned")):
+            with self.subTest(why=why), tempfile.TemporaryDirectory() as tmp:
+                env = _gates_tree(Path(tmp))
+                mutate(Path(tmp))
+                proc = _run_repro_step(Path(tmp), env)
+                ran = (Path(tmp) / "stub.log").read_text()
+                self.assertNotEqual(proc.returncode, 0, msg=f"[{why}] stayed GREEN.\nstdout: {proc.stdout}")
+                self.assertIn(token, proc.stdout + proc.stderr, msg=f"[{why}] the red does not say why")
+                self.assertNotIn("tool beta", ran, msg=f"[{why}] the tool ran on an example whose pins disagree")
 
     def test_a_wrong_sha256_is_a_hard_fail_and_the_tool_never_runs_on_those_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -507,24 +641,39 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
             proc = _run_repro_step(Path(tmp), env)
             ran = (Path(tmp) / "stub.log").read_text()
             pinned = json.loads((Path(tmp) / "examples" / "beta" / "SOURCE.json").read_text())["sha256"]
-            fetched = _sha((Path(tmp) / "stub_logs" / "beta.bin").read_bytes())
+            fetched = (Path(tmp) / "stub_logs" / "beta.bin").read_bytes()
         self.assertNotEqual(proc.returncode, 0, msg=f"stdout: {proc.stdout}")
         out = proc.stdout + proc.stderr
         self.assertIn("FAIL beta", out)
-        for sha in (pinned, fetched):
+        for sha in (pinned, _sha(fetched)):
             self.assertIn(sha, out, msg="both hashes must be printed, the pinned and the fetched")
+        self.assertIn(f"({len(fetched)} B)", out, msg="the size is printed too -- here it is the SAME size, one bit off")
         self.assertIn("Not judged", out)
         self.assertNotIn("tool beta", ran, msg="the tool ran on bytes that failed the sha256 check -- the hash gate is cosmetic")
         self.assertIn("tool alpha", ran)
         self.assertIn("tool gamma", ran)
 
-    def test_two_examples_instead_of_three_is_red_with_the_count_printed(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            env = _gates_tree(Path(tmp), names=("alpha", "beta"))
-            proc = _run_repro_step(Path(tmp), env)
-        self.assertNotEqual(proc.returncode, 0)
-        self.assertIn("matched: 2", proc.stdout)
-        self.assertIn("expected exactly 3", proc.stderr)
+    def test_the_denominator_is_exactly_three_pinned_distinct_logs(self):
+        def stray_dir(tmp):
+            (tmp / "examples" / "stray").mkdir()
+            (tmp / "examples" / "stray" / "bars.yaml").write_text("bars: []\n")
+
+        def beta_is_alpha(tmp):
+            for f in ("SOURCE.json", "bars.yaml", "bars.yaml.prereg.json", "verdict.json"):
+                shutil.copy(tmp / "examples" / "alpha" / f, tmp / "examples" / "beta" / f)
+            shutil.copy(tmp / "stub_logs" / "alpha.bin", tmp / "stub_logs" / "beta.bin")
+
+        for why, names, mutate, token in (("two examples", ("alpha", "beta"), None, "matched: 2"),
+                                          ("four examples", ("alpha", "beta", "gamma", "delta"), None, "expected exactly 3"),
+                                          ("a dir without SOURCE.json", ("alpha", "beta", "gamma"), stray_dir, "SOURCE.json files"),
+                                          ("two dirs, one log (G271)", ("alpha", "beta", "gamma"), beta_is_alpha, "more than one example dir")):
+            with self.subTest(why=why), tempfile.TemporaryDirectory() as tmp:
+                env = _gates_tree(Path(tmp), names=names)
+                if mutate:
+                    mutate(Path(tmp))
+                proc = _run_repro_step(Path(tmp), env)
+                self.assertNotEqual(proc.returncode, 0, msg=f"[{why}] stayed GREEN.\nstdout: {proc.stdout}")
+                self.assertIn(token, proc.stdout + proc.stderr, msg=f"[{why}]\n{proc.stdout}\n{proc.stderr}")
 
     def test_the_tool_missing_from_path_is_red_and_says_so(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -547,31 +696,43 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
                 self.assertIn("badge.svg", proc.stdout + proc.stderr)
 
     def test_the_real_invocation_is_not_swallowed(self):
-        body = _step_run_block(REPRO_STEP)
-        self.assertIn("set -euo pipefail", body)
-        self.assertNotIn("set +e", body)
-        self.assertRegex(body, r"curl\s+-\S*f", msg="curl needs -f: without it an HTTP 404 page is saved as the 'log'")
-        calls = [ln.strip() for ln in body.splitlines()
-                 if "check_gates_examples.py" in ln and not ln.strip().startswith("#")]
-        self.assertTrue(calls, msg=f"the step no longer runs the checker:\n{body}")
-        for call in calls:
-            for swallow in ("|| true", "|| :", "continue-on-error"):
-                self.assertNotIn(swallow, call)
+        """Read on NON-COMMENT lines only (QA G273: a `curl -fL` in a comment satisfied the old regex)."""
+        for step in (REPRO_STEP, DEMO_FETCH_STEP):
+            with self.subTest(step=step):
+                body = _step_run_block(step)
+                code = _code_lines(body)
+                self.assertIn("set -euo pipefail", code)
+                self.assertNotIn("set +e", code)
+                curls = [ln for ln in code.splitlines() if re.search(r"\bcurl\b", ln)]
+                self.assertTrue(curls, f"no curl in the {step!r} step")
+                for ln in curls:
+                    self.assertRegex(ln, r"\bcurl\s+-\w*f", msg=f"curl without -f: an HTTP 404 page is saved as the 'log': {ln!r}")
+                    self.assertIn("--proto '=https'", ln, msg=f"curl may follow a redirect off https: {ln!r}")
+                for swallow in ("|| true", "|| :", "continue-on-error"):
+                    self.assertNotIn(swallow, code, msg=f"{step!r} swallows a failure with {swallow!r}")
+        code = _code_lines(_step_run_block(REPRO_STEP))
+        self.assertTrue([ln for ln in code.splitlines() if "check_gates_examples.py" in ln], "the step no longer runs the checker")
+        self.assertIn("sha256sum -c", _code_lines(_step_run_block(DEMO_FETCH_STEP)), "the demo logs are not sha256-checked before the Action")
         step = next(s for s in _job_steps(GATES_JOB) if REPRO_STEP in s[0])
         self.assertFalse([ln for ln in step[1] if ln.startswith("continue-on-error")],
                          msg="the reproduction step itself must be allowed to fail the job")
 
 
 class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
-    """The committed `examples/` the reproduction job will judge: three by name, four files each, one log per dir."""
+    """The committed `examples/` the reproduction job will judge: three by name and sha256, four files each."""
 
-    def test_exactly_the_three_design_logs_are_committed_each_with_its_four_files(self):
+    def test_exactly_the_three_design_logs_are_committed_each_with_its_four_files_and_its_pin(self):
         dirs = sorted({p.split("/")[1] for p in _tracked("examples/*/SOURCE.json")})
-        self.assertEqual(tuple(dirs), DESIGN_EXAMPLES, msg="design §8 / ADR-023 D7 pin three public logs by name; "
-                         "adding or removing one is a reviewed change to ci.yml's `-ne 3` line and to this tuple")
-        for name in DESIGN_EXAMPLES:
+        self.assertEqual(dirs, sorted(DESIGN_EXAMPLES), msg="design §8 / ADR-023 D7 pin three public logs by name; "
+                         "adding or removing one is a reviewed change to ci.yml's `-ne 3` line and to this map")
+        self.assertEqual(sorted({p.split("/")[1] for p in _tracked("examples/*")}), dirs,
+                         msg="an examples/ dir without a SOURCE.json is a verdict nobody can re-fetch")
+        for name, sha in DESIGN_EXAMPLES.items():
             for f in ("SOURCE.json", "bars.yaml", "bars.yaml.prereg.json", "verdict.json"):
                 self.assertTrue(_tracked(f"examples/{name}/{f}"), msg=f"examples/{name}/{f} is not committed")
+            source = json.loads((REPO_ROOT / "examples" / name / "SOURCE.json").read_text())
+            self.assertEqual(source["sha256"], sha, msg=f"{name}: the pinned log changed -- a reviewed diff, here and in ADR-023")
+            self.assertRegex(source["url"], PINNED_URL, msg=f"{name}: the url is not commit-pinned (40-hex) https raw.githubusercontent.com")
         self.assertEqual([p for p in _tracked("examples/") if p.lower().endswith((".bin", ".log", ".ulg"))], [],
                          msg="a third-party log is committed -- design §8's fixture rule forbids it (licence)")
 
@@ -580,13 +741,15 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
             with self.subTest(example=name):
                 ex = REPO_ROOT / "examples" / name
                 source = json.loads((ex / "SOURCE.json").read_text())
-                sidecar = json.loads((ex / "bars.yaml.prereg.json").read_text())
+                sidecar_bytes = (ex / "bars.yaml.prereg.json").read_bytes()
+                sidecar = json.loads(sidecar_bytes)
                 verdict = json.loads((ex / "verdict.json").read_text())
-                self.assertEqual(len(source["sha256"]), 64)
+                bars_sha = _sha((ex / "bars.yaml").read_bytes())
                 self.assertEqual({source["sha256"], sidecar["log_sha256"], verdict["source"]["sha256"]}, {source["sha256"]},
                                  msg="SOURCE.json, the sidecar and the verdict name different logs")
-                self.assertEqual(sidecar["bars_sha256"], _sha((ex / "bars.yaml").read_bytes()),
-                                 msg="the sidecar does not hash the committed bars.yaml: the run would refuse (MISMATCH)")
+                self.assertEqual({sidecar["bars_sha256"], verdict["bars"]["sha256"], verdict["prereg"]["bars_sha256_registered"]}, {bars_sha},
+                                 msg="the committed bars.yaml is not the one the verdict was judged under (G267)")
+                self.assertEqual(verdict["prereg"]["sidecar_sha256"], _sha(sidecar_bytes), msg="the sidecar was re-registered after the verdict")
                 self.assertEqual((verdict["prereg"]["status"], verdict["prereg"]["post_hoc"]), ("HASH_MATCH", True))
                 self.assertTrue(verdict["badge"].endswith("(post-hoc)"), verdict["badge"])
                 word = verdict["badge"].split("gates: ", 1)[1].split(" ·", 1)[0]
@@ -610,6 +773,17 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
         readme = (REPO_ROOT / "README.md").read_text()
         self.assertIn("examples/tarot_x4/badge.svg", readme, "README.md does not show the badge")
         self.assertIn(TAROT_BADGE, readme, "README.md's badge line must quote the string the image depicts")
+
+    def test_only_pass_is_painted_green(self):
+        """QA G273: a renderer painting `fail` or `could not tell` green survived every test."""
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        from render_gates_badge import render_svg
+        green = 'fill="#4c1"'
+        self.assertIn(green, render_svg("x", "gates: pass · 1/1 measured"))
+        for word in ("fail", "could not tell", "refused", "passing", "PASS", "green"):
+            with self.subTest(word=word):
+                self.assertNotIn(green, render_svg("x", f"gates: {word} · 1/1 measured"), msg=f"{word!r} painted green")
+        self.assertIn('fill="#e05d44"', render_svg("x", "gates: fail · 0/1 measured"))
 
 
 class TestGatesJobKeepsEveryGateReporting(unittest.TestCase):
@@ -638,15 +812,42 @@ class TestGatesJobKeepsEveryGateReporting(unittest.TestCase):
         self.assertIsNotNone(floor)
         self.assertEqual(floor.group(1), versions[0], msg="the pyproject floor must equal the lowest tested leg")
 
-    def test_only_the_no_softening_probe_carries_continue_on_error_and_the_next_step_asserts_it_failed(self):
+    def test_the_two_action_steps_judge_their_own_logs_with_their_own_bars(self):
+        steps = dict(_job_steps(GATES_JOB))
+        tarot = " ".join(next(b for n, b in steps.items() if "Tarot X4 must PASS" in n))
+        plane = " ".join(next(b for n, b in steps.items() if "must FAIL this step" in n))
+        for body, name in ((tarot, "tarot_x4"), (plane, "plane_nofix")):
+            self.assertIn("uses: ./.github/actions/swathkeeper-gates", body)
+            self.assertIn(f"steps.demo-logs.outputs.{name}", body, f"the {name} step is not pointed at the {name} log")
+            self.assertIn(f"examples/{name}/bars.yaml", body)
+        self.assertNotIn("tarot_x4", plane, "the no-softening probe must run the log whose correct verdict is exit 1")
+
+    def test_only_the_no_softening_probe_carries_continue_on_error_and_the_assertions_really_assert(self):
+        """QA G273: `[ … ] || true` and a dropped CODE check in the assertion steps survived. So the two assertion
+        bodies are EXECUTED here with OUTCOME / CODE / BADGE set the way a softened Action run would set them."""
         steps = _job_steps(GATES_JOB)
         soft = [i for i, (_, body) in enumerate(steps) if any(ln.startswith("continue-on-error") for ln in body)]
         self.assertEqual(len(soft), 1, msg=f"continue-on-error on {[steps[i][0] for i in soft]}")
-        probe, nxt = steps[soft[0]], steps[soft[0] + 1]
-        self.assertIn("plane_nofix", " ".join(probe[1]), "the probe must be the log whose correct verdict is exit 1")
-        self.assertIn('"failure"', " ".join(nxt[1]), "the step after the probe must assert the probe's outcome WAS failure")
-        self.assertIn("exit-code", " ".join(nxt[1]))
-        self.assertIn("uses: ./.github/actions/swathkeeper-gates", " ".join(probe[1]))
+        self.assertIn("plane_nofix", " ".join(steps[soft[0]][1]), "the probe must be the log whose correct verdict is exit 1")
+        self.assertIn(PLANE_ASSERT_STEP, steps[soft[0] + 1][0], "the step right after the probe must assert its outcome")
+        tarot_badge = json.loads((REPO_ROOT / "examples" / "tarot_x4" / "verdict.json").read_text())["badge"]
+        plane_badge = json.loads((REPO_ROOT / "examples" / "plane_nofix" / "verdict.json").read_text())["badge"]
+        cases = ((PLANE_ASSERT_STEP, "failure", "1", plane_badge, 0),       # the honest run: the step was red, exit 1
+                 (PLANE_ASSERT_STEP, "success", "0", plane_badge, 1),       # a softened Action: green on a FAIL log
+                 (PLANE_ASSERT_STEP, "failure", "2", plane_badge, 1),       # red for the wrong reason (a refusal)
+                 (PLANE_ASSERT_STEP, "failure", "1", tarot_badge, 1),       # red with the wrong verdict
+                 (TAROT_ASSERT_STEP, "success", "0", tarot_badge, 0),
+                 (TAROT_ASSERT_STEP, "failure", "1", tarot_badge, 1),
+                 (TAROT_ASSERT_STEP, "success", "0", plane_badge, 1))
+        with tempfile.TemporaryDirectory() as tmp:
+            os.symlink(sys.executable, Path(tmp) / "python3")
+            env = {**os.environ, "PATH": f"{tmp}{os.pathsep}{os.environ.get('PATH', '')}"}
+            for step, outcome, code, badge, want in cases:
+                with self.subTest(step=step, outcome=outcome, code=code, badge=badge[:12]):
+                    proc = subprocess.run(["bash", "-c", _step_run_block(step)], cwd=REPO_ROOT, capture_output=True, text=True,
+                                          env={**env, "OUTCOME": outcome, "CODE": code, "BADGE": badge}, timeout=60)
+                    self.assertEqual(proc.returncode != 0, want != 0,
+                                     msg=f"[{step}] OUTCOME={outcome} CODE={code} -> exit {proc.returncode}, expected {want}\n{proc.stdout}{proc.stderr}")
 
 
 class TestTheActionNeverSoftensTheExitCode(unittest.TestCase):
@@ -658,18 +859,20 @@ class TestTheActionNeverSoftensTheExitCode(unittest.TestCase):
         bin_.mkdir(exist_ok=True)
         (bin_ / "swathkeeper-gates").write_text(tool_script)
         (bin_ / "swathkeeper-gates").chmod(0o755)
-        os.symlink(sys.executable, bin_ / "python3")
+        if not (bin_ / "python3").exists():
+            os.symlink(sys.executable, bin_ / "python3")
         gh_out = tmp / "github_output"
         env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ.get('PATH', '')}", "GITHUB_OUTPUT": str(gh_out),
                "LOG": str(tmp / "flight.bin"), "BARS": str(tmp / "bars.yaml"), "OUT": str(out), **(extra_env or {})}
         proc = subprocess.run(["bash", str(ACTION_DIR / "run.sh")], cwd=tmp, env=env, capture_output=True, text=True, timeout=120)
-        outputs = dict(ln.split("=", 1) for ln in gh_out.read_text().splitlines()) if gh_out.exists() else {}
-        return proc, outputs
+        lines = gh_out.read_text().splitlines() if gh_out.exists() else []
+        return proc, dict(ln.split("=", 1) for ln in lines), lines
+
+    @staticmethod
+    def _stub(code, badge, write=True):
+        return STUB_RUN_TOOL.format(python=sys.executable, write=write, badge=badge, code=code)
 
     def test_exit_1_and_2_fail_the_step_with_the_outputs_already_written(self):
-        stub = ("#!{py}\nimport json, sys\na = sys.argv[1:]\nout = a[a.index('--out') + 1]\n"
-                "if {write}:\n    open(out, 'w').write(json.dumps({{'badge': {badge!r}, 'exit_code': {code}}}))\n"
-                "sys.exit({code})\n")
         cases = (("fail", 1, "gates: fail · 1/5 measured (post-hoc)", True),
                  ("could not tell", 1, "gates: could not tell · 3/6 measured (post-hoc)", True),
                  ("refused, verdict written", 2, "gates: refused", True),
@@ -678,11 +881,48 @@ class TestTheActionNeverSoftensTheExitCode(unittest.TestCase):
         for why, code, badge, write in cases:
             with self.subTest(why=why), tempfile.TemporaryDirectory() as tmp:
                 out = Path(tmp) / "verdict.json"
-                proc, outputs = self._run(Path(tmp), stub.format(py=sys.executable, write=write, badge=badge, code=code), out)
+                proc, outputs, _ = self._run(Path(tmp), self._stub(code, badge, write), out)
                 self.assertEqual(proc.returncode, code, msg=f"[{why}] run.sh exited {proc.returncode}, the tool {code}.\n"
                                                             f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
                 self.assertEqual(outputs, {"exit-code": str(code), "badge": badge, "verdict": str(out)},
                                  msg=f"[{why}] outputs must be written before the exit, red or not")
+
+    def test_a_stale_verdict_at_out_is_never_reported_as_this_runs(self):
+        """QA G268: with an old verdict.json at --out and a tool that refuses before writing, the outputs read the
+        OLD badge. run.sh now removes the file first; a stale badge here is a forged green."""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "verdict.json"
+            out.write_text(json.dumps({"badge": "gates: pass · 8/8 measured (post-hoc)", "exit_code": 0}))
+            proc, outputs, _ = self._run(Path(tmp), self._stub(2, "unused", write=False), out)
+            self.assertEqual((proc.returncode, outputs["exit-code"], outputs["badge"]), (2, "2", "gates: refused"))
+            self.assertFalse(out.exists(), "the stale file survived")
+
+    def test_a_missing_or_line_broken_input_is_a_refusal_with_outputs(self):
+        """QA G269/G270: `${LOG:?}` exited 1 with NO outputs; a line break in `out` forged a second output line."""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "verdict.json"
+            proc, outputs, lines = self._run(Path(tmp), self._stub(0, "gates: pass · 1/1 measured"), out, {"LOG": ""})
+            self.assertEqual((proc.returncode, outputs), (2, {"exit-code": "2", "badge": "gates: refused", "verdict": str(out)}))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "verdict.json"
+            forged = f"{out}\nexit-code=0\nbadge=gates: pass · 9/9 measured"
+            proc, outputs, lines = self._run(Path(tmp), self._stub(1, "gates: fail · 0/1 measured"), out, {"OUT": forged})
+            self.assertEqual(proc.returncode, 2, msg=proc.stderr)
+            self.assertEqual(len(lines), 3, msg=f"forged output lines: {lines}")
+            self.assertEqual(outputs["exit-code"], "2")
+
+    def test_optional_inputs_reach_the_tool_only_when_set_and_paths_are_never_options(self):
+        """QA G273: dropping `--declared` or `--prereg` from run.sh survived every test. And QA G268: a path that
+        starts with '-' must reach the tool as a path (`--log=-x`), not be parsed as an option."""
+        with tempfile.TemporaryDirectory() as tmp:
+            args = Path(tmp) / "argv"
+            self._run(Path(tmp), self._stub(0, "gates: pass · 1/1 measured"), Path(tmp) / "v.json",
+                      {"STUB_ARGS": str(args), "DECLARED": "d.yaml", "PREREG": "p.json", "LOG": "-flight.bin"})
+            got = args.read_text().splitlines()
+            self.assertEqual(got, ["run", "--log=-flight.bin", f"--bars={tmp}/bars.yaml", f"--out={tmp}/v.json",
+                                   "--declared=d.yaml", "--prereg=p.json"])
+            self._run(Path(tmp), self._stub(0, "gates: pass · 1/1 measured"), Path(tmp) / "v.json", {"STUB_ARGS": str(args)})
+            self.assertFalse([a for a in args.read_text().splitlines() if a.startswith(("--declared", "--prereg"))])
 
     def test_the_real_tool_through_the_action_on_a_synthetic_log(self):
         sys.path.insert(0, str(REPO_ROOT / "tests"))
@@ -694,14 +934,14 @@ class TestTheActionNeverSoftensTheExitCode(unittest.TestCase):
             write_synthetic_log(Path(tmp) / "flight.bin", flight_rows())
             (Path(tmp) / "bars.yaml").write_text(BARS)
             out = Path(tmp) / "verdict.json"
-            proc, outputs = self._run(Path(tmp), wrapper, out)
+            proc, outputs, _ = self._run(Path(tmp), wrapper, out)
             verdict = json.loads(out.read_text())
         self.assertEqual(proc.returncode, 0, msg=f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
         self.assertEqual(outputs["badge"], verdict["badge"])
         self.assertTrue(outputs["badge"].endswith("(unregistered)"), outputs["badge"])  # no sidecar beside these bars: SAID
         self.assertEqual(outputs["exit-code"], "0")
 
-    def test_action_yml_declares_the_contract_and_carries_no_softener(self):
+    def test_action_yml_declares_the_contract_installs_from_its_own_checkout_and_carries_no_softener(self):
         text = (ACTION_DIR / "action.yml").read_text()
         self.assertIn("using: composite", text)
         for out in ("exit-code:", "badge:", "verdict:"):
@@ -709,10 +949,15 @@ class TestTheActionNeverSoftensTheExitCode(unittest.TestCase):
         self.assertRegex(text, r"log:\s*\n\s+description:[^\n]*\n\s+required: true")
         self.assertRegex(text, r"bars:\s*\n\s+description:(?:[^\n]*\n)+?\s+required: true")
         self.assertIn('run: bash "${GITHUB_ACTION_PATH}/run.sh"', text)
+        code = _code_lines(text)
+        self.assertIn('root="$(cd "${GITHUB_ACTION_PATH}/../../.." && pwd)"', code,
+                      "the Action must install the tool from ITS OWN checkout, so the judge is pinned to the action's ref")
+        self.assertFalse(re.search(r"pip install[^\n]*swathkeeper-gates", code), "the Action installs the tool from an index, not its ref")
         for f in ("action.yml", "run.sh"):
-            code = "\n".join(ln for ln in (ACTION_DIR / f).read_text().splitlines() if not ln.lstrip().startswith("#"))
+            code = _code_lines((ACTION_DIR / f).read_text())
             for swallow in ("continue-on-error", "|| true", "|| :", "set +e"):
-                self.assertNotIn(swallow, code, msg=f"{f} softens the exit code: {swallow!r}")
+                self.assertNotIn(swallow, code.replace('rm -f -- "$OUT" 2>/dev/null || true', ""),   # the one `|| true`: on rm, re-checked
+                                 msg=f"{f} softens the exit code: {swallow!r}")
         run_sh = (ACTION_DIR / "run.sh").read_text()
         self.assertIn('exit "$rc"', run_sh)
         self.assertIn("set -euo pipefail", run_sh)

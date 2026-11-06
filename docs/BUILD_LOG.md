@@ -17,13 +17,15 @@ can be told otherwise; CI proves it by running the Action on the ArduPlane no-fi
 deterministic stdlib render that CI regenerates and diffs, so the README image cannot say something the verdict does not. And
 a CI job, `gates-tool`, fetches all three `examples/*/SOURCE.json` logs with `curl -fL` into a fresh temp dir, hard-fails on any
 sha256 or size mismatch with both hashes printed and the tool un-run, judges each with its committed bars under the pinned
-sidecar, and diffs `results[*].{id,verdict,n}`, badge and exit code against the committed verdict — the pre-registered diff,
-so a `should` bar sliding PASS → EI is a red, not a footnote. The job runs on Python 3.10 and 3.12; all three verdicts reproduce
+sidecar, and diffs the whole verdict, leaf by leaf, against the committed one — QA's first attack (G266) showed the
+pre-registered `results[*].{verdict,n}` diff left 337 of 363 Tarot leaves unwatched (a measured value, a bar limit, a
+severity, the integrity block could all drift under a green), and that a loosened bars file with a re-registered sidecar
+also passed (G267); both are red now, by hash and by leaf. The job runs on Python 3.10 and 3.12; all three verdicts reproduce
 on both, measured values included, which is the one condition the design set for lowering `requires-python` to 3.10, so it was
 lowered — and a test pins the floor to the lowest matrix leg so neither can move without the other. No third-party log is
 committed; the job is the only place the real bytes are read. Armed red-first in `tests/test_ci_evidence_gate.py` (a wrong
-sha256, a slid verdict, a moved n, a missing tool, two examples instead of three — each turns the real step body red); no new test
-file, tests:src 3.37. What a green job means, said plainly: the committed verdicts reproduce today. It does not mean any vehicle
+sha256 one bit off at the same size, a slid verdict, a moved measured value, a re-registered sidecar, a missing tool, two or four
+examples instead of three, an Action that softens its exit — each turns the real step or script red); no new test file. What a green job means, said plainly: the committed verdicts reproduce today. It does not mean any vehicle
 is safe. Still open and flagged, not decided: G257 (a Dp rise as a hole would flip the Tarot badge to `could not tell`).
 
 ## 2026-11-05 — the evidence-gate tool: step 2 built and scored

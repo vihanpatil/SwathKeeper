@@ -229,9 +229,11 @@ jobs:
   #   3. the reproduction gate: every examples/*/SOURCE.json's log is fetched with `curl -fL` into a fresh temp
   #      dir, its sha256 and size checked against the pin (mismatch = hard FAIL, both hashes printed, the tool
   #      NOT run on those bytes), judged with the committed bars.yaml under its pinned sidecar (HASH_MATCH,
-  #      post-hoc), and results[*].{id,verdict,n} + badge + exit code diffed against the committed verdict.json,
-  #      so a `should` bar sliding PASS -> EVIDENCE_INSUFFICIENT is a red, not a footnote (design §9). The Tarot
-  #      badge.svg the README shows is re-rendered from the FRESH verdict and diffed in the same pass.
+  #      post-hoc), and the WHOLE fresh verdict diffed leaf by leaf against the committed verdict.json -- every
+  #      verdict, n and measured value, every bar limit, integrity, streams, badge, exit code; only four leaves
+  #      that differ by construction are excluded and printed (QA G266: the pre-registered {verdict,n} diff left
+  #      337 of 363 Tarot leaves unwatched). The Tarot badge.svg the README shows is re-rendered from the FRESH
+  #      verdict and diffed in the same pass.
   # No third-party log is ever committed (design §8); this job is the only place the real bytes are read.
   # A green job means the committed verdicts REPRODUCE on today's parser and interpreter. It does not mean any
   # vehicle is safe, and it says nothing about any log but the three pinned here.
@@ -271,7 +273,7 @@ jobs:
           for name in tarot_x4 plane_nofix; do
             url="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["url"])' "examples/$name/SOURCE.json")"
             sha="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["sha256"])' "examples/$name/SOURCE.json")"
-            curl -fsSL --retry 3 --retry-delay 5 -o "$RUNNER_TEMP/$name.bin" "$url"
+            curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 -o "$RUNNER_TEMP/$name.bin" "$url"
             echo "$sha  $RUNNER_TEMP/$name.bin" | sha256sum -c -
             echo "$name=$RUNNER_TEMP/$name.bin" >> "$GITHUB_OUTPUT"
           done
@@ -321,7 +323,7 @@ jobs:
           echo "[ci] action: outcome=$OUTCOME exit-code=$CODE badge='$BADGE' | committed badge='$committed'"
           [ "$OUTCOME" = "failure" ] && [ "$CODE" = "1" ] && [ "$BADGE" = "$committed" ]
 
-      - name: Re-fetch the three pinned public logs by sha256 and diff the committed verdicts (results, badge, exit, badge.svg)
+      - name: Re-fetch the three pinned public logs by sha256 and diff the committed verdicts (every leaf, badge, exit, badge.svg)
         if: always()
         run: |
           set -euo pipefail
@@ -329,20 +331,27 @@ jobs:
           # A missing example dir is a verdict nobody re-checks; a fourth is a reviewed change to this line.
           shopt -s nullglob
           sources=(examples/*/SOURCE.json)
-          echo "[ci] committed gate examples matched: ${#sources[@]}"
+          dirs=(examples/*/)
+          echo "[ci] committed gate examples matched: ${#sources[@]} (example dirs: ${#dirs[@]})"
           if [ "${#sources[@]}" -ne 3 ]; then
             echo "[ci] FAIL: expected exactly 3 examples/*/SOURCE.json (the pinned public logs), found ${#sources[@]}." >&2
             echo "     This gate may not score green while reproducing fewer verdicts than are committed." >&2
             exit 1
           fi
-          # Fresh temp dir, `curl -fL` (-f: an HTTP error is a failure, never an HTML page saved as a "log").
-          # The sha256 check, the tool run and the diff are scripts/check_gates_examples.py's, which prints each.
+          if [ "${#dirs[@]}" -ne "${#sources[@]}" ]; then
+            echo "[ci] FAIL: ${#dirs[@]} example dirs but ${#sources[@]} SOURCE.json files -- an example without a pinned" >&2
+            echo "     log is a verdict nobody can re-fetch (design §8); add its SOURCE.json or remove the dir." >&2
+            exit 1
+          fi
+          # Fresh temp dir; `curl -f` (an HTTP error is a failure, never an HTML page saved as a "log"), https only
+          # and no protocol downgrade on a redirect. The sha256 check, the URL-pin check, the tool run and the
+          # whole-verdict diff are scripts/check_gates_examples.py's, which prints each.
           fetched="$(mktemp -d)"
           for src in "${sources[@]}"; do
             name="$(basename "$(dirname "$src")")"
             url="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["url"])' "$src")"
             echo "[ci] fetching $name <- $url"
-            curl -fsSL --retry 3 --retry-delay 5 -o "$fetched/$name.bin" "$url"
+            curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 -o "$fetched/$name.bin" "$url"
           done
           python3 scripts/check_gates_examples.py --fetched "$fetched" "${sources[@]%/SOURCE.json}"
 
