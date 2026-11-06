@@ -1,0 +1,27 @@
+# The evidence-gate tool's package (docs/design/GATES_TOOL_DESIGN.md §1). This file declares
+# swathkeeper-gates and NOTHING else: the include filter below keeps src/fieldguard_planning (the drone
+# stack, which still runs on PYTHONPATH=src) out of the wheel, and scripts/, tests/ and examples/ are
+# never packaged. Parsers are pinned == because the parser is the instrument; PyYAML is not one.
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swathkeeper-gates"
+dynamic = ["version"]
+description = "Pre-registered evidence gates over flight logs: a JSON verdict and an exit code, where 'could not tell' is never a green."
+requires-python = ">=3.12"   # the only interpreter anyone has run it on (design §1: no 3.10 floor unless CI tests it)
+dependencies = ["PyYAML>=6.0.3,<7"]
+
+[project.optional-dependencies]
+ardupilot = ["pymavlink==2.4.50"]   # [px4] = pyulog returns with its adapter (design §1, stretch)
+
+[project.scripts]
+swathkeeper-gates = "swathkeeper_gates.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["swathkeeper_gates*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "swathkeeper_gates.__version__"}

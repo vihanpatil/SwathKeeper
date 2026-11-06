@@ -1,0 +1,66 @@
+# Bars for the NEGATIVE log (design §8): ArduPlane V4.7.0-beta5, 52.72 s of
+# contract-type records (the verdict's duration_s; 52.74 s across all record types), GPS only as instance 1 and never a
+# fix, no POS, no ORGN. The same method as examples/tarot_x4 (limits from the log's own PARM, the rest the
+# author's and labelled), Plane mode names only. NOT blind: before writing these bars the author had seen
+# this log's message counts, its three MODE rows (FBWA, TAKEOFF, STABILIZE), its single ARM row (a disarm),
+# the first GPS row (Status 0, 0 sats) and the PARM values quoted below, so every result is a demonstration,
+# not a test. Omitted, with the reason: B2 (no logged groundspeed limit: AIRSPEED_* are airspeeds), B3
+# (BATT_LOW_VOLT is 0 here: no floor was configured, and an invented one would be tuning) and B7 (dropped
+# after QA review G243: its FLTMODE set excluded the GCS-commanded STABILIZE, MODE.Rsn 2, and was chosen after
+# the MODE rows were seen, so its FAIL was a fact about the bars, not the vehicle).
+schema: swathkeeper-bars/1.0
+contract: swathkeeper-flightlog/1.0
+bars:
+  - id: alt_floor
+    kind: series_bound
+    severity: should
+    provenance:
+      text: >-
+        B1, AUTHOR-CHOSEN as on the demo: never more than 10 m below home, the logged FENCE_ALT_MIN (-10). This
+        log has no POS rows, so the design predicts EVIDENCE_INSUFFICIENT. min_n 100 = 10 s at 10 Hz.
+      param: FENCE_ALT_MIN
+    scope: {armed: null, modes: null}
+    min_n: 100
+    params: {channel: position.alt_rel_home_m, bound: floor, limit: -10.0}
+  - id: ekf_vel_ceiling
+    kind: series_bound
+    severity: should
+    provenance:
+      text: >-
+        B4, AUTHOR-CHOSEN as on the demo: XKF4.SV <= 0.8 (the logged FS_EKF_THRESH; SV against it is uncited,
+        design §11.1 item 5) on every core. min_n 200 = 10 s at 10 Hz on two cores.
+      param: FS_EKF_THRESH
+    scope: {armed: null, modes: null}
+    min_n: 200
+    params: {channel: ekf.vel_ratio, bound: ceiling, limit: 0.8}
+  - id: gnss_quality
+    kind: gnss_quality
+    severity: must
+    provenance:
+      text: >-
+        B5, AUTHOR-CHOSEN as on the demo: every GPS row of every instance has fix >= 3 and >= 6 satellites
+        (max_outage_s 0 = every row). The design predicts FAIL on measured no-fix rows (§8). min_n 50.
+    scope: {armed: null, modes: null}
+    min_n: 50
+    params: {fix_min: 3, sats_min: 6, max_outage_s: 0}
+  - id: geofence
+    kind: containment
+    severity: should
+    provenance:
+      text: >-
+        B6: the log's own fence. FENCE_ENABLE is 0 here and there are no POS or ORGN rows, so the design
+        predicts EVIDENCE_INSUFFICIENT. min_n 100 segments.
+      param: FENCE_RADIUS
+    scope: {armed: null, modes: null}
+    min_n: 100
+    params: {source: log}
+  - id: no_errors
+    kind: no_events
+    severity: must
+    provenance:
+      text: >-
+        B8, AUTHOR-CHOSEN as on the demo: zero ERR rows in drop-free logging. The ERR citation is at ArduPilot
+        4.5.x and this log is V4.7, so zero ERR rows is ABSENT and the bar cannot be measured. min_n 60.
+    scope: {armed: null, modes: null}
+    min_n: 60
+    params: {kinds: [error]}

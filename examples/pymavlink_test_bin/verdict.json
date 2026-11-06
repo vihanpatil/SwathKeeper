@@ -1,0 +1,464 @@
+{
+ "schema": "swathkeeper-verdict/1.0",
+ "contract": "swathkeeper-flightlog/1.0",
+ "tool": {
+  "version": "0.1.0",
+  "python": "3.12.12",
+  "deps": {
+   "PyYAML": "6.0.3",
+   "pymavlink": "2.4.50"
+  }
+ },
+ "source": {
+  "path": "test.BIN",
+  "sha256": "a51f040b2ad7f55185c1da5705f226f51469b86562c4ff76d05c99e0e52c2bf4",
+  "size_bytes": 65536,
+  "format": "ardupilot-dataflash",
+  "adapter": "ardupilot",
+  "vehicle": "ArduPlane",
+  "firmware": "ArduPlane V3.8.2-dev",
+  "hardware": "PX4v4",
+  "absent": {},
+  "duration_s": 0.974661,
+  "records_decoded": 1731,
+  "record_counts": {
+   "AETR": 23,
+   "AHR2": 23,
+   "AOA": 23,
+   "ATT": 24,
+   "BARO": 8,
+   "BAT": 8,
+   "CMD": 12,
+   "CTUN": 23,
+   "FMT": 132,
+   "GPA": 5,
+   "GPS": 5,
+   "IMU": 45,
+   "IMU2": 45,
+   "MAG": 8,
+   "MAG2": 8,
+   "MAG3": 8,
+   "MODE": 1,
+   "MSG": 6,
+   "NKF1": 24,
+   "NKF2": 24,
+   "NKF3": 24,
+   "NKF4": 24,
+   "NKF5": 24,
+   "NKF6": 24,
+   "NKF7": 24,
+   "NKF8": 24,
+   "NKF9": 24,
+   "NKQ1": 24,
+   "NKQ2": 24,
+   "NTUN": 23,
+   "ORGN": 2,
+   "PARM": 809,
+   "PIDP": 24,
+   "PIDR": 24,
+   "PIDS": 24,
+   "PIDY": 24,
+   "PM": 1,
+   "POS": 23,
+   "POWR": 8,
+   "RAD": 1,
+   "RCIN": 23,
+   "RCOU": 23,
+   "RSSI": 23,
+   "STAT": 3,
+   "STRT": 1,
+   "TERR": 1,
+   "VIBE": 23
+  },
+  "log_gpst_start": {
+   "t_s": 81.855471,
+   "gps_week": 1973,
+   "gps_ms": 6448000,
+   "label": "GPS time, not UTC: the 18 s leap offset is not applied"
+  }
+ },
+ "integrity": {
+  "bytes_skipped": 24,
+  "bytes_skipped_interior": 0,
+  "bytes_skipped_trailing": 24,
+  "holes": [],
+  "dsf_dropped_max": null,
+  "dsf_rows": 0,
+  "drop_intervals": [],
+  "drops_known_until_s": null,
+  "reason": "no DSF rows"
+ },
+ "streams": {
+  "position": {
+   "state": "PRESENT",
+   "source": "POS (Lat, Lng, Alt, RelHomeAlt)",
+   "reason": null,
+   "note": "5 RelHomeAlt samples before home was set (first ORGN Type 1 at t=82.021 s): not a value",
+   "n": 23,
+   "instances": {
+    "0": {
+     "n": 23,
+     "t_first": 81.796345,
+     "t_last": 82.730515,
+     "median_period_s": 0.040287,
+     "max_gap_s": 0.08043
+    }
+   },
+   "absent_columns": {}
+  },
+  "velocity": {
+   "state": "PRESENT",
+   "source": "GPS by I (Spd)",
+   "reason": null,
+   "note": null,
+   "n": 5,
+   "instances": {
+    "0": {
+     "n": 5,
+     "t_first": 81.855471,
+     "t_last": 82.649944,
+     "median_period_s": 0.199886,
+     "max_gap_s": 0.200273
+    }
+   },
+   "absent_columns": {}
+  },
+  "gnss": {
+   "state": "PRESENT",
+   "source": "GPS by I (Status, NSats, HDop, GWk, GMS)",
+   "reason": null,
+   "note": null,
+   "n": 5,
+   "instances": {
+    "0": {
+     "n": 5,
+     "t_first": 81.855471,
+     "t_last": 82.649944,
+     "median_period_s": 0.199886,
+     "max_gap_s": 0.200273
+    }
+   },
+   "absent_columns": {}
+  },
+  "battery": {
+   "state": "PRESENT",
+   "source": "BAT by Inst (Volt, Curr)",
+   "reason": null,
+   "note": null,
+   "n": 8,
+   "instances": {
+    "0": {
+     "n": 8,
+     "t_first": 81.876092,
+     "t_last": 82.69083,
+     "median_period_s": 0.100135,
+     "max_gap_s": 0.216574
+    }
+   },
+   "absent_columns": {}
+  },
+  "ekf": {
+   "state": "PRESENT",
+   "source": "EKF2: NKF4 = core 0, NKF9 = core 1, or NKF4 by C (SV, SP, SH, SM)",
+   "reason": null,
+   "note": null,
+   "n": 48,
+   "instances": {
+    "0": {
+     "n": 24,
+     "t_first": 81.795742,
+     "t_last": 82.770403,
+     "median_period_s": 0.040233,
+     "max_gap_s": 0.080703
+    },
+    "1": {
+     "n": 24,
+     "t_first": 81.795742,
+     "t_last": 82.770403,
+     "median_period_s": 0.040233,
+     "max_gap_s": 0.080703
+    }
+   },
+   "absent_columns": {}
+  },
+  "mode": {
+   "state": "PRESENT",
+   "source": "MODE (ModeNum, Rsn)",
+   "reason": null,
+   "note": null,
+   "n": 1,
+   "instances": {
+    "0": {
+     "n": 1,
+     "t_first": 82.020997,
+     "t_last": 82.020997,
+     "median_period_s": 0.0,
+     "max_gap_s": 0.0
+    }
+   },
+   "absent_columns": {},
+   "windows": [
+    [
+     82.020997,
+     82.770404,
+     "MANUAL"
+    ]
+   ]
+  },
+  "arming": {
+   "state": "ABSENT",
+   "source": "ARM (ArmState)",
+   "reason": "no ARM rows",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "events": {
+   "state": "ABSENT",
+   "source": "ERR (Subsys, ECode)",
+   "reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V3.8.2-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); no ERR format defined",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "home": {
+   "state": "PRESENT",
+   "lat": -35.3626299,
+   "lon": 149.1653109,
+   "alt_amsl_m": 584.64
+  },
+  "fence": {
+   "state": "ABSENT",
+   "reason": "FENCE_ENABLE / FENCE_TYPE not logged"
+  },
+  "params": {
+   "state": "PRESENT",
+   "n": 809
+  }
+ },
+ "bars": {
+  "path": "bars.yaml",
+  "sha256": "7f29d1f72a73963511f6568571b4761f541ccd9d276f8c5ed31eeef48188700c",
+  "schema": "swathkeeper-bars/1.0"
+ },
+ "prereg": {
+  "status": "HASH_MATCH",
+  "sidecar": "bars.yaml.prereg.json",
+  "sidecar_sha256": "6448e4ff2bc32404d9fe785493f26312f65b5e8486c1884b2c4989dc9d0db59a",
+  "bars_sha256": "7f29d1f72a73963511f6568571b4761f541ccd9d276f8c5ed31eeef48188700c",
+  "bars_sha256_registered": "7f29d1f72a73963511f6568571b4761f541ccd9d276f8c5ed31eeef48188700c",
+  "log_sha256_pinned": "a51f040b2ad7f55185c1da5705f226f51469b86562c4ff76d05c99e0e52c2bf4",
+  "post_hoc": true,
+  "written_utc_untrusted": "2026-11-06T02:21:19+00:00"
+ },
+ "allowlist": {
+  "path": null,
+  "sha256": null,
+  "run_date_utc": "2026-11-06",
+  "declared": [],
+  "red": [
+   [
+    "no_errors",
+    "EVIDENCE_INSUFFICIENT"
+   ]
+  ],
+  "matched": [],
+  "undeclared": [
+   [
+    "no_errors",
+    "EVIDENCE_INSUFFICIENT"
+   ]
+  ],
+  "vacuous": [],
+  "expired": []
+ },
+ "exit_code": 1,
+ "badge": "gates: could not tell \u00b7 3/6 measured (post-hoc)",
+ "refusal": null,
+ "results": [
+  {
+   "id": "alt_floor_armed",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "channel": "position.alt_rel_home_m",
+    "bound": "floor",
+    "limit": -10.0
+   },
+   "n": 0,
+   "min_n": 10,
+   "scope": {
+    "armed": true,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+   "provenance": {
+    "text": "B1 scoped to armed: true. The log has no ARM row, so arming is ABSENT and the design's rule 1 makes this EVIDENCE_INSUFFICIENT whatever POS says. Limit AUTHOR-CHOSEN (-10 m, as on the demo). min_n 10."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "battery_floor",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 12.387425422668457,
+   "bar": {
+    "channel": "battery.voltage_v",
+    "bound": "floor",
+    "limit": 10.5
+   },
+   "n": 8,
+   "min_n": 5,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "n=8; worst 12.3874 on instance 0 at t=82.190 s, 1 window(s); instances present [0]",
+   "provenance": {
+    "text": "B3 on BAT without an Inst column (read as instance 0). No BATT_LOW_VOLT is logged; the limit is AUTHOR-CHOSEN, 10.5 V = a 3-cell pack at 3.5 V/cell, assumed from the 12.4 V first row. min_n 5 rows."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "ekf_vel_ceiling",
+   "kind": "series_bound",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 0.09,
+   "bar": {
+    "channel": "ekf.vel_ratio",
+    "bound": "ceiling",
+    "limit": 0.8
+   },
+   "n": 48,
+   "min_n": 20,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0,
+    1
+   ],
+   "worst_instance": 1,
+   "gaps": [],
+   "note": "n=48; worst 0.09 on instance 1 at t=82.491 s, 1 window(s); instances present [0, 1]",
+   "provenance": {
+    "text": "B4 across EKF2's NKF4 (core 0) and NKF9 (core 1). AUTHOR-CHOSEN 0.8 as on the demo (no FS_EKF_THRESH is logged here). min_n 20 rows over both cores."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "gnss_quality",
+   "kind": "gnss_quality",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 0.0,
+   "bar": {
+    "fix_min": 3,
+    "sats_min": 6,
+    "max_outage_s": 0
+   },
+   "n": 5,
+   "min_n": 5,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=5; every row in scope qualifies",
+   "provenance": {
+    "text": "B5 on GPS without an I column (instance 0), AUTHOR-CHOSEN as on the demo: fix >= 3, sats >= 6, every row. min_n 5 rows."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "mode_transitions",
+   "kind": "mode_transitions",
+   "severity": "should",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "allowed": [
+     [
+      "*",
+      "AUTO"
+     ],
+     [
+      "*",
+      "RTL"
+     ],
+     [
+      "*",
+      "AUTOTUNE"
+     ],
+     [
+      "*",
+      "FBWA"
+     ],
+     [
+      "*",
+      "MANUAL"
+     ]
+    ]
+   },
+   "n": 0,
+   "min_n": 1,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; n 0 < min_n 1; mode unknown for 0.225 s before the first MODE row (<= 1.0 s: left out of the scope)",
+   "provenance": {
+    "text": "B7 with Plane names: the vehicle resolves from the MSG banner (there is no VER row). Allowed: entering a mode of the log's own FLTMODE1-6 = 10, 11, 10, 8, 5, 0 = {AUTO, RTL, AUTOTUNE, FBWA, MANUAL}. min_n 1 real transition; the log's one MODE row is the startup write, judged as <start> -> MANUAL but not counted."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "no_errors",
+   "kind": "no_events",
+   "severity": "must",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "kinds": [
+     "error"
+    ]
+   },
+   "n": 0,
+   "min_n": 60,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V3.8.2-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); no ERR format defined",
+   "provenance": {
+    "text": "B8 as on the demo. Zero ERR rows at V3.8 is ABSENT (the citation is at 4.5.x) and there are no DSF rows, so the design's rule 1 makes this EVIDENCE_INSUFFICIENT. min_n 60."
+   },
+   "param_in_log": null
+  }
+ ]
+}

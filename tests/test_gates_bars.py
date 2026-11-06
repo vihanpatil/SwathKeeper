@@ -1,0 +1,324 @@
+"""swathkeeper_gates' bars (design §3, §9): the strict loader, the five kinds, and §3.2's fixed order.
+
+Every fixture is a synthetic DataFlash log from test_gates_adapter (no third-party bytes). Each red-first
+assertion names the mutant it was shown failing against (G-numbers are QA's findings, Q-numbers QA's mutants).
+"""
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from swathkeeper_gates import bars as B  # noqa: E402
+from swathkeeper_gates.contract import Refusal, fired_gaps, hits  # noqa: E402
+from test_gates_adapter import (M_PER_DEG, STD, T0, at_time, edit, flight_rows, gps, latlon, parse, surgery,  # noqa: E402
+                                us, zeroed)
+
+
+def bar(kind, params, min_n=1, modes=None, armed=None):
+    return {"id": "b", "kind": kind, "severity": "must", "provenance": {"text": "test", "param": "FENCE_RADIUS"},
+            "scope": {"armed": armed, "modes": modes}, "min_n": min_n, "params": params}
+
+
+def judge(b, log):
+    return B.evaluate(B.validate({"schema": B.SCHEMA, "contract": "swathkeeper-flightlog/1.0", "bars": [b]}), log)[0]
+
+
+def batt(limit=20.0, **kw):
+    return bar("series_bound", {"channel": "battery.voltage_v", "bound": "floor", "limit": limit}, **kw)
+
+
+def gnss(max_outage=0, **kw):
+    return bar("gnss_quality", {"fix_min": 3, "sats_min": 6, "max_outage_s": max_outage}, **kw)
+
+
+def cut(rows, a, b, keep=()):
+    """Rows with a < t < b removed (a clean hole), except messages in `keep`."""
+    return [x for x in rows if x[0] in keep or not us(a) < x[1]["TimeUS"] < us(b)]
+
+
+FENCE = bar("containment", {"source": "log"})
+MODES = bar("mode_transitions", {"allowed": [["<start>", "STABILIZE"], ["STABILIZE", "ALT_HOLD"], ["ALT_HOLD", "LOITER"]]})
+EVENTS = bar("no_events", {"kinds": ["error"]}, min_n=20)
+# A U in local metres (concave: the notch is 40 < x < 60, y > 20). The default track (x = t, y = 50) is in the left arm.
+U = [list(latlon(x, y)) for x, y in ((-10, 0), (100, 0), (100, 100), (60, 100), (60, 20), (40, 20), (40, 100), (-10, 100))]
+POLY = bar("containment", {"source": "yaml", "polygon": U, "alt_max_rel_home_m": 50})
+JUMP = lambda t: (t if t < 15 else 65 + t, 50.0, 5.0)     # one 0.1 s step from x=14.9 (left arm) to x=80 (right arm)
+
+
+class TestKinds(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.clean = parse(flight_rows())
+
+    def test_each_kind_passes_clean_and_fails_on_one_sample(self):
+        ignored = bar("no_events", {"kinds": ["error"], "ignore": [[16, 1]]}, min_n=20)
+        err = parse(flight_rows(events=STD + ((12.3, "ERR", 16),)))
+        for b, log, want in ((batt(), parse(edit(flight_rows(), "BAT", 12.3, inst=1, Volt=19.0)), B.FAIL),
+                             (gnss(), parse(edit(flight_rows(), "GPS", 12.4, inst=1, Status=1)), B.FAIL),
+                             (gnss(), parse(edit(flight_rows(), "GPS", 12.4, inst=1, NSats=4)), B.FAIL),       # Q24
+                             (FENCE, parse(flight_rows(track=lambda t: (t, 200.0 if t == 12.3 else 50.0, 5.0))), B.FAIL),
+                             (MODES, parse(flight_rows(events=STD[:3] + ((20.0, "MODE", 6),))), B.FAIL),    # -> RTL
+                             (EVENTS, err, B.FAIL), (ignored, err, B.PASS)):                                   # Q23
+            with self.subTest(kind=b["kind"], want=want):
+                self.assertEqual(judge(b, self.clean)["verdict"], B.PASS)
+                self.assertEqual(judge(b, log)["verdict"], want)   # mutant: the kind's violation rule deleted -> red
+        self.assertEqual(judge(batt(), self.clean)["param_in_log"]["values"], [150.0])    # the log's own value, printed
+
+    def test_a_violation_on_a_thin_sample_is_fail_and_the_worse_instance_is_named(self):
+        r = judge(batt(min_n=10_000), parse(edit(flight_rows(), "BAT", 12.3, inst=1, Volt=19.0)))
+        self.assertEqual((r["verdict"], r["worst_instance"]), (B.FAIL, 1))   # mutants: rules 3/4 swapped; instance 0 only -> red
+        self.assertAlmostEqual(r["measured"], 19.0, places=5)
+
+    def test_ei_and_na_never_print_a_pass_or_a_number(self):
+        for r in (judge(batt(min_n=10_000), self.clean), judge(batt(modes=["AUTO"]), self.clean)):
+            self.assertIn(r["verdict"], (B.EI, B.NA))
+            self.assertEqual((r["measured"], r["worst_instance"]), (None, None))   # mutant: measured always shown -> red
+            self.assertNotIn("worst", r["note"])
+
+    def test_a_non_finite_sample_in_scope_is_ei(self):
+        for v in (float("nan"), float("inf"), float("-inf")):              # G237: inf is not a value either
+            with self.subTest(v=v):
+                r = judge(batt(), parse(edit(flight_rows(), "BAT", 12.3, inst=0, Volt=v)))
+                self.assertEqual(r["verdict"], B.EI)                         # mutant: plain min (NaN as a value) -> red
+                self.assertIn("NaN/inf", r["note"])
+
+    def test_a_2_s_hole_or_a_late_start_is_ei_with_the_gap_printed(self):
+        r = judge(batt(), parse(cut(flight_rows(), 10.0, 12.0)))
+        self.assertEqual(r["verdict"], B.EI)        # mutants: no gap rule; the 1 s floor -> 3 s; 5p -> 50p -> red
+        self.assertEqual({("battery", 0, T0 + 10, T0 + 12), ("battery", 1, T0 + 10, T0 + 12), ("log", None, T0 + 10, T0 + 12)},
+                         {(g["stream"], g["instance"], g["t0"], g["t1"]) for g in r["gaps"]})   # every raw stream: the logger
+        late = [x for x in flight_rows() if not (x[0] == "BAT" and x[1]["TimeUS"] < us(3.0))]
+        self.assertEqual(judge(batt(), parse(late))["verdict"], B.EI)       # Q1 mutant: window edges not gaps -> red
+
+    def test_the_gap_threshold_is_max_of_1_s_and_5_periods_from_both_sides(self):
+        ten_hz, slow = [k / 10 for k in range(100)], [k * 0.4 for k in range(50)]     # p = 0.1 s; p = 0.4 s (5p = 2 s)
+        holes = lambda ts, a, b: fired_gaps([t for t in ts if not a < t < b], [(0.0, ts[-1])])
+        # G259 HM7 mutant: a point hole at a window's start does not hit it -> red (its end is outside: half-open)
+        self.assertEqual((hits((5.0, 5.0), [(5.0, 6.0)]), hits((6.0, 6.0), [(5.0, 6.0)])), (True, False))
+        # mutants: the floor 1 s -> 0.85 s or -> 1.2 s; 5p -> 3.5p or -> 6.5p: each turns one line red
+        self.assertEqual((holes(ten_hz, 2.0, 2.9), len(holes(ten_hz, 2.0, 3.1))), ([], 1))     # 0.9 s no; 1.1 s yes
+        self.assertEqual((holes(slow, 2.0, 3.6), len(holes(slow, 2.0, 4.4))), ([], 1))         # 1.6 s no; 2.4 s yes
+
+    def test_no_window_is_na_only_when_the_absence_was_measured(self):
+        self.assertEqual(judge(batt(modes=["AUTO"]), self.clean)["verdict"], B.NA)
+        for name, log in (("no MODE", parse([x for x in flight_rows() if x[0] != "MODE"])),   # mutant: ABSENT mode as NA
+                          ("vehicle ABSENT", parse(flight_rows(banner=None))),
+                          # G233: AUTO entered only inside a 4 s byte hole (11..15 s) -> the absence is not measured
+                          ("AUTO inside a hole", zeroed(flight_rows(events=STD[:3] + ((12.0, "MODE", 3), (14.0, "MODE", 2),
+                                                                                       (20.0, "MODE", 5))), span=(11.0, 15.0))[0]),
+                          # G234: mode unknown for 5 s before the first MODE row
+                          ("mode prefix 5 s", parse(flight_rows(events=((5.0, "MODE", 5),))))):
+            with self.subTest(name):
+                self.assertEqual(judge(batt(modes=["AUTO"]), log)["verdict"], B.EI)
+        self.assertIn("mode unknown for 0.000 s", judge(batt(modes=["LOITER"]), self.clean)["note"])
+        for at in (0.5, 1.0):        # mutants: MODE_PREFIX_S 1.0 -> 0.3 (or -> 10, above); G259 HM5 `>` -> `>=`
+            self.assertEqual(judge(batt(modes=["STABILIZE"]), parse(flight_rows(events=((at, "MODE", 0),))))["verdict"], B.PASS)
+
+    def test_a_fully_excluded_instance_is_ei_never_a_greener_pass(self):
+        ekf = bar("series_bound", {"channel": "ekf.vel_ratio", "bound": "ceiling", "limit": 0.8})
+        speed = bar("series_bound", {"channel": "velocity.groundspeed_mps", "bound": "ceiling", "limit": 12.5})
+        for b, rows, stream in ((ekf, [(n, {**v, "SS": 0} if n == "XKF4" and v["C"] == 1 else v) for n, v in flight_rows()], "ekf"),
+                                (speed, [(n, {**v, "Status": 1} if n == "GPS" and v["I"] == 1 else v) for n, v in flight_rows()],
+                                 "velocity")):
+            with self.subTest(stream):   # G256 mutant: the instance vanishes -> PASS on the other one -> red
+                r = judge(b, parse(rows))
+                self.assertEqual((r["verdict"], [(g["stream"], g["instance"]) for g in r["gaps"]]), (B.EI, [(stream, 1)]))
+                self.assertIn("are EMPTY", r["note"])
+
+    def test_touching_scope_windows_are_one_window(self):
+        # G228 / Q13: the chord and the outage straddle the ALT_HOLD -> LOITER switch at t = 20
+        jump20 = parse(flight_rows(track=lambda t: (t if t < 20 else 60 + t, 50.0, 5.0)))
+        self.assertEqual(judge({**POLY, "scope": {"armed": None, "modes": ["ALT_HOLD", "LOITER"]}}, jump20)["verdict"], B.FAIL)
+        r = judge(gnss(5, modes=["ALT_HOLD", "LOITER"]), parse(gps(flight_rows(), 16.0, 24.0, Status=1)))
+        self.assertEqual((r["verdict"], r["measured"]), (B.FAIL, 8.0))
+
+    def test_an_armed_scope_before_the_first_arm_row_is_ei(self):
+        # mutant: the ABSENT prefix skipped (arming judged from the first row only) -> red
+        self.assertIn("ABSENT before the first ARM row", judge(batt(armed=True), self.clean)["note"])
+        self.assertEqual(judge(batt(armed=True, modes=["LOITER"]), self.clean)["verdict"], B.PASS)
+
+    def test_the_note_says_when_every_sample_is_one_value_and_what_was_excluded(self):
+        speed = bar("series_bound", {"channel": "velocity.groundspeed_mps", "bound": "ceiling", "limit": 12.5})
+        self.assertIn("all 302 judged samples equal 3", judge(speed, self.clean)["note"])       # G230c
+        floor = bar("series_bound", {"channel": "position.alt_rel_home_m", "bound": "floor", "limit": 4.0})
+        log = parse(flight_rows(home_at=5.0, track=lambda t: (t, 50.0, 0.0 if t < 5 else 5.0)))
+        r = judge(floor, log)                      # G240 mutant: RelHomeAlt before home judged -> FAIL -> red
+        self.assertEqual((r["verdict"], r["n"]), (B.PASS, 251))
+        self.assertIn("50 sample(s) excluded", r["note"])
+
+    def test_a_gnss_run_ends_at_a_gap_or_the_window_end(self):
+        # (orchestrator) bad 0-2 s, rows missing 2-4 s, bad 4-6 s: two 2 s runs and a gap (EI), never a 6 s outage
+        r = judge(gnss(3), parse(cut(gps(flight_rows(), 0.0, 6.0, Status=1), 2.0, 4.0, keep=("POS", "BAT", "XKF4"))))
+        self.assertEqual(r["verdict"], B.EI)
+        r = judge(gnss(3), parse(gps(flight_rows(), 25.0, 99.0, Status=1)))
+        self.assertEqual(r["verdict"], B.FAIL)     # Q5 mutant: an outage open at the window end is dropped -> red
+        self.assertAlmostEqual(r["measured"], 5.0, places=3)
+        # G255: a byte hole ENDING at the run's first row (shared timestamp, the ALT_HOLD window's start) must not cut it
+        log, _ = zeroed(gps(flight_rows(), 10.0, 15.0, Status=1), span=(9.9, 10.0))
+        r = judge(gnss(4.9, modes=["ALT_HOLD"]), log)
+        self.assertEqual((r["verdict"], round(r["measured"], 3)), (B.FAIL, 5.0))   # mutant: `prev <= a` -> any overlap
+
+
+class TestContainment(unittest.TestCase):
+    def test_a_concave_chord_with_both_ends_inside_fails(self):
+        self.assertEqual(judge(POLY, parse(flight_rows()))["verdict"], B.PASS)
+        r = judge(POLY, parse(flight_rows(track=JUMP)))
+        self.assertEqual(r["verdict"], B.FAIL)                         # mutant: points only -> red
+        self.assertIn("crossed the polygon boundary between samples at t=16.000 s", r["note"])   # G246
+
+    def test_a_chord_across_a_gap_or_a_nan_is_not_judged(self):
+        rows = [x for x in flight_rows(track=JUMP) if not (x[0] == "POS" and us(13.0) < x[1]["TimeUS"] < us(15.0))]
+        r = judge(POLY, parse(rows))
+        self.assertEqual((r["verdict"], r["gaps"][0]["stream"]), (B.EI, "position"))   # mutant: bridge the gap -> red
+        nan = edit(flight_rows(track=JUMP), "POS", 15.0, RelHomeAlt=float("nan"))
+        self.assertEqual(judge(POLY, parse(nan))["verdict"], B.EI)    # Q14 mutant: a NaN sample bridged -> FAIL -> red
+
+    def test_a_fail_on_the_row_before_a_byte_hole_is_flagged_unverifiable(self):
+        def half_zero_pos(raw):          # G265: POS at 12.3 keeps its header, loses its values and the next header
+            o = at_time(raw, 12.3)
+            raw[o + 11:o + 32] = bytes(21)
+        r = judge(FENCE, surgery(flight_rows(), half_zero_pos))
+        self.assertEqual(r["verdict"], B.FAIL)
+        self.assertIn("sits beside a byte hole", r["note"])      # mutant: the line dropped -> red
+
+    def test_alt_max_and_exclusion_segments_are_judged(self):
+        r = judge(FENCE, parse(flight_rows(track=lambda t: (t, 50.0, 101.0 if t == 12.3 else 5.0))))
+        self.assertEqual(r["verdict"], B.FAIL)                               # mutant: alt_max ignored -> red
+        self.assertAlmostEqual(r["measured"], -1.0, places=3)
+        circle = bar("containment", {"source": "log", "exclusions": [dict(zip(("lat", "lon"), latlon(47, 50)), radius_m=5)]})
+        self.assertEqual(judge(circle, parse(flight_rows()))["verdict"], B.PASS)
+        self.assertEqual(judge(circle, parse(flight_rows(track=JUMP)))["verdict"], B.FAIL)  # mutant: samples only -> red
+
+    def test_delta_longitude_wraps_at_the_antimeridian(self):
+        d = 100 / M_PER_DEG                                          # G232: a 200 m square straddling lon 180
+        square = bar("containment", {"source": "yaml", "polygon": [[-d, 180 - d], [-d, -180 + d], [d, -180 + d], [d, 180 - d]]})
+        west = lambda x, y: (0.0, 180 - (300 + x) / M_PER_DEG)        # 300-330 m west of 180: outside
+        self.assertEqual(judge(square, parse(flight_rows(geo=west)))["verdict"], B.FAIL)
+
+
+class TestModeTransitions(unittest.TestCase):
+    def test_n_counts_real_transitions_and_the_startup_row_is_judged_apart(self):
+        late = parse(flight_rows(events=((8.0, "MODE", 0), (12.0, "MODE", 2))))
+        self.assertEqual(judge(MODES, late)["verdict"], B.EI)          # G258 mutant: B7 ignores an 8 s unknown prefix -> red
+        one = parse(flight_rows(events=((0.0, "MODE", 5),)))
+        r = judge(bar("mode_transitions", {"allowed": [["*", "LOITER"]]}), one)
+        self.assertEqual((r["verdict"], r["n"]), (B.EI, 0))            # G235 mutant: the startup row counted -> PASS -> red
+        r = judge(bar("mode_transitions", {"allowed": [["<start>", "STABILIZE"], ["*", "ALT_HOLD"]]}), one)
+        self.assertEqual((r["verdict"], r["n"]), (B.FAIL, 0))
+        self.assertIn("<start> -> LOITER (Rsn 1)", r["note"])          # G253
+
+    def test_a_hole_anywhere_in_scope_is_ei_and_a_transition_across_it_is_not_judged(self):
+        self.assertEqual(judge(MODES, zeroed(flight_rows(), span=(22.0, 26.0))[0])["verdict"], B.EI)   # G231: after the last row
+        no_alt = bar("mode_transitions", {"allowed": [["<start>", "STABILIZE"], ["ALT_HOLD", "LOITER"]]})
+        r = judge(no_alt, zeroed(flight_rows(), span=(6.0, 8.0))[0])
+        self.assertEqual(r["verdict"], B.EI)           # Q7 mutant: STABILIZE -> ALT_HOLD judged across the hole -> FAIL
+
+
+class TestLoggerHoles(unittest.TestCase):
+    def test_a_gap_in_every_raw_stream_is_the_logger_and_in_one_stream_the_sensor(self):
+        gps_only = parse(cut(flight_rows(), 22.0, 26.0, keep=("POS", "BAT", "XKF4", "MODE", "DSF")))
+        for b in (batt(), MODES, EVENTS):              # G260 mutant: the UNION of stream gaps -> EI here -> red
+            with self.subTest(gps_only=b["kind"]):
+                self.assertEqual(judge(b, gps_only)["verdict"], B.PASS)
+        auto = STD[:3] + ((12.0, "MODE", 3), (14.0, "MODE", 2), (20.0, "MODE", 5))
+        for b, log in ((MODES, parse(cut(flight_rows(), 22.0, 26.0))),      # mutant: byte holes only -> PASS / NA -> red
+                       (batt(modes=["AUTO"]), parse(cut(flight_rows(events=auto), 11.0, 15.0)))):
+            with self.subTest(all_raw=b["kind"]):
+                self.assertEqual(judge(b, log)["verdict"], B.EI)
+        self.assertEqual(judge(EVENTS, parse(cut(flight_rows(), 22.0, 26.0)))["n"], 26.0)    # B8 subtracts the 4 s
+        blind = parse([x for x in flight_rows() if x[0] not in ("POS", "GPS", "BAT")])
+        for b in (MODES, EVENTS):                      # mutant: liveness unwitnessed, judged anyway -> PASS -> red
+            with self.subTest(unwitnessed=b["kind"]):
+                self.assertIn("to witness logger liveness", judge(b, blind)["note"])
+
+
+class TestNoEvents(unittest.TestCase):
+    def test_n_is_drop_free_seconds(self):
+        r = judge(bar("no_events", {"kinds": ["error"]}, min_n=40), parse(flight_rows()))
+        self.assertEqual((r["verdict"], r["n"]), (B.EI, 30.0))               # mutant: n counts rows -> PASS -> red
+        rose = [(n, {**v, "Dp": 3} if n == "DSF" and v["TimeUS"] >= us(11) else v) for n, v in flight_rows()]
+        self.assertEqual(judge(EVENTS, parse(rose))["n"], 29.0)             # the second in which Dp rose is not drop-free
+        # G257 mutants: the note dropped; tested against the windows, not the base range (a LOITER bar misses it) -> red
+        for b, how in ((EVENTS, "excluded from n"), (batt(), "judged across"), (batt(modes=["LOITER"]), "judged across")):
+            self.assertIn(f"3 firmware-dropped writes in [{T0 + 10:.3f}, {T0 + 11:.3f}] s (DSF.Dp), not located; {how}",
+                          judge(b, parse(rose))["note"])
+        log, _ = zeroed(flight_rows(), span=(12.0, 14.0))
+        hole = log.integrity["holes"][0]
+        self.assertEqual(judge(EVENTS, log)["n"], round(30.0 - (hole[1] - hole[0]), 3))   # G259 HM8: holes not subtracted
+        early = [x for x in flight_rows() if not (x[0] == "DSF" and x[1]["TimeUS"] > us(20))]
+        self.assertEqual(judge(EVENTS, parse(early))["n"], 20.0)            # Q3 mutant: seconds after the last DSF -> red
+        self.assertEqual(judge(EVENTS, parse(flight_rows(banner="ArduCopter V4.7.0 (x)")))["verdict"], B.EI)
+
+    def test_a_lost_err_row_is_never_a_pass(self):
+        log, _ = zeroed(flight_rows(events=STD + ((12.3, "ERR", 16),)), at=42)
+        self.assertEqual(judge(EVENTS, log)["verdict"], B.EI)        # G229 mutant: byte holes ignored -> PASS -> red
+
+
+DOC = """schema: swathkeeper-bars/1.0
+contract: {contract}
+bars:
+  - id: batt
+    kind: series_bound
+    severity: {severity}
+    provenance: {{text: t}}
+    scope: {{armed: {armed}, modes: {modes}}}
+    min_n: {min_n}
+    params: {{channel: battery.voltage_v, bound: floor, limit: {limit}}}
+"""
+GOOD = {"contract": "swathkeeper-flightlog/1.0", "severity": "must", "armed": "null", "modes": "null", "min_n": 1, "limit": 18.6}
+
+
+def load(text=None, **kw):
+    return B.validate(B.load_yaml(text or DOC.format(**{**GOOD, **kw}), "bars"))
+
+
+class TestLoader(unittest.TestCase):
+    def test_the_template_loads(self):
+        self.assertEqual(load()[0]["params"]["limit"], 18.6)
+
+    def test_each_malformed_value_refuses(self):
+        for kw, why in (({"limit": "1e3"}, "not a finite number"), ({"limit": ".nan"}, "plain decimal"),
+                        ({"limit": "yes"}, "not a finite number"), ({"min_n": 0}, r"integer in \[1"),
+                        ({"min_n": 1.5}, "integer"), ({"modes": "[NO]"}, "non-empty string"),
+                        ({"modes": "[]"}, "at least 1"), ({"armed": "false"}, "true or null"), ({"armed": 1}, "true or null"),
+                        ({"severity": "should"}, "zero `must`"), ({"contract": "swathkeeper-flightlog/2.0"}, "major"),
+                        ({"contract": "swathkeeper-flightlog/1.9"}, "this tool speaks"),                     # G249
+                        ({"modes": '["*"]'}, "only for mode_transitions"), ({"modes": "[<start>]"}, "only for"),  # G239
+                        *(({"limit": x}, "plain decimal") for x in ("022", "18:36", "0x12", "1_8.6", ".inf")),   # G236
+                        ({"min_n": "030"}, "plain decimal")):
+            with self.subTest(kw=kw), self.assertRaisesRegex(Refusal, why):   # mutants: number() takes str/bool; min_n lo 0
+                load(**kw)
+
+    def test_a_duplicate_key_unknown_key_or_bad_pairing_refuses(self):
+        text = DOC.format(**GOOD)
+        poly = "[[0, 0], [0, 1], [1, 1], [1, 0]]"
+        bowtie = "[[0, 0], [1, 1], [1, 0], [0, 1]]"
+        geo = lambda params: text.replace("kind: series_bound", "kind: containment").replace(
+            "{channel: battery.voltage_v, bound: floor, limit: 18.6}", params)
+        for bad, why in ((text.replace("limit: 18.6", "limit: 18.6, limit: 0"), "duplicate"),   # mutant: plain SafeLoader
+                         (text + "schema: swathkeeper-bars/1.0\n", "duplicate"),
+                         (text.replace("min_n: 1", "min_n: 1\n    stat: max"), "unknown keys"),
+                         (text + text[text.index("  - id"):], "duplicate id"),
+                         (text[:text.index("bars:")] + "bars: []\n", "at least 1"),
+                         (text.replace("kind: series_bound", "kind: mode_transitions").replace(
+                             "{channel: battery.voltage_v, bound: floor, limit: 18.6}", "{allowed: [[STABILIZE, <start>]]}"),
+                          "only ever a `from`"),                                                         # Q15
+                         (geo("{source: yaml}"), "needs a polygon"), (geo(f"{{source: log, polygon: {poly}}}"), "needs a polygon"),
+                         (geo("{source: log, alt_max_rel_home_m: 5}"), "FENCE_"),                         # Q16
+                         (geo(f"{{source: yaml, polygon: {poly}, alt_max_m: 5}}"), "unknown keys"),       # G254
+                         (geo(f"{{source: yaml, polygon: {bowtie}}}"), "intersects itself")):             # G247
+            with self.subTest(why=why), self.assertRaisesRegex(Refusal, why):
+                load(bad)
+        load(geo(f"{{source: yaml, polygon: {poly}, alt_max_rel_home_m: 5}}"))
+
+    def test_a_mode_name_must_be_in_the_resolved_vehicles_table(self):
+        clean = parse(flight_rows())
+        B.check_modes(load(modes="[LOITER]"), clean)
+        for name in ("LOITR", "FBWA"):                       # a typo; a Plane name on a Copter
+            with self.assertRaisesRegex(Refusal, name):      # mutant: check_modes a no-op -> red
+                B.check_modes(load(modes=f"[{name}]"), clean)
+
+
+if __name__ == "__main__":
+    unittest.main()
