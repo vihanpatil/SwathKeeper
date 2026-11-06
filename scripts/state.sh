@@ -15,6 +15,7 @@ cd "$REPO_ROOT" || { echo "state: cannot cd to repo root"; exit 0; }
 
 PAGES_URL="https://vihanpatil.github.io/SwathKeeper/dashboard/"
 DECLARED_RED_JOB="Planning tests + eval spike harness (numpy/scipy)"   # declared reds live inside it
+# Every other job -- validate, docs, the gates-tool legs (py3.10/py3.12, ADR-023 am. 1) -- is expected GREEN.
 RATIO_CAP="3.70"
 
 # run_t SECS CMD... -- run CMD with a wall-clock cap (macOS has no `timeout`). stdout/stderr pass
@@ -88,6 +89,7 @@ else
           "Validate tiger-team config"*) short="validate";;
           "Planning tests"*)             short="planning";;
           "Docs site"*)                  short="docs";;
+          "Gates tool (py"*)             short="gates-py$(printf '%s' "$jname" | sed -n 's/^Gates tool (py\([0-9.]*\)).*/\1/p')";;
           "Headless Gazebo"*)            short="sim-smoke";;
           *)                             short="$jname";;
         esac

@@ -4610,7 +4610,7 @@ installable thing the team can build sim-free. *Steelman lost:* this ADR called 
 hands-on owner for 8 weeks, and a tool people can try is a cheaper question than a call. Packaging: `src/swathkeeper_gates/`,
 never imported by `fieldguard_planning`; tests:src counts its src and tests (ROADMAP Next up). Confirmation-pending the ten posts.
 
-## ADR-023: The evidence-gate tool is `swathkeeper-gates` 0.1 — one ArduPilot DataFlash adapter, eight bars over five kinds, a JSON verdict whose fourth word "could not tell" never scores green — BUILT and SCORED on three public logs we did not fly   (2026-11-05, status: ACCEPTED — lead, build-level: option C step 2 (ADR-022 am. 4), scored against `docs/design/GATES_TOOL_DESIGN.md` rev 2 after two QA rounds (G228–G265, every finding accepted and closed) and three fix rounds; **confirmation-pending** the first CI run (the workflow line is unrun until PR #39) and step 5's job that fetches the three logs by sha256 and diffs `results[*].{verdict,n}`; the ten posts confirm ADR-022 am. 4, not this entry)
+## ADR-023: The evidence-gate tool is `swathkeeper-gates` 0.1 — one ArduPilot DataFlash adapter, eight bars over five kinds, a JSON verdict whose fourth word "could not tell" never scores green — BUILT and SCORED on three public logs we did not fly   (2026-11-05, status: ACCEPTED — lead, build-level: option C step 2 (ADR-022 am. 4), scored against `docs/design/GATES_TOOL_DESIGN.md` rev 2 after two QA rounds (G228–G265, every finding accepted and closed) and three fix rounds; **confirmation-pending → PR #39's first CI run (2026-11-05) was exactly the declared red with the install line green; step 5's `gates-tool` job is BUILT (amendment 1) and reproduces all three verdicts on py3.10 and py3.12 locally — its first CI run is on the stacked PR**; the ten posts confirm ADR-022 am. 4, not this entry)
 
 **The one sentence.** `pip install -e '.[ardupilot]'`, then `swathkeeper-gates prereg` and `run` take a stranger's `.bin`
 and a YAML file of bars hashed before the run, and write a JSON verdict and an exit code; on the three public logs it
@@ -4726,3 +4726,16 @@ until CI tests another interpreter. Step 6: the ten posts. This work goes up as 
 Owner / roles: lead (this record, D1–D9, the ERR ruling); software-engineer (the build, three fix rounds);
 qa-safety-reviewer (G228–G265, the independent re-derivation, the sign-off condition "SHIP once G255/G256 land
 red-first, G261 copy fixed, G257 in the ADR" — met); orchestrator (G260's correction); narrative-lead (step 6).
+
+### ADR-023 amendment 1 (2026-11-05, OPTION C STEP 5 BUILT — the Action, the badge, the reproduction job; the floor drops to 3.10 because CI now tests it)
+
+`.github/actions/swathkeeper-gates/` (composite, `run.sh`) runs `swathkeeper-gates run` on a caller's log + bars, installs the tool from its own
+checkout (same ref as the action), writes outputs `exit-code` / `badge` / `verdict` BEFORE exiting with the tool's own code: 1 and 2 fail the step,
+no input softens that (`continue-on-error` is the caller's visible choice). `ci.yml` job `gates-tool` (py3.10 + py3.12, every step `if: always()`):
+the 55 unit tests; the Action on the Tarot log (must PASS, badge verbatim) and the ArduPlane log (must FAIL the step — asserted); and
+`scripts/check_gates_examples.py` over the three `examples/*/SOURCE.json` logs — `curl -fL` into a fresh temp dir, sha256 + size vs the pin
+(mismatch = hard FAIL, both hashes printed, tool NOT run), sidecar HASH_MATCH (post-hoc), `results[*].{id,verdict,n}` + badge + exit diffed against
+the committed verdict (`measured` drift printed, not gated), the README's `examples/tarot_x4/badge.svg` re-rendered (`scripts/render_gates_badge.py`,
+stdlib, deterministic) and diffed. Armed red-first in `tests/test_ci_evidence_gate.py` (no new file; tests:src 3.37). **Measured:** all three verdicts,
+badges, exit codes and measured values reproduce on 3.10.21 and 3.12.12 → `requires-python = ">=3.10"` (design §1's condition; a test pins the floor to
+the lowest matrix leg). **Not claimed:** it fetches only the three pinned logs; green = the committed verdicts REPRODUCE today, not that any vehicle is safe. **G257 stays OPEN for lead + owner before step 6:** a Dp rise as a hole flips the Tarot badge to `could not tell`.

@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # scripts/gates.sh -- every HOST-SIDE CI gate, run locally, each scored against its EXPECTED state.
 #
-# Mirrors .github/workflows/ci.yml's `validate-config`, `planning-and-eval` and `docs-site` jobs:
-# the same commands in the same order (the `pip install` steps run as `uv pip install` into the
-# pinned .venv, which has no pip). Every step runs regardless of earlier failures, as CI's
-# `if: always()` does. Not mirrored: actions/upload-artifact (not a gate) and `build-test-sim`
-# (manual-dispatch, needs the GHCR image). Rows CI lacks: the tests:src cap (ADR-022 am. 1) and a
-# check that the gate outputs left the tree as they found it.
+# Mirrors .github/workflows/ci.yml's `validate-config`, `planning-and-eval`, `gates-tool` (its 3.12 leg;
+# the 3.10 leg runs only in CI) and `docs-site` jobs: the same commands in the same order (the `pip
+# install` steps run as `uv pip install` into the pinned .venv, which has no pip). Every step runs
+# regardless of earlier failures, as CI's `if: always()` does. Not mirrored: actions/upload-artifact
+# (not a gate), the two `uses: ./.github/actions/swathkeeper-gates` steps (a composite action needs
+# the runner; tests/test_ci_evidence_gate.py runs its run.sh instead) and `build-test-sim`
+# (manual-dispatch, needs the GHCR image). The gates-tool reproduction row FETCHES ~7 MB (three public
+# logs, by sha256) and is the one row here that needs the network. Rows CI lacks: the tests:src cap
+# (ADR-022 am. 1) and a check that the gate outputs left the tree as they found it.
 #
 # Expected states: every step PASS except the two DECLARED reds --
 #   * the host-side suite fails on EXACTLY test_step_passes_on_the_committed_evidence
@@ -41,7 +44,7 @@ DECLARED_INVALID_LOG="live_flight_log_20260825T210402Z.json"
 SPIKE_OUTPUTS="sim/spike/out/spike_seed42 eval/results/spike_scores.json eval/results/ground_truth.json eval/results/overlays eval/results/detections_ndvi.json eval/results/detections_rgb.json"
 DOCS_OUTPUTS="docs-site"
 # Tree areas the gates could write into (concurrent doc edits in .claude/, docs/, *README.md are not ours).
-TREE_SCOPE="eval sim src config tests scripts dashboard docs-site"
+TREE_SCOPE="eval sim src config tests scripts dashboard docs-site examples .github"
 
 # pip install -> uv pip install into the venv (uv venvs ship no pip); python -m pip as a fallback.
 pip_install() {
@@ -97,6 +100,27 @@ s_geofence()        { python3 scripts/check_mission_geofence.py; }
 s_spike_clip()      { python3 sim/spike/gen_spike_clip.py --seed 42 --out sim/spike/out/spike_seed42; }
 s_spike_harness()   { bash eval/run_spike.sh; }
 s_spike_regress()   { python3 scripts/check_spike_regression.py eval/results/spike_scores.json; }
+# gates-tool (ci.yml, ADR-023 am. 1) -- the 3.12 leg, on the host venv
+s_gates_install()   { pip_install -e '.[ardupilot]'; swathkeeper-gates --help > /dev/null; }
+s_gates_tests()     { python3 -m unittest discover -s tests -p 'test_gates_*.py' -v; }
+s_gates_examples() {
+  shopt -s nullglob
+  sources=(examples/*/SOURCE.json)
+  echo "[ci] committed gate examples matched: ${#sources[@]}"
+  if [ "${#sources[@]}" -ne 3 ]; then
+    echo "[ci] FAIL: expected exactly 3 examples/*/SOURCE.json (the pinned public logs), found ${#sources[@]}." >&2
+    echo "     This gate may not score green while reproducing fewer verdicts than are committed." >&2
+    exit 1
+  fi
+  fetched="$(mktemp -d)"
+  for src in "${sources[@]}"; do
+    name="$(basename "$(dirname "$src")")"
+    url="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["url"])' "$src")"
+    echo "[ci] fetching $name <- $url"
+    curl -fsSL --retry 3 --retry-delay 5 -o "$fetched/$name.bin" "$url"
+  done
+  python3 scripts/check_gates_examples.py --fetched "$fetched" "${sources[@]%/SOURCE.json}"
+}
 # docs-site
 s_docs_deps()       { pip_install -r requirements-eval.txt; }
 s_docs_build()      { python3 scripts/build_docs_site.py; }
@@ -107,7 +131,7 @@ add_row() { # gate result expected ok(1/0) note
   ROW_GATE+=("$1"); ROW_RESULT+=("$2"); ROW_EXPECT+=("$3"); ROW_OK+=("$4"); ROW_NOTE+=("$5")
 }
 STEP_N=0
-STEP_TOTAL=17
+STEP_TOTAL=20
 
 # run_step KEY LABEL FN -> sets RC, LOG
 run_step() {
@@ -207,6 +231,20 @@ if ignored_or_refuse "planning: eval spike harness end-to-end" $SPIKE_OUTPUTS; t
   expect_pass spike_harness "planning: eval spike harness end-to-end"               s_spike_harness
 fi
 expect_pass spike_regress   "planning: seed-42 headline metric no regression"      s_spike_regress
+
+# ===== job: gates-tool (3.12 leg) ================================================================
+expect_pass gates_install   "gates-tool: install .[ardupilot]"                     s_gates_install
+expect_pass gates_tests     "gates-tool: unit tests (tests/test_gates_*.py)"       s_gates_tests
+run_step gates_examples "gates-tool: 3 pinned logs re-fetched by sha256 + verdicts diffed" s_gates_examples
+if [ "$RC" -eq 0 ]; then
+  add_row "gates-tool: 3 pinned logs re-fetched by sha256 + verdicts diffed" "PASS" "PASS" 1 ""
+elif grep -q "^curl: " "$LOG"; then
+  add_row "gates-tool: 3 pinned logs re-fetched by sha256 + verdicts diffed" "FAIL (exit $RC: fetch)" "PASS" 0 \
+    "a fetch failed (offline, or an upstream URL moved -- a moved pin is a finding, not a flake); $LOG"
+else
+  add_row "gates-tool: 3 pinned logs re-fetched by sha256 + verdicts diffed" "FAIL (exit $RC)" "PASS" 0 \
+    "a committed verdict did NOT reproduce, or a sha256 mismatched -- read the log before touching examples/; $LOG"
+fi
 
 # ===== job: docs-site ============================================================================
 expect_pass docs_deps       "docs-site: install requirements-eval.txt"             s_docs_deps

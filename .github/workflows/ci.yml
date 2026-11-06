@@ -218,6 +218,135 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # ACTIVE (2026-11-05, ADR-023 amendment 1 -- option C step 5). The evidence-gate tool's own job, on the two
+  # interpreters `requires-python` promises (3.10 and 3.12: the floor is exactly as low as this matrix tests,
+  # design §1 -- widen one, widen both). Three gates, each its own step:
+  #   1. the tool's unit tests (tests/test_gates_*.py: synthetic DataFlash written by the tests, no real log);
+  #   2. the composite Action in .github/actions/swathkeeper-gates, run on a public log we did not fly: the Tarot
+  #      X4 demo must PASS with the committed badge string verbatim, and the ArduPlane no-fix log must FAIL THE
+  #      STEP (exit 1). `continue-on-error` on that one step, then an assertion that its outcome WAS failure, is
+  #      how "the Action never softens an exit code" is tested rather than remembered;
+  #   3. the reproduction gate: every examples/*/SOURCE.json's log is fetched with `curl -fL` into a fresh temp
+  #      dir, its sha256 and size checked against the pin (mismatch = hard FAIL, both hashes printed, the tool
+  #      NOT run on those bytes), judged with the committed bars.yaml under its pinned sidecar (HASH_MATCH,
+  #      post-hoc), and results[*].{id,verdict,n} + badge + exit code diffed against the committed verdict.json,
+  #      so a `should` bar sliding PASS -> EVIDENCE_INSUFFICIENT is a red, not a footnote (design §9). The Tarot
+  #      badge.svg the README shows is re-rendered from the FRESH verdict and diffed in the same pass.
+  # No third-party log is ever committed (design §8); this job is the only place the real bytes are read.
+  # A green job means the committed verdicts REPRODUCE on today's parser and interpreter. It does not mean any
+  # vehicle is safe, and it says nothing about any log but the three pinned here.
+  # `if: always()` from the first fallible step down, as in planning-and-eval: a red unit test must not hide a
+  # red reproduction, or the reverse. tests/test_ci_evidence_gate.py runs the reproduction step's body against
+  # stubs (a wrong sha256, a slid verdict, a missing tool) to keep it armed, and runs the Action's run.sh.
+  # ---------------------------------------------------------------------------
+  gates-tool:
+    name: Gates tool (py${{ matrix.python-version }}) -- unit tests, the Action on a public log, three pinned verdicts re-fetched and diffed
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the tool with its ArduPilot extra (pyproject.toml; the only install this job needs)
+        run: |
+          set -euo pipefail
+          pip install -e '.[ardupilot]'
+          swathkeeper-gates --help > /dev/null
+
+      - name: Gates tool unit tests (tests/test_gates_*.py -- synthetic logs, nothing fetched)
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_gates_*.py' -v
+
+      - name: Fetch the two demo logs for the Action (SOURCE.json pins; curl -fL, then sha256sum -c)
+        if: always()
+        id: demo-logs
+        run: |
+          set -euo pipefail
+          for name in tarot_x4 plane_nofix; do
+            url="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["url"])' "examples/$name/SOURCE.json")"
+            sha="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["sha256"])' "examples/$name/SOURCE.json")"
+            curl -fsSL --retry 3 --retry-delay 5 -o "$RUNNER_TEMP/$name.bin" "$url"
+            echo "$sha  $RUNNER_TEMP/$name.bin" | sha256sum -c -
+            echo "$name=$RUNNER_TEMP/$name.bin" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: The Action on a public log we did not fly -- Tarot X4 must PASS (exit 0)
+        if: always()
+        id: action-tarot
+        uses: ./.github/actions/swathkeeper-gates
+        with:
+          log: ${{ steps.demo-logs.outputs.tarot_x4 }}
+          bars: examples/tarot_x4/bars.yaml
+          out: ${{ runner.temp }}/tarot_x4.action.verdict.json
+          python-version: ${{ matrix.python-version }}
+
+      - name: The Action's outputs equal the committed demo verdict, verbatim
+        if: always()
+        env:
+          BADGE: ${{ steps.action-tarot.outputs.badge }}
+          CODE: ${{ steps.action-tarot.outputs.exit-code }}
+          OUTCOME: ${{ steps.action-tarot.outcome }}
+        run: |
+          set -euo pipefail
+          committed="$(python3 -c 'import json; print(json.load(open("examples/tarot_x4/verdict.json"))["badge"])')"
+          echo "[ci] action: outcome=$OUTCOME exit-code=$CODE badge='$BADGE' | committed badge='$committed'"
+          [ "$OUTCOME" = "success" ] && [ "$CODE" = "0" ] && [ "$BADGE" = "$committed" ]
+
+      - name: The Action never softens exit 1 -- the ArduPlane no-fix log must FAIL this step
+        if: always()
+        id: action-plane
+        continue-on-error: true   # the ONE such line in this job: the next step asserts this step's outcome WAS failure
+        uses: ./.github/actions/swathkeeper-gates
+        with:
+          log: ${{ steps.demo-logs.outputs.plane_nofix }}
+          bars: examples/plane_nofix/bars.yaml
+          out: ${{ runner.temp }}/plane_nofix.action.verdict.json
+          python-version: ${{ matrix.python-version }}
+
+      - name: ...and it did fail, with exit-code 1 and the committed badge (the no-softening assertion)
+        if: always()
+        env:
+          BADGE: ${{ steps.action-plane.outputs.badge }}
+          CODE: ${{ steps.action-plane.outputs.exit-code }}
+          OUTCOME: ${{ steps.action-plane.outcome }}
+        run: |
+          set -euo pipefail
+          committed="$(python3 -c 'import json; print(json.load(open("examples/plane_nofix/verdict.json"))["badge"])')"
+          echo "[ci] action: outcome=$OUTCOME exit-code=$CODE badge='$BADGE' | committed badge='$committed'"
+          [ "$OUTCOME" = "failure" ] && [ "$CODE" = "1" ] && [ "$BADGE" = "$committed" ]
+
+      - name: Re-fetch the three pinned public logs by sha256 and diff the committed verdicts (results, badge, exit, badge.svg)
+        if: always()
+        run: |
+          set -euo pipefail
+          # THE DENOMINATOR FIRST (ADR-013 am. 16's rule): design §8 / ADR-023 D7 pin exactly THREE public logs.
+          # A missing example dir is a verdict nobody re-checks; a fourth is a reviewed change to this line.
+          shopt -s nullglob
+          sources=(examples/*/SOURCE.json)
+          echo "[ci] committed gate examples matched: ${#sources[@]}"
+          if [ "${#sources[@]}" -ne 3 ]; then
+            echo "[ci] FAIL: expected exactly 3 examples/*/SOURCE.json (the pinned public logs), found ${#sources[@]}." >&2
+            echo "     This gate may not score green while reproducing fewer verdicts than are committed." >&2
+            exit 1
+          fi
+          # Fresh temp dir, `curl -fL` (-f: an HTTP error is a failure, never an HTML page saved as a "log").
+          # The sha256 check, the tool run and the diff are scripts/check_gates_examples.py's, which prints each.
+          fetched="$(mktemp -d)"
+          for src in "${sources[@]}"; do
+            name="$(basename "$(dirname "$src")")"
+            url="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["url"])' "$src")"
+            echo "[ci] fetching $name <- $url"
+            curl -fsSL --retry 3 --retry-delay 5 -o "$fetched/$name.bin" "$url"
+          done
+          python3 scripts/check_gates_examples.py --fetched "$fetched" "${sources[@]%/SOURCE.json}"
+
+  # ---------------------------------------------------------------------------
   # ACTIVE (2026-08-18, ADR-014). The docs site is a rendering layer over docs/*.md, but its build
   # is also the repo's only automated doc-integrity gate: it exits 1 on any broken intra-repo .md
   # link and on source-vs-rendered heading drift (both gates added by the adversarial pass, see
