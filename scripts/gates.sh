@@ -101,6 +101,7 @@ s_spike_clip()      { python3 sim/spike/gen_spike_clip.py --seed 42 --out sim/sp
 s_spike_harness()   { bash eval/run_spike.sh; }
 s_spike_regress()   { python3 scripts/check_spike_regression.py eval/results/spike_scores.json; }
 # gates-tool (ci.yml, ADR-023 am. 1) -- the 3.12 leg, on the host venv
+PYTHON_LEG="$(python -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')"; export PYTHON_LEG
 s_gates_install()   { pip_install -e '.[ardupilot]'; swathkeeper-gates --help > /dev/null; }
 s_gates_tests()     { python3 -m unittest discover -s tests -p 'test_gates_*.py' -v; }
 s_gates_examples() {
@@ -128,7 +129,7 @@ s_gates_examples() {
     echo "[ci] fetching $name <- $url"
     curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 -o "$fetched/$name/$base" "$url"
   done
-  python3 scripts/check_gates_examples.py --fetched "$fetched" "${sources[@]%/SOURCE.json}"
+  python3 scripts/check_gates_examples.py --fetched "$fetched" --python-leg "${PYTHON_LEG:-}" "${sources[@]%/SOURCE.json}"
 }
 # docs-site
 s_docs_deps()       { pip_install -r requirements-eval.txt; }

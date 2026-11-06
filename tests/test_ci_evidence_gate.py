@@ -33,6 +33,7 @@ Lives in tests/ (not tests/fieldguard_planning/) on purpose, like test_fly_pipel
 host-side artifact — the workflow file — not the planning package. stdlib unittest, so it runs under
 both `python3 -m pytest tests/test_ci_evidence_gate.py -q` and `python3 -m unittest`.
 """
+import datetime as _dt
 import hashlib
 import json
 import math
@@ -377,6 +378,7 @@ DESIGN_EXAMPLES = {
 }
 EXAMPLE_FILES = {"SOURCE.json", "bars.yaml", "bars.yaml.prereg.json", "verdict.json", "badge.svg"}   # nothing else (QA G280)
 EXCLUDED_LEAVES = {"tool.python", "tool.deps.PyYAML", "allowlist.run_date_utc"}                     # exactly these (QA G281)
+TODAY = _dt.datetime.now(_dt.timezone.utc).date()                                                     # the checker's run date
 
 
 def _canonical(obj) -> str:
@@ -440,8 +442,9 @@ def _sha(b: bytes) -> str:
 
 def _fake_verdict(log_sha, bars_sha, sidecar_sha, name="beta"):
     """Shaped like a real swathkeeper-verdict/1.0 where the checker looks: pins, prereg, results with every leaf."""
-    results = (("alt_floor", "PASS", 100, 1.5, "must", -10.0), ("speed_ceiling", "PASS", 50, 2.0, "should", 12.5),
-               ("no_errors", "EVIDENCE_INSUFFICIENT", 0, None, "should", 0))
+    results = (("alt_floor", "PASS", 100, 1.5, "must", "series_bound", {"channel": "position.alt_rel_home_m", "bound": "floor", "limit": -10.0}),
+               ("speed_ceiling", "PASS", 50, 2.0, "should", "series_bound", {"channel": "velocity.groundspeed_mps", "bound": "ceiling", "limit": 12.5}),
+               ("no_errors", "EVIDENCE_INSUFFICIENT", 0, None, "should", "no_events", {"kinds": ["error"]}))
     return {"schema": "swathkeeper-verdict/1.0", "contract": "swathkeeper-flightlog/1.0",
             "tool": {"version": "0.1.0", "python": "3.12.12", "deps": {"PyYAML": "6.0.3", "pymavlink": "2.4.50"}},
             "source": {"path": f"{name}.bin", "sha256": log_sha, "size_bytes": 1234},
@@ -450,9 +453,9 @@ def _fake_verdict(log_sha, bars_sha, sidecar_sha, name="beta"):
             "bars": {"path": "bars.yaml", "sha256": bars_sha, "schema": "swathkeeper-bars/1.0"},
             "prereg": {"status": "HASH_MATCH", "sidecar": "bars.yaml.prereg.json", "sidecar_sha256": sidecar_sha,
                        "bars_sha256": bars_sha, "bars_sha256_registered": bars_sha, "log_sha256_pinned": log_sha, "post_hoc": True},
-            "results": [{"id": i, "verdict": v, "n": n, "measured": m, "severity": sev, "bar": {"limit": lim}, "note": None}
-                        for i, v, n, m, sev, lim in results],
-            "allowlist": {"path": None, "run_date_utc": "2026-11-05", "declared": [], "undeclared": []},
+            "results": [{"id": i, "kind": k, "verdict": v, "n": n, "measured": m, "severity": sev, "bar": bar, "note": None}
+                        for i, v, n, m, sev, k, bar in results],
+            "allowlist": {"path": None, "run_date_utc": TODAY.isoformat(), "declared": [], "undeclared": []},
             "exit_code": 0, "badge": FAKE_BADGE, "refusal": None}
 
 
@@ -578,7 +581,11 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
                  ("the bars hash zeroed (G266)", set_(("bars", "sha256"), "0" * 64), ("bars.sha256",)),
                  ("a stream state moved (G266)", set_(("streams", "position", "state"), "ABSENT"), ("streams.position.state",)),
                  ("the fresh run refused", refusal, ("REFUSED",)),
-                 ("a null leaf went absent (G281)", lambda v: v["results"][2].pop("note"), ("results[2].note",)))
+                 ("a null leaf went absent (G281)", lambda v: v["results"][2].pop("note"), ("results[2].note",)),
+                 ("a PASS whose number contradicts its own bar (G284)", set_(("results", 0, "measured"), -20.0), ("CONTRADICTS", "alt_floor")),
+                 ("a FAIL whose number satisfies its bar (G284)", lambda v: v["results"][1].update(verdict="FAIL"), ("CONTRADICTS", "speed_ceiling")),
+                 ("the fresh run date is not today (G283)", set_(("allowlist", "run_date_utc"), (TODAY - _dt.timedelta(days=1)).isoformat()), ("allowlist.run_date_utc",)),
+                 ("a non-finite measured value", set_(("results", 0, "measured"), float("nan")), ("non-finite",)))
         for why, mutate, tokens in cases:
             with self.subTest(why=why):
                 proc, _ = self._with_fresh(mutate)
@@ -589,6 +596,16 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
                 self.assertIn("FAIL beta", out)
                 self.assertIn("2/3 examples reproduce", out,
                               msg="the other two must still be judged and counted: one red does not blind the rest")
+
+    def test_the_fresh_run_must_be_on_the_matrix_leg_the_job_declares(self):
+        """QA G283: ci.yml passes `PYTHON_LEG=${{ matrix.python-version }}`; the fresh tool.python must start with it."""
+        for leg, red in (("3.12", False), ("3.10", True), ("", False)):
+            with self.subTest(leg=leg), tempfile.TemporaryDirectory() as tmp:
+                env = _gates_tree(Path(tmp))
+                proc = _run_repro_step(Path(tmp), {**env, "PYTHON_LEG": leg})
+                self.assertEqual(proc.returncode != 0, red, msg=f"[leg={leg!r}]\n{proc.stdout}\n{proc.stderr}")
+                if red:
+                    self.assertIn("matrix leg", proc.stdout + proc.stderr)
 
     def test_the_process_exit_is_checked_not_only_the_json(self):
         """A CLI that printed the right JSON but exited 0 on a FAIL would pass the diff alone (QA G273)."""
@@ -630,6 +647,7 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
                                    ("url climbs out of the commit with .. (G279)", set_url(f"{pinned}/../main/logs/beta.bin"), "commit-pinned"),
                                    ("url carries a query string (G279)", set_url(f"{pinned}/logs/beta.bin?token=x"), "commit-pinned"),
                                    ("url carries a fragment (G279)", set_url(f"{pinned}/logs/beta.bin#x"), "commit-pinned"),
+                                   ("url owner spelt with a non-ASCII letter (G285)", set_url(f"https://raw.githubusercontent.com/ArduP\u00edlot/x/{'a' * 40}/logs/beta.bin"), "commit-pinned"),
                                    ("SOURCE.json with a duplicate key", lambda tmp: (tmp / "examples" / "beta" / "SOURCE.json").write_text(
                                        (tmp / "examples" / "beta" / "SOURCE.json").read_text().replace('{\n', '{\n "sha256": "' + 'c' * 64 + '",\n', 1)), "duplicate key")):
             with self.subTest(why=why), tempfile.TemporaryDirectory() as tmp:
@@ -662,12 +680,20 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
                  ("tool.python as free text (G278)", text('"python": "3.12.12"', '"python": "3.12.12 (independently certified safe)"'), ("tool.python", "free-text")),
                  ("tool.python deleted (G278)", text('  "python": "3.12.12",\n', ""), ("tool.python",)),
                  ("PyYAML as free text (G278)", text('"PyYAML": "6.0.3"', '"PyYAML": "any"'), ("tool.deps.PyYAML",)),
-                 ("hand formatting (two-space indent)", lambda t: json.dumps(json.loads(t), indent=2) + "\n", ("canonical",)))
+                 ("hand formatting (two-space indent)", lambda t: json.dumps(json.loads(t), indent=2) + "\n", ("canonical",)),
+                 ("CRLF line endings (G282)", lambda t: t.replace("\n", "\r\n"), ("canonical",)),
+                 ("a lone CR (G282)", lambda t: t.replace("\n", "\r", 1), ("canonical",)),
+                 ("a UTF-8 BOM", lambda t: "\ufeff" + t, ("BOM",)),
+                 ("tool.python below the floor (G283)", text('"python": "3.12.12"', '"python": "3.8.0"'), ("tool.python",)),
+                 ("tool.python off the matrix (G283)", text('"python": "3.12.12"', '"python": "3.11.9"'), ("tool.python",)),
+                 ("PyYAML below its pin (G283)", text('"PyYAML": "6.0.3"', '"PyYAML": "6.0"'), ("tool.deps.PyYAML", "outside the pin")),
+                 ("an impossible run date (G283)", text(f'"run_date_utc": "{TODAY.isoformat()}"', '"run_date_utc": "9999-99-99"'), ("allowlist.run_date_utc",)),
+                 ("a committed run date AFTER the fresh one (G283)", text(f'"run_date_utc": "{TODAY.isoformat()}"', f'"run_date_utc": "{(TODAY + _dt.timedelta(days=1)).isoformat()}"'), ("AFTER",)))
         for why, mutate, tokens in cases:
             with self.subTest(why=why), tempfile.TemporaryDirectory() as tmp:
                 env = _gates_tree(Path(tmp))
                 v = Path(tmp) / "examples" / "beta" / "verdict.json"
-                v.write_text(mutate(v.read_text()))
+                v.write_bytes(mutate(v.read_bytes().decode("utf-8")).encode("utf-8"))   # bytes: no newline translation
                 proc = _run_repro_step(Path(tmp), env)
                 self.assertNotEqual(proc.returncode, 0, msg=f"[{why}] stayed GREEN.\nstdout: {proc.stdout}")
                 out = proc.stdout + proc.stderr
@@ -684,6 +710,8 @@ class TestGatesReproductionStepIsArmed(unittest.TestCase):
             self.assertFalse(shape.match("3.12.12 (independently certified safe)"), leaf)
         self.assertTrue(C.EXCLUDED["tool.python"][1].match("3.10.21") and C.EXCLUDED["tool.deps.PyYAML"][1].match("6.0.3")
                         and C.EXCLUDED["allowlist.run_date_utc"][1].match("2026-11-06"))
+        for off in ("3.8.0", "3.11.9", "3.99.999", "3.13.0"):
+            self.assertFalse(C.EXCLUDED["tool.python"][1].match(off), msg=f"{off} is not a matrix leg (G283)")
 
     def test_a_wrong_sha256_is_a_hard_fail_and_the_tool_never_runs_on_those_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -787,7 +815,7 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
             self.assertEqual((source["sha256"], source["url"]), (sha, url),
                              msg=f"{name}: the pinned log or its url changed -- a reviewed diff, here and in ADR-023")
             for f in ("SOURCE.json", "bars.yaml.prereg.json", "verdict.json"):
-                t = (REPO_ROOT / "examples" / name / f).read_text()
+                t = (REPO_ROOT / "examples" / name / f).read_bytes().decode("utf-8")     # bytes: CRLF must not pass (G282)
                 self.assertEqual(t, _canonical(json.loads(t)), msg=f"examples/{name}/{f} is not in canonical form (QA G277)")
         self.assertEqual([p for p in _tracked("examples/") if p.lower().endswith((".bin", ".log", ".ulg"))], [],
                          msg="a third-party log is committed -- design §8's fixture rule forbids it (licence)")
@@ -811,6 +839,19 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
                 word = verdict["badge"].split("gates: ", 1)[1].split(" ·", 1)[0]
                 self.assertEqual(verdict["exit_code"], 0 if word == "pass" else 1, msg=f"{word!r} vs exit {verdict['exit_code']}")
                 self.assertEqual(source["size_bytes"], verdict["source"]["size_bytes"])
+
+    def test_the_numbers_adr_023_publishes_are_the_committed_ones(self):
+        """QA G284: a buggy tool committed WITH its regenerated verdicts reproduces byte for byte. The one thing outside
+        that loop is the record: ADR-023's published values (QA re-derived with raw pymavlink). Pinned here."""
+        published = {("tarot_x4", "alt_floor"): (0.0147, 4), ("tarot_x4", "speed_ceiling_loiter"): (2.421, 3),
+                     ("tarot_x4", "battery_floor"): (23.48, 2), ("tarot_x4", "ekf_vel_ceiling"): (0.11, 2),
+                     ("tarot_x4", "geofence"): (115.743, 3), ("tarot_x4", "no_errors"): (0, 0),
+                     ("plane_nofix", "gnss_quality"): (52.72, 2), ("pymavlink_test_bin", "battery_floor"): (12.39, 2)}
+        for (name, bar), (value, places) in published.items():
+            with self.subTest(example=name, bar=bar):
+                results = {r["id"]: r for r in json.loads((REPO_ROOT / "examples" / name / "verdict.json").read_text())["results"]}
+                self.assertEqual(round(results[bar]["measured"], places), value,
+                                 msg=f"{name}/{bar}: the committed measured value is not the one ADR-023 publishes")
 
     def test_the_readme_badge_is_the_tarot_verdict_verbatim_and_regenerates_byte_identical(self):
         verdict = json.loads((REPO_ROOT / "examples" / "tarot_x4" / "verdict.json").read_text())

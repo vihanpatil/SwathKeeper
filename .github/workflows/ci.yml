@@ -326,6 +326,8 @@ jobs:
 
       - name: Re-fetch the three pinned public logs by sha256 and diff the committed verdicts (every byte, badge, exit, badge.svg)
         if: always()
+        env:
+          PYTHON_LEG: ${{ matrix.python-version }}   # the fresh verdict's tool.python must be on this leg (QA G283)
         run: |
           set -euo pipefail
           # THE DENOMINATOR FIRST (ADR-013 am. 16's rule): design §8 / ADR-023 D7 pin exactly THREE public logs.
@@ -357,7 +359,7 @@ jobs:
             echo "[ci] fetching $name <- $url"
             curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 -o "$fetched/$name/$base" "$url"
           done
-          python3 scripts/check_gates_examples.py --fetched "$fetched" "${sources[@]%/SOURCE.json}"
+          python3 scripts/check_gates_examples.py --fetched "$fetched" --python-leg "${PYTHON_LEG:-}" "${sources[@]%/SOURCE.json}"
 
   # ---------------------------------------------------------------------------
   # ACTIVE (2026-08-18, ADR-014). The docs site is a rendering layer over docs/*.md, but its build

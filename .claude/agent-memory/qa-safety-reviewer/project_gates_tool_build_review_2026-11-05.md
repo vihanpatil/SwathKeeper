@@ -91,3 +91,17 @@ repo (rsync minus .venv/.git, `git init`) so `_tracked` works; remote-use simula
   by a non-measured key, committed-extra-leaf, ABSENT==None, short-sha url, stale-refuse line, badge flatten, `"` escape,
   demo --proto-redir); 3 round-1 survivors are equivalent (size-only, fresh-prereg, zero-examples).
 **Lesson:** a projection gate fixed to a full leaf diff still trusts the parser; the cheapest complete gate is BYTES.
+
+## Round 5 — sign-off pass on 53228e1 (2026-11-05) — G282-G286; G277-G281 CLOSED
+- All 17 + 16 + url mutants red on the checker except extra-file (caught by the G280 tree test). The byte gate holds
+  against dup keys, smuggled keys, types, empty containers, BOM, upper-hex.
+- G282 MINOR: "byte-identical" is really text-identical. `Path.read_text()` uses universal newlines, so CRLF and lone-CR
+  verdict files pass the checker AND the tree test. Fix: read_bytes().decode("utf-8").
+- G283 MINOR: the shapes accept python 3.8.0 / 3.99.999, PyYAML 6.0 (below the >=6.0.3 pin), date 9999-99-99.
+  Want: ^3\.(10|12)\.\d+$, a fresh value that matches the matrix leg, a PEP 440 check against the range, a real date.
+- G284 MINOR (the residual by design, now reproduced): a tool bug committed together with regenerated verdicts is
+  green. I halved every `measured` in an installed scratch copy and regenerated -> 3/3 rc 0, and Tarot B3 then reads
+  PASS with min 11.74 V under an 18.6 V floor. Cheap fixes: a semantic check (PASS => measured on the right side of the
+  limit) and a tree test pinning ADR-023's published values.
+- NOTE: the checker alone accepts any owner and Unicode `\w` homoglyphs; only the tree test's exact url pin catches them.
+**Method:** qa7/tools/{mut3.py, treemut.py, wrongtool.py}. mut.run now builds fetched/<name>/<url basename>.

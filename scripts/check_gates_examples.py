@@ -40,6 +40,7 @@ nothing from `fieldguard_planning` (ADR-023: the two packages never meet).
 """
 import argparse
 import copy
+import datetime as dt
 import hashlib
 import json
 import re
@@ -55,15 +56,56 @@ from render_gates_badge import render_svg  # noqa: E402
 
 TAG = "[gates-examples]"
 BADGE_LABELS = {"tarot_x4": "tarot_x4 · public log"}   # the README badge; other examples carry no SVG today
-PINNED_URL = re.compile(r"^https://raw\.githubusercontent\.com/[\w.-]+/[\w.-]+/[0-9a-f]{40}/[^?#]+$")
+PINNED_URL = re.compile(r"^https://raw\.githubusercontent\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[0-9a-f]{40}/[^?#]+$")  # ASCII owner/repo (G285)
 # leaf -> (why it may differ, the shape BOTH values must still have). Printed on every run, never diffed; a value
-# that is absent or off-shape is a FAIL (QA G278: an excluded leaf is not a free-text slot).
+# that is absent or off-shape is a FAIL (QA G278: an excluded leaf is not a free-text slot; G283: the shape is the
+# contract's own -- a matrix leg, the PyYAML pin, a real date that is today).
 EXCLUDED = {
-    "tool.python": ("the interpreter -- the job runs 3.10 and 3.12", re.compile(r"^3\.\d{1,2}\.\d{1,3}$")),
-    "tool.deps.PyYAML": ("a range pin >=6.0.3,<7, not an instrument (design §1)", re.compile(r"^6\.\d+(\.\d+)?$")),
+    "tool.python": ("the interpreter -- the job runs 3.10 and 3.12", re.compile(r"^3\.(10|12)\.\d{1,3}$")),
+    "tool.deps.PyYAML": ("a range pin >=6.0.3,<7, not an instrument (design §1)", re.compile(r"^6\.\d{1,3}(\.\d{1,3})?$")),
     "allowlist.run_date_utc": ("today", re.compile(r"^\d{4}-\d{2}-\d{2}$")),
 }
 ABSENT = object()
+# What a verdict word must mean for each kind's `measured` (the tool's own semantics, bars.py): a PASS whose number
+# sits on the wrong side of its own bar is a self-contradicting result -- the one artifact a byte-identical
+# reproduction cannot see, a buggy tool committed together with its regenerated verdicts (QA G284).
+def _consistent(kind, bar, measured):
+    """-> True iff `measured` satisfies the bar (PASS-side); False iff it violates it; None if not judgeable here."""
+    if not isinstance(measured, (int, float)) or isinstance(measured, bool):
+        return None
+    if kind == "series_bound":
+        if bar.get("bound") == "floor":
+            return measured >= bar["limit"]
+        if bar.get("bound") == "ceiling":
+            return measured <= bar["limit"]
+        return None
+    if kind == "gnss_quality":
+        return measured <= bar.get("max_outage_s", 0)
+    if kind == "containment":
+        return measured >= 0
+    if kind in ("mode_transitions", "no_events"):
+        return measured == 0
+    return None
+
+
+def excluded_ok(key, cv, fv, python_leg, today):
+    """The extra meaning each excluded leaf carries beyond its regex (G283). -> None if fine, else the reason."""
+    if key == "tool.python" and python_leg and not fv.startswith(python_leg + "."):
+        return f"the fresh run reports python {fv!r} but this job's matrix leg is {python_leg!r}"
+    if key == "tool.deps.PyYAML":
+        for v in (cv, fv):
+            if not (6, 0, 3) <= tuple(int(x) for x in v.split(".")) < (7,):
+                return f"PyYAML {v!r} is outside the pin >=6.0.3,<7"
+    if key == "allowlist.run_date_utc":
+        try:
+            c, f = dt.date.fromisoformat(cv), dt.date.fromisoformat(fv)
+        except ValueError as e:
+            return f"not a date: {e}"
+        if not c <= f:
+            return f"the committed run date {cv} is AFTER the fresh one {fv}"
+        if f != today:
+            return f"the fresh run date {fv} is not today ({today.isoformat()} UTC)"
+    return None
 
 
 def url_is_pinned(url) -> bool:
@@ -90,8 +132,9 @@ def canonical(obj) -> str:
 
 
 def load_canonical(path: Path):
-    """(text, object) of a committed JSON file that refuses duplicate keys and must be in canonical form, or raise."""
-    text = path.read_text()
+    """(text, object) of a committed JSON file that refuses duplicate keys and must be in canonical form, or raise.
+    Read as BYTES and decoded: `read_text()` would translate CRLF / CR to LF and make "byte-identical" a lie (G282)."""
+    text = path.read_bytes().decode("utf-8")
     obj = json.loads(text, object_pairs_hook=_unique)
     if text != canonical(obj):
         raise ValueError(f"{path.name} is not in canonical form (json.dumps indent=1 + newline): re-serialise it, do not hand-edit")
@@ -156,7 +199,7 @@ def _result_id(verdict, path):
     return ""
 
 
-def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
+def check_example(example: Path, fetched_dir: Path, tool: str, log, python_leg="") -> bool:
     """One example directory. Prints every finding under `name:`; returns True iff it reproduces."""
     name = example.name
     ok = True
@@ -245,22 +288,37 @@ def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
     if rc != committed.get("exit_code"):
         fail(f"the PROCESS exited {rc} but the committed verdict says exit_code {committed.get('exit_code')} "
              f"(the CLI's exit is part of the contract, not only the JSON)")
+    for r in fresh.get("results") or []:
+        if r.get("verdict") in ("PASS", "FAIL"):
+            ok_side = _consistent(r.get("kind"), r.get("bar") or {}, r.get("measured"))
+            if ok_side is not None and ok_side != (r["verdict"] == "PASS"):
+                fail(f"result {r.get('id')!r} ({r.get('kind')}) reads {r['verdict']} with measured={r.get('measured')!r} against "
+                     f"bar {r.get('bar')}: the number CONTRADICTS the word -- a tool bug committed with its own verdicts (QA G284)")
 
     # 5. the whole verdict: leaf by leaf (to NAME a drift), then byte for byte (so nothing hides between the leaves)
     a, b = dict(leaves(committed)), dict(leaves(fresh))
     as_committed = copy.deepcopy(fresh)
+    today = dt.datetime.now(dt.timezone.utc).date()
     for k, (why, shape) in EXCLUDED.items():
         cv, fv = a.get(k, ABSENT), b.get(k, ABSENT)
         if not all(isinstance(v, str) and shape.match(v) for v in (cv, fv)):
             fail(f"{k}: committed {_val(cv)} / fresh {_val(fv)} -- an excluded leaf must be present on both sides and "
                  f"match {shape.pattern!r}; it is not a free-text slot")
             continue
+        reason = excluded_ok(k, cv, fv, python_leg, today)
+        if reason:
+            fail(f"{k}: committed {_val(cv)} / fresh {_val(fv)} -- {reason}")
+            continue
         set_leaf(as_committed, k, cv)
         log(f"{TAG} {name}: not diffed -- {k} committed {_val(cv)} / fresh {_val(fv)} ({why})")
     diffs = leaf_diff(committed, fresh)
     for path, cv, fv in diffs:
         fail(f"{path}{_result_id(committed, path)}: committed {_val(cv)} -> fresh {_val(fv)}")
-    want = canonical(as_committed)
+    try:
+        want = canonical(as_committed)
+    except ValueError as e:
+        fail(f"the fresh verdict cannot be serialised canonically (a non-finite number?): {e}")
+        return False
     if committed_text != want:
         cl, wl = committed_text.splitlines(), want.splitlines()
         i = next((i for i in range(max(len(cl), len(wl))) if i >= len(cl) or i >= len(wl) or cl[i] != wl[i]), None)
@@ -290,8 +348,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--fetched", required=True, help="directory holding <name>.bin for each example, fetched by the caller")
     ap.add_argument("examples", nargs="*", help="example directories (each with SOURCE.json, bars.yaml, its sidecar, verdict.json)")
+    ap.add_argument("--python-leg", default="", help="the CI matrix leg, e.g. 3.10: the fresh verdict's tool.python must be on it")
     a = ap.parse_args(argv)
     log = print
+    if a.python_leg:
+        log(f"{TAG} matrix leg {a.python_leg}: the fresh tool.python must start with it")
     examples = [Path(e.rstrip("/")) for e in a.examples]
     log(f"{TAG} committed example dirs: {len(examples)}")
     if not examples:
@@ -317,7 +378,7 @@ def main(argv=None) -> int:
     if dupes:
         log(f"{TAG} FAIL: the same pinned log sha256 under more than one example dir: {dupes}", file=sys.stderr)
         return 1
-    results = {e.name: check_example(e, fetched, tool, log) for e in examples}
+    results = {e.name: check_example(e, fetched, tool, log, a.python_leg) for e in examples}
     good = sum(results.values())
     if good == len(results):
         log(f"{TAG} {good}/{len(results)} examples reproduce their committed verdict, every byte. exit 0")
