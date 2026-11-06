@@ -6,7 +6,7 @@ Every bug QA finds (missed detection, silently-skipped coverage cell, geofence b
 
 ## How to run (all three work, from repo root)
 
-This file is the **one home** for the suite totals. Measured on the verified host **2026-09-11** —
+This file is the **one home** for the suite totals. Measured on the verified host **2026-11-05** —
 re-run all three commands and re-quote **every** quoter if you change any of them. The quoters, so
 a re-quote can be complete rather than partial: `README.md` (evidence table) and `SETUP.md` §(b)
 *(`docs/drafts/README_FULL.md` was a fourth quoter until it was deleted on 2026-09-10). They all
@@ -16,11 +16,11 @@ of one measured invariant with nothing that failed when they disagreed; since 20
 
 ```bash
 python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1450, OK (skipped=1) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 346 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1794 passed, 1 FAILED, 1 skipped, 0 xfail
+python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 401 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1849 passed, 1 FAILED, 1 skipped, 0 xfail
 ```
 
-**The consistency check that matters:** 1450 + 346 = 1796 = 1794 + 1 + 1. If those two sides
+**The consistency check that matters:** 1450 + 401 = 1851 = 1849 + 1 + 1. If those two sides
 disagree, a file is invisible to one of the runners — which has happened before and is exactly what
 the second, separate CI job exists to prevent.
 

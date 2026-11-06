@@ -1,6 +1,7 @@
 # The evidence-gate tool: design note (it becomes an ADR once built and scored)
 
-**Status: DESIGN. Nothing is built and nothing has been scored.** Option C, step 1 (ADR-022 amendment 4;
+**Status: BUILT 2026-11-05 and SCORED on three public logs — see ADR-023.** This body is unchanged and stays the
+pre-registration the build was scored against; every deviation and QA amendment is recorded in ADR-023, not here. Option C, step 1 (ADR-022 amendment 4;
 `docs/ROADMAP.md` *Next up*). The build is scored against this note, the same way ADR-021 was scored
 against [`DEPTH_SEGMENTER_DESIGN.md`](DEPTH_SEGMENTER_DESIGN.md). Every number here is either measured
 (with how and when) or labelled a budget. **Owner:** lead (design) → software-engineer (steps 2-5) →

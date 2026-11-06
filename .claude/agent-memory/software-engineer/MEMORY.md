@@ -14,6 +14,7 @@ Consolidated 2026-11-05 from flight-software-engineer, perception-ml-engineer (t
 - [Forward depth camera + its booking gate](forward_depth_booking_gate.md) — /fg/depth/*, the 47.56 m corner horizon, the six-number live CLI, the ONE corner-ray primitive, band 13.05 m, sweeps authorise nothing
 - [Booking ↔ flown speed (G128/G135/G137/G138)](booking_speed_enforcement.md) — the param is `WP_SPD` in m/s (sourced), TWO gated medians because the mission median hides the encounter (3.417 vs 9.012 on 08-25)
 - [Extractability audit](extractability_audit.md) — what leaves the sim intact, no-packaging/REPO_ROOT costs, the two rival "covered" definitions + the 6.92 vs 7.5 m swath error, ecosystem form facts
+- [Gates tool build (option C step 2)](gates_tool_build.md) — DFReader facts the adapter relies on, C-level parser spam, exact byte-skip holes, QA's named-FAIL kill rule
 - [Direction reset 2026-09-10](project_direction_20260910.md) — portfolio first, then 10 method conversations; wire program CUT, deletion aggressive, no new gate without retiring one
 
 ## From perception-ml-engineer

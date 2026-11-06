@@ -6,6 +6,36 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-11-05 — the evidence-gate tool: step 2 built and scored
+
+Option C's first code (ADR-022 am. 4), written against the pre-registered design note and recorded as **ADR-023**.
+`src/swathkeeper_gates/` is a pip package of its own, `swathkeeper-gates`. It reads an ArduPilot DataFlash `.bin` into a
+versioned contract, judges YAML bars whose hash is committed before the run, and writes a JSON verdict plus an exit code.
+"Could not tell" is a fourth word, never a green. On three public logs nobody on this team flew: a real Tarot X4 reads
+**`pass · 8/8 measured (post-hoc)`**, exit 0; an ArduPlane log with no GNSS fix reads **`fail · 1/5`**, exit 1, its
+one FAIL being 263 of 263 GPS rows without a fix; pymavlink's own `test.BIN` reads **`could not tell · 3/6`**, exit 1.
+QA re-derived seven of the Tarot's eight numbers with raw pymavlink, and all seven agree to 3 dp.
+
+The interesting part is what review found. QA's first round (G228–G254) had five BLOCKERs, each a green a stranger
+would have published. Adjacent scope windows split segments and runs. A byte skip under one second was invisible:
+zeroing a single MODE row left the Tarot at `pass`. A GPS with no fix and an EKF with no solution were judged as
+values, so a no-fix speed ceiling read `pass`. B7 was blind to holes after its last row. A fence across the
+antimeridian passed a track 300 m outside it. The second round (G255–G265) found a false PASS at a GNSS run boundary
+on shared timestamps, and a fully filtered instance vanishing into a greener verdict. All 38 findings were accepted
+and closed (the code fixes red-first; the rest by deletion or a copy fix). The build ends at 55 tests with zero skips, and 121 of 121 shadow-copy mutants
+were killed by the named assertion. Two firmware assumptions were settled by reading ArduPilot's source at
+Copter-4.5.5 rather than guessed: ARM rows are event-only, and ERR goes through a critical-block write. Zero ERR rows
+now read "no errors" only where that citation reaches (release V4.5.x, file backend). Everywhere else they read
+"could not tell".
+
+What it cost and what it did not do: **1,319** src lines against a 950 budget (QA judged the overrun load-bearing),
+**869** test lines. The PX4 adapter was **cut** from v0.1, along with an arming-inference note and one
+author-constructed Plane bar. tests:src reads **3.33**, under the 3.70 cap for the first time since 2026-09-11, but
+**by dilution**: over `fieldguard_planning` alone it is 3.97. Still open: a MODE row lost inside a counted-drop
+interval is invisible to the mode bars (G257, a v1.1 call), a truncated log reads as a shorter flight, and the CI
+line has not run. Next is step 5 (an Action, a badge and a CI job that re-fetches the three logs by sha256 and diffs
+the verdicts), then the ten posts. Uncommitted at the time of writing; it goes up as PR #39.
+
 ## 2026-09-10 — the audit, and the direction reset it bought
 
 An end-to-end read of the repo against its own artifacts — eight subsystem passes, three outside

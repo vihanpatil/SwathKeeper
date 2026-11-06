@@ -18,6 +18,8 @@ ArduPilot/PX4 teams about running pre-registered evidence gates on *their* logs,
 criterion **0 of 10 → strong portfolio, no product**; **(3) drone-as-product is DEFERRED** behind
 that answer (closing the control loop in sim, ≥20 seeded headless encounters clearing 3.00 m),
 hardware behind that. **The ADR-019 wire program is CUT** (am. 1). **NDVI is FROZEN** (ADR-019 §7).
+**Re-sequenced 2026-11-05 (ADR-022 am. 4): the owner ruled C — build the method as a tool, then ten public posts of it;
+step 2 was BUILT and SCORED 2026-11-05 (ADR-023: `src/swathkeeper_gates/`, three public logs, PX4 cut).**
 **Claims ceiling everywhere: "sim-demonstrated, evidence-gated."**
 
 **Naming (ADR-011):** renamed from FieldGuard on 2026-08-18; **code identifiers deliberately keep
@@ -118,6 +120,8 @@ ArduPilot's own documented/CI-tested stack; Docker on Ubuntu 22.04 (not supporte
 .claude/agents/     5 team subagents              docs/README.md      docs map: living/runbooks/history
 .claude/skills/     5 skills (TIGER_TEAM_GUIDE §1) docs/SPEC.md        system spec (living)
 src/                Python planning core           docs/ROADMAP.md     current truth + what's next
+src/swathkeeper_gates/ the evidence-gate tool (ADR-023; pip package `swathkeeper-gates`, never imported by the core)
+examples/           the tool's 3 scored public logs: SOURCE.json (url+sha256), bars, prereg sidecar, verdict.json
 sim/                Gazebo worlds & models         docs/DECISIONS.md   ADR / tradeoff log
 config/             field polygon, missions, birds docs/BUILD_LOG.md   chronological narrative
 scripts/            bringup / run / stitch helpers docs/runbooks/      operational Docker-session docs
@@ -142,5 +146,7 @@ Five subagents (`.claude/agents/`): `lead`, `software-engineer`, `platform-engin
 - **`docs/DECISIONS.md` amendments are ≤ 10 lines, and no new ADR ships without a cut.**
 - **tests:src is capped at 3.70:1** (ADR-022 am. 1; baseline 2026-09-10: `src/fieldguard_planning/*.py`
   6,771 vs `tests/**.{py,sh}` 25,049; the src side is `src/**/*.py` since ADR-022 am. 4, 2026-11-05).
-  **OVER THE CAP since 2026-09-11: 3.84** (6,854 vs 26,320 — R8 and the `--no-birds` round added tests, no src).
-  Every new test file retires one until it falls; the cap is not re-baselined.
+  **UNDER since 2026-11-05: 3.33** (27,189 / 8,173), **by dilution, not by retiring a test** — the new
+  `src/swathkeeper_gates/` joined the src side (ADR-023); over `src/fieldguard_planning/*.py` alone it is
+  27,189 / 6,854 = **3.97** (it was OVER at 3.84 from 2026-09-11). Every new test file still retires one while the
+  ratio is over the cap; the cap is not re-baselined.

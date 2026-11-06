@@ -36,4 +36,5 @@ Consolidated 2026-11-05 from exec-council, product-lead, tech-lead (team v2); en
 - [ADR-005 AP_DDS contract locked](project_adr005-apdds-contract.md) — /ap/* map locked to pinned SHA, CONFIRMED live 2026-08-05; the most extractable artifact in the repo
 - [ADR-006 avoidance executor](project_adr006-avoidance-executor.md) — AUTO->GUIDED->AUTO, our code owns the maneuver; CONFIRMED live; MIS_RESTART=0 still typed at flight time, not pinned
 - [ADR-007 NDVI render](project_adr007-ndvi-render.md) — Red=RGB cam, NIR=thermal sensor repurposed; gates green live 2026-08-18; the NIR band is authored, so this NDVI does not transfer to hardware
-- [Gates tool design 2026-11-05](project_gates-tool-design-2026-11-05.md) — C step 1; Rev 2 after QA G211-G227 (all accepted); limits from log PARM; demo may read "could not tell"; tests:src 3.43 by dilution
+- [ADR-023 gates tool BUILT 2026-11-05](project_adr023-gates-tool-built.md) — scored on 3 public logs; ERR citation reach ruling, G260 intersection rule, G257 open
+- [Gates tool design 2026-11-05](project_gates-tool-design-2026-11-05.md) — C step 1; Rev 2 after QA G211-G227 (all accepted); limits from log PARM; now the pre-registration of ADR-023
