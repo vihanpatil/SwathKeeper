@@ -161,7 +161,7 @@ as a tool feature. Scored on three public logs (`examples/*/verdict.json`). Unco
    stacked on #39 as **PR #40**): composite Action `.github/actions/swathkeeper-gates/` (outputs `exit-code` / `badge` / `verdict`, exits with the tool's
    own code, no softening — the ArduPlane log FAILING the step is asserted in CI); README badge `examples/tarot_x4/badge.svg`, re-rendered and
    diffed on every run; CI job `gates-tool` on **py3.10 + py3.12** fetches the three `examples/*/SOURCE.json` logs by sha256 into a fresh temp
-   dir and diffs the **whole verdict, leaf by leaf** (QA G266 widened the pre-registered `{verdict,n}` diff) against each committed verdict — all three reproduce on both interpreters, so
+   dir and requires each committed verdict to be **byte-identical to the canonical serialisation of the fresh run** (QA G266/G277 widened the pre-registered `{verdict,n}` diff; three environment leaves shape-checked) — all three reproduce on both interpreters, so
    `requires-python>=3.10` (the floor is test-pinned to the lowest matrix leg). **STILL OWED — flagged for lead + owner before step 6, NOT
    decided here:** ADR-023's G257 v1.1 call (a Dp rise as a hole — measured cost: Tarot B7 EI → the badge flips to `could not tell`).
 6. **The ten posts** — drafted by `narrative-lead`, QA-checked, posted by the owner (minutes each), the same 11 public channels in

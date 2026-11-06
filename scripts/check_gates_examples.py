@@ -3,9 +3,10 @@
 
     python3 scripts/check_gates_examples.py --fetched "$dir" examples/tarot_x4 examples/plane_nofix ...
 
-`$dir/<name>.bin` is the log that ci.yml's `gates-tool` job just fetched with `curl -fL` from
-`examples/<name>/SOURCE.json`'s url into a fresh temp dir (this script NEVER fetches; design §8: no third-party
-log is committed, and a unit test never downloads). For each example directory, in this order, every step printed:
+`$dir/<name>/<basename>` is the log that ci.yml's `gates-tool` job just fetched with `curl -fL` from
+`examples/<name>/SOURCE.json`'s url into a fresh temp dir, saved under the url's own unquoted basename so the
+verdict's `source.path` diffs like every other leaf (this script NEVER fetches; design §8: no third-party log
+is committed, and a unit test never downloads). For each example directory, in this order, every step printed:
 
   1. SOURCE.json's url must be a commit-pinned https://raw.githubusercontent.com/<owner>/<repo>/<40-hex sha>/ path
      (a branch, a short sha or another host is a FAIL: the pin is the fixture), and across the examples the pinned
@@ -19,12 +20,17 @@ log is committed, and a unit test never downloads). For each example directory, 
   4. `swathkeeper-gates run` (the console script on PATH, as a stranger would run it) judges the fetched log
      against the committed bars.yaml, its exit code captured as a VALUE (1 is the correct verdict on two of the
      three logs); a refusal is a FAIL, and the fresh verdict must read prereg HASH_MATCH, post_hoc, `(post-hoc)`;
-  5. the WHOLE fresh verdict is diffed, leaf by leaf, against the committed verdict.json -- every result's
-     verdict, n AND measured value, every bar limit, the integrity block, the streams map, the badge, the exit
-     code (QA G266: the pre-registered `results[*].{verdict,n}` diff let 337 of 363 Tarot leaves drift unseen).
-     Exactly four leaves are EXCLUDED and printed instead, because they differ by construction between the
-     committing host and a CI leg: `source.path` (the fetched basename), `tool.python` (3.10 and 3.12 both
-     run), `tool.deps.PyYAML` (a range pin, not an instrument -- design §1) and `allowlist.run_date_utc`;
+  5. the committed verdict.json must be BYTE-IDENTICAL to the canonical serialisation (`json.dumps(indent=1)`
+     + newline, the tool's own) of the fresh run -- every result's verdict, n and measured value, every bar
+     limit, the integrity block, the streams map, the badge, the exit code (QA G266: the pre-registered
+     `results[*].{verdict,n}` diff let 337 of 363 Tarot leaves drift unseen), and the FILE itself: a duplicate
+     key, a smuggled path-shaped key, `1418.0` for `1418`, `false` for `0`, a deleted empty container all
+     survive a parsed-JSON comparison and none survives bytes (QA G277). A leaf-by-leaf diff is printed first
+     so a drift is named. Exactly three leaves are EXCLUDED, because they differ by construction between the
+     committing host and a CI leg, and each must still be PRESENT on both sides and match a fixed shape:
+     `tool.python` (3.10 and 3.12 both run), `tool.deps.PyYAML` (a range pin, not an instrument -- design §1)
+     and `allowlist.run_date_utc`. SOURCE.json and the sidecar are read refusing duplicate keys, and all three
+     committed JSON files must be in canonical form;
   6. if `badge.svg` is committed beside the verdict, a fresh render of the FRESH badge must equal it byte for byte.
 
 Denominator first: the number of example directories is printed and zero is a FAIL. Exit 0 iff every example
@@ -33,9 +39,11 @@ It imports nothing from `swathkeeper_gates` (the tool is exercised through its C
 nothing from `fieldguard_planning` (ADR-023: the two packages never meet).
 """
 import argparse
+import copy
 import hashlib
 import json
 import re
+import urllib.parse
 import shutil
 import subprocess
 import sys
@@ -47,14 +55,55 @@ from render_gates_badge import render_svg  # noqa: E402
 
 TAG = "[gates-examples]"
 BADGE_LABELS = {"tarot_x4": "tarot_x4 · public log"}   # the README badge; other examples carry no SVG today
-PINNED_URL = re.compile(r"^https://raw\.githubusercontent\.com/[\w.-]+/[\w.-]+/[0-9a-f]{40}/.+")
-EXCLUDED = {                      # leaf -> why it may differ (printed on every run, never diffed)
-    "source.path": "the fetched file's basename",
-    "tool.python": "the interpreter -- the job runs 3.10 and 3.12",
-    "tool.deps.PyYAML": "a range pin, not an instrument (design §1)",
-    "allowlist.run_date_utc": "today",
+PINNED_URL = re.compile(r"^https://raw\.githubusercontent\.com/[\w.-]+/[\w.-]+/[0-9a-f]{40}/[^?#]+$")
+# leaf -> (why it may differ, the shape BOTH values must still have). Printed on every run, never diffed; a value
+# that is absent or off-shape is a FAIL (QA G278: an excluded leaf is not a free-text slot).
+EXCLUDED = {
+    "tool.python": ("the interpreter -- the job runs 3.10 and 3.12", re.compile(r"^3\.\d{1,2}\.\d{1,3}$")),
+    "tool.deps.PyYAML": ("a range pin >=6.0.3,<7, not an instrument (design §1)", re.compile(r"^6\.\d+(\.\d+)?$")),
+    "allowlist.run_date_utc": ("today", re.compile(r"^\d{4}-\d{2}-\d{2}$")),
 }
 ABSENT = object()
+
+
+def url_is_pinned(url) -> bool:
+    """A commit-pinned https raw.githubusercontent.com path: no `..`/`%2e` (curl normalises `<sha>/../main/x` to a
+    branch path, QA G279), no query, no fragment, no empty segment."""
+    return (isinstance(url, str) and bool(PINNED_URL.match(url)) and ".." not in url and "%2e" not in url.lower()
+            and "//" not in url[len("https://"):])
+
+
+def url_basename(url: str) -> str:
+    return urllib.parse.unquote(url.rsplit("/", 1)[-1])
+
+
+def _unique(pairs):
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise ValueError(f"duplicate key in {sorted(k for k in keys if keys.count(k) > 1)}")
+    return dict(pairs)
+
+
+def canonical(obj) -> str:
+    """The tool's own serialisation (swathkeeper_gates.verdict.dumps): indent 1, ASCII, no NaN, one trailing newline."""
+    return json.dumps(obj, indent=1, allow_nan=False) + "\n"
+
+
+def load_canonical(path: Path):
+    """(text, object) of a committed JSON file that refuses duplicate keys and must be in canonical form, or raise."""
+    text = path.read_text()
+    obj = json.loads(text, object_pairs_hook=_unique)
+    if text != canonical(obj):
+        raise ValueError(f"{path.name} is not in canonical form (json.dumps indent=1 + newline): re-serialise it, do not hand-edit")
+    return text, obj
+
+
+def set_leaf(obj, dotted: str, value):
+    cur = obj
+    *parents, last = dotted.split(".")
+    for k in parents:
+        cur = cur[k]
+    cur[last] = value
 
 
 def sha256_of(path: Path) -> str:
@@ -70,11 +119,16 @@ def short(sha) -> str:
 
 
 def leaves(obj, prefix=""):
-    """Every scalar in a JSON document as (dotted path, value); list items as [i]."""
+    """Every scalar in a JSON document as (dotted path, value); list items as [i]. An EMPTY container is a leaf too
+    (`<[]>` / `<{}>`), so a dropped `holes: []` or a `[]` turned `{}` is named, not just caught by the bytes."""
     if isinstance(obj, dict):
+        if not obj:
+            yield prefix, "<{}>"
         for k, v in obj.items():
             yield from leaves(v, f"{prefix}.{k}" if prefix else str(k))
     elif isinstance(obj, list):
+        if not obj:
+            yield prefix, "<[]>"
         for i, v in enumerate(obj):
             yield from leaves(v, f"{prefix}[{i}]")
     else:
@@ -113,10 +167,10 @@ def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
         log(f"{TAG} FAIL {name}: {msg}")
 
     try:
-        source = json.loads((example / "SOURCE.json").read_text())
+        _, source = load_canonical(example / "SOURCE.json")
         sidecar_bytes = (example / "bars.yaml.prereg.json").read_bytes()
-        sidecar = json.loads(sidecar_bytes)
-        committed = json.loads((example / "verdict.json").read_text())
+        _, sidecar = load_canonical(example / "bars.yaml.prereg.json")
+        committed_text, committed = load_canonical(example / "verdict.json")
         bars_bytes = (example / "bars.yaml").read_bytes()
     except (OSError, ValueError) as e:
         fail(f"cannot read the committed example: {e}")
@@ -124,15 +178,18 @@ def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
 
     # 1. the pin itself
     url = source.get("url")
-    if not isinstance(url, str) or not PINNED_URL.match(url):
-        fail(f"SOURCE.json url is not a commit-pinned raw.githubusercontent.com path (40-hex sha, https): {url!r}")
+    if not url_is_pinned(url):
+        fail(f"SOURCE.json url is not a commit-pinned raw.githubusercontent.com path (40-hex sha, https, no .., ?, #): {url!r}")
         return False
 
-    # 2. the fetched bytes
-    fetched = fetched_dir / f"{name}.bin"
-    if not fetched.is_file():
-        fail(f"no fetched log at {fetched} (the fetch step did not deliver this example's bytes)")
+    # 2. the fetched bytes: one file, under the url's own basename, in this example's sub-dir
+    sub = fetched_dir / name
+    files = sorted(p for p in sub.iterdir() if p.is_file()) if sub.is_dir() else []
+    if len(files) != 1 or files[0].name != url_basename(url):
+        fail(f"expected exactly one fetched file named {url_basename(url)!r} under {sub}, found {[p.name for p in files]} "
+             f"(the fetch step did not deliver this example's bytes as the step promises)")
         return False
+    fetched = files[0]
     got, size = sha256_of(fetched), fetched.stat().st_size
     if got != source.get("sha256") or size != source.get("size_bytes"):
         fail(f"fetched bytes do NOT match SOURCE.json -- sha256 fetched {got} ({size} B) vs pinned "
@@ -189,16 +246,32 @@ def check_example(example: Path, fetched_dir: Path, tool: str, log) -> bool:
         fail(f"the PROCESS exited {rc} but the committed verdict says exit_code {committed.get('exit_code')} "
              f"(the CLI's exit is part of the contract, not only the JSON)")
 
-    # 5. the whole verdict, leaf by leaf
+    # 5. the whole verdict: leaf by leaf (to NAME a drift), then byte for byte (so nothing hides between the leaves)
     a, b = dict(leaves(committed)), dict(leaves(fresh))
-    for k, why in EXCLUDED.items():
-        log(f"{TAG} {name}: not diffed -- {k} committed {_val(a.get(k, ABSENT))} / fresh {_val(b.get(k, ABSENT))} ({why})")
+    as_committed = copy.deepcopy(fresh)
+    for k, (why, shape) in EXCLUDED.items():
+        cv, fv = a.get(k, ABSENT), b.get(k, ABSENT)
+        if not all(isinstance(v, str) and shape.match(v) for v in (cv, fv)):
+            fail(f"{k}: committed {_val(cv)} / fresh {_val(fv)} -- an excluded leaf must be present on both sides and "
+                 f"match {shape.pattern!r}; it is not a free-text slot")
+            continue
+        set_leaf(as_committed, k, cv)
+        log(f"{TAG} {name}: not diffed -- {k} committed {_val(cv)} / fresh {_val(fv)} ({why})")
     diffs = leaf_diff(committed, fresh)
     for path, cv, fv in diffs:
         fail(f"{path}{_result_id(committed, path)}: committed {_val(cv)} -> fresh {_val(fv)}")
-    if not diffs:
+    want = canonical(as_committed)
+    if committed_text != want:
+        cl, wl = committed_text.splitlines(), want.splitlines()
+        i = next((i for i in range(max(len(cl), len(wl))) if i >= len(cl) or i >= len(wl) or cl[i] != wl[i]), None)
+        fail(f"verdict.json is NOT byte-identical to the canonical serialisation of the fresh run"
+             + ("" if diffs else " although every parsed leaf agrees: a duplicate key, a smuggled path-shaped key, a float "
+                "for an int, false for 0, or a dropped empty container (QA G277)")
+             + f" -- first difference at line {i + 1}: committed {cl[i] if i < len(cl) else '<end>'!r} vs fresh "
+               f"{wl[i] if i < len(wl) else '<end>'!r}")
+    elif not diffs:
         results = committed.get("results") or []
-        log(f"{TAG} {name}: {len(a)} leaves identical ({len(EXCLUDED)} excluded) -- "
+        log(f"{TAG} {name}: {len(committed_text.encode())} bytes / {len(a)} leaves identical ({len(EXCLUDED)} excluded, shape-checked) -- "
             + ", ".join(f"{r.get('id')} {r.get('verdict')} n={r.get('n')} measured={r.get('measured')}" for r in results))
 
     # 6. the committed badge, if any
@@ -236,7 +309,7 @@ def main(argv=None) -> int:
     shas = {}
     for e in examples:
         try:
-            shas.setdefault(json.loads((e / "SOURCE.json").read_text()).get("sha256"), []).append(e.name)
+            shas.setdefault(load_canonical(e / "SOURCE.json")[1].get("sha256"), []).append(e.name)
         except (OSError, ValueError) as err:
             log(f"{TAG} FAIL {e.name}: cannot read SOURCE.json: {err}", file=sys.stderr)
             return 1
@@ -247,7 +320,7 @@ def main(argv=None) -> int:
     results = {e.name: check_example(e, fetched, tool, log) for e in examples}
     good = sum(results.values())
     if good == len(results):
-        log(f"{TAG} {good}/{len(results)} examples reproduce their committed verdict, every leaf. exit 0")
+        log(f"{TAG} {good}/{len(results)} examples reproduce their committed verdict, every byte. exit 0")
         return 0
     log(f"{TAG} {good}/{len(results)} examples reproduce; FAILED: {[n for n, r in results.items() if not r]}. exit 1", file=sys.stderr)
     return 1

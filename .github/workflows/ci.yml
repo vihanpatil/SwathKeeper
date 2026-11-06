@@ -229,17 +229,18 @@ jobs:
   #   3. the reproduction gate: every examples/*/SOURCE.json's log is fetched with `curl -fL` into a fresh temp
   #      dir, its sha256 and size checked against the pin (mismatch = hard FAIL, both hashes printed, the tool
   #      NOT run on those bytes), judged with the committed bars.yaml under its pinned sidecar (HASH_MATCH,
-  #      post-hoc), and the WHOLE fresh verdict diffed leaf by leaf against the committed verdict.json -- every
-  #      verdict, n and measured value, every bar limit, integrity, streams, badge, exit code; only four leaves
-  #      that differ by construction are excluded and printed (QA G266: the pre-registered {verdict,n} diff left
-  #      337 of 363 Tarot leaves unwatched). The Tarot badge.svg the README shows is re-rendered from the FRESH
-  #      verdict and diffed in the same pass.
+  #      post-hoc), and the committed verdict.json must be BYTE-IDENTICAL to the canonical serialisation of the
+  #      fresh run -- every verdict, n and measured value, every bar limit, integrity, streams, badge, exit code,
+  #      and the file itself; only three leaves that differ by construction are excluded, shape-checked and
+  #      printed (QA G266: the pre-registered {verdict,n} diff left 337 of 363 Tarot leaves unwatched; QA G277:
+  #      a parsed-JSON diff let duplicate keys and type tricks through). The Tarot badge.svg the README shows is
+  #      re-rendered from the FRESH verdict and diffed in the same pass.
   # No third-party log is ever committed (design §8); this job is the only place the real bytes are read.
   # A green job means the committed verdicts REPRODUCE on today's parser and interpreter. It does not mean any
   # vehicle is safe, and it says nothing about any log but the three pinned here.
   # `if: always()` from the first fallible step down, as in planning-and-eval: a red unit test must not hide a
   # red reproduction, or the reverse. tests/test_ci_evidence_gate.py runs the reproduction step's body against
-  # stubs (a wrong sha256, a slid verdict, a missing tool) to keep it armed, and runs the Action's run.sh.
+  # stubs (a wrong sha256, a slid verdict, a duplicate key, a missing tool) to keep it armed, and runs the Action's run.sh.
   # ---------------------------------------------------------------------------
   gates-tool:
     name: Gates tool (py${{ matrix.python-version }}) -- unit tests, the Action on a public log, three pinned verdicts re-fetched and diffed
@@ -323,7 +324,7 @@ jobs:
           echo "[ci] action: outcome=$OUTCOME exit-code=$CODE badge='$BADGE' | committed badge='$committed'"
           [ "$OUTCOME" = "failure" ] && [ "$CODE" = "1" ] && [ "$BADGE" = "$committed" ]
 
-      - name: Re-fetch the three pinned public logs by sha256 and diff the committed verdicts (every leaf, badge, exit, badge.svg)
+      - name: Re-fetch the three pinned public logs by sha256 and diff the committed verdicts (every byte, badge, exit, badge.svg)
         if: always()
         run: |
           set -euo pipefail
@@ -350,8 +351,11 @@ jobs:
           for src in "${sources[@]}"; do
             name="$(basename "$(dirname "$src")")"
             url="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["url"])' "$src")"
+            # saved under the url's own (unquoted) basename, so the verdict's source.path diffs like every other leaf
+            base="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(sys.argv[1].rsplit("/", 1)[-1]))' "$url")"
+            mkdir -p "$fetched/$name"
             echo "[ci] fetching $name <- $url"
-            curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 -o "$fetched/$name.bin" "$url"
+            curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 -o "$fetched/$name/$base" "$url"
           done
           python3 scripts/check_gates_examples.py --fetched "$fetched" "${sources[@]%/SOURCE.json}"
 

@@ -17,10 +17,12 @@ can be told otherwise; CI proves it by running the Action on the ArduPlane no-fi
 deterministic stdlib render that CI regenerates and diffs, so the README image cannot say something the verdict does not. And
 a CI job, `gates-tool`, fetches all three `examples/*/SOURCE.json` logs with `curl -fL` into a fresh temp dir, hard-fails on any
 sha256 or size mismatch with both hashes printed and the tool un-run, judges each with its committed bars under the pinned
-sidecar, and diffs the whole verdict, leaf by leaf, against the committed one — QA's first attack (G266) showed the
-pre-registered `results[*].{verdict,n}` diff left 337 of 363 Tarot leaves unwatched (a measured value, a bar limit, a
-severity, the integrity block could all drift under a green), and that a loosened bars file with a re-registered sidecar
-also passed (G267); both are red now, by hash and by leaf. The job runs on Python 3.10 and 3.12; all three verdicts reproduce
+sidecar, and requires the committed verdict to be byte-identical to the canonical serialisation of the fresh run — QA's
+first attack (G266) showed the pre-registered `results[*].{verdict,n}` diff left 337 of 363 Tarot leaves unwatched (a
+measured value, a bar limit, a severity, the integrity block could all drift under a green) and that a loosened bars file
+with a re-registered sidecar also passed (G267); its second attack (G277) showed a parsed-JSON diff still let a duplicate
+key, a smuggled path-shaped key, `1418.0` for `1418`, `false` for `0` and a dropped `[]` through. Bytes catch all of them;
+a leaf diff names the drift first, and the three leaves that differ by construction are shape-checked, not free. The job runs on Python 3.10 and 3.12; all three verdicts reproduce
 on both, measured values included, which is the one condition the design set for lowering `requires-python` to 3.10, so it was
 lowered — and a test pins the floor to the lowest matrix leg so neither can move without the other. No third-party log is
 committed; the job is the only place the real bytes are read. Armed red-first in `tests/test_ci_evidence_gate.py` (a wrong

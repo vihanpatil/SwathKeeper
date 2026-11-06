@@ -76,3 +76,18 @@ Commit 663e40c on feat/gates-tool-action. Verdict: NOT DONE until G266 (+G267, G
 **Method (reuse):** qa5/tools/{mut.py,tmut.py,probes.py,fulldiff.py} in the session scratchpad; independent shadow git
 repo (rsync minus .venv/.git, `git init`) so `_tracked` works; remote-use simulated by `git archive HEAD` into
 `_actions/<owner>/<repo>/<ref>/` + offline `uv pip install`. Leaf-level full diff is the cheapest killer of projection gates.
+
+## Round 4 — re-attack of the step-5 fix 9b355fa (2026-11-05) — G277-G281; G266-G274 CLOSED as designed
+- G277 MAJOR: leaf diff over PARSED JSON with Python == is laundered from the committed side: duplicate keys
+  (json.loads keeps the LAST; the file shows the false value first: measured 12.4, alt_floor EI, a fail badge), smuggled
+  path-collision keys ("results[1].measured", "integrity.dsf_dropped_max" at top level), types (1418.0, exit false),
+  dropped/retyped empty containers -> all rc 0. Fix proven in shadow: committed text == json.dumps(fresh w/ excluded
+  leaves carried over, indent=1)+"\n" (all 9 committed JSON files are already canonical) -> 12/13 red, control green.
+  Write mutants with the tool's serialisation (ensure_ascii=True) or the byte check "catches" them for the wrong reason.
+- MINOR: G278 excluded leaves are free text (tool.python "…certified safe", source.path) and droppable; the four are the
+  right four (only source.path + tool.python differ 3.10 vs 3.12) -> pattern-check them, fetch to the url basename.
+  G279 PINNED_URL passes `<40hex>/../master/x.bin` (curl squashes it to a BRANCH path, url_effective verified), any owner,
+  ?query#frag. G280 extra files inside an example dir unchecked. G281 8/33 new source mutants survive (EXCLUDED widened
+  by a non-measured key, committed-extra-leaf, ABSENT==None, short-sha url, stale-refuse line, badge flatten, `"` escape,
+  demo --proto-redir); 3 round-1 survivors are equivalent (size-only, fresh-prereg, zero-examples).
+**Lesson:** a projection gate fixed to a full leaf diff still trusts the parser; the cheapest complete gate is BYTES.

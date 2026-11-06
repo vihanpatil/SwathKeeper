@@ -106,18 +106,27 @@ s_gates_tests()     { python3 -m unittest discover -s tests -p 'test_gates_*.py'
 s_gates_examples() {
   shopt -s nullglob
   sources=(examples/*/SOURCE.json)
-  echo "[ci] committed gate examples matched: ${#sources[@]}"
+  dirs=(examples/*/)
+  echo "[ci] committed gate examples matched: ${#sources[@]} (example dirs: ${#dirs[@]})"
   if [ "${#sources[@]}" -ne 3 ]; then
     echo "[ci] FAIL: expected exactly 3 examples/*/SOURCE.json (the pinned public logs), found ${#sources[@]}." >&2
     echo "     This gate may not score green while reproducing fewer verdicts than are committed." >&2
+    exit 1
+  fi
+  if [ "${#dirs[@]}" -ne "${#sources[@]}" ]; then
+    echo "[ci] FAIL: ${#dirs[@]} example dirs but ${#sources[@]} SOURCE.json files -- an example without a pinned" >&2
+    echo "     log is a verdict nobody can re-fetch (design §8); add its SOURCE.json or remove the dir." >&2
     exit 1
   fi
   fetched="$(mktemp -d)"
   for src in "${sources[@]}"; do
     name="$(basename "$(dirname "$src")")"
     url="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["url"])' "$src")"
+    # saved under the url's own (unquoted) basename, so the verdict's source.path diffs like every other leaf
+    base="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(sys.argv[1].rsplit("/", 1)[-1]))' "$url")"
+    mkdir -p "$fetched/$name"
     echo "[ci] fetching $name <- $url"
-    curl -fsSL --retry 3 --retry-delay 5 -o "$fetched/$name.bin" "$url"
+    curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 -o "$fetched/$name/$base" "$url"
   done
   python3 scripts/check_gates_examples.py --fetched "$fetched" "${sources[@]%/SOURCE.json}"
 }
