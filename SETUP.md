@@ -38,7 +38,7 @@ python3 -m unittest discover -s tests/fieldguard_planning     # planning, safety
 Ran 417 tests in 115.458s
 FAILED (failures=1)                             # measured 2026-11-05 — the ONE deliberate red, see (b)
 Ran 1450 tests in 28.509s
-OK (skipped=1)
+OK (skipped=9)                                  # fresh checkout; 8 skips are gitignored-artifact gates (tests/README.md)
 ```
 
 Two roots because `discover -s tests/fieldguard_planning` never walks `tests/test_*.py` — CI runs

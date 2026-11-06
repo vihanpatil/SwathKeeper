@@ -55,3 +55,24 @@ Byte accounting interior+trailing == size - decoded on 3 fixtures + 8 mutants (Q
   skip decoded with garbage (half-zeroed POS -> fence FAIL; red, never green).
 **Lesson:** the first-round report's non-blocker G list was not saved — save every G one-liner next time.
 Builder's 103/103 is true of its own mutant set; 5 of my 8 boundary mutants survived (HM4-HM8).
+
+## Round 3 — option C step 5 (ADR-023 am. 1: Action + badge + `gates-tool` CI job), reviewed 2026-11-05 — G266-G276
+Commit 663e40c on feat/gates-tool-action. Verdict: NOT DONE until G266 (+G267, G268).
+- G266 BLOCKER vacuous: checker diffs results{id,verdict,n}+badge+exit = 26 of 363 Tarot leaves. Fabricated committed
+  measured (B2 2.421->12.4, a number ADR-023 publishes), bar.limit, severity, note, integrity.drop_intervals erased,
+  verdict.bars.sha256 zeroed, streams state -> all rc 0. Fresh 3.10 vs committed 3.12 differ in ONLY source.path +
+  tool.python (also allowlist.run_date_utc on another day) -> full diff minus those 3 keys is free.
+- G267 MAJOR: edit bars.yaml (B2 12.5->50) + recompute sidecar bars_sha256, verdict.json untouched -> green; the checker
+  docstring ("a sidecar re-registered after the fact fails here") and the test-class docstring ("the one artifact") are false.
+- G268 MAJOR: run.sh reads badge from a STALE --out when the tool exits w/o writing (argparse refusal on LOG=-flight.bin,
+  read-only verdict.json): outputs exit-code=2 badge "gates: pass · 8/8". Fix rm -f "$OUT" first, --log="$LOG".
+- MINOR: G269 empty input -> exit 1, no outputs; G270 newline in OUT injects GITHUB_OUTPUT lines (exit-code=0 appended);
+  G271 denominator = count of SOURCE.json (dir w/o SOURCE.json slips both gates; tarot dir = plane copy -> 3/3);
+  G272 file:// url fetched under the job's curl flags, 8-hex short SHAs in urls; G273 17/38 mutants survive the new
+  tests (size-only sha check, process-rc half, prereg/refusal/3-way-pin checks, plane assertion `|| true`, curl -f regex
+  satisfied by a COMMENT, badge colours fail/cnt->green); G274 escape() leaves `"` -> label quote breaks SVG.
+- NOTE: G275 claims clean of vehicle-safety wording; "every committed verdict"/"cannot drift from the number" overstate
+  until G266. G276 CI-only semantics (composite outputs on failure self-tested by the plane assertion; fail-safe).
+**Method (reuse):** qa5/tools/{mut.py,tmut.py,probes.py,fulldiff.py} in the session scratchpad; independent shadow git
+repo (rsync minus .venv/.git, `git init`) so `_tracked` works; remote-use simulated by `git archive HEAD` into
+`_actions/<owner>/<repo>/<ref>/` + offline `uv pip install`. Leaf-level full diff is the cheapest killer of projection gates.
