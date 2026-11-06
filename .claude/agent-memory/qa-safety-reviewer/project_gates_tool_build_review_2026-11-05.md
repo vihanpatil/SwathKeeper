@@ -55,3 +55,53 @@ Byte accounting interior+trailing == size - decoded on 3 fixtures + 8 mutants (Q
   skip decoded with garbage (half-zeroed POS -> fence FAIL; red, never green).
 **Lesson:** the first-round report's non-blocker G list was not saved — save every G one-liner next time.
 Builder's 103/103 is true of its own mutant set; 5 of my 8 boundary mutants survived (HM4-HM8).
+
+## Round 3 — option C step 5 (ADR-023 am. 1: Action + badge + `gates-tool` CI job), reviewed 2026-11-05 — G266-G276
+Commit 663e40c on feat/gates-tool-action. Verdict: NOT DONE until G266 (+G267, G268).
+- G266 BLOCKER vacuous: checker diffs results{id,verdict,n}+badge+exit = 26 of 363 Tarot leaves. Fabricated committed
+  measured (B2 2.421->12.4, a number ADR-023 publishes), bar.limit, severity, note, integrity.drop_intervals erased,
+  verdict.bars.sha256 zeroed, streams state -> all rc 0. Fresh 3.10 vs committed 3.12 differ in ONLY source.path +
+  tool.python (also allowlist.run_date_utc on another day) -> full diff minus those 3 keys is free.
+- G267 MAJOR: edit bars.yaml (B2 12.5->50) + recompute sidecar bars_sha256, verdict.json untouched -> green; the checker
+  docstring ("a sidecar re-registered after the fact fails here") and the test-class docstring ("the one artifact") are false.
+- G268 MAJOR: run.sh reads badge from a STALE --out when the tool exits w/o writing (argparse refusal on LOG=-flight.bin,
+  read-only verdict.json): outputs exit-code=2 badge "gates: pass · 8/8". Fix rm -f "$OUT" first, --log="$LOG".
+- MINOR: G269 empty input -> exit 1, no outputs; G270 newline in OUT injects GITHUB_OUTPUT lines (exit-code=0 appended);
+  G271 denominator = count of SOURCE.json (dir w/o SOURCE.json slips both gates; tarot dir = plane copy -> 3/3);
+  G272 file:// url fetched under the job's curl flags, 8-hex short SHAs in urls; G273 17/38 mutants survive the new
+  tests (size-only sha check, process-rc half, prereg/refusal/3-way-pin checks, plane assertion `|| true`, curl -f regex
+  satisfied by a COMMENT, badge colours fail/cnt->green); G274 escape() leaves `"` -> label quote breaks SVG.
+- NOTE: G275 claims clean of vehicle-safety wording; "every committed verdict"/"cannot drift from the number" overstate
+  until G266. G276 CI-only semantics (composite outputs on failure self-tested by the plane assertion; fail-safe).
+**Method (reuse):** qa5/tools/{mut.py,tmut.py,probes.py,fulldiff.py} in the session scratchpad; independent shadow git
+repo (rsync minus .venv/.git, `git init`) so `_tracked` works; remote-use simulated by `git archive HEAD` into
+`_actions/<owner>/<repo>/<ref>/` + offline `uv pip install`. Leaf-level full diff is the cheapest killer of projection gates.
+
+## Round 4 — re-attack of the step-5 fix 9b355fa (2026-11-05) — G277-G281; G266-G274 CLOSED as designed
+- G277 MAJOR: leaf diff over PARSED JSON with Python == is laundered from the committed side: duplicate keys
+  (json.loads keeps the LAST; the file shows the false value first: measured 12.4, alt_floor EI, a fail badge), smuggled
+  path-collision keys ("results[1].measured", "integrity.dsf_dropped_max" at top level), types (1418.0, exit false),
+  dropped/retyped empty containers -> all rc 0. Fix proven in shadow: committed text == json.dumps(fresh w/ excluded
+  leaves carried over, indent=1)+"\n" (all 9 committed JSON files are already canonical) -> 12/13 red, control green.
+  Write mutants with the tool's serialisation (ensure_ascii=True) or the byte check "catches" them for the wrong reason.
+- MINOR: G278 excluded leaves are free text (tool.python "…certified safe", source.path) and droppable; the four are the
+  right four (only source.path + tool.python differ 3.10 vs 3.12) -> pattern-check them, fetch to the url basename.
+  G279 PINNED_URL passes `<40hex>/../master/x.bin` (curl squashes it to a BRANCH path, url_effective verified), any owner,
+  ?query#frag. G280 extra files inside an example dir unchecked. G281 8/33 new source mutants survive (EXCLUDED widened
+  by a non-measured key, committed-extra-leaf, ABSENT==None, short-sha url, stale-refuse line, badge flatten, `"` escape,
+  demo --proto-redir); 3 round-1 survivors are equivalent (size-only, fresh-prereg, zero-examples).
+**Lesson:** a projection gate fixed to a full leaf diff still trusts the parser; the cheapest complete gate is BYTES.
+
+## Round 5 — sign-off pass on 53228e1 (2026-11-05) — G282-G286; G277-G281 CLOSED
+- All 17 + 16 + url mutants red on the checker except extra-file (caught by the G280 tree test). The byte gate holds
+  against dup keys, smuggled keys, types, empty containers, BOM, upper-hex.
+- G282 MINOR: "byte-identical" is really text-identical. `Path.read_text()` uses universal newlines, so CRLF and lone-CR
+  verdict files pass the checker AND the tree test. Fix: read_bytes().decode("utf-8").
+- G283 MINOR: the shapes accept python 3.8.0 / 3.99.999, PyYAML 6.0 (below the >=6.0.3 pin), date 9999-99-99.
+  Want: ^3\.(10|12)\.\d+$, a fresh value that matches the matrix leg, a PEP 440 check against the range, a real date.
+- G284 MINOR (the residual by design, now reproduced): a tool bug committed together with regenerated verdicts is
+  green. I halved every `measured` in an installed scratch copy and regenerated -> 3/3 rc 0, and Tarot B3 then reads
+  PASS with min 11.74 V under an 18.6 V floor. Cheap fixes: a semantic check (PASS => measured on the right side of the
+  limit) and a tree test pinning ADR-023's published values.
+- NOTE: the checker alone accepts any owner and Unicode `\w` homoglyphs; only the tree test's exact url pin catches them.
+**Method:** qa7/tools/{mut3.py, treemut.py, wrongtool.py}. mut.run now builds fetched/<name>/<url basename>.

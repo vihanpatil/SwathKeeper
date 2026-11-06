@@ -2,6 +2,11 @@
 
 [![CI](https://github.com/vihanpatil/SwathKeeper/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vihanpatil/SwathKeeper/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![swathkeeper-gates on a public Tarot X4 log: gates: pass · 8/8 measured (post-hoc)](examples/tarot_x4/badge.svg)](examples/tarot_x4/verdict.json)
+
+*The third badge is the evidence-gate tool (`swathkeeper-gates`, ADR-023) judging a public ArduCopter log nobody
+here flew — `gates: pass · 8/8 measured (post-hoc)` — re-fetched by sha256 and re-judged on every CI run against
+[its committed verdict](examples/tarot_x4/verdict.json), so the image cannot drift from the number.*
 
 **An autonomous ag-survey drone that reacts to obstacles its mission plan never knew about — and
 proves the survey is still complete afterwards. Built entirely in simulation; every number on this
@@ -136,7 +141,7 @@ not (see [What's next](#whats-next)) a product this repo is currently building t
 | Recording cadence | **5.0 Hz** flat, 100 % delivery on both bands (was 0.41 Hz — a Fast DDS shared-memory segment was the root cause) | that clip's `meta.json` |
 | Live↔offline equivalence | flight-logged obstacle positions reproduced to **1 µm** across SciPy 1.8.0 (air) / 1.13.1 (host), all 1301 in-window frames | ADR-009 am. 2 |
 | Monocular range estimator vs ground truth at closest approach | agrees to **3.3 mm** (0.0035 m vs 0.0067 m) — and is still refused as a gate, on purpose | ADR-013 am. 19 |
-| Automated tests | **1849 passed, 1 failed, 1 skipped, 0 xfail** (`python3 -m pytest tests -q`). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-11-05 — re-run and re-quote if you change the suite |
+| Automated tests | **1869 passed, 1 failed, 9 skipped, 0 xfail** (`python3 -m pytest tests -q`; 8 skips are gitignored-artifact gates, see tests/README.md). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-11-05 — re-run and re-quote if you change the suite |
 
 Two caveats this repo refuses to round off. The −0.61 real-render detection threshold is
 **PROVISIONAL** — narrowed on 2026-08-26 across a 2.3× depth span (3.9 / 6.9 / 9.0 m), still open

@@ -1,0 +1,86 @@
+# swathkeeper-gates as a GitHub Action (ADR-023 amendment 1, option C step 5).
+#
+# Runs `swathkeeper-gates run --log … --bars … --out …` on the caller's flight log and bars, writes the JSON
+# verdict, exposes the badge string and the exit code as outputs, and then EXITS WITH THE TOOL'S OWN CODE:
+# 0 pass, 1 fail or "could not tell", 2 refused. There is no input that softens that -- a caller who wants a
+# non-blocking run uses `continue-on-error` on the step and reads `exit-code`, which is a decision taken in the
+# caller's workflow where a reviewer can see it, not one hidden in here.
+#
+# It installs the tool from THIS action's own checkout (`$GITHUB_ACTION_PATH/../../..`), so the tool that judges
+# is pinned to the same ref as the action (`uses: vihanpatil/SwathKeeper/.github/actions/swathkeeper-gates@<ref>`;
+# `@main` floats). It fetches no log and no bars: the caller puts both in the workspace.
+#
+# What a green step means: THIS log, judged against THESE bars (by sha256, in the verdict), met every bar that
+# could be measured, under the parser versions the verdict records. It says nothing about any other flight, and
+# nothing about whether a vehicle is safe. A `<bars>.prereg.json` sidecar beside the bars file binds the run to
+# the bars text that was registered (and, if pinned, to the log) and the badge then reads `(post-hoc)`; without
+# one it reads `(unregistered)`. Both are printed, neither is hidden.
+name: swathkeeper-gates
+description: >-
+  Pre-registered evidence gates over a flight log (ArduPilot DataFlash). Writes a JSON verdict, outputs its badge
+  string and exit code, and fails the step exactly when the tool does (exit 1 fail / could not tell, exit 2 refused).
+inputs:
+  log:
+    description: Path to the flight log (ArduPilot DataFlash .bin), already in the workspace.
+    required: true
+  bars:
+    description: >-
+      Path to the bars YAML (swathkeeper-bars/1.0). A `<bars>.prereg.json` sidecar beside it is discovered
+      automatically (design §4); `prereg` names one elsewhere.
+    required: true
+  out:
+    description: Where to write the JSON verdict (swathkeeper-verdict/1.0).
+    required: false
+    default: verdict.json
+  declared:
+    description: Optional swathkeeper-declared/1.0 YAML naming the acknowledged reds (exact set; expiring).
+    required: false
+    default: ""
+  prereg:
+    description: A pre-registration sidecar at another path than `<bars>.prereg.json`.
+    required: false
+    default: ""
+  extras:
+    description: The pip extras to install with the tool; `ardupilot` brings the pinned pymavlink parser.
+    required: false
+    default: ardupilot
+  python-version:
+    description: Python to run the tool on (3.10 and 3.12 are what this repository's CI tests).
+    required: false
+    default: "3.12"
+outputs:
+  exit-code:
+    description: "The tool's exit code, verbatim: 0 pass, 1 fail or could not tell, 2 refused."
+    value: ${{ steps.run.outputs.exit-code }}
+  badge:
+    description: "The verdict's badge string, e.g. `gates: pass · 8/8 measured (post-hoc)`; `gates: refused` on exit 2."
+    value: ${{ steps.run.outputs.badge }}
+  verdict:
+    description: Path of the JSON verdict that was written (the `out` input).
+    value: ${{ steps.run.outputs.verdict }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install swathkeeper-gates from this action's own checkout (the same ref as the action)
+      shell: bash
+      env:
+        EXTRAS: ${{ inputs.extras }}
+      run: |
+        set -euo pipefail
+        root="$(cd "${GITHUB_ACTION_PATH}/../../.." && pwd)"
+        if [ -n "$EXTRAS" ]; then spec="${root}[${EXTRAS}]"; else spec="$root"; fi
+        python -m pip install --quiet "$spec"
+        swathkeeper-gates --help > /dev/null
+    - name: Run the gates (exits with the tool's own code; outputs written first)
+      id: run
+      shell: bash
+      env:
+        LOG: ${{ inputs.log }}
+        BARS: ${{ inputs.bars }}
+        OUT: ${{ inputs.out }}
+        DECLARED: ${{ inputs.declared }}
+        PREREG: ${{ inputs.prereg }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

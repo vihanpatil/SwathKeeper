@@ -19,7 +19,9 @@ criterion **0 of 10 → strong portfolio, no product**; **(3) drone-as-product i
 that answer (closing the control loop in sim, ≥20 seeded headless encounters clearing 3.00 m),
 hardware behind that. **The ADR-019 wire program is CUT** (am. 1). **NDVI is FROZEN** (ADR-019 §7).
 **Re-sequenced 2026-11-05 (ADR-022 am. 4): the owner ruled C — build the method as a tool, then ten public posts of it;
-step 2 was BUILT and SCORED 2026-11-05 (ADR-023: `src/swathkeeper_gates/`, three public logs, PX4 cut).**
+step 2 was BUILT and SCORED 2026-11-05 (ADR-023: `src/swathkeeper_gates/`, three public logs, PX4 cut); step 5 BUILT the same day
+(ADR-023 am. 1: the composite Action `.github/actions/swathkeeper-gates/`, the README badge, and CI job `gates-tool` on py3.10 + py3.12
+re-fetching the three logs by sha256 and diffing every committed verdict). Next: step 6, the ten posts; G257 is flagged, undecided.**
 **Claims ceiling everywhere: "sim-demonstrated, evidence-gated."**
 
 **Naming (ADR-011):** renamed from FieldGuard on 2026-08-18; **code identifiers deliberately keep
@@ -146,7 +148,7 @@ Five subagents (`.claude/agents/`): `lead`, `software-engineer`, `platform-engin
 - **`docs/DECISIONS.md` amendments are ≤ 10 lines, and no new ADR ships without a cut.**
 - **tests:src is capped at 3.70:1** (ADR-022 am. 1; baseline 2026-09-10: `src/fieldguard_planning/*.py`
   6,771 vs `tests/**.{py,sh}` 25,049; the src side is `src/**/*.py` since ADR-022 am. 4, 2026-11-05).
-  **UNDER since 2026-11-05: 3.33** (27,189 / 8,173), **by dilution, not by retiring a test** — the new
+  **UNDER since 2026-11-05: 3.42** (27,929 / 8,173 after step 5 + its three QA rounds; 3.33 after step 2), **by dilution, not by retiring a test** — the new
   `src/swathkeeper_gates/` joined the src side (ADR-023); over `src/fieldguard_planning/*.py` alone it is
   27,189 / 6,854 = **3.97** (it was OVER at 3.84 from 2026-09-11). Every new test file still retires one while the
   ratio is over the cap; the cap is not re-baselined.
