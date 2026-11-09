@@ -17,7 +17,7 @@ leaf but the run date. So the mechanics are usable; what a stranger lacked was a
 schema, the decision order and the exit codes lived only in the 381-line design note. `src/swathkeeper_gates/README.md` is that
 front door (266 lines; `pyproject.toml` `readme` points at it so package metadata carries it), written by `narrative-lead` from
 the code and the measured outputs, attacked by `qa-safety-reviewer` in two rounds (G286–G310, every finding accepted), and every
-command in it re-run literally by the orchestrator from a fresh directory. QA's attack mattered: the first draft's decision-order
+command in it re-run literally by the orchestrator from a fresh directory; PR #41, stacked on #40. QA's attack mattered: the first draft's decision-order
 list omitted two EVIDENCE_INSUFFICIENT causes (`mode unknown > 1.0 s before the first MODE row`; no raw stream to witness the
 logger) that fire on the committed ArduPlane log; it called the ERR EMPTY rule a citation when ADR-023 records it as a lead
 ruling extended to every vehicle at 4.5.n; it did not say the fence's polygon and minimum-altitude bits are never judged; it
