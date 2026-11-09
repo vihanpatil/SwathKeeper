@@ -60,6 +60,8 @@ thing the build was scored against; each one is superseded by its ADR, never by 
 - [`design/GATES_TOOL_DESIGN.md`](design/GATES_TOOL_DESIGN.md) — the lead's pre-registered design for the
   option-C evidence-gate tool (ADR-022 am. 4): package, flight-log contract, the 8-bar catalogue, exit codes,
   allowlist and the pinned foreign logs (built 2026-11-05, ADR-023).
+  The tool's own front door (install, the three commands, the bars schema, exit codes, what it does NOT claim)
+  is [`src/swathkeeper_gates/README.md`](../src/swathkeeper_gates/README.md), beside the code it documents.
 - [`design/DEPTH_SEGMENTER_ALGORITHM.md`](design/DEPTH_SEGMENTER_ALGORITHM.md) — perception's
   companion note on the prototype operator and the numbers that chose its constants. Written
   **concurrently and independently** of the design note above; the two arrived at the same core
