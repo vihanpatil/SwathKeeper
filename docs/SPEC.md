@@ -128,6 +128,13 @@ no-silent-skip invariant; live-run evidence is timestamped and validated so it c
 overwritten. Sim-side claims are verified in batched human Docker sessions with written gate
 records (`docs/runbooks/`, `docs/archive/`).
 
+The same discipline, extracted as an installable tool (ADR-022 am. 4 → ADR-023): `src/swathkeeper_gates/`
+(pip package `swathkeeper-gates`) judges a stranger's ArduPilot DataFlash log against a YAML file of bars hashed
+before the run and writes a JSON verdict and an exit code; `could not tell` is a fourth word and never a green.
+It imports nothing from `fieldguard_planning` and nothing there imports it. Front door:
+[`src/swathkeeper_gates/README.md`](../src/swathkeeper_gates/README.md); scored on three public logs in
+`examples/`, re-fetched by sha256 and re-judged on every CI run.
+
 ## Reference
 
 **`aerial-autonomy-stack`** (Feb 2026): autopilot-agnostic ROS 2 framework wiring Gazebo +

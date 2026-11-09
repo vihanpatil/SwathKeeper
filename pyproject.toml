@@ -10,6 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "swathkeeper-gates"
 dynamic = ["version"]
 description = "Pre-registered evidence gates over flight logs: a JSON verdict and an exit code, where 'could not tell' is never a green."
+readme = "src/swathkeeper_gates/README.md"   # the package's own front door (install, the three commands, the schema, what it does NOT claim)
 requires-python = ">=3.10"   # exactly as low as CI tests (design §1): ci.yml job `gates-tool` runs the four
                              # tests/test_gates_*.py AND re-judges the three pinned public logs on 3.10 and 3.12
                              # (ADR-023 am. 1, 2026-11-05). Widen the matrix before lowering this; never the reverse.

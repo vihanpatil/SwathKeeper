@@ -140,7 +140,8 @@ Five subagents (`.claude/agents/`): `lead`, `software-engineer`, `platform-engin
 ## Working conventions
 - No "it works" without a metric or a reproducible scenario (software-engineer / qa-safety enforce).
 - Every non-trivial architecture choice gets a one-line justification in `docs/DECISIONS.md`.
-- Host Python: `.venv/bin/python` (uv, 3.12); `/usr/bin/python3` is the Xcode stub. Tests need `.venv/bin` first on PATH.
+- Host Python: `.venv/bin/python` (uv, 3.12); `/usr/bin/python3` runs but is 3.9.6 (measured 2026-11-09), below the gates
+  tool's 3.10 floor. Tests need `.venv/bin` first on PATH.
 - Instrument the avoidance loop: log every detection, takeover, maneuver, resume and debt cell.
 - Keep sim runs reproducible (pinned versions, fixed seeds where possible) so eval numbers mean something.
 - **Standing freezes (ADR-022):** the **NDVI pipeline** is frozen (ADR-019 §7) and the **depth

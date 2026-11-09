@@ -6,7 +6,8 @@
 
 *The third badge is the evidence-gate tool (`swathkeeper-gates`, ADR-023) judging a public ArduCopter log nobody
 here flew — `gates: pass · 8/8 measured (post-hoc)` — re-fetched by sha256 and re-judged on every CI run against
-[its committed verdict](examples/tarot_x4/verdict.json), so the image cannot drift from the number.*
+[its committed verdict](examples/tarot_x4/verdict.json), so the image cannot drift from the number. To run it on
+your own log: [`src/swathkeeper_gates/README.md`](src/swathkeeper_gates/README.md).*
 
 **An autonomous ag-survey drone that reacts to obstacles its mission plan never knew about — and
 proves the survey is still complete afterwards. Built entirely in simulation; every number on this

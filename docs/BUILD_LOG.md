@@ -6,6 +6,32 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-11-09 — the tool gets a front door, and a stranger's run says it is usable
+
+Before step 6 (the ten posts) could send anyone to the tool, the orchestrator ran it the way a stranger would: a fresh venv, no
+checkout, `pip install 'swathkeeper-gates[ardupilot] @ git+https://github.com/vihanpatil/SwathKeeper@<ref>'` (3.5 s with uv,
+8.9 s with pip), the public Tarot log fetched and sha256-checked, `inspect` (1.2 s), a one-bar `bars.yaml` written from the
+schema snippet alone, `prereg`, `run` (0.4 s, `gates: pass · 1/1 measured (post-hoc)`), a typo (refused, exit 2, the refusal JSON
+still written) and a random file (refused, exit 2). The committed Tarot verdict reproduced from that install on every scalar
+leaf but the run date. So the mechanics are usable; what a stranger lacked was any user-facing text: the install line, the bars
+schema, the decision order and the exit codes lived only in the 381-line design note. `src/swathkeeper_gates/README.md` is that
+front door (266 lines; `pyproject.toml` `readme` points at it so package metadata carries it), written by `narrative-lead` from
+the code and the measured outputs, attacked by `qa-safety-reviewer` in two rounds (G286–G310, every finding accepted), and every
+command in it re-run literally by the orchestrator from a fresh directory; PR #41, stacked on #40. QA's attack mattered: the first draft's decision-order
+list omitted two EVIDENCE_INSUFFICIENT causes (`mode unknown > 1.0 s before the first MODE row`; no raw stream to witness the
+logger) that fire on the committed ArduPlane log; it called the ERR EMPTY rule a citation when ADR-023 records it as a lead
+ruling extended to every vehicle at 4.5.n; it did not say the fence's polygon and minimum-altitude bits are never judged; it
+said `armed: true` "judges known-armed intervals" without saying it reads EI on all three public logs (the arm row is not written
+under LOG_DISARMED 0; `test.BIN` has no ARM rows); and its Tarot story was cleaner than the bars.yaml header's own account. All
+fixed in the text; none needed code. Pointers added in `README.md` (badge caption), `docs/README.md` and `docs/SPEC.md`.
+**G257 was PRICED, not decided** (owner call, outward-facing): the Tarot's 15 dropped writes all sit in the first 0.906 s of
+logging (the startup flood: 2,072 rows written there, 1,198 of them PARM; the first DSF row already reads Dp 15); the Plane log
+has Dp 0 throughout and `test.BIN` no DSF. Under the only rule that fits the data (a Dp rise blinds event-driven streams, not
+series rows that are visibly present), exactly one bar flips: Tarot B7 → EI, badge `could not tell · 7/8`, exit 1; the
+ALT_HOLD-window max speed is 1.038 m/s, so B2 would stay PASS under conservative judging. Two more lead-level items surfaced by
+QA, open: an unpinned sidecar gets a cleaner badge than the honest pinned one (G296), and `armed: true` is unusable on
+LOG_DISARMED 0 logs (G288). Not on PyPI: the install is a git URL, and the README says so.
+
 ## 2026-11-05 (late) — step 5: the tool gets an Action, a badge and a job that re-fetches its own evidence
 
 Option C's step 5 (ADR-023 amendment 1), stacked on PR #39 as `feat/gates-tool-action`. Three deliverables, each with the

@@ -105,3 +105,26 @@ repo (rsync minus .venv/.git, `git init`) so `_tracked` works; remote-use simula
   limit) and a tree test pinning ADR-023's published values.
 - NOTE: the checker alone accepts any owner and Unicode `\w` homoglyphs; only the tree test's exact url pin catches them.
 **Method:** qa7/tools/{mut3.py, treemut.py, wrongtool.py}. mut.run now builds fetched/<name>/<url basename>.
+
+## Round 6 — the package README `src/swathkeeper_gates/README.md` before step 6 (2026-11-09) — G286-G307
+Verdict SHIP-AFTER-FIXES. Measured with the stranger venv (ecbe20c) on tarot/plane + in-process FlightLog mutation.
+- G286 BLOCKER: `@main` install + Action fail TODAY (main 5a31261 has no pyproject; PRs #39/#40 OPEN; uv rc 1). The
+  README's outputs came from ref feat/gates-tool-action, not @main. Gate the posts on the merge order.
+- G287 BLOCKER: decision rules omit two `j["blind"]` EI causes (mode unknown >1.0 s before first MODE row; no POS/GPS/BAT
+  witness). FIRES ON A COMMITTED LOG: plane.bin prefix 1.281 s -> any mode-scoped bar and B7 `[*,*]` read EI.
+- MAJOR: G288 armed:true is EI on 3/3 public logs (scope reaches before first ARM row; by the adapter's own citation,
+  on essentially every log); G289 ERR EMPTY is a lead RULING for any vehicle/any 4.5.n, README calls it a citation;
+  G290 FENCE polygon bit/min-alt never judged; G291 G257's cost (Tarot -> could not tell) dropped; G292 "the method that
+  caught that" (2 of 3 breaches flew under green gates); G293 Tarot bars re-registered after a registered verdict,
+  sidecar+verdict committed together, "142 s low hover" clause dropped; G294 n is segments/transitions/seconds, not
+  samples; G295 exit row 0 matched by a vacuous run (exit 1); G296 an unpinned after-the-fact sidecar gets the CLEANEST badge.
+- MINOR G297-G307: `sha256sum -c` (use `-c -`), uv needs a venv, inspect-vs-run message, no_errors note variant,
+  "byte for byte" minus 3 leaves / 363 vs CI's 391, badge counts matched only, "Never run on" mood, Action lacks checkout,
+  gnss span wording, pyproject readme links break in METADATA.
+**Method (reuse):** probe in-process with `swathkeeper_gates.adapters.load` + `copy.deepcopy(log)` and mutate one
+stream (shift MODE t_s[0], set raw streams ABSENT) — cheaper than byte surgery for decision-order claims. Diff the
+README's own code blocks against a literal re-run (sed the yaml block out, sha it, run it).
+- Round 6b re-check (2026-11-09, README now 264 lines): 20/22 CLOSED, G286 copy closed but merge-order gated, G288 OPEN
+  (test.BIN has NO ARM rows, not "only the disarm"). NEW: G308 MAJOR `python3 -m venv` on stock macOS = Xcode 3.9.6 <
+  requires-python 3.10; G309 MINOR "pre-registered to fail" (it said MAY fail); G310 MINOR Plane mode-bar numbers are a
+  QA probe not a committed verdict, "base range" undefined. Walkthrough re-run: all 5 outputs byte-identical, yaml 185074…
