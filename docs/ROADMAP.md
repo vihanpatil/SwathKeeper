@@ -311,3 +311,16 @@ _(product-lead records cuts here with date + reason — interview material.)_
   the asset; inflating it converts the honesty in every ADR into an interview red flag.
 - **2026-08-05 — colcon/ament packaging of the planning package.** Zero demo value; PYTHONPATH
   works in-container. Restated 2026-08-18 (audit re-confirmed the cut).
+
+## 2026-11-10 — the control loop reopened (ADR-022 am. 5, ADR-013 am. 20)
+
+The owner asked for the avoidance software to be USABLE, and the day was spent on exactly that, in sim on this Mac:
+`scripts/fly_pipeline.sh encounter --detection-source depth --speed 5.0` is now one command that brings the stack up,
+arms the avoidance node after takeoff, flies two passes down bird_0's lane, tears down evidence-first and scores the log
+against its own bird track (≈5 min wall). Four runs were flown, each after one change: baseline **gt_cpa not computed**
+(the checker refused an ambiguous truth; closed by `--results-dir`) → **0.0212 m** (45 m trigger + sidestep, dodges
+abandoned on absence) → **0.839 m** (dodge-completion rule; four dodges flown 8.3 m) → **0.0393 m** (track-axis side rule + one commitment per encounter: the dodges themselves are now clean -- the encounter seen at 43.6 m was flown 8.45 m and passed at 9.6 m -- and every remaining strike had ZERO detections: the bird arrived at the north lane end during the drone's 180° turn, or overtook it from astern at 1 m/s closing, both outside a single forward camera's view). Measured along
+the way: the GUIDED command path works (3 m lateral in ≈2.2–2.5 s sim from hover); the depth camera acquires bird_0 at
+35.6–44.6 m in flight. Every run is an unbooked EXPERIMENT (claims ceiling unchanged); the artifacts live in
+`eval/results/encounters/<UTC>/`, gitignored. **Next:** fly the kill-criterion batch (≥20 seeded encounters), then book
+one take properly (`--booking`) so a clearance can be called evidence.

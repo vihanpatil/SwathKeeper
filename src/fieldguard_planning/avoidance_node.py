@@ -156,6 +156,17 @@ FRAME_TOPICS = {
 KIND_NDVI = "ndvi"
 KIND_DEPTH = "depth"
 DETECTION_SOURCE_KINDS = (KIND_NDVI, KIND_DEPTH)
+# The threat cylinder's RADIUS when the forward depth camera is the detector (2026-11-10). The
+# PolicyParams default of 12.0 m was sized for the nadir NDVI rig, whose forward horizon is 2.48 m:
+# nothing it detects is ever far away. A forward depth camera acquires a 0.18 m bird at up to 46.80 m
+# (config/depth_camera.json, detection.acquisition_range_note) and its far-clip corner bound is
+# 47.56 m -- and a policy that waits for 12 m throws 34 m of that away: at the 11 m/s closing speed
+# of bird_0 against a 5 m/s cruise, 12 m is 1.1 s of lead against a measured 2.2 s (sim) to move
+# 3.00 m (eval/results/actuation_probe_20261110T174141Z.json). 45.0 m keeps every finite return
+# inside the acquisition bound. The executor logs a `detection` only for an in-cylinder threat, so
+# this is also what lets the checker's first-detection-range bar read a MEASURED number instead of
+# CENSORED. The flown value travels in run.policy_params like every other knob.
+DEPTH_THREAT_RADIUS_M = 45.0
 
 # What `detection_source_name` calls a frame detector that declares no tag. Deliberately NOT
 # `DEMO_SOURCE_TAG` and deliberately not a guess: the flight-log gate treats a demo bird's logged
@@ -169,6 +180,19 @@ UNTAGGED_FRAME_SOURCE = "untagged_frame_source"
 # scored against ground truth. Legacy logs have no `run` key at all and keep exactly the verdict
 # they were flown under (scripts/check_live_flight_log.py branches on this).
 RUN_SCHEMA_VERSION = 2
+
+
+def _leg_heading_rad(mission_xy: Sequence[Tuple[float, float]], wp_index: int) -> Optional[float]:
+    """Direction of the mission leg that ENDS at `wp_index` (ENU radians), or None when the index
+    has no leg (0, out of range) or the leg has no length. Fed to `DroneState.track_heading_rad` so
+    the policy's on-track test uses the lane, not the yaw (R4, 2026-11-10). Sign is immaterial to the
+    policy: it folds ahead and astern together and picks the sidestep side from geometry."""
+    if wp_index < 1 or wp_index >= len(mission_xy):
+        return None
+    (ax, ay), (bx, by) = mission_xy[wp_index - 1], mission_xy[wp_index]
+    if math.hypot(bx - ax, by - ay) < 1e-6:
+        return None
+    return math.atan2(by - ay, bx - ax)
 
 
 def _nearest_upcoming_wp(pos_xy: Tuple[float, float], mission_xy: Sequence[Tuple[float, float]]) -> int:
@@ -812,8 +836,10 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             # The ADR-009 staleness bound is NOT passed here: it is a PolicyParams default, so the
             # gate that reads `PolicyParams()` as its bar and the flight that flies it cannot be
             # different numbers. The flown value travels in run.policy_params either way.
-            self.policy = AvoidancePolicy(field_polygon=load_field_polygon(),
-                                          cruise_alt_m=CRUISE_ALT_M)
+            policy_kwargs = {"cruise_alt_m": CRUISE_ALT_M}
+            if detection_source_name(detection_source) == DEPTH_SOURCE_TAG:
+                policy_kwargs["threat_radius_m"] = DEPTH_THREAT_RADIUS_M   # see the constant's note
+            self.policy = AvoidancePolicy(field_polygon=load_field_polygon(), **policy_kwargs)
             self.sink = Ros2VehicleSink(self)
             swath_half_m = derive_swath_half_width_m(CRUISE_ALT_M)
             self.avoidance_executor = AvoidanceExecutor(self.geofence, self.cells, self.sink,
@@ -913,7 +939,8 @@ def build_node(detection_source: Optional[DetectionSource] = None,
             # heading from orientation quaternion (yaw), ENU
             q = msg.pose.orientation
             yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
-            self._drone = DroneState(position_enu=(p.x, p.y, p.z), heading_rad=yaw, current_wp_index=wp)
+            self._drone = DroneState(position_enu=(p.x, p.y, p.z), heading_rad=yaw, current_wp_index=wp,
+                                     track_heading_rad=_leg_heading_rad(self.mission_xy, wp))
             if self._gz_now is not None:
                 # gz-domain tag: the burst-proof pairing key each NDVI frame selects against. The
                 # POLICY keeps using the latest pose (it wants where the drone is NOW); the DETECTOR

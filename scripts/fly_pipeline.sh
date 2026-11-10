@@ -34,15 +34,33 @@
 # ADR-011: the `fieldguard` identifiers (container, /workspace path, /fg topics) are intentional.
 #
 # Usage (host, repo root):
-#   scripts/fly_pipeline.sh [up|attach|status|birds|node|down|test-flight] [--dry-run]
+#   scripts/fly_pipeline.sh [up|attach|status|birds|node|down|test-flight|encounter] [--dry-run]
 #                           [--gate-geometry] [--booking eval/results/booking_gate_<UTC>.json]
 #                           [--detection-source ndvi|depth] [--no-birds]
+#                           [--mission <name>] [--speed <m/s>]      (encounter only)
+#
+#   encounter  ONE COMMAND, ONE MEASURED DODGE (2026-11-10): 'up' with the birds armed, the avoidance
+#              node started on the chosen detector, the mission flown unattended exactly like
+#              test-flight, evidence-first teardown, then the flight log SCORED against the bird
+#              track this run wrote (check_live_flight_log.py --truth <applied.jsonl>). Prints the
+#              gate's verdict and writes eval/results/encounter_<UTC>.json. It is the developer loop
+#              for the control law: fly, read the clearance, change one thing, fly again. An
+#              encounter is an EXPERIMENT unless it was booked (--booking) -- say so when quoting it.
 set -euo pipefail
 
 SESSION="swathkeeper"
 CONTAINER="fieldguard-sim"
 CTR_REPO="/workspace/fieldguard"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# HOST-SIDE Python is the project venv when it exists. The host-side steps (the booking reader, the
+# gate record, the stitch) import numpy; macOS's /usr/bin/python3 is 3.9 with none of it, and on
+# 2026-11-10 a flight that flew clean (708 frames, 412 cells) was recorded as FAIL because the
+# stitch ran under that interpreter. Container payloads are unaffected: they run inside docker exec.
+# Only when the python3 already on PATH cannot do the job: a caller that put a working interpreter
+# (or a test shim around one) ahead on PATH keeps it.
+if [ -x "$REPO_ROOT/.venv/bin/python3" ] && ! python3 -c "import numpy" >/dev/null 2>&1; then
+  export PATH="$REPO_ROOT/.venv/bin:$PATH"
+fi
 TMPBASE="${TMPDIR:-/tmp}"
 RECIPE_FILE="${TMPBASE%/}/swathkeeper_fly_recipe.txt"
 
@@ -78,6 +96,13 @@ NO_BIRDS=0
 # declaration would have nothing to be contradicted BY (QA, 2026-09-11).
 BIRDS_NONE_DECLARED="none (declared --no-birds)"
 BIRDS_ARMED="armed (altitude-gated drive_birds.py pane)"
+# --- encounter: the scripted dodge experiment (see the header) ------------------------------------
+ENCOUNTER=0
+ENC_MISSION="encounter_lane15"   # config/missions/<name>.waypoints: two passes down bird_0's lane x=15
+ENC_SPEED=""                     # explicit WP_SPD for an UNBOOKED experiment; the booking wins
+ENC_NODE_ARM_S=90                # avoidance node: start -> "live intrinsics present"
+ENC_LOG=""; ENC_TRUTH=""; ENC_CHECKER_EXIT=""; ENC_RECORD=""; ENC_DIR=""
+TF_AFTER_TAKEOFF_HOOK=""         # a function tf_fly_mission calls once the takeoff has completed
 
 # --- the booking: the ONE speed a dodge take is authorised to fly (ADR-019 / ADR-020) ------------
 # scripts/predict_forward_lead.py authorises an avoidance take at ONE mission speed, and until
@@ -214,6 +239,12 @@ scripts/fly_pipeline.sh [SUBCOMMAND] [FLAGS]      (host side, macOS; needs tmux 
             the vehicle. It writes the flight log on shutdown: WAIT for 'wrote flight log ->'.
   down      SIGINT the recorder first, wait for finalize, then the node (and wait for its flight
             log), stop the rest, print the stitch command
+  encounter ONE COMMAND, ONE MEASURED DODGE: 'up' with birds armed, the node on --detection-source,
+            the mission (--mission, default encounter_lane15: two passes down bird_0's lane) flown
+            unattended, teardown, then check_live_flight_log.py --truth on this run's own bird
+            track. --speed <m/s> types 'param set WP_SPD' for an UNBOOKED experiment (SITL's eeprom
+            otherwise flies the last session's value). Exit code = the checker's. An experiment,
+            not evidence, unless --booking was given.
   test-flight  REGRESSION GATE, not the demo path: 'up', then fly the short test mission
                unattended (only after DDS+EKF+GPS ready), tear down, stitch, judge the flight's
                evidence yield against the floor, write a gate record under eval/results/.
@@ -739,6 +770,11 @@ param set MIS_RESTART 0
 param set AUTO_OPTIONS 3
 EOF
   if [ -n "$BOOKING_SPEED" ]; then printf 'param set %s %s\n' "$BOOKED_PARAM" "$BOOKING_SPEED"; fi
+  # encounter --speed: the same line, the same place, for an experiment that books nothing. SITL's
+  # eeprom PERSISTS the last param set across sessions (measured 2026-11-10: WP_SPD read 5.0, the
+  # 2026-09-11 booking, against the firmware default of 10.0), so an experiment that does not set
+  # its speed flies whatever the previous session left behind.
+  if [ -z "$BOOKING_SPEED" ] && [ -n "$ENC_SPEED" ]; then printf 'param set %s %s\n' "$BOOKED_PARAM" "$ENC_SPEED"; fi
   cat <<EOF
 wp set 1
 mode guided
@@ -1310,7 +1346,8 @@ tf_cleanup() {
   local w n=15
   if [ -n "$TF_FAIL" ] || [ "$TF_PHASE" != "teardown" ]; then n=60; fi
   if session_exists; then
-    for w in gazebo bridge agent sitl ndvi record birds; do
+    for w in gazebo bridge agent sitl ndvi record birds node; do
+      tmux list-panes -t "$SESSION:$w" >/dev/null 2>&1 || continue
       pane_tail "$w" "$n" >"$TF_WORK/tails/$w.log"
     done
     TF_BIRDS_ALT=$(birds_gate_alt)
@@ -1334,6 +1371,21 @@ tf_cleanup() {
   fi
   if [ -z "$TF_FAIL" ] && [ -z "$TF_BIRDS_ALT" ]; then
     TF_FAIL="the birds pane never fired its own altitude gate — drive_birds.py never launched"
+  fi
+  if (( ENCOUNTER )); then
+    # The encounter's evidence is the FLIGHT LOG scored against the bird track, not the NDVI clip:
+    # no stitch, no evidence-yield floor. A missing log is the failure.
+    enc_score
+    tf_write_record
+    if [ -n "$TF_FAIL" ]; then
+      printf '[fly_pipeline] ENCOUNTER FAILED in %s: %s\n' "$TF_PHASE" "$TF_FAIL" >&2
+      say "record: $TF_RECORD   full logs: $TF_WORK"
+      exit 1
+    fi
+    say "ENCOUNTER SCORED (checker exit $ENC_CHECKER_EXIT) — record: $TF_RECORD"
+    say "flight log: $ENC_LOG"
+    say "truth:      $ENC_TRUTH"
+    exit "$ENC_CHECKER_EXIT"
   fi
   if [ -z "$TF_FAIL" ] && [ -z "$TF_CLIP" ]; then
     TF_FAIL="no clip directory survived the recorder's finalize — nothing to stitch"
@@ -1379,6 +1431,7 @@ tf_cleanup() {
 # meta.json / heatmap.json above, so the record can never disagree with the artifacts it describes.
 tf_write_record() {
   TF_RECORD="$REPO_ROOT/eval/results/testflight_gate_$(date -u +%Y%m%dT%H%M%SZ).json"
+  if (( ENCOUNTER )); then TF_RECORD="${ENC_DIR:-$REPO_ROOT/eval/results}/encounter_$(date -u +%Y%m%dT%H%M%SZ).json"; fi
   mkdir -p "$REPO_ROOT/eval/results"
   TF_RESULT=PASS
   if [ -n "$TF_FAIL" ]; then TF_RESULT=FAIL; fi
@@ -1388,6 +1441,7 @@ tf_write_record() {
   export TF_RESULT TF_START TF_FINISHED TF_DURATION TF_MISSION_NAME
   export TF_FRAMES TF_CELLS TF_MIN_FRAMES TF_MIN_CELLS
   export BOOKING_PATH_REL BOOKING_SPEED BOOKED_PARAM
+  export ENCOUNTER ENC_LOG ENC_TRUTH ENC_CHECKER_EXIT ENC_SPEED DETECTION_SOURCE
   python3 - "$TF_RECORD" <<'PY' || warn "could not write the gate record to $TF_RECORD"
 import json, os, pathlib, sys
 
@@ -1448,8 +1502,144 @@ record = {
     "sitl_log": str(work / "sitl.log"),
     "pane_tails": {p.stem: lines(p) for p in sorted((work / "tails").glob("*.log"))},
 }
+if os.environ.get("ENCOUNTER") == "1":
+    # The encounter record: what was flown, against which bird track, and what the gate said. The
+    # verdict itself is NOT re-stated here -- the checker's own output (score.log) is the record of
+    # that, quoted verbatim below, and its exit code is the one number this file repeats.
+    record["gate"] = "scripts/fly_pipeline.sh encounter (scripted dodge EXPERIMENT; booked only if 'booking' is non-null)"
+    record["kind"] = "encounter"
+    record["detection_source"] = os.environ.get("DETECTION_SOURCE")
+    record["experiment_speed_mps"] = opt("ENC_SPEED", float)
+    record["flight_log"] = opt("ENC_LOG")
+    record["truth"] = opt("ENC_TRUTH")
+    record["checker_exit"] = opt("ENC_CHECKER_EXIT", int)
+    record["checker_output"] = lines(work / "score.log")
+    for k in ("frames_recorded", "cells_imaged", "evidence_floor", "stitch_exit"):
+        record.pop(k, None)
 pathlib.Path(sys.argv[1]).write_text(json.dumps(record, indent=1) + "\n")
 PY
+}
+
+# --- encounter: fly one scripted dodge experiment and score it -------------------------------------
+enc_dry_plan() {
+  say "encounter = 'up' (birds armed), the avoidance node on '$DETECTION_SOURCE', the fly recipe on $ENC_MISSION, teardown, then the score."
+  cmd_up
+  printf '  DRY  tmux new-window -d -t %s -n node %s\n' "$SESSION" "$(exec_line "$(node_payload)")"
+  printf '  DRY  (the node window opens AFTER the first "Reached command", i.e. once the takeoff is done)\n'
+  printf '  DRY  wait <=%ss for the node pane to print "live intrinsics present" (exit 3/4 = refused to fly blind)\n' "$ENC_NODE_ARM_S"
+  printf '  DRY  then the test-flight supervision, mission %s' "$ENC_MISSION"
+  [ -n "$ENC_SPEED" ] && printf ', with "param set %s %s" typed ahead of the AUTO entry' "$BOOKED_PARAM" "$ENC_SPEED"
+  printf ':\n'
+  fly_lines "$ENC_MISSION" | sed 's/^/  DRY      /'
+  printf '  DRY  on disarm: down (recorder first, then the node -> "wrote flight log ->")\n'
+  printf '  DRY  move this run'"'"'s flight log + bird track(s) + booking sidecar into eval/results/encounters/<UTC>/ (ignored by git; one run, one track)\n'
+  printf '  DRY  score: python3 scripts/check_live_flight_log.py <that log> --truth <this run'"'"'s bird_drive_*_applied.jsonl> --results-dir <that folder>'
+  [ -n "$BOOKING_PATH_REL" ] && printf ' --booking %s' "$BOOKING_PATH_REL"
+  printf '\n  DRY  record: eval/results/encounters/<UTC>/encounter_<UTC>.json; exit code = the checker'"'"'s\n'
+}
+
+# The score. Reads what the run itself wrote: the node's flight log (path recovered from the
+# teardown's own output, else the newest one written since this run started) and the bird driver's
+# applied-pose log from the same window. Never a path typed by hand -- a log scored against the
+# wrong flight's birds was the exact mistake TRUTH_BINDINGS exists to stop.
+enc_score() {
+  local since="$TF_WORK/.since" ctr_log="" f
+  # ONE RUN, ONE DIRECTORY. Everything this run wrote under eval/results/ moves into its own folder:
+  #   * the checker refuses "AMBIGUOUS TAKE" when ANY other bird track overlaps the flight's
+  #     sim-time window -- and Gazebo's clock restarts near 0 every session, so every run overlaps
+  #     the committed 2026-08-23 track and every earlier run today. Scored alone in its folder
+  #     (--results-dir), the run has exactly one track.
+  #   * .gitignore un-ignores eval/results/live_flight_log_*.json, bird_drive_* and the booking
+  #     sidecars AT THE TOP LEVEL, and CI validates every committed flight log. An experiment that
+  #     stayed there would be committed by the next `git add -A` and turn CI red on a log that was
+  #     never evidence. eval/results/encounters/ is ignored.
+  ENC_DIR="$REPO_ROOT/eval/results/encounters/$(basename "$TF_WORK" | sed 's/^swathkeeper_encounter_//')"
+  mkdir -p "$ENC_DIR"
+  while IFS= read -r f; do
+    [ -n "$f" ] && mv "$f" "$ENC_DIR/"
+  done < <(find "$REPO_ROOT/eval/results" -maxdepth 1 \( -name 'live_flight_log_*.json' -o -name 'bird_drive_*' -o -name 'live_flight_booking_*.json' \) -newer "$since" 2>/dev/null | sort)
+  ctr_log=$(sed -n 's#.*flight log written: \([^[:space:]]*\).*#\1#p' "$TF_WORK/down.log" 2>/dev/null | tail -n 1)
+  [ -n "$ctr_log" ] && ENC_LOG="$ENC_DIR/$(basename "$ctr_log")"
+  if [ -z "$ENC_LOG" ] || [ ! -f "$ENC_LOG" ]; then
+    ENC_LOG=$(find "$ENC_DIR" -maxdepth 1 -name 'live_flight_log_*.json' 2>/dev/null | sort | tail -n 1)
+  fi
+  ENC_TRUTH=$(find "$ENC_DIR" -maxdepth 1 -name 'bird_drive_*_applied.jsonl' 2>/dev/null | sort | tail -n 1)
+  if [ -z "$TF_FAIL" ] && [ -z "$ENC_LOG" ]; then
+    TF_FAIL="no flight log was written by this run — the node never printed 'wrote flight log ->' (see pane_tails.node)"
+  fi
+  if [ -z "$TF_FAIL" ] && [ -z "$ENC_TRUTH" ]; then
+    TF_FAIL="no bird_drive_*_applied.jsonl was written by this run — the birds pane never drove (see pane_tails.birds)"
+  fi
+  [ -n "$TF_FAIL" ] && return 0
+  local -a cmd=(python3 "$REPO_ROOT/scripts/check_live_flight_log.py" "$ENC_LOG" --truth "$ENC_TRUTH" --results-dir "$ENC_DIR")
+  [ -n "$BOOKING_PATH_REL" ] && cmd+=(--booking "$REPO_ROOT/$BOOKING_PATH_REL")
+  say "scoring: ${cmd[*]#$REPO_ROOT/}"
+  ENC_CHECKER_EXIT=0
+  "${cmd[@]}" >"$TF_WORK/score.log" 2>&1 || ENC_CHECKER_EXIT=$?
+  evidence "checker exit $ENC_CHECKER_EXIT on $(basename "$ENC_LOG") vs $(basename "$ENC_TRUTH")"
+  # The lines a developer reads first; the full output is in the record. Under `set -o pipefail`
+  # a `grep | head` that matches nothing (or that head closes early) would exit this function --
+  # inside the EXIT trap, before the record is written (2026-11-10 run 2: exit 141, no record).
+  { grep -Ei 'verdict|gt_cpa|cpa|clearance|INVALID|takeover|maneuver|achieved|guided' "$TF_WORK/score.log" || true; } | head -n 40 || true
+  return 0
+}
+
+cmd_encounter() {
+  [ -f "$REPO_ROOT/config/missions/$ENC_MISSION.waypoints" ] ||
+    die "--mission $ENC_MISSION: config/missions/$ENC_MISSION.waypoints does not exist"
+  if (( DRY_RUN )); then enc_dry_plan; return 0; fi
+  if session_exists; then
+    die "tmux session '$SESSION' already exists — refusing to script a flight on top of a session
+  this run does not own (its teardown would kill yours). Tear it down first:
+    scripts/fly_pipeline.sh down"
+  fi
+  ENCOUNTER=1; TESTFLIGHT=1
+  TF_MISSION_NAME="$ENC_MISSION"
+  TF_START=$(now_utc); TF_T0=$SECONDS
+  TF_WORK="${TMPBASE%/}/swathkeeper_encounter_$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$TF_WORK/tails"; : >"$TF_WORK/.since"
+  TF_LOG="$TF_WORK/sitl.log";        : >"$TF_LOG"
+  EVIDENCE_FILE="$TF_WORK/evidence.txt"; : >"$EVIDENCE_FILE"
+  say "ENCOUNTER: scripted dodge EXPERIMENT on $ENC_MISSION, detector '$DETECTION_SOURCE'. Logs: $TF_WORK"
+  evidence "encounter started (mission $ENC_MISSION, detection source $DETECTION_SOURCE)"
+  if [ -n "$BOOKING_SPEED" ]; then
+    evidence "booked: $BOOKING_PATH_REL -> $BOOKING_SPEED m/s (param set $BOOKED_PARAM $BOOKING_SPEED)"
+  elif [ -n "$ENC_SPEED" ]; then
+    evidence "UNBOOKED experiment: param set $BOOKED_PARAM $ENC_SPEED typed by --speed"
+  else
+    evidence "UNBOOKED experiment, no --speed: flies whatever $BOOKED_PARAM SITL's eeprom holds (NOT reproducible)"
+  fi
+  trap tf_cleanup EXIT INT TERM
+
+  TF_PHASE="bringup"
+  cmd_up
+  # The node is started by tf_fly_mission AFTER the takeoff has completed (first 'Reached command'),
+  # not before arming. Run 2 (2026-11-10) started it with the bringup: the policy saw bird_0 parked
+  # at its spawn (15, 5, 11) -- 15.8 m from the pad, inside the 45 m cylinder -- as soon as the climb
+  # entered the +/-6 m band, took over DURING the AUTO takeoff, HOLDed for 33 s (200 hold ticks at
+  # 0 m/s) and only resumed when the bird was driven away. Avoidance is armed once the survey is in
+  # the air, which is also what a real deployment would do.
+  TF_AFTER_TAKEOFF_HOOK=enc_start_node
+  tf_fly_mission
+}
+
+enc_start_node() {
+  TF_PHASE="node"
+  new_window node "$(exec_line "$(node_payload)")"
+  local waited=0 txt=""
+  while (( waited < ENC_NODE_ARM_S )); do
+    txt=$(pane_text node)
+    if grep -q 'live intrinsics present' <<<"$txt"; then break; fi
+    if window_failed node; then
+      printf '%s\n' "--- tail of the 'node' window ---" >&2; meaningful <<<"$txt" | tail -n 15 >&2
+      tf_die "the avoidance node exited before arming its detector (exit 3 = no gz clock, 4 = no camera_info)"
+    fi
+    sleep "$POLL_S"; waited=$(( waited + POLL_S ))
+  done
+  grep -q 'live intrinsics present' <<<"$txt" ||
+    tf_die "the avoidance node did not report 'live intrinsics present' within ${ENC_NODE_ARM_S}s"
+  evidence "node armed on '$DETECTION_SOURCE' after takeoff: $(grep -m1 'live intrinsics present' <<<"$txt")"
+  TF_PHASE="flight"
 }
 
 cmd_test_flight() {
@@ -1478,7 +1668,13 @@ cmd_test_flight() {
 
   TF_PHASE="bringup"
   cmd_up
+  tf_fly_mission
+}
 
+# Readiness -> recipe -> arm -> flight -> disarm, supervised. Shared by test-flight and encounter;
+# the caller owns the bringup (and, for encounter, the node) before this, and the EXIT trap owns
+# everything after.
+tf_fly_mission() {
   TF_PHASE="sitl-readiness"
   TF_PANE=$(tf_sitl_pane)
   [ -n "$TF_PANE" ] || tf_die "could not identify the SITL pane in the sitl window"
@@ -1508,6 +1704,7 @@ cmd_test_flight() {
   hit=$(tf_wait "$TF_RE_REACHED" "$TF_TAKEOFF_S" "$armed_from") ||
     tf_die "no '$TF_RE_REACHED' within ${TF_TAKEOFF_S}s of arming — takeoff or AUTO entry failed"
   evidence "takeoff / AUTO progress: $hit"
+  if [ -n "$TF_AFTER_TAKEOFF_HOOK" ]; then "$TF_AFTER_TAKEOFF_HOOK"; fi
   hit=$(tf_wait "$TF_RE_DISARM" $(( TF_FLIGHT_S - (SECONDS - TF_T0) )) "$armed_from") ||
     tf_die "no disarm within the ${TF_FLIGHT_S}s flight budget — the mission or RTL never finished"
   evidence "mission progress: $(grep -Ec -- "$TF_RE_REACHED" "$TF_LOG" || true) '$TF_RE_REACHED' lines"
@@ -1531,8 +1728,14 @@ main() {
                        DETECTION_SOURCE=$2; shift ;;
       --detection-source=*) DETECTION_SOURCE=${1#--detection-source=} ;;
       --no-birds)      NO_BIRDS=1 ;;
+      --mission)       [ $# -ge 2 ] || die "--mission needs a name under config/missions/"
+                       ENC_MISSION=$2; shift ;;
+      --mission=*)     ENC_MISSION=${1#--mission=} ;;
+      --speed)         [ $# -ge 2 ] || die "--speed needs a mission speed in m/s"
+                       ENC_SPEED=$2; shift ;;
+      --speed=*)       ENC_SPEED=${1#--speed=} ;;
       -h|--help)       usage; exit 0 ;;
-      up|attach|status|birds|node|down|test-flight) CMD=$1 ;;
+      up|attach|status|birds|node|down|test-flight|encounter) CMD=$1 ;;
       *) usage >&2; die "unknown argument: $1" ;;
     esac
     shift
@@ -1547,7 +1750,7 @@ main() {
     *" $DETECTION_SOURCE "*) ;;
     *) die "--detection-source $DETECTION_SOURCE is not one of: $DETECTION_SOURCES";;
   esac
-  if [ "$DETECTION_SOURCE" != "$DETECTION_SOURCE_DEFAULT" ] && [ "$CMD" != node ]; then
+  if [ "$DETECTION_SOURCE" != "$DETECTION_SOURCE_DEFAULT" ] && [ "$CMD" != node ] && [ "$CMD" != encounter ]; then
     if [ "$CMD" = down ]; then
       # ...with ONE exception, and it is the same one the booking makes: teardown is never
       # blocked. `down` after a depth take is the command that waits for the flight log; refusing
@@ -1566,9 +1769,17 @@ main() {
   # --no-birds` can only mean the operator believes that command decides whether birds fly. It does
   # not — `up` already opened (or did not open) the pane minutes earlier — and a flight brought up
   # with birds and scored as bird-less is the one mistake this whole feature exists to prevent.
+  if [ -n "$ENC_SPEED" ] || [ "$ENC_MISSION" != "encounter_lane15" ]; then
+    [ "$CMD" = encounter ] || die "--mission / --speed belong to 'encounter' only; '$CMD' flies no experiment. Nothing was run."
+  fi
+  if [ -n "$ENC_SPEED" ] && ! [[ $ENC_SPEED =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    die "--speed $ENC_SPEED is not a plain decimal in m/s"
+  fi
   if (( NO_BIRDS )); then
     case $CMD in
       up) ;;
+      encounter)
+        die "--no-birds is refused on 'encounter': an encounter IS the birds. Nothing was run." ;;
       test-flight)
         # `cmd_test_flight` DOES build the pane list (it calls `cmd_up`), so the refusal below would
         # be a false sentence here. The real reason is narrower and stands on its own: this
@@ -1606,7 +1817,7 @@ main() {
   # booking file, and `birds`/`attach` book nothing.
   if [ -n "$BOOKING_ARG" ]; then
     case $CMD in
-      up|test-flight|status) booking_resolve ;;
+      up|test-flight|status|encounter) booking_resolve ;;
       *) warn "--booking / SWATHKEEPER_BOOKING has no effect on '$CMD': it books the fly recipe,
   which only up / test-flight / status print. Nothing was read, nothing was refused." ;;
     esac
@@ -1626,6 +1837,7 @@ main() {
     node)        cmd_node ;;
     down)        cmd_down ;;
     test-flight) cmd_test_flight ;;
+    encounter)   cmd_encounter ;;
     *)           usage >&2; die "unknown subcommand: $CMD" ;;
   esac
 }

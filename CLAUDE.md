@@ -31,7 +31,9 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
 ## Confirmed priorities (do not reorder)
 1. **Flight autonomy + reactive obstacle avoidance** — the differentiator, and the least proven
    thing here: three live flights, **three** bird-clearance breaches (see the safety asterisk).
-   **Most engineering time lives in the detect → avoid → resume → honest-debt loop.**
+   **Most engineering time lives in the detect → avoid → resume → honest-debt loop.** **2026-11-10: the owner
+   reopened this loop (ADR-022 am. 5); four scripted depth-camera encounters flew in one day under ADR-013 am. 20,
+   gt_cpa 0.021 → 0.839 → 0.039 (the last two strikes with zero detections: a lane-end U-turn and an astern overtake, outside a forward camera's view; the encounter seen at 43.6 m passed at 9.6 m) m against the 3.00 m bar — unbooked EXPERIMENTS, not evidence.**
 2. **NDVI health mapping** — works end to end (720/720 cells, 5.0 Hz) and is **FROZEN** since
    2026-08-26: it is the working demo, not open work. The world authors no health variation.
 3. **Farmer-facing dashboard** — **BUILT 2026-08-26** (ADR-018), static and light. The proof, not
@@ -50,10 +52,13 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   "known static obstacle" from "genuinely unplanned dynamic obstacle" (the real hard problem).
 - **Coverage planning**: boustrophedon (lawnmower) over the field polygon. Don't reinvent it.
 - **Reactive avoidance (the core)**: on dynamic detection → local avoidance maneuver → reconcile
-  against the coverage plan so **no cell is silently skipped**; track **coverage debt**. Measured:
-  there is **no replan and no requeue in the code** (ADR-002 scoped them out), and the command path
-  is **open-loop** — `send_setpoint_enu` publishes and returns, `verdict="accepted"` is a constant,
-  and no live gate compares commanded to achieved displacement.
+  against the coverage plan so **no cell is silently skipped**; track **coverage debt**. Still **no replan
+  and no requeue in the code** (ADR-002). **Measured 2026-11-10 (ADR-013 am. 20):** the GUIDED command path WORKS
+  (`scripts/probe_actuation.py`: 3 m lateral in ≈2.2–2.5 s sim from hover), the executor flies a latched dodge to
+  completion (`DODGE_ARRIVAL_RADIUS_M`, one commitment per encounter), R4 sidesteps an on-track bird, the depth
+  source triggers at 45 m, and **one command flies + scores an encounter**:
+  `scripts/fly_pipeline.sh encounter --detection-source depth --speed 5.0` (≈5 min; artifacts in
+  `eval/results/encounters/<UTC>/`, gitignored). `verdict="accepted"` is still a constant (no mode readback).
 - **Health mapping**: NDVI = (NIR − Red)/(NIR + Red) per frame, georeferenced (`ndvi_georef.py`),
   stitched **offline post-flight** (ADR-010) onto the SAME canonical 2.5 m grid as the ledger (join
   by `cell_id`). The world authors 4 temperatures: a canopy-vs-soil sign test, not a health gradient.

@@ -4739,3 +4739,31 @@ https-only into a fresh temp dir under the url's own basename, sha256 + size vs 
 SOURCE/sidecar/verdict bound by hash to the same log, bars AND sidecar (G267), then the committed `verdict.json` must be **BYTE-IDENTICAL to the
 canonical serialisation of the fresh run** (a leaf diff names the drift first; three leaves that differ by construction — `tool.python`,
 `tool.deps.PyYAML`, `allowlist.run_date_utc` — are excluded, shape-checked to the matrix legs / the pin / today, and printed, G278/G283; a PASS whose number sits on the wrong side of its own bar is red, G284): QA measured that the design's pre-registered `results[*].{verdict,n}` diff left 337 of 363 Tarot leaves unwatched (G266) and that a parsed-JSON diff let duplicate keys, smuggled keys, `1418.0`, `false` and dropped `[]` through (G277), so that pre-registration is widened here, not kept. `examples/tarot_x4/badge.svg` (`scripts/render_gates_badge.py`, stdlib, deterministic; only `pass` is green) is re-rendered from the fresh badge and diffed. **Measured:** every byte reproduces on 3.10.21 and 3.12.12 → `requires-python = ">=3.10"` (design §1's condition; a test pins the floor to the lowest matrix leg). Armed red-first in `tests/test_ci_evidence_gate.py` (no new file): QA rounds 1–3 (G266–G285) found 17/38, then 8/33, then 0 shadow mutants surviving — **signed off on `53228e1`**, the four residual MINORs closed in the final commit. **Not claimed:** it fetches only the three pinned logs; green = the committed verdicts REPRODUCE today, byte for byte, not that any vehicle is safe. **G257 stays OPEN for lead + owner before step 6:** a Dp rise as a hole flips the Tarot badge to `could not tell`.
+
+### ADR-022 amendment 5 (2026-11-10, THE OWNER REOPENED THE CONTROL LOOP): "make the avoidance software usable" — option B's engineering resumes as the active sequence, as one developer loop
+
+The owner's instruction of 2026-11-10 ("directly work towards making this drone autonomous obstacle avoidance software
+usable") reopens the control-loop work amendment 4 deferred; the gates tool and its posts are untouched by this branch
+(they continue on `feat/gates-tool-dp-rule`, the sibling branch off the same tip). What landed, all measured in sim on
+this Mac and NONE of it evidence under the claims ceiling (unbooked experiments): `scripts/fly_pipeline.sh encounter`
+(one command — bringup, node armed after takeoff, scripted flight, teardown, the flight log scored against its own bird
+track in its own folder; `--speed` pins WP_SPD because SITL's eeprom persisted the 2026-09-11 booking and every unbooked
+flight since flew 5.0 m/s while its record said 10.0); `scripts/probe_actuation.py` (GUIDED + /ap/cmd_gps_pose works:
+3.00 m lateral in ≈2.2–2.5 s sim from hover, ModeSwitch accepted in <25 ms, WP_JERK/WP_ACC buy nothing at ANGLE_MAX
+30°); and the control law of ADR-013 am. 20. Paid for: the "human-flown dodge take" rule for this loop; `--booking`
+bypassed by `--speed`, which the checker names on every such log. B's kill criterion (≥20 seeded encounters ≥3.00 m)
+is now RUNNABLE at ≈5 min per flight; hardware stays behind it.
+
+### ADR-013 amendment 20 (2026-11-10, R4 LANDED, THE TREE MARGIN IS 3D, ONE DODGE IS FLOWN TO COMPLETION): the five control-law changes the first measured depth-camera encounters forced
+
+(1) `DEPTH_THREAT_RADIUS_M` 45.0 (avoidance_node): with the forward depth camera the cylinder is 45 m, not 12 — run 1
+detected bird_0 at 12.0 / 9.1 m (1.1 s of lead at 11 m/s closing); runs 2–3 acquired at 35.6 / 44.6 / 43.7 m in flight,
+the first in-flight measurements. (2) R4 (`_candidate_order`): a bird within 30° of the TRACK axis (the mission leg,
+`DroneState.track_heading_rad`, never the yaw) at ≥6 m is answered with a ±90° sidestep first, the side away from an
+offset >1.0 m, else toward the field interior; the 0° reversal — every flown dodge's choice — is taken only inside R3's
+regime. (3) Gate 2's swept-path margin applies only where the dodge can meet a tree (segment ≤ 3.8 + 1.0 m): on lane
+x=15 the altitude-blind vet HOLDed over every tree column at 15 m (run 1: 4 holds at 0 m/s). (4) `DODGE_ARRIVAL_RADIUS_M`
+2.0: a latched dodge is flown to within 2 m before clear ticks may hand back — absence ended every dodge in run 2 after
+3–21 ticks (gt_cpa 0.021 m). (5) `RELATCH_AFTER_ARRIVAL_ONLY`: no re-latch while a dodge is in progress — run 3's side
+flips (RL/RLLL/LRL) spent 5–6 s of GUIDED moving <0.5 m. Checker: R2.1 reads `swept_margin_applied`; `--results-dir`.
+Measured: run 2 (1–3) gt_cpa_m 0.0212 m; run 3 (1–4) 0.839 m, four dodges flown 8.3 m; run 4 (1–5): 0.0393 m, with NO detection behind either strike: the bird reached the drone twice during its 180 deg turn at the north lane end and twice by overtaking from astern at 1 m/s closing -- outside a forward camera's view by construction; the one encounter it saw at 43.6 m was flown 8.45 m and passed at 9.6 m.

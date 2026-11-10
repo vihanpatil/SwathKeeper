@@ -6,6 +6,7 @@ Covers the guarantees the module exists to make impossible-by-construction:
   3. command ONE dodge point per encounter (the setpoint latch + its re-latch escape hatch).
 Plus the ADR-006 AUTO->GUIDED->AUTO takeover/resume flow. Stdlib unittest, bare python.
 """
+import math
 import sys
 import unittest
 from pathlib import Path
@@ -17,8 +18,8 @@ from fieldguard_planning.avoidance_types import (  # noqa: E402
     AvoidanceManeuver, Decision, Detection, DroneState,
 )
 from fieldguard_planning.avoidance_executor import (  # noqa: E402
-    AvoidanceExecutor, SimulatedVehicleSink, GUIDED_CEILING_TICKS, MODE_AUTO, MODE_GUIDED,
-    RELATCH_THRESHOLD_M, RESUME_CLEAR_TICKS,
+    AvoidanceExecutor, SimulatedVehicleSink, DODGE_ARRIVAL_RADIUS_M, GUIDED_CEILING_TICKS,
+    MODE_AUTO, MODE_GUIDED, RELATCH_THRESHOLD_M, RESUME_CLEAR_TICKS,
 )
 from fieldguard_planning.geofence import GeofenceMap  # noqa: E402
 from fieldguard_planning.coverage import CoverageCell, check_ledger, CELL_DEBT, CELL_COVERED  # noqa: E402
@@ -42,8 +43,17 @@ def _drone(x, y, z=15.0, wp=3):
 def _exec(sink=None, cells=None, **kwargs):
     geo = GeofenceMap.from_file()
     sink = sink or SimulatedVehicleSink(initial_wp_index=3)
+    # These tests drive a STATIC drone state through the executor, so a latched dodge never
+    # "arrives"; the dodge-completion rule (DODGE_ARRIVAL_RADIUS_M, 2026-11-10) is switched off here
+    # so the clear-tick hysteresis can be pinned on its own. TestDodgeCompletion pins the rule.
+    kwargs.setdefault("dodge_arrival_radius_m", math.inf)
+    kwargs.setdefault("relatch_after_arrival_only", False)   # likewise: the re-latch tests pin the old rule
     return AvoidanceExecutor(geo, cells or _cells(), sink, swath_half_width_m=SWATH,
                              alt_bounds=(2.0, 30.0), **kwargs), sink
+
+
+def _proceed():
+    return AvoidanceManeuver(decision=Decision.PROCEED)
 
 
 def _events(ex, kind):
@@ -651,3 +661,109 @@ class TestExecutorParamsAreInTheArtifact(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDodgeCompletion(unittest.TestCase):
+    """DODGE_ARRIVAL_RADIUS_M (2026-11-10): a latched dodge is flown to completion before the
+    mission is handed back, however many clear ticks the policy counts. The threat leaving the
+    camera's view is not the threat passing -- in GUIDED the airframe turns toward the setpoint and
+    the forward camera loses a head-on bird within a second (2026-11-10 encounter 1: both GUIDED
+    windows closed on absence after 0.55 / 0.74 s with < 0.1 m of cross-course motion)."""
+
+    def _encounter(self, **kwargs):
+        kwargs.setdefault("dodge_arrival_radius_m", DODGE_ARRIVAL_RADIUS_M)
+        kwargs.setdefault("relatch_after_arrival_only", True)
+        ex, sink = _exec(**kwargs)
+        divert = AvoidanceManeuver(decision=Decision.DIVERT, setpoint_enu=(40.0, 30.0, 15.0),
+                                   reason="test dodge 10 m east")
+        ex.step(_drone(30.0, 30.0), divert)                 # takeover + latch
+        self.assertEqual(ex.mode, MODE_GUIDED)
+        return ex, sink
+
+    def test_absence_alone_does_not_end_a_dodge_in_progress(self):
+        ex, sink = self._encounter()
+        n_cmd = len(sink.setpoints_sent)
+        for _ in range(6):                                  # twice the clear-tick hysteresis
+            ex.step(_drone(30.5, 30.0), _proceed())        # the bird is out of sight; 9.5 m to go
+        self.assertEqual(ex.mode, MODE_GUIDED, "a half-flown dodge was handed back on absence")
+        self.assertEqual(_events(ex, "resume"), [])
+        pend = [e["resume_pending"] for e in _events(ex, "proceed") if "resume_pending" in e]
+        self.assertEqual(len(pend), 6)
+        self.assertTrue(all(p["reason"] == "dodge_in_progress" for p in pend))
+        self.assertAlmostEqual(pend[-1]["dist_to_latched_m"], 9.5, places=3)
+        self.assertEqual(pend[-1]["arrival_radius_m"], DODGE_ARRIVAL_RADIUS_M)
+        # the latched point was re-commanded on every waiting tick
+        self.assertEqual(len(sink.setpoints_sent) - n_cmd, 6)
+        self.assertTrue(all(sp == (40.0, 30.0, 15.0) for sp in sink.setpoints_sent[n_cmd:]))
+
+    def test_arrival_then_clear_ticks_resumes_and_says_how_far_it_got(self):
+        ex, sink = self._encounter()
+        for x in (33.0, 36.0):
+            ex.step(_drone(x, 30.0), _proceed())           # en route, clear ticks counting
+        self.assertEqual(ex.mode, MODE_GUIDED)
+        ex.step(_drone(38.5, 30.0), _proceed())            # within 2.0 m of (40, 30): arrived
+        self.assertEqual(ex.mode, MODE_AUTO)                # 3rd consecutive clear tick -> resume
+        (res,) = _events(ex, "resume")
+        self.assertEqual(res["trigger"], "threat_cleared")
+        self.assertAlmostEqual(res["dodge_dist_to_latched_m"], 1.5, places=3)
+        self.assertEqual(res["dodge_arrival_radius_m"], DODGE_ARRIVAL_RADIUS_M)
+
+    def test_arrival_still_waits_for_the_clear_tick_hysteresis(self):
+        ex, _ = self._encounter()
+        ex.step(_drone(39.0, 30.0), _proceed())            # arrived on the FIRST clear tick
+        self.assertEqual(ex.mode, MODE_GUIDED, "arrival must not bypass the clear-tick rule")
+        ex.step(_drone(39.0, 30.0), _proceed())
+        self.assertEqual(ex.mode, MODE_GUIDED)
+        ex.step(_drone(39.0, 30.0), _proceed())
+        self.assertEqual(ex.mode, MODE_AUTO)
+
+    def test_a_never_arriving_dodge_still_ends_on_the_ceiling_not_as_cleared(self):
+        ex, _ = self._encounter(guided_ceiling_ticks=8)
+        for _ in range(12):
+            ex.step(_drone(30.0, 30.0), _proceed())
+        self.assertEqual(ex.mode, MODE_AUTO)
+        (res,) = _events(ex, "resume")
+        self.assertEqual(res["trigger"], "guided_ceiling")
+
+    def test_a_hold_only_encounter_keeps_the_old_rule(self):
+        ex, _ = _exec(dodge_arrival_radius_m=DODGE_ARRIVAL_RADIUS_M)
+        ex.step(_drone(30.0, 30.0), AvoidanceManeuver(decision=Decision.HOLD, reason="boxed in"))
+        self.assertEqual(ex.mode, MODE_GUIDED)
+        for _ in range(3):
+            ex.step(_drone(30.0, 30.0), _proceed())
+        self.assertEqual(ex.mode, MODE_AUTO, "no latch, nothing to complete: three clear ticks resume")
+
+    def test_the_knobs_are_in_the_flight_log(self):
+        ex, _ = _exec(dodge_arrival_radius_m=DODGE_ARRIVAL_RADIUS_M, relatch_after_arrival_only=True)
+        self.assertEqual(ex.executor_params()["dodge_arrival_radius_m"], DODGE_ARRIVAL_RADIUS_M)
+        self.assertIs(ex.executor_params()["relatch_after_arrival_only"], True)
+
+    def test_a_relatch_is_refused_while_the_dodge_is_in_progress(self):
+        ex, sink = self._encounter()
+        n_cmd = len(sink.setpoints_sent)
+        # the policy now wants a point 20 m from the latch (the other side); the vehicle is 1 m in
+        far = AvoidanceManeuver(decision=Decision.DIVERT, setpoint_enu=(20.0, 30.0, 15.0), reason="flipped")
+        ex.step(_drone(31.0, 30.0), far)
+        last = _events(ex, "maneuver")[-1]
+        self.assertEqual(last["latch_action"], "relatch_refused_in_progress")
+        self.assertEqual(last["setpoint_enu"], (40.0, 30.0, 15.0), "the commitment moved")
+        self.assertEqual(sink.setpoints_sent[n_cmd:], [(40.0, 30.0, 15.0)])
+        self.assertEqual(_events(ex, "relatch"), [])
+
+    def test_after_arrival_a_moved_threat_may_relatch(self):
+        ex, sink = self._encounter()
+        far = AvoidanceManeuver(decision=Decision.DIVERT, setpoint_enu=(50.0, 30.0, 15.0), reason="still closing")
+        ex.step(_drone(39.0, 30.0), far)                # within 2 m of (40, 30): the dodge arrived
+        last = _events(ex, "maneuver")[-1]
+        self.assertEqual(last["latch_action"], "relatch")
+        self.assertEqual(last["setpoint_enu"], (50.0, 30.0, 15.0))
+
+    def test_the_old_rule_is_one_knob_away(self):
+        ex, _ = self._encounter(relatch_after_arrival_only=False)
+        far = AvoidanceManeuver(decision=Decision.DIVERT, setpoint_enu=(20.0, 30.0, 15.0), reason="flipped")
+        ex.step(_drone(31.0, 30.0), far)
+        self.assertEqual(_events(ex, "maneuver")[-1]["latch_action"], "relatch")
+
+    def test_a_non_positive_radius_is_refused(self):
+        with self.assertRaises(ValueError):
+            _exec(dodge_arrival_radius_m=0.0)

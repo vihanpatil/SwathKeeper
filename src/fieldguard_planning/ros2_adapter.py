@@ -39,7 +39,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_FIELD_POLYGON = REPO_ROOT / "config" / "field_polygon.json"
 
 # ArduCopter flight-mode numbers (Copter mode enum). Confirm with MAVProxy `mode` if ever in doubt.
-AP_COPTER_MODE = {"AUTO": 3, "GUIDED": 4}
+AP_COPTER_MODE = {"AUTO": 3, "GUIDED": 4, "LOITER": 5}  # LOITER: probe_actuation.py's re-init bounce only
 
 # ardupilot_msgs/GlobalPosition.coordinate_frame — MAV_FRAME_GLOBAL_INT (absolute lat/lon, AMSL alt).
 # The executor commands a world-ENU point; we convert to absolute geodetic against the field home,
@@ -59,6 +59,9 @@ _MODE_SWITCH_FAILURE_COST = {
                "and the dodge is NOT flying"),
     "AUTO": ("the vehicle is still in GUIDED — the mission never resumed, so the drone is holding at "
              "the dodge point and coverage is stalling"),
+    "LOITER": ("the vehicle did not take LOITER — probe_actuation.py's re-init bounce did not happen, "
+               "so the GUIDED request that follows re-uses the WP controller's old limits and the "
+               "probe measures the previous parameter set, not the one just typed"),
 }
 
 

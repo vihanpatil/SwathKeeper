@@ -2409,17 +2409,21 @@ def gate_r2_r3(log, run) -> Tuple[List[str], List[str]]:
     degen = _num(pp.get("degenerate_range_m"))
     bird_bar = _num(pp.get("min_bird_clearance_m"))
     n_refused = 0
+    n_refused_in_progress = 0        # RELATCH_AFTER_ARRIVAL_ONLY (2026-11-10): kept the dodge it was flying
     n_maneuvers = 0
     n_rejects = 0
     n_holds = 0
     reject_bird_gaps: List[float] = []
     hold_gaps: List[float] = []
     holds_no_field: List[object] = []               # hold ticks with no USABLE bird_clearance_m
+    above_band_sweeps: List[Tuple[object, float]] = []   # R2 not applied: dodge above the canopy band
     for ev in log.get("events") or []:
         if not isinstance(ev, dict):
             continue
         if ev.get("latch_action") == "relatch_refused_degenerate":
             n_refused += 1
+        if ev.get("latch_action") == "relatch_refused_in_progress":
+            n_refused_in_progress += 1
         kind = ev.get("kind")
         if kind == "hold":
             n_holds += 1
@@ -2464,14 +2468,26 @@ def gate_r2_r3(log, run) -> Tuple[List[str], List[str]]:
                             f"writes one, so absence means this log did not come from this policy")
             continue
         # -- R2.1: the policy did what its own params say ---------------------------------------
+        # Since 2026-11-10 the swept-path margin applies only where the dodge can meet a tree (the
+        # swept segment at or below the canopy band top -- `avoidance_policy._swept_margin_applies`),
+        # and every maneuver says whether it did: `debug.swept_margin_applied`. A dodge flown above
+        # the band may legitimately sweep INSIDE a tree's XY column (mission lane x=15 runs over tree
+        # row 0 at 15 m), so its clearance is reported as context, never a breach. A log written
+        # before the flag existed carries no key, and for it the rule was always live: absent -> True.
         clearance = _num(debug.get("swept_tree_clearance_m"))
+        margin_applied = debug.get("swept_margin_applied", True)
         if clearance is None:
             problems.append(f"tick {tick}: accepted maneuver has no debug.swept_tree_clearance_m "
                             f"-- an accepted dodge with no recorded tree clearance is unvetted "
                             f"evidence, not a passing decision")
-        elif margin is not None and clearance < margin:
+        elif margin_applied is not True and margin_applied is not False:
+            problems.append(f"tick {tick}: debug.swept_margin_applied is {margin_applied!r}, not a "
+                            f"bool -- the field the R2 gate branches on has drifted")
+        elif margin is not None and clearance < margin and margin_applied:
             problems.append(f"R2 BREACH tick {tick}: accepted dodge swept within {clearance:.3f} m "
                             f"of a tree, below the flown lateral_tree_margin_m {margin:.3f} m")
+        elif margin is not None and clearance < margin:
+            above_band_sweeps.append((tick, clearance))
         # -- R3.7: the COMMANDED point kept the policy's own bird bar ----------------------------
         gap = _min_setpoint_bird_gap_m(ev.get("setpoint_enu"), debug.get("threat_positions_enu"))
         if gap is None:
@@ -2513,7 +2529,10 @@ def gate_r2_r3(log, run) -> Tuple[List[str], List[str]]:
     # flight with none has not exercised them, and "no maneuver breached the margin" is a true
     # sentence about an empty set. The vacuous-pass family is how a green gate stops meaning
     # anything (eval/score.py's ADOPT on empty ground truth, 2026-08-21).
+    # The in-progress counter is printed only when it fired: the three committed logs predate the
+    # rule and their output is pinned byte for byte (TestTheNdviPathIsByteIdentical).
     notes.append(f"maneuvers={n_maneuvers} relatch_refused_degenerate={n_refused}"
+                 + (f" relatch_refused_in_progress={n_refused_in_progress}" if n_refused_in_progress else "")
                  + ("" if n_maneuvers else " -- R2/R3 PASS (vacuous): 0 accepted dodges to check"))
     # R3.8: the backstop's own artifact. `n_maneuvers` counts points that PASSED it; this counts the
     # ones it stopped, which is the only place a working backstop shows up in a log.
@@ -4245,9 +4264,17 @@ def main(argv=None) -> int:
                          "log is used if present, otherwise an avoidance log gets a WARNING that "
                          "its authorisation is unverified. Applies to EVERY log on this command "
                          "line -- pass one flight at a time.")
+    ap.add_argument("--results-dir", type=Path, default=RESULTS_DIR, dest="results_dir",
+                    help="the directory whose sibling artifacts (bird tracks, booking sidecars, the "
+                         "launcher's bringup record) belong to the log(s) being scored (default: "
+                         "eval/results). The truth scan refuses a take when ANY other bird track "
+                         "overlaps its sim-time window, and Gazebo's clock restarts near 0 every "
+                         "session -- so a developer-loop run (fly_pipeline.sh encounter) is scored "
+                         "from its own folder, where it has exactly one track. The log's own "
+                         "directory is always scanned as well.")
     args = ap.parse_args(argv)
 
-    paths = args.logs or sorted(RESULTS_DIR.glob("*flight_log*.json"))
+    paths = args.logs or sorted(args.results_dir.glob("*flight_log*.json"))
     if not paths:
         print("[check_live_flight_log] SKIP: no eval/results/*flight_log*.json present -- "
               "nothing to validate (eval/results/ is gitignored; exit 0).")
@@ -4260,8 +4287,8 @@ def main(argv=None) -> int:
     declared = f" (DECLARED BIRD-LESS -- gt_cpa_m {NA_NO_BIRDS})" if args.no_birds else ""
     n_invalid = n_acknowledged = n_declared = 0
     for path in paths:
-        status, messages = check_file(path, truth=args.truth, booking=args.booking,
-                                      no_birds=args.no_birds)
+        status, messages = check_file(path, truth=args.truth, results_dir=args.results_dir,
+                                      booking=args.booking, no_birds=args.no_birds)
         if args.no_birds and status in (VALID, ACKNOWLEDGED):
             n_declared += 1
         if status == INVALID:

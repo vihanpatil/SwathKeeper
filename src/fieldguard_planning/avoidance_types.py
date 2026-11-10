@@ -62,6 +62,12 @@ class DroneState:
     heading_rad: float                         # yaw, ENU convention (0 = +E, CCW positive)
     current_wp_index: int                      # the coverage waypoint the mission is heading to
     ground_speed_mps: float = 0.0
+    # The MISSION LEG's direction (ENU radians), when the caller knows the mission; None otherwise.
+    # The policy's on-track test (R4) reads this before `heading_rad`: yaw turns toward the dodge
+    # setpoint in GUIDED (WP_YAW_BEHAVIOR 2), so a test on yaw flips a head-on bird to "abeam" one
+    # second into the sidestep -- measured 2026-11-10 run 3, where it re-ordered the candidates
+    # mid-dodge on 9 of 13 encounters. The leg does not turn with the airframe.
+    track_heading_rad: Optional[float] = None
 
 
 @dataclass

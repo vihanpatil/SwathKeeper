@@ -5273,6 +5273,7 @@
   "max_detection_age_s": 1.0,
   "min_bird_clearance_m": 3.0,
   "min_confidence": 0.0,
+  "on_track_sidestep_min_range_m": 6.0,
   "threat_radius_m": 12.0,
   "vertical_margin_m": 1.0,
   "vertical_threat_m": 6.0
