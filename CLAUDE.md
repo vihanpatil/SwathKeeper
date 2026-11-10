@@ -151,7 +151,7 @@ Five subagents (`.claude/agents/`): `lead`, `software-engineer`, `platform-engin
 - **`docs/DECISIONS.md` amendments are ≤ 10 lines, and no new ADR ships without a cut.**
 - **tests:src is capped at 3.70:1** (ADR-022 am. 1; baseline 2026-09-10: `src/fieldguard_planning/*.py`
   6,771 vs `tests/**.{py,sh}` 25,049; the src side is `src/**/*.py` since ADR-022 am. 4, 2026-11-05).
-  **UNDER since 2026-11-05: 3.42** (27,929 / 8,173 after step 5 + its three QA rounds; 3.33 after step 2), **by dilution, not by retiring a test** — the new
+  **UNDER since 2026-11-05: 3.40** (28,219 / 8,302 after tool 0.2.0, 2026-11-10; 3.42 after step 5, 3.33 after step 2), **by dilution, not by retiring a test** — the new
   `src/swathkeeper_gates/` joined the src side (ADR-023); over `src/fieldguard_planning/*.py` alone it is
-  27,189 / 6,854 = **3.97** (it was OVER at 3.84 from 2026-09-11). Every new test file still retires one while the
+  28,219 / 6,854 = **4.12** (it was OVER at 3.84 from 2026-09-11). Every new test file still retires one while the
   ratio is over the cap; the cap is not re-baselined.

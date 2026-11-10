@@ -16,19 +16,23 @@ of one measured invariant with nothing that failed when they disagreed; since 20
 
 ```bash
 python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1450, OK (skipped=9) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 429 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1869 passed, 1 FAILED, 9 skipped, 0 xfail
+python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 442 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1882 passed, 1 FAILED, 9 skipped, 0 xfail
 ```
 
-**The consistency check that matters:** 1450 + 429 = 1879 = 1869 + 1 + 9. If those two sides
+**The consistency check that matters:** 1450 + 442 = 1892 = 1882 + 1 + 9. If those two sides
 disagree, a file is invisible to one of the runners — which has happened before and is exactly what
 the second, separate CI job exists to prevent.
+
+*(Re-quoted 2026-11-10 for tool 0.2.0's 13 new host-side tests. The COUNTS are measured, by collection on a clean export of the
+commit: 1450 + 442 = 1892. The pass / fail / skip split was not re-run on the host that day, because another session was flying
+the sim on it; it is the 2026-11-05 split carried forward and is confirmed by the PR's CI run, a fresh checkout.)*
 
 **The 9 skips are a FRESH-checkout figure** (measured in a clean worktree with the pinned venv): 8 of them are
 gated on gitignored local artifacts — the 2026-09-11 wiring-flight log (4), `eval/results/spike_scores.json`
 (1), the adopted clip's `.npy` frames (2) and the seed-42 spike clip (1) — so a developer host that still
 holds those files reads `skipped=1` (the one unconditional skip, `test_safety_scenarios_pending.py:216`) and
-`1877 passed`. Same tree, same sum; only the split moves. CI is a fresh checkout, so this is CI's split.
+`1890 passed`. Same tree, same sum; only the split moves. CI is a fresh checkout, so this is CI's split.
 
 **The 1 failure is deliberate and load-bearing:** `test_ci_evidence_gate…test_step_passes_on_the_
 committed_evidence` is red because the committed 2026-08-25 take breached its GT-CPA bar and the
