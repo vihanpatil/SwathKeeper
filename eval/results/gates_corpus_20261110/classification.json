@@ -1,0 +1,242 @@
+{
+ "00": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: PX4v2",
+  "judged": true
+ },
+ "01": {
+  "population": "github",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "02": {
+  "population": "github",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "03": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixhawk1",
+  "judged": true
+ },
+ "04": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixhawk1",
+  "judged": true
+ },
+ "05": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixhawk6C",
+  "judged": true
+ },
+ "06": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixhawk6C",
+  "judged": true
+ },
+ "07": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixhawk6C",
+  "judged": true
+ },
+ "08": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixracer",
+  "judged": true
+ },
+ "09": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixracer",
+  "judged": true
+ },
+ "10": {
+  "population": "github",
+  "kind": "unclassified",
+  "evidence": "no SIM record, no board banner",
+  "judged": true
+ },
+ "11": {
+  "population": "github",
+  "kind": "unclassified",
+  "evidence": "no SIM record, no board banner",
+  "judged": false
+ },
+ "12": {
+  "population": "github",
+  "kind": "unclassified",
+  "evidence": "no SIM record, no board banner",
+  "judged": false
+ },
+ "13": {
+  "population": "github",
+  "kind": "unclassified",
+  "evidence": "no SIM record, no board banner",
+  "judged": false
+ },
+ "14": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixhawk1",
+  "judged": true
+ },
+ "15": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: PX4v2",
+  "judged": false
+ },
+ "16": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: PX4v2",
+  "judged": false
+ },
+ "17": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: EchoPilotAI",
+  "judged": true
+ },
+ "18": {
+  "population": "github",
+  "kind": "unclassified",
+  "evidence": "no SIM record, no board banner",
+  "judged": true
+ },
+ "19": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: PX4v2",
+  "judged": false
+ },
+ "20": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: PX4v2",
+  "judged": false
+ },
+ "21": {
+  "population": "github",
+  "kind": "synthetic",
+  "evidence": "ArduPlane V4.5.7 (synthetic teaching fixture)",
+  "judged": true
+ },
+ "22": {
+  "population": "github",
+  "kind": "synthetic",
+  "evidence": "ArduPlane V4.5.7 (synthetic teaching fixture)",
+  "judged": true
+ },
+ "23": {
+  "population": "github",
+  "kind": "hardware",
+  "evidence": "board banner: Pixhawk6C",
+  "judged": true
+ },
+ "24": {
+  "population": "github",
+  "kind": "unclassified",
+  "evidence": "no SIM record, no board banner",
+  "judged": true
+ },
+ "25": {
+  "population": "github",
+  "kind": "unclassified",
+  "evidence": "no SIM record, no board banner",
+  "judged": true
+ },
+ "26": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "27": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "28": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "29": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "30": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "31": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "32": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "33": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "34": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "35": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "36": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "37": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "38": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ },
+ "39": {
+  "population": "sitl-autotest",
+  "kind": "sitl",
+  "evidence": "SIM, SIM2 records",
+  "judged": true
+ }
+}

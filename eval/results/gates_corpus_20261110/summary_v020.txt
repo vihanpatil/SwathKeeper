@@ -1,0 +1,111 @@
+logs 40  judged 33  refused 7
+  REFUSED 11 erlerobot/logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 12 erlerobot/logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 13 erlerobot/logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 15 joeydouglas/dataflash_logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 16 joeydouglas/dataflash_logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 19 peterbarker/dataflash-logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 20 peterbarker/dataflash-logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+
+firmware: {'ArduCopter V4.8': 12, 'unresolved': 3, 'ArduCopter V4.6': 3, 'ArduCopter V4.3': 2, 'ArduCopter V3.6': 2, 'ArduCopter V4.5': 2, 'ArduCopter V4.0': 2, 'ArduPlane V4.5': 2, 'ArduPlane V3.9': 2, 'ArduRover V4.8': 2, 'ArduPlane V4.6': 1}
+badge word: {'github': {'could not tell': 14, 'fail': 5}, 'sitl-autotest': {'fail': 13, 'could not tell': 1}}
+
+bar                                     github                 sitl-autotest    (measured = PASS+FAIL / judged logs; then P/F/EI/NA)
+alt_any            6/19   31.6%  P6 F0 EI13 NA0   1/14    7.1%  P1 F0 EI13 NA0
+speed_any         13/19   68.4%  P13 F0 EI6 NA0   0/14    0.0%  P0 F0 EI14 NA0
+batt_any           9/19   47.4%  P9 F0 EI10 NA0  11/14   78.6%  P11 F0 EI3 NA0
+ekf_any            7/19   36.8%  P7 F0 EI12 NA0   1/14    7.1%  P1 F0 EI13 NA0
+gnss              14/19   73.7%  P12 F2 EI5 NA0   1/14    7.1%  P0 F1 EI13 NA0
+fence              2/19   10.5%  P2 F0 EI17 NA0   0/14    0.0%  P0 F0 EI14 NA0
+modes_any         12/19   63.2%  P12 F0 EI7 NA0   9/14   64.3%  P9 F0 EI5 NA0
+modes_seen         5/19   26.3%  P5 F0 EI14 NA0   9/14   64.3%  P9 F0 EI5 NA0
+no_errors          4/19   21.1%  P0 F4 EI15 NA0  13/14   92.9%  P0 F13 EI1 NA0
+speed_in_mode     10/19   52.6%  P10 F0 EI9 NA0   2/14   14.3%  P2 F0 EI12 NA0
+batt_armed         0/19    0.0%  P0 F0 EI19 NA0   0/14    0.0%  P0 F0 EI14 NA0
+speed_armed        0/19    0.0%  P0 F0 EI19 NA0   0/14    0.0%  P0 F0 EI14 NA0
+alt_armed          0/19    0.0%  P0 F0 EI19 NA0   0/14    0.0%  P0 F0 EI14 NA0
+ekf_armed          0/19    0.0%  P0 F0 EI19 NA0   1/14    7.1%  P1 F0 EI13 NA0
+gnss_armed         0/19    0.0%  P0 F0 EI19 NA0   0/14    0.0%  P0 F0 EI14 NA0
+
+all bars, all logs: measured 130/495 = 26.3%   {'EVIDENCE_INSUFFICIENT': 365, 'PASS': 110, 'FAIL': 20}
+
+could-not-tell causes (EI/NA), by bar:
+  alt_any         10  EV: position ABSENT: no POS rows
+  alt_any          5  EV: # gap(s) or hole(s) in scope (rule #); position: # RelHomeAlt samples before home was set (first ORGN Type # at t=# s): 
+  alt_any          2  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (desig
+  alt_any          2  EV: position.alt_rel_home_m ABSENT: no ORGN Type # row: RelHomeAlt has no home; # firmware-dropped writes in [#, #] s (DSF.D
+  speed_any        7  EV: velocity ABSENT: no GPS rows
+  speed_any        7  EV: # gap(s) or hole(s) in scope (rule #); velocity: # of # GPS rows excluded: no #D fix (Status < #)
+  speed_any        2  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (desig
+  speed_any        1  EV: velocity ABSENT: no GPS rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#); # 
+  batt_any         7  EV: battery ABSENT: no BAT rows
+  batt_any         3  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (desig
+  batt_any         1  EV: battery ABSENT: no BAT rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#)
+  batt_any         1  EV: n # < min_n #
+  ekf_any         10  EV: # gap(s) or hole(s) in scope (rule #); ekf: # of # XKF# rows excluded: EKF reported no solution (SS #)
+  ekf_any          4  EV: ekf ABSENT: no NKF# / NKF# rows
+  ekf_any          3  EV: ekf ABSENT: # of # XKF# rows measured anything: EKF reported no solution (SS #)
+  ekf_any          2  EV: ekf ABSENT: XKF# has no C column: instance unidentifiable; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; 
+  gnss             7  EV: gnss ABSENT: no GPS rows
+  gnss             7  EV: # gap(s) or hole(s) in scope (rule #)
+  gnss             1  EV: gnss ABSENT: no GPS rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#); # firm
+  gnss             1  EV: gnss ABSENT: no GPS rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#)
+  fence           16  EV: fence ABSENT: fence disabled (FENCE_ENABLE #)
+  fence            8  EV: fence ABSENT: fence disabled (FENCE_ENABLE #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged acros
+  fence            6  EV: fence ABSENT: FENCE_ENABLE / FENCE_TYPE not logged
+  fence            1  EV: fence ABSENT: FENCE_TYPE #: no circle/alt-max bit, or its parameter is unlogged
+  modes_any        6  EV: n # < min_n #; mode unknown for # s before the first MODE row (<= # s: left out of the scope)
+  modes_any        3  EV: vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved
+  modes_any        1  EV: mode ABSENT: no MODE rows
+  modes_any        1  EV: mode ABSENT: MODE has no ModeNum column
+  modes_seen       5  EV: n # < min_n #; mode unknown for # s before the first MODE row (<= # s: left out of the scope)
+  modes_seen       3  EV: vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved
+  modes_seen       3  EV: # firmware-dropped writes in [#, #] s (DSF.Dp), not located: a MODE row may be among them; mode unknown for # s before t
+  modes_seen       3  EV: # firmware-dropped writes in [#, #] s (DSF.Dp), not located: a MODE row may be among them; # firmware-dropped writes in 
+  no_errors       14  EV: events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V#.<n> firmware string (this log:
+  no_errors        1  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; excluded from n (des
+  no_errors        1  EV: dsf_dropped_max ABSENT: no DSF rows
+  speed_in_mode    7  EV: velocity ABSENT: no GPS rows; mode unknown for # s before the first MODE row (<= # s: left out of the scope)
+  speed_in_mode    4  EV: # gap(s) or hole(s) in scope (rule #); mode unknown for # s before the first MODE row (<= # s: left out of the scope); v
+  speed_in_mode    3  EV: vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved
+  speed_in_mode    1  EV: no window of the scope, and the absence is not measured: hole [#, #] s; hole [#, #] s; hole [#, #] s; hole [#, #] s; mod
+  batt_armed      18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  batt_armed      13  EV: arming is ABSENT before the first ARM row at t=# s (rule #) and the scope reaches there
+  batt_armed       1  EV: battery ABSENT: no BAT rows
+  batt_armed       1  EV: n # < min_n #
+  speed_armed     18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  speed_armed     13  EV: arming is ABSENT before the first ARM row at t=# s (rule #) and the scope reaches there
+  speed_armed      1  EV: velocity ABSENT: no GPS rows
+  speed_armed      1  EV: n # < min_n #
+  alt_armed       18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  alt_armed       13  EV: arming is ABSENT before the first ARM row at t=# s (rule #) and the scope reaches there
+  alt_armed        1  EV: position ABSENT: no POS rows
+  alt_armed        1  EV: n # < min_n #
+  ekf_armed       18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  ekf_armed       13  EV: arming is ABSENT before the first ARM row at t=# s (rule #) and the scope reaches there
+  ekf_armed        1  EV: ekf ABSENT: no NKF# / NKF# rows
+  gnss_armed      18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  gnss_armed      13  EV: arming is ABSENT before the first ARM row at t=# s (rule #) and the scope reaches there
+  gnss_armed       1  EV: gnss ABSENT: no GPS rows
+  gnss_armed       1  EV: n # < min_n #
+
+dropped writes (DSF.Dp):
+  github         judged 19 | DSF present 12 | any drop interval  8 | startup-only  7 | mid-log drops  1 | no DSF  7
+  sitl-autotest  judged 14 | DSF present 14 | any drop interval  0 | startup-only  0 | mid-log drops  0 | no DSF  0
+  drop counts in logs that have them: [1, 2, 2, 8, 9, 128, 243, 358]
+
+arming: logs with >=1 ARM row 15 of 33 | LOG_DISARMED values: {'[0.0]': 14, '[1.0]': 16, 'None': 3}
+LOG_BACKEND_TYPE values: {'[1.0]': 28, 'None': 3, '[4.0]': 2}
+byte holes: logs with interior holes 0 of 33
+runtime: median run_s 0.3 max 1.53
+
+verdict changes vs v010_p2:
+  01 github         modes_seen     PASS -> EVIDENCE_INSUFFICIENT: n=4; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located: a MODE row may be among them; mode unknown for 0.000 s before the first 
+  02 github         modes_seen     PASS -> EVIDENCE_INSUFFICIENT: n=2; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located: a MODE row may be among them; mode unknown for 0.000 s before the first 
+  03 github         modes_any      EVIDENCE_INSUFFICIENT -> PASS: n=6; every judged transition is allowed; the startup row <start> -> STABILIZE is judged, never counted in n; mode unknown for 0.000 s before the first
+  04 github         modes_seen     PASS -> EVIDENCE_INSUFFICIENT: n=6; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located: a MODE row may be among them; mode unknown for 0.000 s before the fi
+  08 github         modes_seen     PASS -> EVIDENCE_INSUFFICIENT: n=5; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located: a MODE row may be among them; 1 firmware-dropped writes in [5.123, 6.124] s 
+  09 github         modes_seen     PASS -> EVIDENCE_INSUFFICIENT: n=7; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located: a MODE row may be among them; 1 firmware-dropped writes in [5.569, 6.570] s 
+  14 github         modes_any      EVIDENCE_INSUFFICIENT -> PASS: n=8; every judged transition is allowed; the startup row <start> -> STABILIZE is judged on `to` alone (from unknown), never counted in n; mode unknown
+  totals: {('modes_seen', 'PASS', 'EVID'): 5, ('modes_any', 'EVID', 'PASS'): 2}
+  badge word changes: {}

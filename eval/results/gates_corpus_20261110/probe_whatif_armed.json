@@ -1,0 +1,4502 @@
+[
+ {
+  "id": "00",
+  "population": "github",
+  "source": "BeastAyyG/ardupilot-log-diagnosis",
+  "path": "data/clean_imports/background_expert_01/benchmark_ready/dataset/log_0036_mechanical_failure.bin",
+  "size_bytes": 1751678,
+  "sha256": "d9464b12aaed79a5ea7f7c626bd96d83037db37018deff5c2399d078a9d155fe",
+  "inspect_exit": 0,
+  "inspect_s": 1.67,
+  "run_exit": 1,
+  "run_s": 0.46,
+  "badge": "gates: could not tell \u00b7 3/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": null,
+  "firmware": null,
+  "duration_s": 150.678188,
+  "dominant_mode": "AUTO",
+  "n_mode_rows": 4,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "ABSENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: unresolved) and LOG_BACKEND_TYPE logged, constant an",
+  "dsf_rows": 0,
+  "dsf_dropped_max": null,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 224.602247,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position.alt_rel_home_m ABSENT: POS has no RelHomeAlt column",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 753,
+    "note": "n=753; worst 5.60223 on instance 0 at t=370.132 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 3004,
+    "note": "n=3004; worst 0.79 on instance 0 at t=373.779 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 753,
+    "note": "n=753; every row in scope qualifies",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: unresolved) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "01",
+  "population": "github",
+  "source": "BeastAyyG/ardupilot-log-diagnosis",
+  "path": "data/clean_imports/basic_dataset/dataset/490df34865__2022-07-26_18-26-44__Compass_Failure_.bin",
+  "size_bytes": 18285220,
+  "sha256": "490df348654d253627ee3ad80f982c3130b0482cd5a880d6e8c4d60881733641",
+  "inspect_exit": 0,
+  "inspect_s": 1.57,
+  "run_exit": 1,
+  "run_s": 1.37,
+  "badge": "gates: fail \u00b7 13/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.3.0-dev",
+  "duration_s": 335.503245,
+  "dominant_mode": "CIRCLE",
+  "n_mode_rows": 5,
+  "n_arm_rows": 1,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 335,
+  "dsf_dropped_max": 8,
+  "drop_intervals": [
+   [
+    152.294058,
+    152.624759,
+    8
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 152.294058,
+  "results": {
+   "alt_any": {
+    "verdict": "PASS",
+    "n": 3356,
+    "note": "n=3356; worst -0.00170893 on instance 0 at t=479.397 s, 1 window(s); instances present [0]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 1678,
+    "note": "n=1678; worst 10.036 on instance 0 at t=381.597 s, 1 window(s); instances present [0]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 3356,
+    "note": "n=3356; worst 12.588 on instance 0 at t=152.297 s, 1 window(s); instances present [0]; all 3356 judged samples equal 12.588; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 6712,
+    "note": "n=6712; worst 0.06 on instance 1 at t=471.097 s, 1 window(s); instances present [0, 1]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 1678,
+    "note": "n=1678; every row in scope qualifies; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 4,
+    "note": "n=4; every observed transition is allowed; the startup row <start> -> GUIDED is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 334.799,
+    "note": "n=334.799; 1 event(s) ['ERR Subsys 3 ECode 4 at t=278.497 s']; drop-free 334.799 s (excluded: Dp rose in [(152.294058, 152.624759)], log holes, and after the last DSF row at 487.424119 s); events PRESENT: None; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 817,
+    "note": "n=817; worst 9.581 on instance 0 at t=337.797 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 3206,
+    "note": "n=3206; worst 12.588 on instance 0 at t=152.297 s, 1 window(s); instances present [0]; all 3206 judged samples equal 12.588; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 1603,
+    "note": "n=1603; worst 10.036 on instance 0 at t=381.597 s, 1 window(s); instances present [0]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 3206,
+    "note": "n=3206; worst 0.00246021 on instance 0 at t=155.497 s, 1 window(s); instances present [0]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 6412,
+    "note": "n=6412; worst 0.06 on instance 1 at t=471.097 s, 1 window(s); instances present [0, 1]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 1603,
+    "note": "n=1603; every row in scope qualifies; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "02",
+  "population": "github",
+  "source": "BeastAyyG/ardupilot-log-diagnosis",
+  "path": "data/clean_imports/basic_dataset/dataset/b62f057714__2022-07-27_16-13-54__RC_Failure_.bin",
+  "size_bytes": 14387472,
+  "sha256": "b62f05771458a45d6fe48f5bc606d27946efb21a247d1d7bc4590bb9eb538185",
+  "inspect_exit": 0,
+  "inspect_s": 1.17,
+  "run_exit": 1,
+  "run_s": 1.5,
+  "badge": "gates: fail \u00b7 13/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.3.0-dev",
+  "duration_s": 262.877307,
+  "dominant_mode": "AUTO",
+  "n_mode_rows": 3,
+  "n_arm_rows": 1,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 262,
+  "dsf_dropped_max": 9,
+  "drop_intervals": [
+   [
+    164.013535,
+    164.653279,
+    9
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 164.013535,
+  "results": {
+   "alt_any": {
+    "verdict": "PASS",
+    "n": 2629,
+    "note": "n=2629; worst -0.00480358 on instance 0 at t=418.591 s, 1 window(s); instances present [0]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 1315,
+    "note": "n=1315; worst 9.918 on instance 0 at t=320.791 s, 1 window(s); instances present [0]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 2629,
+    "note": "n=2629; worst 12.588 on instance 0 at t=164.091 s, 1 window(s); instances present [0]; all 2629 judged samples equal 12.588; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 5258,
+    "note": "n=5258; worst 0.04 on instance 0 at t=170.491 s, 1 window(s); instances present [0, 1]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 1315,
+    "note": "n=1315; every row in scope qualifies; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 2,
+    "note": "n=2; every observed transition is allowed; the startup row <start> -> GUIDED is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 261.63,
+    "note": "n=261.63; 2 event(s) ['ERR Subsys 2 ECode 2 at t=308.721 s', 'ERR Subsys 5 ECode 1 at t=308.721 s']; drop-free 261.63 s (excluded: Dp rose in [(164.013535, 164.653279)], log holes, and after the last DSF row at 426.283585 s); events PRESENT: None; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 674,
+    "note": "n=674; worst 9.062 on instance 0 at t=260.592 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 2479,
+    "note": "n=2479; worst 12.588 on instance 0 at t=164.091 s, 1 window(s); instances present [0]; all 2479 judged samples equal 12.588; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 1240,
+    "note": "n=1240; worst 9.918 on instance 0 at t=320.791 s, 1 window(s); instances present [0]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 2479,
+    "note": "n=2479; worst 0.00230829 on instance 0 at t=166.792 s, 1 window(s); instances present [0]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 4958,
+    "note": "n=4958; worst 0.04 on instance 0 at t=170.491 s, 1 window(s); instances present [0, 1]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 1240,
+    "note": "n=1240; every row in scope qualifies; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "03",
+  "population": "github",
+  "source": "SanderLeliveldGH/dronelogshare",
+  "path": "2 1-1-1980 01-00-00.bin",
+  "size_bytes": 1410786,
+  "sha256": "fcd4645a454e7fd9822742dbdb4a78c490ff6699618791ceea8216df45e7d064",
+  "inspect_exit": 0,
+  "inspect_s": 1.53,
+  "run_exit": 1,
+  "run_s": 0.48,
+  "badge": "gates: could not tell \u00b7 0/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V3.6.8",
+  "duration_s": 125.382703,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 7,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "PRESENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V3.6.8) and LOG_BACKEND_TYPE logged, cons",
+  "dsf_rows": 102,
+  "dsf_dropped_max": 243,
+  "drop_intervals": [
+   [
+    101.727821,
+    102.430468,
+    66
+   ],
+   [
+    129.493026,
+    130.495674,
+    92
+   ],
+   [
+    208.671753,
+    210.67647,
+    85
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 101.727821,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1028,
+    "note": "n=1028; 2 gap(s) or hole(s) in scope (rule 5); 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1030,
+    "note": "n=1030; 2 gap(s) or hole(s) in scope (rule 5); 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: XKF4 has no C column: instance unidentifiable; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 2,
+    "note": "n=2; 1 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V3.6.8) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; excluded from n (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; excluded from n (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3); 92 firmware-dropped writes in [129.493, 130.496] s (DSF.Dp), not located; judged across (design \u00a73.3); 85 firmware-dropped writes in [208.672, 210.676] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "04",
+  "population": "github",
+  "source": "SanderLeliveldGH/dronelogshare",
+  "path": "33 1-1-1980 01-00-00.bin",
+  "size_bytes": 3751386,
+  "sha256": "567f9d7d272a463116d4784fb44dfcce4204753d0ed73417efe31878e801d9d2",
+  "inspect_exit": 0,
+  "inspect_s": 0.99,
+  "run_exit": 1,
+  "run_s": 1.08,
+  "badge": "gates: could not tell \u00b7 1/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V3.6.8",
+  "duration_s": 275.707552,
+  "dominant_mode": "LOITER",
+  "n_mode_rows": 7,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "PRESENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V3.6.8) and LOG_BACKEND_TYPE logged, cons",
+  "dsf_rows": 272,
+  "dsf_dropped_max": 358,
+  "drop_intervals": [
+   [
+    1470.810385,
+    1472.848637,
+    358
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 1470.810385,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 2727,
+    "note": "n=2727; 2 gap(s) or hole(s) in scope (rule 5); 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 2728,
+    "note": "n=2728; 2 gap(s) or hole(s) in scope (rule 5); 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: XKF4 has no C column: instance unidentifiable; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 6,
+    "note": "n=6; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V3.6.8) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "05",
+  "population": "github",
+  "source": "VinayMatade/TEAM_18_E",
+  "path": "files/bin and jpg/00000001.BIN",
+  "size_bytes": 662629,
+  "sha256": "0d5e82d4014233026006473e80f813f6c2e17c2cecc399517445c17630653770",
+  "inspect_exit": 0,
+  "inspect_s": 0.28,
+  "run_exit": 1,
+  "run_s": 0.36,
+  "badge": "gates: could not tell \u00b7 10/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.6.2",
+  "duration_s": 22.280708,
+  "dominant_mode": "LOITER",
+  "n_mode_rows": 1,
+  "n_arm_rows": 1,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "ABSENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "ABSENT",
+   "home": "PRESENT",
+   "fence": "PRESENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.6.2) and LOG_BACKEND_TYPE logged, cons",
+  "dsf_rows": 22,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 69.522259,
+  "results": {
+   "alt_any": {
+    "verdict": "PASS",
+    "n": 222,
+    "note": "n=222; worst -0.128322 on instance 0 at t=73.223 s, 1 window(s); instances present [0]; position: 1 RelHomeAlt samples before home was set (first ORGN Type 1 at t=69.590 s): not a value; 1 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 112,
+    "note": "n=112; worst 0.238 on instance 0 at t=86.003 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 446,
+    "note": "n=446; worst 0.1 on instance 1 at t=72.822 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 112,
+    "note": "n=112; every row in scope qualifies",
+    "param": null
+   },
+   "fence": {
+    "verdict": "PASS",
+    "n": 222,
+    "note": "n=222; minimum signed margin of the samples and judged segments 19.807 m (altitude above home) at t=89.723 s; FENCE_TYPE polygon bit set: not judged (v1 reads no FNCE); position: 1 RelHomeAlt samples before home was set (first ORGN Type 1 at t=69.590 s): not a value",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; n 0 < min_n 1; mode unknown for 0.068 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.6.2) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 112,
+    "note": "n=112; worst 0.238 on instance 0 at t=86.003 s, 1 window(s); instances present [0]; mode unknown for 0.068 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 37,
+    "note": "n=37; worst 0.139 on instance 0 at t=72.223 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 72,
+    "note": "n=72; worst -0.128322 on instance 0 at t=73.223 s, 1 window(s); instances present [0]; position: 1 RelHomeAlt samples before home was set (first ORGN Type 1 at t=69.590 s): not a value; 1 sample(s) excluded, not values",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 148,
+    "note": "n=148; worst 0.1 on instance 1 at t=72.822 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 37,
+    "note": "n=37; every row in scope qualifies",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "06",
+  "population": "github",
+  "source": "VinayMatade/TEAM_18_E",
+  "path": "files/bin and jpg/2025-08-21 15-17-08.bin",
+  "size_bytes": 4026954,
+  "sha256": "7a632625ee7127d55bd06dc8f1cc2681bc2d52fd08d430948ae230e3b9fbf712",
+  "inspect_exit": 0,
+  "inspect_s": 0.6,
+  "run_exit": 1,
+  "run_s": 0.73,
+  "badge": "gates: could not tell \u00b7 13/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.6.2",
+  "duration_s": 158.040646,
+  "dominant_mode": "GUIDED",
+  "n_mode_rows": 2,
+  "n_arm_rows": 1,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "ABSENT",
+   "home": "PRESENT",
+   "fence": "PRESENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.6.2) and LOG_BACKEND_TYPE logged, cons",
+  "dsf_rows": 157,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 236.967671,
+  "results": {
+   "alt_any": {
+    "verdict": "PASS",
+    "n": 1580,
+    "note": "n=1580; worst -0.107244 on instance 0 at t=240.169 s, 1 window(s); instances present [0]; position: 1 RelHomeAlt samples before home was set (first ORGN Type 1 at t=237.031 s): not a value; 1 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 791,
+    "note": "n=791; worst 8.323 on instance 0 at t=342.609 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 1581,
+    "note": "n=1581; worst 13.6071 on instance 0 at t=303.768 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 3162,
+    "note": "n=3162; worst 0.3 on instance 1 at t=308.268 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 791,
+    "note": "n=791; every row in scope qualifies",
+    "param": null
+   },
+   "fence": {
+    "verdict": "PASS",
+    "n": 1580,
+    "note": "n=1580; minimum signed margin of the samples and judged segments 4.370 m (altitude above home) at t=343.969 s; FENCE_TYPE polygon bit set: not judged (v1 reads no FNCE); position: 1 RelHomeAlt samples before home was set (first ORGN Type 1 at t=237.031 s): not a value",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 1,
+    "note": "n=1; every observed transition is allowed; the startup row <start> -> GUIDED is judged but not counted in n; mode unknown for 0.063 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.6.2) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 492,
+    "note": "n=492; worst 4.703 on instance 0 at t=253.609 s, 1 window(s); instances present [0]; mode unknown for 0.063 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 1432,
+    "note": "n=1432; worst 13.6071 on instance 0 at t=303.768 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 716,
+    "note": "n=716; worst 8.323 on instance 0 at t=342.609 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 1430,
+    "note": "n=1430; worst -0.107244 on instance 0 at t=240.169 s, 1 window(s); instances present [0]; position: 1 RelHomeAlt samples before home was set (first ORGN Type 1 at t=237.031 s): not a value; 1 sample(s) excluded, not values",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 2864,
+    "note": "n=2864; worst 0.3 on instance 1 at t=308.268 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 716,
+    "note": "n=716; every row in scope qualifies",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "07",
+  "population": "github",
+  "source": "VinayMatade/TEAM_18_E",
+  "path": "files/rtk_logs/00000045_RTK.BIN",
+  "size_bytes": 410873,
+  "sha256": "fa273d8d62224f14d90bdc06f03a7b9de4fa1724047ddf67d5c0b063933ef4b0",
+  "inspect_exit": 0,
+  "inspect_s": 0.27,
+  "run_exit": 1,
+  "run_s": 0.28,
+  "badge": "gates: could not tell \u00b7 0/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.5.7",
+  "duration_s": 29.100571,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 1,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "EMPTY",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows: EMPTY per AP_Logger::Write_Error -> WriteCriticalBlock (cited at tag Copter-4.5.5). File backend only; silent gates are caught by the gap rule be",
+  "dsf_rows": 21,
+  "dsf_dropped_max": 1,
+  "drop_intervals": [
+   [
+    26.726263,
+    27.501539,
+    1
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 26.726263,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position.alt_rel_home_m ABSENT: no ORGN Type 1 row: RelHomeAlt has no home; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 106,
+    "note": "n=106; 8 gap(s) or hole(s) in scope (rule 5); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 212,
+    "note": "n=212; 8 gap(s) or hole(s) in scope (rule 5); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 424,
+    "note": "n=424; 12 gap(s) or hole(s) in scope (rule 5); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 106,
+    "note": "n=106; 8 gap(s) or hole(s) in scope (rule 5); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; 4 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 1; mode unknown for 0.013 s before the first MODE row (<= 1.0 s: left out of the scope); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 19.703,
+    "note": "n=19.703; 4 gap(s) or hole(s) in scope (rule 5); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 106,
+    "note": "n=106; 8 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.013 s before the first MODE row (<= 1.0 s: left out of the scope); 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "08",
+  "population": "github",
+  "source": "diaven/ardupilot-LogAnalyzer",
+  "path": "example/sample_data/sample01.bin",
+  "size_bytes": 598016,
+  "sha256": "229a9f6112652b53aea0e4eaab57a387fd85c70b745d78c5f4b0ecebea160fe6",
+  "inspect_exit": 0,
+  "inspect_s": 0.86,
+  "run_exit": 1,
+  "run_s": 0.62,
+  "badge": "gates: could not tell \u00b7 5/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.0.2",
+  "duration_s": 146.116362,
+  "dominant_mode": "ALT_HOLD",
+  "n_mode_rows": 6,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.0.2) and LOG_BACKEND_TYPE logged, cons",
+  "dsf_rows": 146,
+  "dsf_dropped_max": 2,
+  "drop_intervals": [
+   [
+    5.123489,
+    5.123489,
+    1
+   ],
+   [
+    5.123489,
+    6.124361,
+    1
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 5.308499,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 686,
+    "note": "n=686; worst 1.1 on instance 0 at t=79.100 s, 1 window(s); instances present [0]; velocity: 43 of 729 GPS rows excluded: no 3D fix (Status < 3); 730 GPS2 rows not read; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 1460,
+    "note": "n=1460; worst 13.8333 on instance 0 at t=111.840 s, 1 window(s); instances present [0]; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 729,
+    "note": "n=729; 43 non-qualifying run(s); longest 0.242 s on instance 0 from t=6.117 s; gnss: 730 GPS2 rows not read; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 5,
+    "note": "n=5; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.185 s before the first MODE row (<= 1.0 s: left out of the scope); 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.0.2) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; excluded from n (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 271,
+    "note": "n=271; worst 1.042 on instance 0 at t=113.300 s, 2 window(s); instances present [0]; mode unknown for 0.185 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 43 of 729 GPS rows excluded: no 3D fix (Status < 3); 730 GPS2 rows not read; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "09",
+  "population": "github",
+  "source": "diaven/ardupilot-LogAnalyzer",
+  "path": "example/sample_data/sample02.bin",
+  "size_bytes": 827392,
+  "sha256": "9a305f4bff78c4a3c071fb7385d8b30eb11d9388ae7f4372e7a9f9bc246bd19b",
+  "inspect_exit": 0,
+  "inspect_s": 0.33,
+  "run_exit": 1,
+  "run_s": 0.45,
+  "badge": "gates: could not tell \u00b7 5/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.0.2",
+  "duration_s": 196.668013,
+  "dominant_mode": "POSHOLD",
+  "n_mode_rows": 8,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.0.2) and LOG_BACKEND_TYPE logged, cons",
+  "dsf_rows": 197,
+  "dsf_dropped_max": 2,
+  "drop_intervals": [
+   [
+    5.569317,
+    5.569317,
+    1
+   ],
+   [
+    5.569317,
+    6.57033,
+    1
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 5.751796,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 983,
+    "note": "n=983; worst 1.124 on instance 0 at t=190.934 s, 1 window(s); instances present [0]; velocity: 983 GPS2 rows not read; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 1966,
+    "note": "n=1966; worst 13.2103 on instance 0 at t=160.287 s, 1 window(s); instances present [0]; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 983,
+    "note": "n=983; every row in scope qualifies; gnss: 983 GPS2 rows not read; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 7,
+    "note": "n=7; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.182 s before the first MODE row (<= 1.0 s: left out of the scope); 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.0.2) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; excluded from n (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 692,
+    "note": "n=692; worst 1.124 on instance 0 at t=190.934 s, 3 window(s); instances present [0]; mode unknown for 0.182 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 983 GPS2 rows not read; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "10",
+  "population": "github",
+  "source": "erlerobot/logs",
+  "path": "erlebrain/APM/21.BIN",
+  "size_bytes": 5743809,
+  "sha256": "2ecdc9662a97cae24cc4dc86c756289585041c2a36ed0a1aea23b36a378fae36",
+  "inspect_exit": 0,
+  "inspect_s": 1.32,
+  "run_exit": 1,
+  "run_s": 1.08,
+  "badge": "gates: could not tell \u00b7 0/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": null,
+  "firmware": null,
+  "duration_s": 436.850572,
+  "dominant_mode": "AUTO",
+  "n_mode_rows": 5,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "ABSENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 0,
+  "dsf_dropped_max": null,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 17.130653,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9328,
+    "note": "n=9328; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: FENCE_ENABLE / FENCE_TYPE not logged",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; dsf_dropped_max ABSENT: no DSF rows",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "11",
+  "population": "github",
+  "source": "erlerobot/logs",
+  "path": "pxf/copter/22-12-2014/41.BIN",
+  "size_bytes": 1878393,
+  "sha256": "780948991dd6742ea8e8bd981a273dc1e7be085df83f93194d7ea438642a4473",
+  "inspect_exit": 2,
+  "inspect_s": 0.65,
+  "refusal": "swathkeeper-gates: refused: DataFlash decode found no timestamped contract record"
+ },
+ {
+  "id": "12",
+  "population": "github",
+  "source": "erlerobot/logs",
+  "path": "pxf/copter/6-11-2014/GPS_issues3.BIN",
+  "size_bytes": 737280,
+  "sha256": "fc7734f83b547712e0985491f979b3748293e719707fbd39d4898eab8153e70d",
+  "inspect_exit": 2,
+  "inspect_s": 0.28,
+  "refusal": "swathkeeper-gates: refused: DataFlash decode found no timestamped contract record"
+ },
+ {
+  "id": "13",
+  "population": "github",
+  "source": "erlerobot/logs",
+  "path": "pxf/copter/7-9-2014/6.BIN",
+  "size_bytes": 536602,
+  "sha256": "72657446f5464583c0ccc815913af5948481d26d15237d1b84dcd8d390d2858f",
+  "inspect_exit": 2,
+  "inspect_s": 0.29,
+  "refusal": "swathkeeper-gates: refused: DataFlash decode found no timestamped contract record"
+ },
+ {
+  "id": "14",
+  "population": "github",
+  "source": "has1172/ArduPilot_Telemetry_Ingestion_Demo",
+  "path": "sample_crash_log.bin",
+  "size_bytes": 3151839,
+  "sha256": "59106200c1558b8034ee4c13c36248849935f31d53d806eba4c6416178d15b05",
+  "inspect_exit": 0,
+  "inspect_s": 0.6,
+  "run_exit": 1,
+  "run_s": 1.31,
+  "badge": "gates: fail \u00b7 5/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.5.7",
+  "duration_s": 686.806621,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 9,
+  "n_arm_rows": 4,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "ABSENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 227,
+  "dsf_dropped_max": 128,
+  "drop_intervals": [
+   [
+    547.667631,
+    548.593465,
+    128
+   ]
+  ],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 547.667631,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position.alt_rel_home_m ABSENT: no ORGN Type 1 row: RelHomeAlt has no home; 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1136,
+    "note": "n=1136; 3 gap(s) or hole(s) in scope (rule 5); 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows; 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 2271,
+    "note": "n=2271; 2 gap(s) or hole(s) in scope (rule 5); ekf: 1 of 2272 XKF4 rows excluded: EKF reported no solution (SS 0); 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "FAIL",
+    "n": 1136,
+    "note": "n=1136; 23 non-qualifying run(s); longest 31.600 s on instance 0 from t=1182.011 s; 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0); 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1,
+    "note": "n=1; 1 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.290 s before the first MODE row (<= 1.0 s: left out of the scope); 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 227.108,
+    "note": "n=227.108; 1 event(s) ['ERR Subsys 10 ECode 5 at t=1210.286 s']; drop-free 227.108 s (excluded: Dp rose in [(547.667631, 548.593465)], log holes, and after the last DSF row at 1234.201188 s); events PRESENT: None; 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; excluded from n (design \u00a73.3)",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1135,
+    "note": "n=1135; 5 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.290 s before the first MODE row (<= 1.0 s: left out of the scope); 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 564,
+    "note": "n=564; worst 6.195 on instance 0 at t=663.191 s, 2 window(s); instances present [0]",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position.alt_rel_home_m ABSENT: no ORGN Type 1 row: RelHomeAlt has no home",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 1129,
+    "note": "n=1129; worst 0 on instance 0 at t=583.073 s, 2 window(s); instances present [0]; all 1129 judged samples equal 0; ekf: 1 of 2272 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "FAIL",
+    "n": 564,
+    "note": "n=564; 17 non-qualifying run(s); longest 22.800 s on instance 0 from t=1190.811 s",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "15",
+  "population": "github",
+  "source": "joeydouglas/dataflash_logs",
+  "path": "2014-10-18 20-04-24.bin",
+  "size_bytes": 1449618,
+  "sha256": "314ce5d710663e277c0dc7700c8f76c4bac7bab01be5445eaeef268b92442059",
+  "inspect_exit": 2,
+  "inspect_s": 0.61,
+  "refusal": "swathkeeper-gates: refused: DataFlash decode found no timestamped contract record"
+ },
+ {
+  "id": "16",
+  "population": "github",
+  "source": "joeydouglas/dataflash_logs",
+  "path": "2014-10-18 20-44-05.bin",
+  "size_bytes": 1313420,
+  "sha256": "89d6423865b730dada1983d419be88d94dfb3f16d1521d0ec4862aa732f41efd",
+  "inspect_exit": 2,
+  "inspect_s": 0.34,
+  "refusal": "swathkeeper-gates: refused: DataFlash decode found no timestamped contract record"
+ },
+ {
+  "id": "17",
+  "population": "github",
+  "source": "kumar9900/Ardupilot_local_tools",
+  "path": "Log.bin",
+  "size_bytes": 21946301,
+  "sha256": "c1bc2c761de42933cd94a7a779b1ac7e682d83251fd45c8202ccb6bcdba0610e",
+  "inspect_exit": 0,
+  "inspect_s": 1.96,
+  "run_exit": 1,
+  "run_s": 2.52,
+  "badge": "gates: could not tell \u00b7 12/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduPlane",
+  "firmware": "ArduPlane V4.6.2",
+  "duration_s": 217.640875,
+  "dominant_mode": "AUTO",
+  "n_mode_rows": 5,
+  "n_arm_rows": 1,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V4.6.2) and LOG_BACKEND_TYPE logged, const",
+  "dsf_rows": 214,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 835.504839,
+  "results": {
+   "alt_any": {
+    "verdict": "PASS",
+    "n": 5424,
+    "note": "n=5424; worst -3.35301 on instance 0 at t=1036.266 s, 1 window(s); instances present [0]; position: 18 RelHomeAlt samples before home was set (first ORGN Type 1 at t=836.206 s): not a value; 18 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 1089,
+    "note": "n=1089; worst 53.7146 on instance 0 at t=893.686 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 2176,
+    "note": "n=2176; worst 43.5649 on instance 0 at t=970.686 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 10884,
+    "note": "n=10884; worst 0.35 on instance 0 at t=924.705 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 1089,
+    "note": "n=1089; every row in scope qualifies",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: FENCE_TYPE 4: no circle/alt-max bit, or its parameter is unlogged",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 4,
+    "note": "n=4; every observed transition is allowed; the startup row <start> -> QHOVER is judged but not counted in n; mode unknown for 0.701 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V4.6.2) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 627,
+    "note": "n=627; worst 53.7146 on instance 0 at t=893.686 s, 1 window(s); instances present [0]; mode unknown for 0.701 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 2027,
+    "note": "n=2027; worst 43.5649 on instance 0 at t=970.686 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 1014,
+    "note": "n=1014; worst 53.7146 on instance 0 at t=893.686 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 5050,
+    "note": "n=5050; worst -3.35301 on instance 0 at t=1036.266 s, 1 window(s); instances present [0]; position: 18 RelHomeAlt samples before home was set (first ORGN Type 1 at t=836.206 s): not a value; 18 sample(s) excluded, not values",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 10136,
+    "note": "n=10136; worst 0.35 on instance 0 at t=924.705 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 1014,
+    "note": "n=1014; every row in scope qualifies",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "18",
+  "population": "github",
+  "source": "lookmanOZ/drone-log-analyzer",
+  "path": "arduplane_tecs_bug_demo.bin",
+  "size_bytes": 341834,
+  "sha256": "4a256816b1a9f39c34e78a9769b114f9544091bd450180ca43166e663552b703",
+  "inspect_exit": 0,
+  "inspect_s": 0.69,
+  "run_exit": 1,
+  "run_s": 0.75,
+  "badge": "gates: fail \u00b7 3/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": null,
+  "firmware": null,
+  "duration_s": 129.8,
+  "dominant_mode": "AUTO",
+  "n_mode_rows": 4,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: unresolved) and LOG_BACKEND_TYPE logged, constant an",
+  "dsf_rows": 0,
+  "dsf_dropped_max": null,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 0.0,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 650,
+    "note": "n=650; worst 17.1636 on instance 0 at t=67.800 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 520,
+    "note": "n=520; worst 11.0084 on instance 0 at t=129.750 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": null
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "FAIL",
+    "n": 650,
+    "note": "n=650; 1 non-qualifying run(s); longest 7.600 s on instance 0 from t=0.000 s",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: FENCE_ENABLE / FENCE_TYPE not logged",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: unresolved) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: not logged); no ERR format defined",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": null
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "19",
+  "population": "github",
+  "source": "peterbarker/dataflash-logs",
+  "path": "1.BIN",
+  "size_bytes": 3095199,
+  "sha256": "34dc8493291164832ca507cded81733b40e1caf32d09a56fb25b43ef6c753ee5",
+  "inspect_exit": 2,
+  "inspect_s": 0.61,
+  "refusal": "swathkeeper-gates: refused: DataFlash decode found no timestamped contract record"
+ },
+ {
+  "id": "20",
+  "population": "github",
+  "source": "peterbarker/dataflash-logs",
+  "path": "3.BIN",
+  "size_bytes": 958464,
+  "sha256": "86086c7f193de7cdbf29ea0d878dbd3c1ea17066460164838435c03528f0cfe9",
+  "inspect_exit": 2,
+  "inspect_s": 0.3,
+  "refusal": "swathkeeper-gates: refused: DataFlash decode found no timestamped contract record"
+ },
+ {
+  "id": "21",
+  "population": "github",
+  "source": "polojia997/ardupilot-log-analyzer",
+  "path": "\u6d4b\u8bd5/missing.BIN",
+  "size_bytes": 420366,
+  "sha256": "e0a99f913698dee0e164781c1b207adb52563d240353289632e8cba4e5a2afec",
+  "inspect_exit": 0,
+  "inspect_s": 0.56,
+  "run_exit": 1,
+  "run_s": 0.28,
+  "badge": "gates: could not tell \u00b7 0/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduPlane",
+  "firmware": "ArduPlane V4.5.7",
+  "duration_s": 220.0,
+  "dominant_mode": "AUTO",
+  "n_mode_rows": 0,
+  "n_arm_rows": 2,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "ABSENT",
+   "ekf": "ABSENT",
+   "mode": "ABSENT",
+   "arming": "PRESENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "ABSENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V4.5.7) and LOG_BACKEND_TYPE logged, const",
+  "dsf_rows": 0,
+  "dsf_dropped_max": null,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 10.0,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": null
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: FENCE_ENABLE / FENCE_TYPE not logged",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; mode ABSENT: no MODE rows",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V4.5.7) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: not logged); no ERR format defined",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": null
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; mode ABSENT: no MODE rows",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "22",
+  "population": "github",
+  "source": "polojia997/ardupilot-log-analyzer",
+  "path": "\u6d4b\u8bd5/normal.BIN",
+  "size_bytes": 2173082,
+  "sha256": "81c2cc907c7effcdc037d2d5b77c777c61731654f63afa7351060141aca5ffc1",
+  "inspect_exit": 2,
+  "inspect_s": 0.62,
+  "refusal": "swathkeeper-gates: internal error, no verdict (exit 2)"
+ },
+ {
+  "id": "23",
+  "population": "github",
+  "source": "shashwatagrawal0407-code/uav-flight-log-analyzer",
+  "path": "logs/00000008.BIN",
+  "size_bytes": 962560,
+  "sha256": "5bfb91d20b5b69457b8c45f5162a47fd594223a5744027d596dfafec4b16ecf7",
+  "inspect_exit": 0,
+  "inspect_s": 0.65,
+  "run_exit": 1,
+  "run_s": 0.6,
+  "badge": "gates: fail \u00b7 8/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.6.3",
+  "duration_s": 40.400289,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 2,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 40,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 102.362797,
+  "results": {
+   "alt_any": {
+    "verdict": "PASS",
+    "n": 348,
+    "note": "n=348; worst -1.46709 on instance 0 at t=119.263 s, 1 window(s); instances present [0]; position: 56 RelHomeAlt samples before home was set (first ORGN Type 1 at t=107.916 s): not a value; 56 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 202,
+    "note": "n=202; worst 2.191 on instance 0 at t=123.503 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 405,
+    "note": "n=405; worst 22.9692 on instance 0 at t=134.663 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 810,
+    "note": "n=810; worst 0.59 on instance 0 at t=123.563 s, 1 window(s); instances present [0, 1]",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 202,
+    "note": "n=202; every row in scope qualifies",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 1,
+    "note": "n=1; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.094 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 40.085,
+    "note": "n=40.085; 1 event(s) ['ERR Subsys 11 ECode 2 at t=141.763 s']; drop-free 40.085 s (excluded: Dp rose in [], log holes, and after the last DSF row at 142.448067 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 167,
+    "note": "n=167; worst 2.191 on instance 0 at t=123.503 s, 1 window(s); instances present [0]; mode unknown for 0.094 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "24",
+  "population": "github",
+  "source": "tornidomaroc-web/uas-sustainment-workbench",
+  "path": "tests/fixtures/alfa/2018-07-30_16-30-14.bin",
+  "size_bytes": 194218,
+  "sha256": "f74823b01f009e08172aaa6db7f9b461b56af51b4f89f9d5217f5665f1d8576b",
+  "inspect_exit": 0,
+  "inspect_s": 0.22,
+  "run_exit": 1,
+  "run_s": 0.23,
+  "badge": "gates: could not tell \u00b7 4/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduPlane",
+  "firmware": "ArduPlane V3.9.0-beta1",
+  "duration_s": 490.585231,
+  "dominant_mode": "MANUAL",
+  "n_mode_rows": 6,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "ABSENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V3.9.0-beta1) and LOG_BACKEND_TYPE logged,",
+  "dsf_rows": 0,
+  "dsf_dropped_max": null,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 366.307171,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 2451,
+    "note": "n=2451; worst 26.289 on instance 0 at t=464.493 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 2451,
+    "note": "n=2451; every row in scope qualifies",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: FENCE_ENABLE / FENCE_TYPE not logged",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 5,
+    "note": "n=5; every observed transition is allowed; the startup row <start> -> MANUAL is judged but not counted in n; mode unknown for 0.210 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V3.9.0-beta1) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); no ERR format defined",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 1684,
+    "note": "n=1684; worst 26.289 on instance 0 at t=464.493 s, 3 window(s); instances present [0]; mode unknown for 0.210 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "25",
+  "population": "github",
+  "source": "tornidomaroc-web/uas-sustainment-workbench",
+  "path": "tests/fixtures/alfa/2018-07-30_16-46-36.bin",
+  "size_bytes": 195020,
+  "sha256": "86083d20dffa844520a4f53118fa3221c3754da848bce2bc793d9d7f2dae55e1",
+  "inspect_exit": 0,
+  "inspect_s": 0.22,
+  "run_exit": 1,
+  "run_s": 0.24,
+  "badge": "gates: could not tell \u00b7 4/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduPlane",
+  "firmware": "ArduPlane V3.9.0-beta1",
+  "duration_s": 491.082691,
+  "dominant_mode": "MANUAL",
+  "n_mode_rows": 6,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "ABSENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "ABSENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V3.9.0-beta1) and LOG_BACKEND_TYPE logged,",
+  "dsf_rows": 0,
+  "dsf_dropped_max": null,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 252.455228,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "PASS",
+    "n": 2453,
+    "note": "n=2453; worst 25.602 on instance 0 at t=370.939 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      0.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "PASS",
+    "n": 2453,
+    "note": "n=2453; every row in scope qualifies",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: FENCE_ENABLE / FENCE_TYPE not logged",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 5,
+    "note": "n=5; every observed transition is allowed; the startup row <start> -> MANUAL is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduPlane V3.9.0-beta1) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0]); no ERR format defined",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 1687,
+    "note": "n=1687; worst 25.602 on instance 0 at t=370.939 s, 3 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "26",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000499.BIN",
+  "size_bytes": 3788800,
+  "sha256": "63fe56bf29c365fdfaeb85c513a784a4563d36d791d0d652e37f296521dbaf22",
+  "inspect_exit": 0,
+  "inspect_s": 0.64,
+  "run_exit": 1,
+  "run_s": 0.77,
+  "badge": "gates: fail \u00b7 5/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 168.792456,
+  "dominant_mode": "GUIDED",
+  "n_mode_rows": 11,
+  "n_arm_rows": 2,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 168,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.447354,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1155,
+    "note": "n=1155; 2 gap(s) or hole(s) in scope (rule 5); position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value; 50 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 646,
+    "note": "n=646; 2 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 647 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 1483,
+    "note": "n=1483; worst 12.1885 on instance 0 at t=47.439 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 2936,
+    "note": "n=2936; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 2956 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 647,
+    "note": "n=647; 2 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 10,
+    "note": "n=10; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 168.397,
+    "note": "n=168.397; 21 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s', 'ERR Subsys 24 ECode 1 at t=79.842 s', 'ERR Subsys 16 ECode 2 at t=79.940 s', 'ERR Subsys 17 ECode 1 at t=79.940 s', 'ERR Subsys 24 ECode 0 at t=103.112 s']; drop-free 168.397 s (excluded: Dp rose in [], log holes, and after the last DSF row at 170.844135 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 305,
+    "note": "n=305; 2 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 1 of 647 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 1239,
+    "note": "n=1239; worst 12.1885 on instance 0 at t=47.439 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 464,
+    "note": "n=464; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 647 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 998,
+    "note": "n=998; 1 gap(s) or hole(s) in scope (rule 5); position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 2478,
+    "note": "n=2478; worst 3.29 on instance 0 at t=103.839 s, 1 window(s); instances present [0, 1]; ekf: 20 of 2956 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 464,
+    "note": "n=464; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "27",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000510.BIN",
+  "size_bytes": 122880,
+  "sha256": "e708bfc53996fdd59cbd2ae1a8844c4c2f4339e779d7d884c2f8c1ebc44178a4",
+  "inspect_exit": 0,
+  "inspect_s": 0.88,
+  "run_exit": 1,
+  "run_s": 0.74,
+  "badge": "gates: fail \u00b7 3/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 3.894275,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 4,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 3,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.444855,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 20,
+    "note": "n=20; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 20 judged samples equal 12.6",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 8,
+    "note": "n=8; 2 gap(s) or hole(s) in scope (rule 5); n 8 < min_n 10; ekf: 20 of 28 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 3,
+    "note": "n=3; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 3.005,
+    "note": "n=3.005; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 3.005 s (excluded: Dp rose in [], log holes, and after the last DSF row at 5.449486 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "28",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000521.BIN",
+  "size_bytes": 126976,
+  "sha256": "fbb089d09278976fbb3cd086726492bc1a21533030792758dbaffa03bcae25a3",
+  "inspect_exit": 0,
+  "inspect_s": 0.25,
+  "run_exit": 1,
+  "run_s": 0.28,
+  "badge": "gates: fail \u00b7 3/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 4.00673,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 4,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 4,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.444855,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 20,
+    "note": "n=20; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 20 judged samples equal 12.6",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 10,
+    "note": "n=10; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 30 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 3,
+    "note": "n=3; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 4.007,
+    "note": "n=4.007; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 4.007 s (excluded: Dp rose in [], log holes, and after the last DSF row at 6.451585 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "29",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000532.BIN",
+  "size_bytes": 2674688,
+  "sha256": "d7ce8d6b0467afea87bc7b6221b74e40267a9abf57ecad1518c410c0062d6a9f",
+  "inspect_exit": 0,
+  "inspect_s": 0.39,
+  "run_exit": 1,
+  "run_s": 0.4,
+  "badge": "gates: fail \u00b7 8/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 121.689638,
+  "dominant_mode": "GUIDED",
+  "n_mode_rows": 7,
+  "n_arm_rows": 4,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 121,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.449853,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 925,
+    "note": "n=925; 1 gap(s) or hole(s) in scope (rule 5); position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value; 50 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 565,
+    "note": "n=565; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 566 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 1012,
+    "note": "n=1012; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1994,
+    "note": "n=1994; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 2014 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 566,
+    "note": "n=566; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 6,
+    "note": "n=6; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 121.282,
+    "note": "n=121.282; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 121.282 s (excluded: Dp rose in [], log holes, and after the last DSF row at 123.732154 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 324,
+    "note": "n=324; 1 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 1 of 566 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 785,
+    "note": "n=785; worst 12.1871 on instance 0 at t=47.439 s, 2 window(s); instances present [0]",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 392,
+    "note": "n=392; worst 0.03 on instance 0 at t=74.599 s, 2 window(s); instances present [0]; velocity: 1 of 566 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 785,
+    "note": "n=785; worst -20.0315 on instance 0 at t=121.540 s, 2 window(s); instances present [0]; position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 1570,
+    "note": "n=1570; worst 0.05 on instance 0 at t=66.239 s, 2 window(s); instances present [0, 1]; ekf: 20 of 2014 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 392,
+    "note": "n=392; every row in scope qualifies",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "30",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000543.BIN",
+  "size_bytes": 524288,
+  "sha256": "020203227e13c36d346211de8cae10817cad88fec8a30894d950733a7df0355e",
+  "inspect_exit": 0,
+  "inspect_s": 0.26,
+  "run_exit": 1,
+  "run_s": 0.95,
+  "badge": "gates: fail \u00b7 2/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 31.692318,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 1,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 31,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.447354,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 71,
+    "note": "n=71; 1 gap(s) or hole(s) in scope (rule 5); position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value; 50 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 117,
+    "note": "n=117; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 118 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 159,
+    "note": "n=159; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 159 judged samples equal 12.6",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 288,
+    "note": "n=288; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 308 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 118,
+    "note": "n=118; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; n 0 < min_n 1; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 31.069,
+    "note": "n=31.069; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 31.069 s (excluded: Dp rose in [], log holes, and after the last DSF row at 33.516588 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 117,
+    "note": "n=117; 1 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 1 of 118 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "31",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000554.BIN",
+  "size_bytes": 442368,
+  "sha256": "494b084c42a5c4727e31780d699f7729ebc4259ed079ee6d7ff452d263a13bea",
+  "inspect_exit": 0,
+  "inspect_s": 0.78,
+  "run_exit": 1,
+  "run_s": 0.28,
+  "badge": "gates: fail \u00b7 5/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 21.992033,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 2,
+  "n_arm_rows": 2,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "ABSENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 21,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.447354,
+  "results": {
+   "alt_any": {
+    "verdict": "PASS",
+    "n": 190,
+    "note": "n=190; worst 0 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 190 judged samples equal 0",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 73,
+    "note": "n=73; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 74 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 354,
+    "note": "n=354; 2 gap(s) or hole(s) in scope (rule 5); ekf: 16 of 370 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 74,
+    "note": "n=74; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 1,
+    "note": "n=1; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 21.045,
+    "note": "n=21.045; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 21.045 s (excluded: Dp rose in [], log holes, and after the last DSF row at 23.492266 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 73,
+    "note": "n=73; 1 gap(s) or hole(s) in scope (rule 5); mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 1 of 74 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; battery ABSENT: no BAT rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; n 0 < min_n 10; velocity: 1 of 74 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 10,
+    "note": "n=10; worst 0 on instance 0 at t=4.339 s, 1 window(s); instances present [0]; all 10 judged samples equal 0",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 16,
+    "note": "n=16; worst 0 on instance 0 at t=4.540 s, 1 window(s); instances present [0, 1]; all 16 judged samples equal 0; ekf: 16 of 370 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; n 0 < min_n 10",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "32",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000565.BIN",
+  "size_bytes": 102400,
+  "sha256": "a52ecaa3c0e3d3c324d335caac8dce0d44acd80b212d958d6eee924a1eeab99b",
+  "inspect_exit": 0,
+  "inspect_s": 0.31,
+  "run_exit": 1,
+  "run_s": 0.3,
+  "badge": "gates: fail \u00b7 2/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 2.494835,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 1,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "PRESENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 2,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.444855,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 13,
+    "note": "n=13; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 13 judged samples equal 12.6",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: 0 of 16 XKF4 rows measured anything: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; n 0 < min_n 1; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 2.002,
+    "note": "n=2.002; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 2.002 s (excluded: Dp rose in [], log holes, and after the last DSF row at 4.446554 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "33",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000576.BIN",
+  "size_bytes": 4849664,
+  "sha256": "197f29047a58ceea3787f2e23d20347a75fe449927f7700fe3b14298ce59326c",
+  "inspect_exit": 0,
+  "inspect_s": 0.71,
+  "run_exit": 1,
+  "run_s": 0.98,
+  "badge": "gates: fail \u00b7 9/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 211.594495,
+  "dominant_mode": "LAND",
+  "n_mode_rows": 5,
+  "n_arm_rows": 2,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 211,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.444855,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1824,
+    "note": "n=1824; 1 gap(s) or hole(s) in scope (rule 5); position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value; 50 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1015,
+    "note": "n=1015; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 1016 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 1911,
+    "note": "n=1911; worst 9.59502 on instance 0 at t=189.039 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 3792,
+    "note": "n=3792; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 3812 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1016,
+    "note": "n=1016; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 4,
+    "note": "n=4; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 211.505,
+    "note": "n=211.505; 5 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s', 'ERR Subsys 6 ECode 1 at t=123.840 s', 'ERR Subsys 2 ECode 2 at t=136.265 s', 'ERR Subsys 5 ECode 1 at t=136.265 s', 'ERR Subsys 5 ECode 0 at t=213.687 s']; drop-free 211.505 s (excluded: Dp rose in [], log holes, and after the last DSF row at 213.949386 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 451,
+    "note": "n=451; worst 0.045 on instance 0 at t=124.000 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 1 of 1016 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 1688,
+    "note": "n=1688; worst 9.59502 on instance 0 at t=189.039 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 844,
+    "note": "n=844; worst 6.704 on instance 0 at t=107.200 s, 1 window(s); instances present [0]; velocity: 1 of 1016 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 1688,
+    "note": "n=1688; worst -0.573444 on instance 0 at t=210.139 s, 1 window(s); instances present [0]; position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 3376,
+    "note": "n=3376; worst 0.06 on instance 0 at t=210.239 s, 1 window(s); instances present [0, 1]; ekf: 20 of 3812 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 844,
+    "note": "n=844; every row in scope qualifies",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "34",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000587.BIN",
+  "size_bytes": 159744,
+  "sha256": "4b7924059e842f8f2c2b5b83616e54ec046301c8a03c1927b877eb4947c11011",
+  "inspect_exit": 0,
+  "inspect_s": 0.28,
+  "run_exit": 1,
+  "run_s": 0.32,
+  "badge": "gates: fail \u00b7 3/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 5.694388,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 4,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 5,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.444855,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 29,
+    "note": "n=29; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 29 judged samples equal 12.6",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 28,
+    "note": "n=28; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 48 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 3,
+    "note": "n=3; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 5.007,
+    "note": "n=5.007; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 5.007 s (excluded: Dp rose in [], log holes, and after the last DSF row at 7.452018 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "35",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000598.BIN",
+  "size_bytes": 1261568,
+  "sha256": "ceb4c5594a1ff1b939eb18672725af6cac66570b609d817114f12f67a9934841",
+  "inspect_exit": 0,
+  "inspect_s": 0.37,
+  "run_exit": 1,
+  "run_s": 0.39,
+  "badge": "gates: fail \u00b7 7/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 55.551937,
+  "dominant_mode": "LAND",
+  "n_mode_rows": 5,
+  "n_arm_rows": 2,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 55,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.447354,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position.alt_rel_home_m ABSENT: no ORGN Type 1 row: RelHomeAlt has no home",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 3,
+    "note": "n=3; 1 gap(s) or hole(s) in scope (rule 5); n 3 < min_n 10; velocity: 237 of 240 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 496,
+    "note": "n=496; worst 12.1777 on instance 0 at t=18.139 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 962,
+    "note": "n=962; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 982 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "FAIL",
+    "n": 240,
+    "note": "n=240; 1 non-qualifying run(s); longest 47.780 s on instance 0 from t=9.819 s",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 4,
+    "note": "n=4; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 55.127,
+    "note": "n=55.127; 3 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s', 'ERR Subsys 3 ECode 4 at t=27.039 s', 'ERR Subsys 3 ECode 0 at t=57.539 s']; drop-free 55.127 s (excluded: Dp rose in [], log holes, and after the last DSF row at 57.574461 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 3,
+    "note": "n=3; 1 gap(s) or hole(s) in scope (rule 5); n 3 < min_n 10; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 237 of 240 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 415,
+    "note": "n=415; worst 12.1777 on instance 0 at t=18.139 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; 1 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; velocity: 237 of 240 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position.alt_rel_home_m ABSENT: no ORGN Type 1 row: RelHomeAlt has no home",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 830,
+    "note": "n=830; worst 0 on instance 0 at t=14.339 s, 1 window(s); instances present [0, 1]; all 830 judged samples equal 0; ekf: 20 of 982 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "FAIL",
+    "n": 207,
+    "note": "n=207; 1 non-qualifying run(s); longest 41.393 s on instance 0 from t=14.399 s",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "36",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000609.BIN",
+  "size_bytes": 105984,
+  "sha256": "a284daa4b476a7c0aadcfe57cb3f7a1e67881daa0afa093c6179c07f861cd16b",
+  "inspect_exit": 0,
+  "inspect_s": 0.28,
+  "run_exit": 1,
+  "run_s": 0.29,
+  "badge": "gates: fail \u00b7 2/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 2.489837,
+  "dominant_mode": "STABILIZE",
+  "n_mode_rows": 1,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "ABSENT",
+   "velocity": "ABSENT",
+   "gnss": "ABSENT",
+   "battery": "PRESENT",
+   "ekf": "ABSENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "ABSENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 2,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.549813,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; position ABSENT: no POS rows",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 13,
+    "note": "n=13; worst 12.6 on instance 0 at t=2.640 s, 1 window(s); instances present [0]; all 13 judged samples equal 12.6",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; ekf ABSENT: 0 of 14 XKF4 rows measured anything: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; gnss ABSENT: no GPS rows",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; n 0 < min_n 1; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 1.997,
+    "note": "n=1.997; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.640 s']; drop-free 1.997 s (excluded: Dp rose in [], log holes, and after the last DSF row at 4.546514 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; velocity ABSENT: no GPS rows; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "37",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "ArduCopter-DataFlash-00000620.BIN",
+  "size_bytes": 5259264,
+  "sha256": "7f829c306350a330380cd0011d3f3c760675da4f1eb07efff362c972a4d14b87",
+  "inspect_exit": 0,
+  "inspect_s": 0.58,
+  "run_exit": 1,
+  "run_s": 0.65,
+  "badge": "gates: fail \u00b7 9/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "duration_s": 226.994999,
+  "dominant_mode": "LOITER",
+  "n_mode_rows": 5,
+  "n_arm_rows": 2,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 226,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 2.444855,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1978,
+    "note": "n=1978; 1 gap(s) or hole(s) in scope (rule 5); position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value; 50 sample(s) excluded, not values",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1092,
+    "note": "n=1092; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 1093 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "PASS",
+    "n": 2065,
+    "note": "n=2065; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 4100,
+    "note": "n=4100; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 4120 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1093,
+    "note": "n=1093; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "PASS",
+    "n": 4,
+    "note": "n=4; every observed transition is allowed; the startup row <start> -> STABILIZE is judged but not counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 226.539,
+    "note": "n=226.539; 1 event(s) ['ERR Subsys 3 ECode 0 at t=2.540 s']; drop-free 226.539 s (excluded: Dp rose in [], log holes, and after the last DSF row at 228.984203 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "PASS",
+    "n": 543,
+    "note": "n=543; worst 0.02 on instance 0 at t=149.599 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope); velocity: 1 of 1093 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "PASS",
+    "n": 1853,
+    "note": "n=1853; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "PASS",
+    "n": 926,
+    "note": "n=926; worst 0.05 on instance 0 at t=170.999 s, 1 window(s); instances present [0]; velocity: 1 of 1093 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "PASS",
+    "n": 1853,
+    "note": "n=1853; worst -0.02 on instance 0 at t=226.839 s, 1 window(s); instances present [0]; position: 50 RelHomeAlt samples before home was set (first ORGN Type 1 at t=20.012 s): not a value",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 3706,
+    "note": "n=3706; worst 0.08 on instance 0 at t=73.840 s, 1 window(s); instances present [0, 1]; ekf: 20 of 4120 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "PASS",
+    "n": 926,
+    "note": "n=926; every row in scope qualifies",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "38",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "Rover-Scripting-dataflash-log-002.BIN",
+  "size_bytes": 176246,
+  "sha256": "4103075cf1b200b1e6d7c891bcdd04bf2dedc7e0fd10da7148c03d57ab340ca4",
+  "inspect_exit": 0,
+  "inspect_s": 0.46,
+  "run_exit": 1,
+  "run_s": 0.41,
+  "badge": "gates: could not tell \u00b7 2/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduRover",
+  "firmware": "ArduRover V4.8.0-dev",
+  "duration_s": 9.219644,
+  "dominant_mode": "MANUAL",
+  "n_mode_rows": 1,
+  "n_arm_rows": 2,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "PRESENT",
+   "events": "ABSENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduRover V4.8.0-dev) and LOG_BACKEND_TYPE logged, c",
+  "dsf_rows": 9,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 51.421923,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9,
+    "note": "n=9; n 9 < min_n 10",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9,
+    "note": "n=9; n 9 < min_n 10",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9,
+    "note": "n=9; n 9 < min_n 10",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "PASS",
+    "n": 18,
+    "note": "n=18; worst 0 on instance 0 at t=51.842 s, 1 window(s); instances present [0, 1]; all 18 judged samples equal 0",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9,
+    "note": "n=9; n 9 < min_n 10",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; n 0 < min_n 1; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduRover V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [4.0])",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      4.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9,
+    "note": "n=9; n 9 < min_n 10; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 5,
+    "note": "n=5; n 5 < min_n 10",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 6,
+    "note": "n=6; n 6 < min_n 10",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 6,
+    "note": "n=6; n 6 < min_n 10",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "PASS",
+    "n": 12,
+    "note": "n=12; worst 0 on instance 0 at t=51.842 s, 1 window(s); instances present [0, 1]; all 12 judged samples equal 0",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 6,
+    "note": "n=6; n 6 < min_n 10",
+    "param": null
+   }
+  }
+ },
+ {
+  "id": "39",
+  "population": "sitl-autotest",
+  "source": "autotest.ardupilot.org",
+  "path": "Rover-Scripting-dataflash-log-003.BIN",
+  "size_bytes": 751496,
+  "sha256": "4fb73f28327ff511903c6a9ef97a8f4ac94bd9f8362325e0f47d2d06970af38a",
+  "inspect_exit": 0,
+  "inspect_s": 0.32,
+  "run_exit": 1,
+  "run_s": 0.32,
+  "badge": "gates: fail \u00b7 1/14 measured (unregistered)",
+  "refusal": null,
+  "vehicle": "ArduRover",
+  "firmware": "ArduRover V4.8.0-dev",
+  "duration_s": 48.519751,
+  "dominant_mode": "MANUAL",
+  "n_mode_rows": 2,
+  "n_arm_rows": 0,
+  "states": {
+   "position": "PRESENT",
+   "velocity": "PRESENT",
+   "gnss": "PRESENT",
+   "battery": "PRESENT",
+   "ekf": "PRESENT",
+   "mode": "PRESENT",
+   "arming": "ABSENT",
+   "events": "PRESENT",
+   "home": "PRESENT",
+   "fence": "ABSENT",
+   "params": "PRESENT"
+  },
+  "events_reason": "",
+  "dsf_rows": 46,
+  "dsf_dropped_max": 0,
+  "drop_intervals": [],
+  "byte_holes": 0,
+  "bytes_skipped_interior": 0,
+  "t_first": 0.122451,
+  "results": {
+   "alt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 192,
+    "note": "n=192; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "speed_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 156,
+    "note": "n=156; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 157 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 220,
+    "note": "n=220; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": {
+     "name": "LOG_DISARMED",
+     "values": [
+      1.0
+     ]
+    }
+   },
+   "ekf_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 428,
+    "note": "n=428; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 448 XKF4 rows excluded: EKF reported no solution (SS 0)",
+    "param": null
+   },
+   "gnss": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 157,
+    "note": "n=157; 1 gap(s) or hole(s) in scope (rule 5)",
+    "param": null
+   },
+   "fence": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; fence ABSENT: fence disabled (FENCE_ENABLE 0)",
+    "param": null
+   },
+   "modes_any": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1,
+    "note": "n=1; mode unknown for 2.239 s before the first MODE row (rule 4)",
+    "param": null
+   },
+   "no_errors": {
+    "verdict": "FAIL",
+    "n": 47.739,
+    "note": "n=47.739; 2 event(s) ['ERR Subsys 18 ECode 0 at t=0.122 s', 'ERR Subsys 3 ECode 0 at t=2.442 s']; drop-free 47.739 s (excluded: Dp rose in [], log holes, and after the last DSF row at 47.861681 s); events PRESENT: None",
+    "param": {
+     "name": "LOG_BACKEND_TYPE",
+     "values": [
+      4.0
+     ]
+    }
+   },
+   "speed_in_mode": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 156,
+    "note": "n=156; 1 gap(s) or hole(s) in scope (rule 5); mode unknown for 2.239 s before the first MODE row (rule 4); velocity: 1 of 157 GPS rows excluded: no 3D fix (Status < 3)",
+    "param": null
+   },
+   "batt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "speed_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "alt_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "ekf_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   },
+   "gnss_armed": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows",
+    "param": null
+   }
+  }
+ }
+]

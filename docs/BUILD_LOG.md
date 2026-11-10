@@ -6,6 +6,40 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-11-10 — tool 0.2.0: the first measurement of what the tool can tell, and two rules built against it
+
+The day began with the owner's ruling on G257 ("flip": a dropped write must not be a footnote on a green) and a direct question:
+is this product being built the right way? The honest answer was that the engineering was careful and the product was unmeasured:
+310 QA findings and a 4,741-line decision log guarded 1,319 lines that had judged three public logs the authors chose, one of them a real flight, the repo had
+never compared itself to ArduPilot's LogAnalyzer or DroneKit-LA, and every rule had been tuned on three logs the authors chose. So
+the tool was run on a corpus before anything else was decided: 40 public DataFlash logs (14 SITL logs from ArduPilot's autotest and 26 from 13 public GitHub repositories:
+by content 15 real hardware, 2 SITL, 2 synthetic fixtures, 7 unclassified), 15 loose-limit probe bars each, so a PASS or FAIL means only that the bar was measurable.
+**Released 0.1.0: 8 of 40 refused (7 pre-2015 logs, 1 adapter crash), and 130 of 480 probe verdicts measurable.** The causes, ranked:
+a log that starts at boot has no GPS fix, EKF solution or home at first, so every whole-log bar is voided by the gap at its start
+(the speed bar on 8 of 14 SITL logs); `armed: true`, which would exclude the boot period, was measurable on 1 of 160 verdicts
+because arming before the first ARM row is ABSENT; `no_events` read PASS on 0 of 32. G257 was not the main problem.
+Two rules were then built red-first as **tool 0.2.0**, each attacked by QA on its own (G311–G342), in two commits. **(1) Lost
+writes (ADR-023 am. 2).** A DSF.Dp drop interval or a log hole may hide a MODE row: a mode-scoped bar is judged on a sure and a wide
+scope, and a transition across a loss is judged on every `from` it could have had. QA's first round returned DO-NOT-SHIP on two
+false greens, **both from the orchestrator's spec**: a spanning transition was skipped even when no mode could be allowed into it
+(a 0.1.0 FAIL with exit 1 on public corpus log 01 became exit 0), and an armed+mode bar never examined the stretch before the first
+ARM row. QA also showed that the five verdict flips first reported to the owner were on an allow-everything bar no hidden row
+could fail; re-measured on a bar allowing only the modes each log used, the rule costs GitHub-sourced logs 10/18 → 5/19 (three hardware, two
+SITL) and the autotest logs nothing (6 of 10 real-hardware logs that count drops carry a drop interval, as do both SITL logs found on
+GitHub and none of the 14 autotest logs; 7 of the 8 only at startup). QA's last pass also caught the orchestrator labelling every
+GitHub-sourced log "hardware", counting 14 repositories for 13 and 17 ERR-bearing logs for 18; all corrected before publication. The Tarot demo now reads
+`could not tell · 7/8`, so none of the three examples reads `pass`. **(2) A declared arming assumption (am. 3).** The owner asked
+for a working armed scope as an assumption printed in every verdict. The lead's source read at Copter-4.5.5 cut half of the
+orchestrator's draft (inferring arming from LOG_DISARMED would judge a ground log as a flight) and corrected the other half (a row
+lost before the first ARM row makes the stretch BEFORE the loss unsure). Pre-registered acceptance: exactly 0 measurable armed
+verdicts on logs with no ARM row. **Measured: 0 of 90; 51 of 75 on the 15 logs with ARM rows; 180 of 495 probe verdicts with the
+key against 130 without.** The corpus crash (a MODE record with no ModeNum column) is fixed: 33 of 40 logs are judged. CI gained a
+real-log success path: the tool README's one-bar walkthrough, pinned by sha256, must pass on the Tarot log and print the README's
+own lines. Process notes worth keeping: specify rules as sets and bounds, not prose (three of the day's false greens were
+boundary or direction errors in a sentence); measure on a corpus before tightening a rule; and a second Claude session flew the
+sim from the same checkout all afternoon, so every commit here names its own files. Still true and unfixed: the tool has never
+judged a SwathKeeper flight, `no_events` cannot pass on any firmware but a 4.5.x release, and nobody outside this repo has run it.
+
 ## 2026-11-09 — the tool gets a front door, and a stranger's run says it is usable
 
 Before step 6 (the ten posts) could send anyone to the tool, the orchestrator ran it the way a stranger would: a fresh venv, no

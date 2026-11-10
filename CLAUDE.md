@@ -21,7 +21,9 @@ hardware behind that. **The ADR-019 wire program is CUT** (am. 1). **NDVI is FRO
 **Re-sequenced 2026-11-05 (ADR-022 am. 4): the owner ruled C — build the method as a tool, then ten public posts of it;
 step 2 was BUILT and SCORED 2026-11-05 (ADR-023: `src/swathkeeper_gates/`, three public logs, PX4 cut); step 5 BUILT the same day
 (ADR-023 am. 1: the composite Action `.github/actions/swathkeeper-gates/`, the README badge, and CI job `gates-tool` on py3.10 + py3.12
-re-fetching the three logs by sha256 and diffing every committed verdict). Next: step 6, the ten posts; G257 is flagged, undecided.**
+re-fetching the three logs by sha256 and diffing every committed verdict). G257 RULED ("flip") by the owner and BUILT 2026-11-10 as tool 0.2.0 with a DECLARED arming assumption
+(ADR-023 am. 2/3); a 40-log public corpus probe measures what the tool can tell: 130 of 495 probe verdicts, 180 of 495 with the assumption
+(`eval/results/gates_corpus_20261110/`). None of the three examples reads `pass` on 0.2.0. Next: step 6, the ten posts.**
 **Claims ceiling everywhere: "sim-demonstrated, evidence-gated."**
 
 **Naming (ADR-011):** renamed from FieldGuard on 2026-08-18; **code identifiers deliberately keep
