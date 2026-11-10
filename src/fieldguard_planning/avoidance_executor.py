@@ -437,6 +437,10 @@ class AvoidanceExecutor:
             confidence=det.confidence,
             position_enu=det.position_enu,
             source=det.source,
+            # The seam's known-static annotation travels into the artifact (pre-registration P2(c),
+            # 2026-11-10): the flight-log gate's bar 6 reads it, and the policy never triggers on a
+            # hinted detection, so on a healthy log this is always None here.
+            static_map_hint=det.static_map_hint,
             decision=maneuver.decision.value,
         )
 

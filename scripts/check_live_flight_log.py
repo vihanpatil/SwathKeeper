@@ -2157,8 +2157,9 @@ def gate_depth_static_map(log, run) -> Tuple[List[str], List[str], bool]:
         notes.append(
             f"STATIC-MAP BAR UNMEASURED on {len(absent)} of {len(feeding)} detection(s) behind "
             f"accepted maneuver(s): the events carry no `static_map_hint` key at all. "
-            f"`AvoidanceExecutor._log_detection` does not write it (checked 2026-09-07), so the "
-            f"seam annotates and the artifact loses it. NOT A PASS -- the bar had nothing to read. "
+            f"`AvoidanceExecutor._log_detection` writes it since 2026-11-10 (and the policy never "
+            f"triggers on a hinted detection), so this is a log written before that date: the seam "
+            f"annotated and the artifact lost it. NOT A PASS -- the bar had nothing to read. "
             f"The seam's own denominator: detections_near_known_obstacle = "
             + ("UNREADABLE (counters problem above)" if annotated is None else str(annotated))
             + (f", so this take DID annotate detections near mapped obstacles and this artifact "

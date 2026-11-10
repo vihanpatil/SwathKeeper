@@ -653,12 +653,13 @@ class TestBar6StaticMap(Harness):
         self.assertIn("_log_detection", text)
         self.assertIn("detections_near_known_obstacle = 7", text)
 
-    def test_the_executor_really_does_not_log_the_hint_today(self):
-        """The claim the UNMEASURED message makes about the code, checked against the code. When
-        this goes red the message is stale and the bar can finally bite."""
+    def test_the_executor_logs_the_hint_since_2026_11_10(self):
+        """P2(c) CLOSED 2026-11-10: `_log_detection` writes `static_map_hint`, so bar 6 can bite on
+        every new log; the UNMEASURED message now names the key's absence as a legacy-log fact, not
+        a claim about the code. Checked against the code so the message cannot go stale again."""
         source = (REPO_ROOT / "src" / "fieldguard_planning" / "avoidance_executor.py").read_text()
         body = source.split("def _log_detection", 1)[1].split("\n    def ", 1)[0]
-        self.assertNotIn("static_map_hint", body)
+        self.assertIn("static_map_hint=det.static_map_hint", body)
 
     def test_only_ACCEPTED_maneuvers_are_in_scope(self):
         events = [e for e in encounter_events(det=detection_event(static_map_hint="tree_07"))

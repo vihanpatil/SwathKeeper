@@ -275,16 +275,30 @@ class AvoidancePolicy:
         # geometry runs, so an old frame can neither trigger a phantom dodge nor sit in the threat
         # set constraining the dodge away from a live bird.
         fresh, stale = self._split_stale(detections, now_s, p)
+        # KNOWN STATIC OBSTACLES are not dynamic threats (2026-11-10). A detection whose position
+        # lies inside a surveyed tree's volume (`Detection.static_map_hint`, set by the depth seam
+        # with the geofence's own `unsafe_obstacle_3d`) IS the tree. The geofence already keeps every
+        # setpoint and swept path out of that volume; dodging it as a bird is a false engagement --
+        # on the 2026-11-10 head-on pilot the vehicle, descending to land through 9.6 m, dodged
+        # tree_row1_5's canopy (z 3.6 m, |dz| 6.0 m) for 8.5 s. This is the "known static obstacle
+        # vs genuinely unplanned dynamic obstacle" separation the architecture promises, applied
+        # where decisions are made. Counted and named on the maneuver like the stale drops; the
+        # executor still logs the detection with its hint so the flight-log gate can see it.
+        fresh, static = self._split_static(fresh)
 
         threats = self._threats(fresh, drone, p)
         if not threats:
-            if detections and not fresh:
+            if detections and not fresh and not static:
                 # Every detection this frame was dropped as stale -> detection-free frame. Called
                 # out explicitly so the event log shows WHY the policy proceeded.
                 reason = (f"all detection(s) stale (age > {p.max_detection_age_s:g} s) "
                           f"-- treated as absent")
             elif fresh:
                 reason = "detection(s) outside threat cylinder"
+            elif static:
+                reason = (f"{len(static)} detection(s) inside known static obstacle volume(s) "
+                          f"({', '.join(sorted({t.static_map_hint for t in static}))}) -- the tree, "
+                          f"not a bird; the geofence owns it")
             else:
                 reason = "no in-cylinder threat"
             maneuver = AvoidanceManeuver(
@@ -324,6 +338,10 @@ class AvoidancePolicy:
                 "threat_positions_enu",
                 [[round(c, 3) for c in t.position_enu] for t, _ in threats]
             )
+        if static:
+            maneuver.debug.setdefault("n_static_map_dropped", len(static))
+            maneuver.debug.setdefault(
+                "static_map_ids", [f"{t.static_map_hint}@{t.frame_id}" for t in static])
         if stale:
             # Always log what the staleness gate dropped, whatever the decision -- a stale frame
             # silently vanishing is exactly the observability gap this gate exists to close.
@@ -355,6 +373,16 @@ class AvoidancePolicy:
             else:
                 fresh.append(det)
         return fresh, stale
+
+    @staticmethod
+    def _split_static(detections: Sequence[Detection]) -> Tuple[List[Detection], List[Detection]]:
+        """Split detections into (dynamic candidates, known-static). A detection carrying a
+        `static_map_hint` sits inside a surveyed tree's 3D volume and is the tree, not a bird."""
+        dynamic: List[Detection] = []
+        static: List[Detection] = []
+        for det in detections:
+            (static if det.static_map_hint else dynamic).append(det)
+        return dynamic, static
 
     def _threats(
         self, detections: Sequence[Detection], drone: DroneState, p: PolicyParams

@@ -33,7 +33,7 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
    thing here: three live flights, **three** bird-clearance breaches (see the safety asterisk).
    **Most engineering time lives in the detect → avoid → resume → honest-debt loop.** **2026-11-10: the owner
    reopened this loop (ADR-022 am. 5); four scripted depth-camera encounters flew in one day under ADR-013 am. 20,
-   gt_cpa 0.021 → 0.839 → 0.039 (the last two strikes with zero detections: a lane-end U-turn and an astern overtake, outside a forward camera's view; the encounter seen at 43.6 m passed at 9.6 m) m against the 3.00 m bar — unbooked EXPERIMENTS, not evidence.**
+   gt_cpa 0.021 → 0.839 → 0.039 m on the lane-patrol bird (its last strikes had zero detections: a lane-end U-turn and an astern overtake, outside a forward camera's view), then **9.568 m on the owner's head-on scenario** (ADR-013 am. 21), then **20 of 20 head-on encounters cleared 3.00 m** (min 5.42 / median 9.52 / max 9.82 m; `docs/encounters/BATCH_20261110T194048Z.md`) — unbooked experiments, the checker still INVALID on range-error association and no booking m against the 3.00 m bar — unbooked EXPERIMENTS, not evidence.**
 2. **NDVI health mapping** — works end to end (720/720 cells, 5.0 Hz) and is **FROZEN** since
    2026-08-26: it is the working demo, not open work. The world authors no health variation.
 3. **Farmer-facing dashboard** — **BUILT 2026-08-26** (ADR-018), static and light. The proof, not

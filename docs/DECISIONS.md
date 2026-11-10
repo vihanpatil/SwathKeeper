@@ -4767,3 +4767,17 @@ x=15 the altitude-blind vet HOLDed over every tree column at 15 m (run 1: 4 hold
 3–21 ticks (gt_cpa 0.021 m). (5) `RELATCH_AFTER_ARRIVAL_ONLY`: no re-latch while a dodge is in progress — run 3's side
 flips (RL/RLLL/LRL) spent 5–6 s of GUIDED moving <0.5 m. Checker: R2.1 reads `swept_margin_applied`; `--results-dir`.
 Measured: run 2 (1–3) gt_cpa_m 0.0212 m; run 3 (1–4) 0.839 m, four dodges flown 8.3 m; run 4 (1–5): 0.0393 m, with NO detection behind either strike: the bird reached the drone twice during its 180 deg turn at the north lane end and twice by overtaking from astern at 1 m/s closing -- outside a forward camera's view by construction; the one encounter it saw at 43.6 m was flown 8.45 m and passed at 9.6 m.
+
+### ADR-013 amendment 21 (2026-11-10, THE HEAD-ON SCENARIO AND THE KNOWN-STATIC RULE): the kill-criterion batch flies a bird a forward camera can see, and a surveyed tree is never a dynamic threat
+
+Runs 3–4 on the committed patrol bird left two strike geometries a single forward camera cannot see — an astern overtake
+(bird_0 at 6 m/s behind a 5 m/s drone on the same lane) and a bird arriving at the lane end during the 180° U-turn. The
+owner chose the head-on scenario for the batch: `config/birds/headon_lane15.json` (one bird, parked above the band,
+down the lane at 6 m/s once, out of the band at the south end) with `config/missions/headon_lane15.waypoints` (one
+northbound pass, land 7 m off the lane); `fly_pipeline.sh encounter --birds`, `scripts/encounter_batch.sh N` (speeds
+cycle 4/5/6 m/s — the batch's seed) and `scripts/summarize_encounters.py` (one row per run, the checker's own lines).
+The pilot: acquired at 44.9 m, dodge 8.36 m in 5.9 s, **gt_cpa_m 9.568 m** (8.80 m after the freeze debit) — the first
+scored encounter above 3.00 m. Its one defect became the rule: landing through 9.6 m, the policy dodged tree_row1_5's
+canopy (z 3.6, |dz| 6.0) for 8.5 s. A detection carrying `static_map_hint` (inside a surveyed tree's volume) is the
+tree: `_split_static` drops it before the threat test, counted on the maneuver; `_log_detection` now writes the hint
+(P2(c) closed). **The 20-run head-on batch (`scripts/encounter_batch.sh 20`, speeds cycling 4/5/6 m/s, 19:40–20:41Z): 20 of 20 cleared 3.00 m — gt_cpa_m min 5.416 m (the one run acquired at 32.2 m), median 9.523 m, max 9.823 m; acquisition 39.8–45.2 m on the other nineteen; one takeover and one resume per run; dodges 8.2–8.7 m cross-course in 4.9–6.1 s. B's kill criterion (≥20 encounters that cannot clear 3.00 m → not the product) did NOT fire. Every run is an unbooked experiment and the checker reads INVALID on all twenty for its range-error association bars (nearest truth at the applied-pose instant, p95 2–4 m) and the missing booking — scoring-side, not clearance. Table: `docs/encounters/BATCH_20261110T194048Z.md`.**

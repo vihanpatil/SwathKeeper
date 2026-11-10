@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "note": "HEAD-ON ENCOUNTER scenario (2026-11-10, owner's choice for the kill-criterion batch). ONE bird, ONE pass: the drone flies lane x=15 northbound once (config/missions/headon_lane15.waypoints) while bird_0 comes DOWN the lane at 6 m/s, head-on, 4 m below cruise -- then climbs out of the +/-6 m threat band and parks. Nothing here can overtake the drone from astern or arrive during a U-turn: those two geometries are what a single forward camera cannot see (measured 2026-11-10 runs 3-4 on the committed patrol bird), and this scenario exists to measure the dodge, not the sensor's blind spots. Time axis: trajectory seconds from the moment the birds pane fires (altitude > 10 m during the takeoff at the pad (0,0)); the drone is then ~2 s from cruise altitude and ~6 s from turning north onto the lane at (15,0).",
+  "timing_note": "Bird enters the band at (15,60,11) at t=8 s, 45-50 m ahead of a drone that has just turned north: at WP_SPD 5.0 the predicted meeting is y~33 m at t~12.5 s with ~4.1 s of lead from the 45 m trigger (3.8 s at 6.0 m/s, 4.5 s at 4.0 m/s). The run south takes 10 s (6 m/s); at y=0 the bird climbs to z=25 (|dz| 10 m, outside the band and above the camera's useful elevation) and holds there (loop false). Vary the drone's speed with `encounter --speed`, not this file, so every run of a batch shares one bird track.",
+  "coordinate_frame": "local ENU meters (x=East, y=North, z=Up), origin = config/field_polygon.json home_lat/home_lon.",
+  "world_note": "Drives the same bird_0 model sim/worlds/farmguard_field.sdf spawns from farm_world_birds.json (no world regeneration); bird_1 and bird_2 are not driven and stay parked at their spawn poses, 7 and 9 m below cruise, outside the threat band. check_live_flight_log.py reads bird ids and the 7.00 m/s speed bound from the COMMITTED config, which this file does not change.",
+  "birds": [
+    {
+      "bird_id": "bird_0",
+      "note": "Parked above the band at the north end until t=7, descends into the band at the lane's north end by t=8, runs the lane south at 6.0 m/s (t=8..18), climbs out at the south end (t=18..19) and holds at 25 m. loop=false: pose_at holds the last waypoint, so one pass of the drone meets exactly one bird, exactly once, head-on.",
+      "physical_radius_m": 0.18,
+      "color_rgba": [0.12, 0.12, 0.12, 1.0],
+      "loop": false,
+      "waypoints": [
+        {"t_s": 0.00, "x_m": 15.0, "y_m": 60.0, "z_m": 25.0, "yaw_deg": 270.0},
+        {"t_s": 7.00, "x_m": 15.0, "y_m": 60.0, "z_m": 25.0, "yaw_deg": 270.0},
+        {"t_s": 8.00, "x_m": 15.0, "y_m": 60.0, "z_m": 11.0, "yaw_deg": 270.0},
+        {"t_s": 18.00, "x_m": 15.0, "y_m": 0.0, "z_m": 11.0, "yaw_deg": 270.0},
+        {"t_s": 19.00, "x_m": 15.0, "y_m": 0.0, "z_m": 25.0, "yaw_deg": 270.0}
+      ]
+    }
+  ]
+}

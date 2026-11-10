@@ -322,5 +322,8 @@ against its own bird track (≈5 min wall). Four runs were flown, each after one
 abandoned on absence) → **0.839 m** (dodge-completion rule; four dodges flown 8.3 m) → **0.0393 m** (track-axis side rule + one commitment per encounter: the dodges themselves are now clean -- the encounter seen at 43.6 m was flown 8.45 m and passed at 9.6 m -- and every remaining strike had ZERO detections: the bird arrived at the north lane end during the drone's 180° turn, or overtook it from astern at 1 m/s closing, both outside a single forward camera's view). Measured along
 the way: the GUIDED command path works (3 m lateral in ≈2.2–2.5 s sim from hover); the depth camera acquires bird_0 at
 35.6–44.6 m in flight. Every run is an unbooked EXPERIMENT (claims ceiling unchanged); the artifacts live in
-`eval/results/encounters/<UTC>/`, gitignored. **Next:** fly the kill-criterion batch (≥20 seeded encounters), then book
-one take properly (`--booking`) so a clearance can be called evidence.
+`eval/results/encounters/<UTC>/`, gitignored. The owner then chose the **head-on scenario** for the batch (a forward camera cannot see an astern overtake or a
+bird arriving mid U-turn; ADR-013 am. 21): one bird down the lane once, one northbound pass. Pilot at 5 m/s: acquired
+at 44.9 m, dodge 8.36 m, **gt_cpa_m 9.568 m** — the first scored encounter above the 3.00 m bar. **The 20-run batch: 20 of 20 cleared 3.00 m** (gt_cpa_m min 5.416, median 9.523, max 9.823 m; acquisition 39.8–45.2 m on nineteen, 32.2 m on the one that read 5.4 m; one takeover, one resume, 8.2–8.7 m of sidestep per run; `docs/encounters/BATCH_20261110T194048Z.md`). B's kill criterion did not fire. Unbooked experiments; the checker reads INVALID on every run for its range-error association bars and the missing booking.
+**Next:** book one head-on take properly (`--booking`) so a clearance can be called evidence; then the sensor-coverage
+question (a second aperture, or an encounter definition that excludes astern geometry) goes to the owner.

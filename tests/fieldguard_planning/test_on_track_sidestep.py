@@ -176,3 +176,50 @@ class DepthSourceThreatRadius(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KnownStaticObstaclesAreNotThreats(unittest.TestCase):
+    """A detection inside a surveyed tree's volume (`static_map_hint`) is the tree: it neither
+    triggers a dodge nor constrains one. Measured need: the 2026-11-10 head-on pilot dodged
+    tree_row1_5's canopy for 8.5 s while descending to land through 9.6 m."""
+
+    def setUp(self):
+        self.geo = GeofenceMap.from_file()
+        self.pol = AvoidancePolicy(field_polygon=FIELD, threat_radius_m=45.0)
+        # drone descending to land at (22, 60): 9.6 m up, tree_row1_5's canopy 18.9 m away at 3.6 m
+        self.drone = DroneState(position_enu=(22.0, 60.0, 9.6), heading_rad=0.0, current_wp_index=4)
+        self.canopy = Detection(position_enu=(40.2, 55.1, 3.6), frame_id=7, static_map_hint="tree_row1_5")
+
+    def test_a_hinted_detection_in_the_band_does_not_trigger(self):
+        m = self.pol.decide(self.canopy, self.drone, self.geo)
+        self.assertIs(m.decision, Decision.PROCEED, m.reason)
+        self.assertEqual(m.debug["n_static_map_dropped"], 1)
+        self.assertEqual(m.debug["static_map_ids"], ["tree_row1_5@7"])
+        self.assertIn("tree_row1_5", m.reason)
+
+    def test_the_same_position_without_a_hint_still_triggers(self):
+        bare = Detection(position_enu=self.canopy.position_enu, frame_id=7)
+        m = self.pol.decide(bare, self.drone, self.geo)
+        self.assertIsNot(m.decision, Decision.PROCEED)
+
+    def test_a_hinted_detection_does_not_constrain_a_real_dodge(self):
+        bird = _bird(15.0, 50.0)
+        drone = _drone(15.0, 10.0)
+        alone = self.pol.decide(bird, drone, self.geo)
+        with_tree = self.pol.decide_multi([bird, Detection(position_enu=(40.0, 55.0, 3.6), frame_id=9,
+                                                             static_map_hint="tree_row1_5")], drone, self.geo)
+        self.assertIs(with_tree.decision, Decision.DIVERT)
+        self.assertEqual(with_tree.setpoint_enu, alone.setpoint_enu)
+        self.assertEqual(with_tree.debug["threat_ids"], alone.debug["threat_ids"])
+        self.assertEqual(with_tree.debug["n_static_map_dropped"], 1)
+
+    def test_the_executor_logs_the_hint(self):
+        from fieldguard_planning.avoidance_executor import AvoidanceExecutor, SimulatedVehicleSink
+        from fieldguard_planning.avoidance_types import AvoidanceManeuver
+        ex = AvoidanceExecutor(GeofenceMap(obstacles=[]), [], SimulatedVehicleSink(), swath_half_width_m=3.0)
+        mv = AvoidanceManeuver(decision=Decision.PROCEED, reason="static")
+        mv.triggering_detection = self.canopy
+        ex.step(self.drone, mv)
+        det = [e for e in ex.event_log if e["kind"] == "detection"]
+        self.assertEqual(len(det), 1)
+        self.assertEqual(det[0]["static_map_hint"], "tree_row1_5")

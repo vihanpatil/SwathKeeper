@@ -100,6 +100,7 @@ BIRDS_ARMED="armed (altitude-gated drive_birds.py pane)"
 ENCOUNTER=0
 ENC_MISSION="encounter_lane15"   # config/missions/<name>.waypoints: two passes down bird_0's lane x=15
 ENC_SPEED=""                     # explicit WP_SPD for an UNBOOKED experiment; the booking wins
+ENC_BIRDS=""                     # repo-relative bird scenario for the birds pane (default: the committed patrol)
 ENC_NODE_ARM_S=90                # avoidance node: start -> "live intrinsics present"
 ENC_LOG=""; ENC_TRUTH=""; ENC_CHECKER_EXIT=""; ENC_RECORD=""; ENC_DIR=""
 TF_AFTER_TAKEOFF_HOOK=""         # a function tf_fly_mission calls once the takeoff has completed
@@ -239,7 +240,8 @@ scripts/fly_pipeline.sh [SUBCOMMAND] [FLAGS]      (host side, macOS; needs tmux 
             the vehicle. It writes the flight log on shutdown: WAIT for 'wrote flight log ->'.
   down      SIGINT the recorder first, wait for finalize, then the node (and wait for its flight
             log), stop the rest, print the stitch command
-  encounter ONE COMMAND, ONE MEASURED DODGE: 'up' with birds armed, the node on --detection-source,
+  encounter ONE COMMAND, ONE MEASURED DODGE: 'up' with birds armed (--birds <config/birds/x.json>
+            swaps the scenario; default the committed patrol), the node on --detection-source,
             the mission (--mission, default encounter_lane15: two passes down bird_0's lane) flown
             unattended, teardown, then check_live_flight_log.py --truth on this run's own bird
             track. --speed <m/s> types 'param set WP_SPD' for an UNBOOKED experiment (SITL's eeprom
@@ -964,7 +966,14 @@ cmd_up() {
     say "    gate. Score this take with: check_live_flight_log.py <log> --no-birds"
   else
     say "7/7 birds — altitude-gated, will not start before you arm and climb past 10 m"
-    new_window birds "$(exec_line "$INNER_BIRDS_WATCH")"
+    if [ -n "$ENC_BIRDS" ]; then
+      # `encounter --birds`: the same altitude-gated pane, the driver pointed at the scenario file.
+      # Everything before the final `exec` line is the runbook's own payload, untouched.
+      say "    bird scenario: $ENC_BIRDS (encounter --birds)"
+      new_window birds "$(exec_line "${INNER_BIRDS_WATCH%exec *}exec $INNER_BIRDS --config $CTR_REPO/$ENC_BIRDS")"
+    else
+      new_window birds "$(exec_line "$INNER_BIRDS_WATCH")"
+    fi
   fi
   run tmux select-window -t "$SESSION:sitl"
   if (( NO_BIRDS )); then
@@ -1441,7 +1450,7 @@ tf_write_record() {
   export TF_RESULT TF_START TF_FINISHED TF_DURATION TF_MISSION_NAME
   export TF_FRAMES TF_CELLS TF_MIN_FRAMES TF_MIN_CELLS
   export BOOKING_PATH_REL BOOKING_SPEED BOOKED_PARAM
-  export ENCOUNTER ENC_LOG ENC_TRUTH ENC_CHECKER_EXIT ENC_SPEED DETECTION_SOURCE
+  export ENCOUNTER ENC_LOG ENC_TRUTH ENC_CHECKER_EXIT ENC_SPEED ENC_BIRDS DETECTION_SOURCE
   python3 - "$TF_RECORD" <<'PY' || warn "could not write the gate record to $TF_RECORD"
 import json, os, pathlib, sys
 
@@ -1510,6 +1519,7 @@ if os.environ.get("ENCOUNTER") == "1":
     record["kind"] = "encounter"
     record["detection_source"] = os.environ.get("DETECTION_SOURCE")
     record["experiment_speed_mps"] = opt("ENC_SPEED", float)
+    record["birds_config"] = opt("ENC_BIRDS") or "config/birds/farm_world_birds.json"
     record["flight_log"] = opt("ENC_LOG")
     record["truth"] = opt("ENC_TRUTH")
     record["checker_exit"] = opt("ENC_CHECKER_EXIT", int)
@@ -1522,7 +1532,7 @@ PY
 
 # --- encounter: fly one scripted dodge experiment and score it -------------------------------------
 enc_dry_plan() {
-  say "encounter = 'up' (birds armed), the avoidance node on '$DETECTION_SOURCE', the fly recipe on $ENC_MISSION, teardown, then the score."
+  say "encounter = 'up' (birds armed${ENC_BIRDS:+, scenario $ENC_BIRDS}), the avoidance node on '$DETECTION_SOURCE', the fly recipe on $ENC_MISSION, teardown, then the score."
   cmd_up
   printf '  DRY  tmux new-window -d -t %s -n node %s\n' "$SESSION" "$(exec_line "$(node_payload)")"
   printf '  DRY  (the node window opens AFTER the first "Reached command", i.e. once the takeoff is done)\n'
@@ -1601,7 +1611,7 @@ cmd_encounter() {
   TF_LOG="$TF_WORK/sitl.log";        : >"$TF_LOG"
   EVIDENCE_FILE="$TF_WORK/evidence.txt"; : >"$EVIDENCE_FILE"
   say "ENCOUNTER: scripted dodge EXPERIMENT on $ENC_MISSION, detector '$DETECTION_SOURCE'. Logs: $TF_WORK"
-  evidence "encounter started (mission $ENC_MISSION, detection source $DETECTION_SOURCE)"
+  evidence "encounter started (mission $ENC_MISSION, detection source $DETECTION_SOURCE, birds ${ENC_BIRDS:-config/birds/farm_world_birds.json (committed default)})"
   if [ -n "$BOOKING_SPEED" ]; then
     evidence "booked: $BOOKING_PATH_REL -> $BOOKING_SPEED m/s (param set $BOOKED_PARAM $BOOKING_SPEED)"
   elif [ -n "$ENC_SPEED" ]; then
@@ -1734,6 +1744,9 @@ main() {
       --speed)         [ $# -ge 2 ] || die "--speed needs a mission speed in m/s"
                        ENC_SPEED=$2; shift ;;
       --speed=*)       ENC_SPEED=${1#--speed=} ;;
+      --birds)         [ $# -ge 2 ] || die "--birds needs a repo-relative path under config/birds/"
+                       ENC_BIRDS=$2; shift ;;
+      --birds=*)       ENC_BIRDS=${1#--birds=} ;;
       -h|--help)       usage; exit 0 ;;
       up|attach|status|birds|node|down|test-flight|encounter) CMD=$1 ;;
       *) usage >&2; die "unknown argument: $1" ;;
@@ -1769,8 +1782,12 @@ main() {
   # --no-birds` can only mean the operator believes that command decides whether birds fly. It does
   # not — `up` already opened (or did not open) the pane minutes earlier — and a flight brought up
   # with birds and scored as bird-less is the one mistake this whole feature exists to prevent.
-  if [ -n "$ENC_SPEED" ] || [ "$ENC_MISSION" != "encounter_lane15" ]; then
-    [ "$CMD" = encounter ] || die "--mission / --speed belong to 'encounter' only; '$CMD' flies no experiment. Nothing was run."
+  if [ -n "$ENC_SPEED" ] || [ -n "$ENC_BIRDS" ] || [ "$ENC_MISSION" != "encounter_lane15" ]; then
+    [ "$CMD" = encounter ] || die "--mission / --speed / --birds belong to 'encounter' only; '$CMD' flies no experiment. Nothing was run."
+  fi
+  if [ -n "$ENC_BIRDS" ]; then
+    case $ENC_BIRDS in /*|*..*) die "--birds must be a repo-relative path (got $ENC_BIRDS)";; esac
+    [ -f "$REPO_ROOT/$ENC_BIRDS" ] || die "--birds $ENC_BIRDS: no such file in the repo"
   fi
   if [ -n "$ENC_SPEED" ] && ! [[ $ENC_SPEED =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
     die "--speed $ENC_SPEED is not a plain decimal in m/s"
