@@ -263,6 +263,15 @@ class TestStreams(unittest.TestCase):
         self.assertIn("disabled", parse(flight_rows(params={**PARAMS, "FENCE_ENABLE": 0})).fence.get("reason", ""))
         self.assertIn("no circle/alt-max bit", parse(flight_rows(params={**PARAMS, "FENCE_TYPE": 4})).fence.get("reason", ""))  # Q18
 
+    def test_a_mode_record_without_modenum_is_absent_not_a_crash(self):
+        try:
+            log = parse(flight_rows(), {**FMTS, "MODE": (40, "QMB", "TimeUS,Mode,Rsn")})     # corpus log 22 (V4.x)
+        except KeyError as e:
+            self.fail(f"a missing ModeNum column crashed the adapter: {e!r}")             # was KeyError 'num'
+        m = log.streams["mode"]
+        self.assertEqual((m.state, m.reason), (ABSENT, "MODE has no ModeNum column"))   # mutant: KeyError 'num' -> red
+        self.assertEqual(streams_map(log)["mode"]["state"], ABSENT)
+
     def test_magic_bytes_route_or_refuse(self):
         with tempfile.TemporaryDirectory() as d:
             for head, why in ((b"ULog\x01\x12\x35\x01", "px4 adapter is not shipped"), (b"\x00\x01\x02\x03", "unknown log format")):

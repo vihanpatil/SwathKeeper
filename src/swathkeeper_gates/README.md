@@ -2,7 +2,7 @@
 
 Pre-registered evidence gates over an ArduPilot flight log. You write pass/fail bars in a YAML file, hash it before
 the run, and the tool judges a DataFlash `.bin` against it: one JSON verdict, one exit code. A bar the log cannot
-measure reads `could not tell`, which never scores green. Version 0.2.0 reads DataFlash only and has run on exactly the three public logs in `examples/`.
+measure reads `could not tell`, which never scores green. Version 0.2.0 reads DataFlash only. It has published verdicts on exactly the three public logs in `examples/`, and a measurability probe ran it on 40 more public logs on 2026-11-10.
 Read [What this does NOT claim](https://github.com/vihanpatil/SwathKeeper/blob/main/src/swathkeeper_gates/README.md#what-this-does-not-claim) first.
 
 ## Install
@@ -85,26 +85,21 @@ gates: pass · 1/1 measured (post-hoc)
 
 Exit 0, in 0.4 s. Each line is verdict, severity, id, n (what n counts depends on the kind, table below) and the
 measured value (for a floor, the lowest sample); each bar's note is in `verdict.json`. `run` finds the sidecar beside
-the bars file (`--prereg PATH` names another). A typo (`bound: min`) refuses with exit 2, the refusal JSON still
-written to `--out`:
+the bars file (`--prereg PATH` names another). A typo (`bound: min`) refuses `run` with exit 2, the refusal JSON
+still written to `--out`. `inspect` on a file that is not DataFlash refuses with exit 2 (`run` with the walkthrough's
+pinned sidecar refuses LOG_MISMATCH first). A PX4 ULog refuses too: this version ships no PX4 adapter.
 
 ```
+$ swathkeeper-gates run --log tarot.bin --bars bars.yaml --out verdict.json    # with bound: min
 swathkeeper-gates: refused: bar batt_floor.params.bound: 'min' is not one of ['floor', 'ceiling']
 gates: refused
-```
-
-`inspect` on a file that is not DataFlash refuses with exit 2 (`run` with the walkthrough's pinned sidecar refuses
-LOG_MISMATCH first). A PX4 ULog refuses with exit 2 too: this version ships no PX4 adapter, and the message says so.
-
-```
 $ swathkeeper-gates inspect --log random.file
 swathkeeper-gates: refused: unknown log format: magic 441688cd is neither DataFlash (a395) nor ULog
 ```
 
 ### 5. Optional: the GitHub Action
 
-It fails the step exactly when the tool exits 1 or 2; see
-[its README](https://github.com/vihanpatil/SwathKeeper/blob/main/.github/actions/swathkeeper-gates/README.md).
+It fails the step exactly when the tool exits 1 or 2; see [its README](https://github.com/vihanpatil/SwathKeeper/blob/main/.github/actions/swathkeeper-gates/README.md).
 
 ```yaml
 - uses: actions/checkout@v4
@@ -127,7 +122,7 @@ tool's, and a newer minor refuses); `bars`, a list of at least one bar. Keys mar
 | `kind` | one of the five kinds below |
 | `severity` | `must` or `should` (see exit codes). A file with zero `must` bars refuses. |
 | `provenance` | `{text, param?}`. `text` says where the limit came from. `param` names a PARM whose logged value(s) the verdict prints beside the limit; it never changes the verdict. |
-| `scope` | `{armed, modes}`, both required. `armed: true` judges known-armed intervals only, `null` the whole log; `false` refuses. `armed: true` reads EVIDENCE_INSUFFICIENT whenever the scope reaches before the first ARM row (arming before it is ABSENT, rule 4). That was all three public logs: on the Tarot and the ArduPlane logs (LOG_DISARMED 0) the arm row is not written, so the only ARM row is the disarm; `test.BIN` has no ARM rows at all. `modes: [names]` judges only those modes, `null` any mode. Names must be spelt as pymavlink spells them for the vehicle resolved from the log's firmware string (e.g. `LOITER`, `ALT_HOLD`), or the run refuses; with the vehicle unresolved, every bar that names a mode reads `EVIDENCE_INSUFFICIENT`, and so does `mode_transitions` even when it names no mode. |
+| `scope` | `{armed, modes}`, both required. `armed: true` judges known-armed intervals only, `null` the whole log; `false` refuses. Without the `assume` key, `armed: true` reads EVIDENCE_INSUFFICIENT whenever the scope reaches before the first ARM row (arming before it is ABSENT, rule 4), and every log has such a stretch; with the key, see Declared assumptions below. `modes: [names]` judges only those modes, `null` any mode. Names must be spelt as pymavlink spells them for the vehicle resolved from the log's firmware string (e.g. `LOITER`, `ALT_HOLD`), or the run refuses; with the vehicle unresolved, every bar that names a mode reads `EVIDENCE_INSUFFICIENT`, and so does `mode_transitions` even when it names no mode. |
 | `min_n` | an integer of at least 1; required, no default |
 | `params` | per kind, below |
 
@@ -155,27 +150,26 @@ Three causes make a bar **blind**: (a) the mode is unknown for more than 1.0 s b
 applies to every bar that names a mode and to `mode_transitions` (1.0 s or less is only a note); (b) no PRESENT
 position, gnss or battery stream exists to witness the logger, which applies to `mode_transitions` and `no_events`;
 (c) for `mode_transitions`, a loss (defined under lost writes below) in its base range, unless its allowed set
-admits every transition.
+admits every transition, and a loss that cuts a transition the tool cannot judge, even when that loss lies outside
+the base range.
 
-1. Something the bar needs is ABSENT: `EVIDENCE_INSUFFICIENT`. That is a needed stream or column; the arming, mode
-   or vehicle the scope needs; for `containment` with `source: log`, the fence or home; for `no_events`,
-   `dsf_dropped_max`; an `armed: true` scope that reaches before the first ARM row; for `mode_transitions`, an
-   unresolved vehicle.
-2. No window of the scope exists, and a log hole touches the base range (the known-armed intervals for `armed: true`,
-   otherwise the whole log) or a blind cause applies: `EVIDENCE_INSUFFICIENT`.
+1. Something the bar needs is ABSENT: `EVIDENCE_INSUFFICIENT`. That is a needed stream or column; the arming, mode or
+   vehicle the scope needs; for `containment` with `source: log`, the fence or home; for `no_events`, `dsf_dropped_max`;
+   without the `assume` key, an `armed: true` scope that reaches before the first ARM row; for `mode_transitions`, an unresolved vehicle.
+2. No window of the scope exists, and a log hole touches the base range or a blind cause applies: `EVIDENCE_INSUFFICIENT`.
 3. No window of the scope exists: `NOT_APPLICABLE`. The absence is measured.
 4. Any judged sample violates the bar: `FAIL`, whatever n is. A measured red is red.
 5. A non-finite sample, a gap or a log hole in scope, a blind cause, or n below `min_n`: `EVIDENCE_INSUFFICIENT`.
+   The exception: a loss does not void an unarmed `mode_transitions` bar whose allowed set admits every transition.
 6. Otherwise: `PASS`.
 
 EI and NA never print a measured number, so a thin-sample value cannot be quoted. A gap is a step longer than
 max(1 s, 5 × the instance's median sample period); a log hole is an interior byte skip, or a gap in every present
 raw series (position, gnss, battery) at once. In a QA probe on 2026-11-09 (not a committed verdict), the public
 ArduPlane log, whose first MODE row is 1.281 s after the log start, read EI with zero gaps on a mode-scoped bar and on
-a `[["*", "*"]]` `mode_transitions` bar (rule 5).
-
-A mode-scoped bar whose scope could reach a loss gets two passes of this same order, on a sure and a wide scope,
-and one combined verdict; the rule is under lost writes below.
+a `[["*", "*"]]` `mode_transitions` bar (rule 5). A mode-scoped bar whose scope could reach a loss, or an
+armed-scoped bar where arming is unsure, gets two passes of this order (a sure and a wide scope) and one combined
+verdict; see lost writes below.
 
 ## Exit codes and the badge
 
@@ -190,14 +184,14 @@ A red is a FAIL on any bar, or an EI or NA on a `must` bar; a `should` bar's EI 
 tell` exits 1 because a bar that could not be measured is not evidence that it was met. The badge:
 
 ```
-gates: <word> · m/n measured[ · k declared (f FAIL, e EI[, n NA])][ (post-hoc) | (unregistered)]
+gates: <word> · m/n measured[ · k declared (f FAIL, e EI[, n NA])][ · k assumed][ (post-hoc) | (unregistered)]
 ```
 
-`m/n measured` counts the bars that read PASS or FAIL. `(post-hoc)`: the sidecar pins this log's hash, so the bars
-were written after the log existed. `(unregistered)`: no sidecar was found, so the bars could have been written after
-the result was known. No suffix means a matching sidecar that pins no log: it proves the bars text was registered,
-not when. Pinning the log with `--log` proves the log existed first and costs the `(post-hoc)` suffix. A malformed
-or mismatched sidecar refuses.
+`m/n measured` counts the bars that read PASS or FAIL. `k assumed` counts the assumption names the bars file declares,
+whether or not they applied to this log. `(post-hoc)`: the sidecar pins this log's hash, so the bars were written
+after the log existed. `(unregistered)`: no sidecar was found, so the bars could have been written after the result
+was known. No suffix means a matching sidecar that pins no log: it proves the bars text was registered, not when.
+Pinning the log with `--log` proves the log existed first and costs the `(post-hoc)` suffix.
 
 ## Declared reds (`--declared`)
 
@@ -210,39 +204,86 @@ declared:
 The set of (bar, verdict) reds must equal the set of live declarations: a red nobody declared is `undeclared`, a
 declaration nothing matches is `vacuous` (exit 1, `fail`), and on or after `expires` an entry declares nothing.
 `verdict` is `FAIL`, `EVIDENCE_INSUFFICIENT` or `NOT_APPLICABLE`; a declared PASS, a second entry for one bar, an entry
-naming no bar, or an EI/NA on a `should` bar refuses. The file's hash is in the verdict, and the count of matched
-declarations is on the badge.
+naming no bar, or an EI/NA on a `should` bar refuses. The file's hash is in the verdict, matched declarations on the badge.
+
+## Declared assumptions (`assume`)
+
+`assume` is an optional top-level key of the bars file: a list of names from a closed set; 0.2.0 knows exactly one,
+`arming_before_first_arm_row`. An unknown name, a duplicate or an empty list refuses, and so does declaring it while
+no bar has `armed: true`. It is part of the bars text, so `prereg` hashes it; a 0.1.0 tool refuses a file using it.
+
+> Before the first ARM row the vehicle is in the opposite state of that row: armed before a first disarm, disarmed before a first arm. A log with no ARM row is not covered: arming stays ABSENT. The tool does not verify this.
+
+**What it changes.** Only bars with `scope.armed: true`, and only when the log has ARM rows. The stretch before the
+first ARM row joins the armed set if that row is a disarm, and the could-not-tell for "arming ABSENT before the first
+ARM row" no longer fires. Nothing in `inspect` or the verdict's `streams` block changes.
+
+**Lost writes and arming** (with or without the key). Arming is unsure (a) between two consecutive ARM rows of the
+same state (a row is provably missing), (b) from a loss that ends at or after the first ARM row until the next ARM
+row, and (c) with the key, from the log's start to the end of any loss that starts at or before the first ARM row.
+An armed-scoped bar is then judged on a sure and a wide scope exactly as a mode-scoped bar is; `mode_transitions`
+with `armed: true` is judged on the sure scope and reads could not tell where the two differ, unless it already FAILs.
+
+**Where it prints.** The verdict's top-level `assumptions` list (always present, `[]` when none) holds `name`, `text`,
+`applied`, `detail` and `log_disarmed`. `applied: true` means the log had ARM rows, not that the assumption changed a
+verdict; `log_disarmed` is the log's own LOG_DISARMED values, printed as context and read by no rule. On a log
+with ARM rows every armed-scoped result's note says "arming before t=… s assumed armed|disarmed (assume: arming_before_first_arm_row)".
+The badge gains ` · k assumed` (k = names declared) on every verdict from that bars file.
+
+**Example**, an armed-scoped bar on the Tarot log (final 0.2.0 build, 2026-11-10):
+```yaml
+schema: swathkeeper-bars/1.0
+contract: swathkeeper-flightlog/1.0
+assume: [arming_before_first_arm_row]
+bars:
+  - id: batt_floor_armed
+    kind: series_bound
+    severity: must
+    provenance: {text: "log PARM BATT_LOW_VOLT, while armed", param: BATT_LOW_VOLT}
+    scope: {armed: true, modes: null}
+    min_n: 30
+    params: {channel: battery.voltage_v, bound: floor, limit: 18.6}
+```
+```
+  PASS                   must   batt_floor_armed     n=1261      measured=23.48213005065918
+gates: pass · 1/1 measured · 1 assumed (unregistered)
+```
+
+Exit 0. Its `detail`: "first ARM row at t=836.274 s is a disarm: armed before it; 15 firmware-dropped writes in
+[709.278, 710.184] s (DSF.Dp): [t0, 710.184] judged both ways". Without the `assume` line the same bar reads
+`EVIDENCE_INSUFFICIENT`, `gates: could not tell · 0/1 measured (unregistered)`, exit 1, with the note "arming is
+ABSENT before the first ARM row at t=836.274 s (rule 4) and the scope reaches there".
+
+**What it does not handle.** It is an assumption about the firmware's arming state. A logger silence shorter than
+max(1 s, 5 sample periods) is not a loss, so a file opened by a failed arm and followed by a refused first arm can
+leave a short disarmed stretch assumed armed; that errs towards a red, never a green. A log without DSF rows reports
+no dropped rows. Firmware other than Copter 4.5.5 is assumed, not read. A log with no ARM row stays could not tell.
 
 ## What the adapter reads, and lost writes
 
 POS, GPS, BAT, XKF4, NKF4, NKF9, MODE, ARM, ERR, DSF, PARM, MSG, VER, ORGN; not GPS2, BAT2 or CURR. Velocity keeps GPS
 rows with Status ≥ 3, ekf rows with SS ≠ 0; `alt_rel_home_m` starts at the first ORGN home row; arming before the
-first ARM row is ABSENT. Zero ERR rows is EMPTY by a lead ruling (ADR-023) that extends one source read at tag
-Copter-4.5.5 to every vehicle's release `V4.5.<n>` firmware string with no suffix, when `LOG_BACKEND_TYPE` is
-logged, constant and == 1 and an ERR format is defined in the log; otherwise events are ABSENT. The citation is in
-the docstring of `adapters/ardupilot.py`. The fence's polygon and minimum-altitude bits are not judged.
+first ARM row is ABSENT unless the bars file declares `assume` (above). Zero ERR rows is EMPTY by a lead ruling
+(ADR-023) that extends one source read at tag Copter-4.5.5 to every vehicle's release `V4.5.<n>` firmware string
+with no suffix, when `LOG_BACKEND_TYPE` is logged, constant and == 1 and an ERR format is defined in the log;
+otherwise events are ABSENT. The citation is in the docstring of `adapters/ardupilot.py`.
 
 A **loss** is an interval in which `DSF.Dp` rose (the firmware dropped writes it does not locate) or a log hole; a
 MODE or ARM row may be inside it. After a loss the mode is unsure until the next MODE row (or the log's end).
 
-- **Mode-scoped bars** are then judged twice: on the sure scope (the observed windows minus the unsure stretch) and
-  on the wide scope (plus it). FAIL if the sure scope fails; PASS only if both pass; otherwise
-  `EVIDENCE_INSUFFICIENT`. On such a PASS the printed `measured` is the wide scope's worst value and n is the sure
-  scope's count; the note gives both (Tarot `speed_ceiling_loiter`: sure worst 2.421 on n=591, wide worst 2.421 on
-  n=709).
+- **Mode-scoped bars** (and armed-scoped ones, as above) are then judged on the sure scope (the observed windows
+  minus the unsure stretch) and the wide scope (plus it): FAIL if the sure scope fails, PASS only if both pass,
+  otherwise `EVIDENCE_INSUFFICIENT`. On such a PASS the printed `measured` is the wide scope's worst value and n is
+  the sure scope's count; the note gives both (Tarot `speed_ceiling_loiter`: sure 2.421 on n=591, wide 2.421 on n=709).
 - **`mode_transitions`**: a transition whose span contains a loss has an unknown `from`. It is a FAIL if no mode
   could be allowed into the observed mode, judged and counted if every mode could, and otherwise not judged, and the
-  bar reads EI. A loss in the bar's base range also makes it EI, unless the allowed set admits every transition
-  (then no hidden row could fail it).
-- **`armed: true`** bars read EI when a drop interval ends at or after the first ARM row.
-- **Unscoped** `series_bound`, `gnss_quality` and `containment` bars are judged as before and print the note below;
-  `no_events` still excludes the interval from its drop-free seconds, and its note says "excluded from n".
-- **A log whose DSF is ABSENT** cannot count its losses: mode- and armed-dependent results carry the note "DSF
-  ABSENT: write loss is not measured; judged as if no MODE or ARM row was lost", and the verdict is unchanged.
-
-```
-15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design §3.3)
-```
+  bar reads EI. A loss in the bar's base range also makes it EI, unless the allowed set admits every transition.
+- **Unscoped** `series_bound`, `gnss_quality` and `containment` bars are judged as before and print the note
+  `N firmware-dropped writes in [a, b] s (DSF.Dp), not located; judged across (design §3.3)` (on the Tarot: 15, in
+  [709.278, 710.184] s); `no_events` still excludes the interval from its drop-free seconds ("excluded from n").
+- **A log whose DSF is ABSENT** cannot count its dropped writes: mode- and armed-dependent results carry the note "DSF
+  ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"; the note alone
+  changes no verdict.
 
 ## The three scored examples
 
@@ -262,6 +303,24 @@ None of the three reads `pass`. The Tarot's 15 dropped writes fall in the first 
 mode-transition bar (a `must`) reads could not tell and its other seven bars pass. Five of those seven carry the
 "judged across" note above, `speed_ceiling_loiter` the sure/wide note, and `no_errors` the excluded-from-n note.
 
+## Measured limits (corpus probe, 2026-11-10)
+
+40 public DataFlash logs: 14 SITL logs from ArduPilot's autotest and 26 from 13 public GitHub repositories, which
+by their own content are 15 real-hardware logs, 2 SITL logs, 2 synthetic teaching fixtures and 7 unclassified. 7 are
+refused (pre-2015 logs with no timestamped contract record) and 33 judged. With 15 loose-limit bars per log, so that
+a PASS or FAIL means the bar was measurable, 130 of 495 verdicts were measurable without the `assume` key and 180 of
+495 with it. Why the tool could not tell, in this order: (i) a log that starts at boot has no GPS fix, EKF solution
+or home at first, so a whole-log bar is voided by the gap at its start: the whole-log speed bar on 8 of the 14
+autotest logs (two hardware logs lost it to mid-log holes instead); scope such bars to armed or to a mode. (ii)
+`armed: true` was measurable on 1 of 165 verdicts without the key and on 51 of 75 with it on the 15 logs that have
+ARM rows; the 18 logs with no ARM row stay at 0 of 90. (iii) `no_events` never read PASS, 0 of 33: the firmware
+reading that lets zero ERR rows count covers 4.5.x releases only, and 18 logs carry ERR rows (the bar fails on any
+ERR row unless its code is in `ignore`). (iv) 6 of the 10 real-hardware logs that count drops carry a drop interval,
+as do both SITL logs found on GitHub and none of the 14 autotest logs; 7 of those 8 drop only at startup, and a
+transition bar allowing only the modes each log used lost 5 of its 19 measurable logs to them. A convenience sample,
+one autotest run, ArduCopter-heavy; the mode-scoped probe bar uses each log's dominant mode
+(`eval/results/gates_corpus_20261110/`).
+
 ## What this does NOT claim
 
 - The tool comes from a sim-demonstrated drone repo. Its authors have flown nothing real, and that drone's own
@@ -270,20 +329,19 @@ mode-transition bar (a `must`) reads could not tell and its other seven bars pas
   pre-registered as a possible FAIL, and it failed. The tool is that method, not evidence that the drone works.
 - A verdict claims nothing beyond what it prints: these bars, this file (by sha256), this parser version, this date.
   PASS means every measured sample met the bar; between samples it says nothing, except where `containment` judges
-  segments, and never across a gap. A PASS says nothing about any vehicle's safety. The tool has run on exactly the
-  three public logs in `examples/`, and on no other vehicle or format.
+  segments, and never across a gap. A PASS says nothing about any vehicle's safety. The tool has published verdicts on
+  exactly the three public logs in `examples/`; the probe above ran it on 40 more, and it reads no other format.
 - Before the Tarot bars were written, the authors had seen its modes, error count, GNSS status, peak altitude and
   first battery and EKF rows. The build's draft run printed the measured values of six of the eight bars, and the
   first registered verdict printed all eight before the file was re-registered. So the Tarot results are
   demonstrations, not tests. Its bars were registered after the log existed (post-hoc), and its bars, sidecar and
-  verdict were first committed together, so git orders nothing there. A 142 s low hover was expected to pass them, and under 0.2.0 it does not: the
-  dropped writes in its first 0.9 s leave its mode-transition bar unable to tell.
-- Pre-registration binds a run to a text, not a date: the date claim is the sidecar's git commit, which a committer
-  can forge, and the sidecar's `written_utc` is recorded as untrusted.
+  verdict were first committed together, so git orders nothing there. A 142 s low hover was expected to pass them,
+  and under 0.2.0 it does not: the dropped writes in its first 0.9 s leave its mode-transition bar unable to tell.
+- Pre-registration binds a run to a text, not a date (step 3); the sidecar's `written_utc` is recorded as untrusted.
 - A truncated log reads as a shorter flight; only a pinned log hash ties a verdict to a file. DataFlash has no
   checksum, so a corrupted record with an intact header decodes as values. Never exercised on: a real EKF2 log with
-  a core column, a multi-home log, a mid-flight Dp rise, or `LOG_BACKEND_TYPE` other than 1.
+  a core column, a multi-home log, or `LOG_BACKEND_TYPE` other than 1. The three scored examples contain no
+  mid-flight Dp rise (one probe log does).
 
 The why, with each rejected alternative: [`docs/design/GATES_TOOL_DESIGN.md`](https://github.com/vihanpatil/SwathKeeper/blob/main/docs/design/GATES_TOOL_DESIGN.md).
-What the build measured, and the open items: ADR-023 and its amendments in
-[`docs/DECISIONS.md`](https://github.com/vihanpatil/SwathKeeper/blob/main/docs/DECISIONS.md).
+What the build measured, and the open items: ADR-023 and its amendments in [`docs/DECISIONS.md`](https://github.com/vihanpatil/SwathKeeper/blob/main/docs/DECISIONS.md).

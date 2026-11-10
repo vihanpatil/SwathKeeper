@@ -878,6 +878,7 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
         from render_gates_badge import render_svg
         green = 'fill="#4c1"'
         self.assertIn(green, render_svg("x", "gates: pass · 1/1 measured"))
+        self.assertIn("· 1 assumed (post-hoc)", render_svg("x", "gates: pass · 1/1 measured · 1 assumed (post-hoc)"))   # A7
         for word in ("fail", "could not tell", "refused", "passing", "PASS", "green"):
             with self.subTest(word=word):
                 self.assertNotIn(green, render_svg("x", f"gates: {word} · 1/1 measured"), msg=f"{word!r} painted green")

@@ -183,3 +183,32 @@ ok(UNKNOWN(?),b) since the sentinel matches only "*" (its mutant survives, as an
   after the 40-log corpus probe (log 03 has Dp rises at 129 s and 208 s); install line still names 0.1.0 (dated).
 - G338 commit hygiene: stage root README.md (badge) with it; the other session's fieldguard_planning, check_live_
   flight_log.py, fly_pipeline.sh, dashboard/data/field.json and tests/fieldguard_planning must stay out.
+
+## Round 10 — the DECLARED arming assumption (uncommitted on 9e42cfa), 2026-11-10 — G339-G342; SHIP-AFTER-FIXES (G339)
+Rule: `assume: [arming_before_first_arm_row]` -> prefix = opposite of first ARM row; U_arm = same-state pairs + [a, next
+row > b) for losses with b >= t_1 + (key only) [t0, b_max] for losses with a < t_1; sure/wide combine; B7 blind if differ.
+- G339 MAJOR same-tick: `pre` uses a < t_1. A loss starting AT the first ARM row's tick: first ARM -> red in the assumed-
+  disarmed prefix reads PASS (false green); first DISARM -> FAIL (false red). Fix a <= first (mutant X1 survives, suite
+  green, both cases -> EI). Pin qa339/tools/a2.py.
+- NOTES: G340 X8 (base = sure arming) survives, argued equivalent; G341 deviation (c) sound but B7 is monotone, so the
+  general combine is equally sound and tighter (defer); G342 what the README must say (applied = arming PRESENT, holes
+  < max(1 s, 5p) are not losses, DSF-absent logs report no pre-first drops, green badge carries "· k assumed").
+Measured: no false green in (3) both directions, straddle, b == t_1, two pre losses, ARM-ARM, no-row (word for word,
+applied false), ArmState 2, overlapping mode/arming U, gnss/no_events cut at U. 0 changes over 156 unarmed corpus bars vs
+9e42cfa; streams/integrity/source identical with/without the key; refusal assumptions []. Raw-pymavlink re-derivation
+of sure/wide n and worst on 01 (first disarm), 06, 33, 29 (first arm), 14 (pre drop + 458 s hole) all equal the tool.
+14/16 QA mutants killed; G334 pin still kills the sentinel mutant with the hole moved before the first ARM row.
+
+## Round 11 — final check before committing the assumption + publishing the corpus docs (2026-11-10) — G343-G351
+Code: SHIP (G339 closed for both first-row states; corpus/22 inspect exit 0, mode ABSENT, all 26 mode-dependent bars EI
+by rule 1, with and without the key; README assume example re-run char-for-char; A2 text verbatim; 3/3 examples).
+Docs: SHIP-AFTER-FIXES. Every probe number reproduced from probe_*.json EXCEPT:
+- G343 MAJOR: "hardware" = population github, but 01/02 are SITL (SIM/SIM2 records, "RC Protocol: SITL") and 21/22 are
+  synthetic fixtures (banner "synthetic teaching fixture"). 2 of the 8 drop logs are SITL; "hardware 28/40" = 10 SITL +
+  3 synthetic + 15/20 board-string hardware. Classify by SIM records / banner, never by where a log was found.
+- G344 "14 GitHub repositories" -> 13; G345 "17 logs carry ERR rows" -> 18 (17 FAIL; 10 FAILs are ECode-0-only SITL rows);
+  G346 the 2 hardware speed-bar voids are mid-log logger holes (07, 14), not a start gap; G347 am.2 /18 vs record /19;
+  G348 "78/78 mutants" is not QA's tally and am.2 omits G326; G349 README rule-5 exception false for armed B7, note
+  scope, DSF-ABSENT "verdict unchanged" (G335 residual); G350 "pre-registered before the build" unsupported; G351
+  BUILD_LOG "one real flight and no outside log" self-contradicts.
+**Lesson:** a population label is a claim; check it in the bytes (SIM records, MSG banner) before counting by it.

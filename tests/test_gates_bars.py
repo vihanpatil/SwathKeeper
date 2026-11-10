@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from swathkeeper_gates import bars as B  # noqa: E402
-from swathkeeper_gates.contract import Refusal, fired_gaps, hits  # noqa: E402
+from swathkeeper_gates.contract import Refusal, fired_gaps, hits, streams_map  # noqa: E402
 from test_gates_adapter import (M_PER_DEG, STD, T0, at_time, edit, flight_rows, gps, latlon, parse, surgery,  # noqa: E402
                                 us, zeroed)
 
@@ -20,8 +20,12 @@ def bar(kind, params, min_n=1, modes=None, armed=None):
             "scope": {"armed": armed, "modes": modes}, "min_n": min_n, "params": params}
 
 
-def judge(b, log):
-    return B.evaluate(B.validate({"schema": B.SCHEMA, "contract": "swathkeeper-flightlog/1.0", "bars": [b]}), log)[0]
+def doc(*bars, **kw):
+    return {"schema": B.SCHEMA, "contract": "swathkeeper-flightlog/1.0", **kw, "bars": list(bars)}
+
+
+def judge(b, log, assume=None):
+    return B.evaluate(B.validate(doc(b, **({"assume": assume} if assume else {}))), log)[0]
 
 
 def batt(limit=20.0, **kw):
@@ -240,6 +244,95 @@ class TestLoggerHoles(unittest.TestCase):
                 self.assertIn("to witness logger liveness", judge(b, blind)["note"])
 
 
+AS = ["arming_before_first_arm_row"]
+ARMED = batt(armed=True)
+
+
+def red_at(rows, t):
+    return edit(rows, "BAT", t, inst=1, Volt=19.0)
+
+
+class TestArmingAssumption(unittest.TestCase):
+    """A1-A5 (owner ruling 2026-11-10): the declared prefix, and the arming losses that replace the blanket R3."""
+
+    def test_the_assume_key_is_closed_and_must_be_used(self):
+        for kw, why in (({"assume": ["arming_before"]}, "is not one of"), ({"assume": AS * 2}, "duplicate"),
+                        ({"assume": []}, "at least 1"), ({"assume": AS[0]}, "expected a list")):
+            with self.subTest(why=why), self.assertRaisesRegex(Refusal, why):
+                B.validate(doc(ARMED, **kw))
+        with self.assertRaisesRegex(Refusal, "an assumption no bar uses"):      # mutant: the refusal dropped -> red
+            B.validate(doc(batt(), assume=AS))
+
+    def test_the_prefix_takes_the_opposite_state_of_the_first_arm_row(self):
+        arm = ((0.0, "MODE", 0), (5.0, "ARM", 1), (15.0, "ARM", 0), (20.0, "ARM", 1))
+        self.assertIn("ABSENT before the first ARM row", judge(ARMED, parse(flight_rows(events=arm)))["note"])    # no key
+        for t, want in ((2.0, B.PASS), (17.0, B.PASS), (10.0, B.FAIL)):    # disarmed prefix, disarmed gap, armed
+            with self.subTest(t=t):     # mutants: s_1 ignored (armed either way); applied when not declared -> red
+                self.assertEqual(judge(ARMED, parse(red_at(flight_rows(events=arm), t)), AS)["verdict"], want)
+        log = parse(flight_rows(events=arm))
+        before = streams_map(log)
+        self.assertEqual(judge(ARMED, log, AS)["n"], 2 * (100 + 101))
+        self.assertEqual(streams_map(log), before)                       # A3: the observed stream is never rewritten
+        disarm = ((0.0, "MODE", 0), (10.0, "ARM", 0))
+        r = judge(ARMED, parse(red_at(flight_rows(events=disarm), 3.0)), AS)     # armed before a first disarm
+        self.assertEqual((r["verdict"], judge(ARMED, parse(flight_rows(events=disarm)), AS)["n"]), (B.FAIL, 200))
+        self.assertIn(f"arming before t={T0 + 10:.3f} s assumed armed (assume: arming_before_first_arm_row)", r["note"])
+        none = parse(flight_rows(events=((0.0, "MODE", 0),)))
+        self.assertEqual(judge(ARMED, none, AS)["note"], "n=0; the scope needs arming, which is ABSENT: no ARM rows")
+        self.assertEqual([(x["applied"], x["detail"]) for x in B.assumptions(B.validate(doc(ARMED, assume=AS)), none)],
+                         [(False, "no ARM rows: not applied, arming stays ABSENT")])
+        r = judge(batt(armed=True, modes=["AUTO"]), parse(flight_rows()), AS)
+        self.assertEqual(r["verdict"], B.NA)
+        self.assertIn("no window of the scope exists (measured, given the assumption)", r["note"])   # mutant -> red
+
+    def test_a_loss_before_the_first_arm_row_makes_the_stretch_before_it_unsure(self):
+        disarm = ((0.0, "MODE", 0), (20.0, "ARM", 0))                 # armed before t=21 s; loss [9, 10]
+        rows = lambda t=None: parse(dropped(red_at(flight_rows(events=disarm), t) if t else flight_rows(events=disarm), 9))
+        self.assertEqual(judge(ARMED, rows(5.0), AS)["verdict"], B.EI)         # inside [t0, 10]: mutant "after the loss"
+        self.assertEqual(judge(ARMED, rows(12.0), AS)["verdict"], B.FAIL)      # after b_max, before the first row
+        r = judge(ARMED, rows(), AS)
+        self.assertEqual((r["verdict"], r["n"]), (B.PASS, 2 * 109))            # sure: (10, 21); wide: [t0, 21)
+        self.assertIn("wide scope (quoted)", r["note"])
+        straddle = ((0.0, "MODE", 0), (9.5, "ARM", 0), (20.0, "ARM", 1))       # loss [10, 11] straddles t=10.5 s
+        for t in (3.0, 15.0):                       # (3) before the loss and (2) after it, up to the next row (V1)
+            self.assertEqual(judge(ARMED, parse(dropped(red_at(flight_rows(events=straddle), t), 10)), AS)["verdict"], B.EI)
+        for first in (1, 0):                         # G339: a loss STARTING on the first row's tick may precede it
+            tick = ((0.0, "MODE", 0), (10.0, "ARM", first), (15.0, "ARM", 1 - first), (20.0, "ARM", first))
+            log = parse(dropped(red_at(flight_rows(events=tick), 5.0), 11))
+            self.assertEqual(judge(ARMED, log, AS)["verdict"], B.EI)
+            self.assertIn("judged both ways", B.assumptions(B.validate(doc(ARMED, assume=AS)), log)[0]["detail"])
+        at = ((0.0, "MODE", 0), (1.0, "ARM", 1), (10.0, "ARM", 0))             # loss [1, 2] ends AT the first row (G313)
+        self.assertEqual(judge(ARMED, parse(dropped(red_at(flight_rows(events=at), 5.0), 1)), AS)["verdict"], B.EI)
+
+    def test_a_loss_after_the_first_arm_row_and_same_state_rows(self):
+        ev = ((0.0, "MODE", 0), (5.0, "ARM", 1), (10.0, "ARM", 0), (20.0, "ARM", 1))   # loss [12, 13]: U = [12, 21)
+        rows = lambda t=None: parse(dropped(red_at(flight_rows(events=ev), t) if t else flight_rows(events=ev), 12))
+        for t, want in ((14.0, B.EI), (25.0, B.FAIL), (None, B.PASS)):    # the old blanket R3 read EI on all three
+            with self.subTest(t=t):     # mutants: U ending at b; wide arming without U_arm -> red
+                self.assertEqual(judge(ARMED, rows(t), AS)["verdict"], want)
+        twice = ((0.0, "MODE", 0), (2.0, "ARM", 1), (8.0, "ARM", 0), (29.0, "ARM", 0))  # QA N6b: DISARM, DISARM
+        for log in (parse(red_at(flight_rows(events=twice), 18.0)), zeroed(red_at(flight_rows(events=twice), 18.0), span=(12.0, 13.0))[0]):
+            self.assertEqual(judge(ARMED, log, AS)["verdict"], B.EI)  # mutant: same-state rows ignored -> PASS -> red
+
+    def test_armed_with_modes_and_b7(self):
+        ev = ((0.0, "MODE", 0), (0.5, "ARM", 1), (2.0, "MODE", 5), (10.0, "ARM", 0), (16.0, "MODE", 5), (20.0, "ARM", 1))
+        b = batt(armed=True, modes=["LOITER"])           # loss [14, 15]: mode unsure to 17, arming to 21
+        for t, want in ((5.0, B.FAIL), (18.0, B.EI), (25.0, B.FAIL)):
+            with self.subTest(t=t):
+                self.assertEqual(judge(b, parse(dropped(red_at(flight_rows(events=ev), t), 14)), AS)["verdict"], want)
+        same = STD + ((25.0, "ARM", 1),)                  # ARM, ARM: arming unsure over [1.5, 26), no MODE row lost
+        b7 = {**MODES, "scope": {"armed": True, "modes": None}}
+        r = judge(b7, parse(flight_rows(events=same)), AS)
+        self.assertEqual(r["verdict"], B.EI)              # mutant: B7 judged on the wide scope -> PASS -> red
+        self.assertIn("ARM rows at", r["note"])
+        self.assertEqual(judge(b7, parse(flight_rows(events=same + ((27.0, "MODE", 6),))), AS)["verdict"], B.FAIL)
+        ev = ((0.0, "MODE", 0), (20.0, "ARM", 1), (25.0, "MODE", 5), (27.0, "MODE", 0), (28.0, "MODE", 5))   # G334 (QA S1)
+        log, _ = zeroed(flight_rows(events=ev), span=(10.0, 11.0))         # a hole before the first ARM row: outside base
+        tab = sorted(set(log.meta["mode_table"].values()))
+        every = [[m, "LOITER"] for m in tab] + [["<start>", "*"]] + [[a, c] for a in tab for c in tab if c != "LOITER"]
+        self.assertEqual(judge(bar("mode_transitions", {"allowed": every}, armed=True, modes=["LOITER"]), log)["verdict"], B.EI)
+
+
 class TestNoEvents(unittest.TestCase):
     def test_n_is_drop_free_seconds(self):
         r = judge(bar("no_events", {"kinds": ["error"]}, min_n=40), parse(flight_rows()))
@@ -345,17 +438,15 @@ class TestDroppedWrites(unittest.TestCase):
 
     def test_arming_is_unsure_after_a_drop_past_the_first_arm_row(self):
         r = judge(batt(armed=True, modes=["LOITER"]), parse(edit(self.R(), "BAT", 25.0, inst=1, Volt=19.0)))
-        self.assertEqual(r["verdict"], B.EI)                             # mutant: R3 after FAIL -> FAIL -> red
-        self.assertIn(f"arming is not known after the 3 firmware-dropped writes in [{T0 + 10:.3f}, {T0 + 11:.3f}] s", r["note"])
+        self.assertEqual(r["verdict"], B.EI)                         # A4: [11, end) may be disarmed, so a red there is not sure
+        self.assertIn(f"arming not known over [{T0 + 10:.3f}, {T0 + 30:.3f}", r["note"])
         self.assertNotIn("judged across", judge(batt(armed=True), parse(self.R()))["note"])   # M10 mutant -> red
-        for arm in (1.0, 0.5):        # G313: b == the first ARM row (t=2 s); M1: a drop [1, 2] straddling ARM at 1.5 s
-            ev = ((0.0, "MODE", 5), (arm, "ARM", 1))
-            self.assertIn("arming is not known", judge(batt(armed=True, modes=["LOITER"]), parse(dropped(flight_rows(events=ev), 1)))["note"])
         # G311: U = [2, 4) lies before the first ARM row (t=6 s), where arming is ABSENT: the wide pass reaches it -> EI
         early = STD[:1] + ((3.0, "MODE", 0), (5.0, "ARM", 1), (20.0, "MODE", 5))
         for b in (batt(armed=True, modes=["LOITER"]), gnss(armed=True, modes=["LOITER"])):
             with self.subTest(b["kind"]):     # M12 mutant: the R2 gate on hits(drop, base) -> PASS -> red
                 self.assertEqual(judge(b, parse(dropped(flight_rows(events=early), 2)))["verdict"], B.EI)
+                self.assertIn("mode not known over [2.000, 4.000)", judge(b, parse(dropped(flight_rows(events=early), 2)))["note"])
         self.assertEqual(judge(batt(armed=True), parse(dropped(flight_rows(events=early), 2))), judge(batt(armed=True), parse(flight_rows(events=early))))
         lone = ((0.0, "MODE", 0), (25.0, "MODE", 2), (29.0, "ARM", 0))     # QA Q8: was a vacuous NA "(measured)"
         r = judge(batt(armed=True, modes=["LOITER"]), parse(edit(self.R(events=lone), "BAT", 15.0, inst=1, Volt=19.0)))

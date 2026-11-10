@@ -127,7 +127,7 @@ def cmd_run(a):
         log = adapters.load(a.log)
         v.update(tool=_tool(log), source=_source(a.log, log, log_sha), integrity=log.integrity, streams=streams_map(log))
         B.check_modes(bars, log)
-        v["results"] = B.evaluate(bars, log)
+        v["results"], v["assumptions"] = B.evaluate(bars, log), B.assumptions(bars, log)
         today = dt.datetime.now(dt.timezone.utc).date()
         v["allowlist"] = {"path": a.declared and Path(a.declared).name, "sha256": dsha,
                           **allowlist.compare(v["results"], declared, today)}
@@ -135,8 +135,8 @@ def cmd_run(a):
         if not isinstance(e, Refusal):
             traceback.print_exc()
         v["refusal"] = str(e) if isinstance(e, Refusal) else f"internal error, no verdict: {type(e).__name__}: {e}"
-        v["results"] = []
-    v["exit_code"], v["badge"] = V.outcome(v["results"], v["allowlist"], v["prereg"], v["refusal"])
+        v["results"], v["assumptions"] = [], []
+    v["exit_code"], v["badge"] = V.outcome(v["results"], v["allowlist"], v["prereg"], v["refusal"], len(v["assumptions"]))
     try:
         Path(a.out).write_text(V.dumps(v))
     except OSError as e:

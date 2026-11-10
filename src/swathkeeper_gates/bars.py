@@ -4,6 +4,7 @@ A kind only MEASURES (its windows, n, any violation, non-finite samples, its str
 applies §3.2's fixed order to every kind and adds the log's holes (byte skips, and gaps in every raw series stream
 at once: contract.log_holes), so the order and the hole rule live in exactly one place. Stdlib + PyYAML.
 """
+import bisect
 import hashlib
 import math
 import re
@@ -11,7 +12,7 @@ import re
 import yaml
 
 from . import CONTRACT
-from .contract import (ABSENT, PRESENT, SERIES, Refusal, armed_windows, fired_gaps, gap_threshold, hits,
+from .contract import (ABSENT, PRESENT, SERIES, TICK_S, Refusal, armed_windows, fired_gaps, gap_threshold, hits,
                        in_windows, intersect, log_holes, median_period, merge, mode_windows, r6, subtract, unsure, witnessed)
 
 PASS, FAIL, EI, NA = "PASS", "FAIL", "EVIDENCE_INSUFFICIENT", "NOT_APPLICABLE"
@@ -21,6 +22,10 @@ ID_RE = re.compile(r"[a-z0-9_]{1,40}")
 INT_TEXT = re.compile(r"-?(0|[1-9][0-9]*)")
 FLOAT_TEXT = re.compile(r"-?[0-9]+\.[0-9]+([eE][-+]?[0-9]+)?|-?[0-9]+[eE][-+]?[0-9]+")
 M_PER_DEG = 111318.84502145034    # ArduPilot's LOCATION_SCALING_FACTOR (m per 1e-7 deg) x 1e7
+ASSUME = "arming_before_first_arm_row"     # A1/A2: the closed set of declarable assumptions, and their fixed text
+ASSUMPTIONS = {ASSUME: "Before the first ARM row the vehicle is in the opposite state of that row: armed before a first "
+                       "disarm, disarmed before a first arm. A log with no ARM row is not covered: arming stays ABSENT. "
+                       "The tool does not verify this."}
 MODE_PREFIX_S = 1.0               # longer than this before the first MODE row: mode-scoped bars are EI (G234)
 
 
@@ -128,7 +133,7 @@ BAR = {"id": string(ID_RE, "an id of [a-z0-9_]{1,40}"), "kind": tuple(PARAMS), "
        "scope": {"armed": _armed, "modes": lambda v, where: v is None or check(v, [STR, 1], where)},
        "min_n": num(1, integer=True), "params": lambda v, where: None}      # params: checked per kind below
 DOC = {"schema": (SCHEMA,), "contract": string(CONTRACT_RE, "swathkeeper-flightlog/1.x (the tool's major)"),
-       "bars": [BAR, 1]}
+       "bars": [BAR, 1], "assume?": [tuple(ASSUMPTIONS), 1]}
 
 
 def validate(doc):
@@ -154,7 +159,12 @@ def validate(doc):
             raise Refusal(f"{w}: <start> is only ever a `from`")
     if not any(b["severity"] == "must" for b in bars):
         raise Refusal("bars file: zero `must` bars")
-    return bars
+    assume = doc.get("assume", [])
+    if len(set(assume)) < len(assume):
+        raise Refusal(f"bars file.assume: duplicate name in {assume}")
+    if assume and not any(b["scope"]["armed"] for b in bars):
+        raise Refusal(f"bars file.assume: {assume} is an assumption no bar uses (no bar has scope.armed: true)")
+    return [{**b, "assume": tuple(assume)} for b in bars]       # the file's assumptions travel with each bar, unprinted
 
 
 def load_bars(path):
@@ -195,26 +205,34 @@ def _losses(log, holes):
 
 
 def _judge(bar, kind, log, holes):
-    """G257 R2: where the mode is unsure (contract.unsure) inside the range the scope could reach, a mode-scoped bar is
-    judged on the SURE scope (without it) and the WIDE scope (with it). The true scope lies between them and every kind
-    is monotone in its scope, so: FAIL iff the sure pass FAILs, PASS iff both PASS, else EI. What prints is the sure
-    pass's, except that a PASS quotes the wide pass's worst (the bound a reader may quote, G318)."""
-    r2, lost = bar["scope"]["modes"] is not None and bar["kind"] != "mode_transitions", _losses(log, holes)
-    u = unsure(log, lost)
-    j = kind(bar, log, holes, ("sure", u) if r2 else None)
-    near = [] if not r2 or j["absent"] else [(x, s) for x, s in zip(lost, u) if intersect([s], j["reach"])]
-    if not near:
+    """G257 R2 / A4: where the mode (contract.unsure) or arming (_arming) is unsure, a scoped bar is judged on the SURE
+    scope (without it) and the WIDE scope (with it). The true scope lies between them and every kind is monotone in its
+    scope, so: FAIL iff the sure pass FAILs, PASS iff both PASS, else EI; B7 is judged on the sure scope and blind where
+    they differ. What prints is the sure pass's, except that a PASS quotes the wide pass's worst (G318)."""
+    lost = _losses(log, holes)
+    u, arm = unsure(log, lost), _arming(bar, log, lost)
+    j = kind(bar, log, holes, ("sure", u, arm))
+    if j["absent"] or (bar["scope"]["modes"] is None and not bar["scope"]["armed"]):
         return _decide(bar, j, log, holes)
-    (sv, why, gaps), w = _order(bar, j, holes), kind(bar, log, holes, ("wide", u))
+    w = kind(bar, log, holes, ("wide", u, arm))
+    if w["windows"] == j["windows"] and not w["absent"]:
+        return _decide(bar, j, log, holes)
+    near = [(x, s) for x, s in zip(lost, u) if intersect([s], j["reach"])] if bar["kind"] != "mode_transitions" and \
+        bar["scope"]["modes"] is not None else []
+    spans = lambda w_: ", ".join(f"[{a:.3f}, {b:.3f})" for a, b in merge(w_))
+    parts = ([f"mode not known over {spans(s for _, s in near)} s ({'; '.join(x[2] for x, _ in near)} may hide a MODE row)"]
+             if near else []) + ([f"arming not known over {spans(arm['u'])} s ({'; '.join(arm['why'])})"] if arm and arm["u"] else [])
+    if bar["kind"] == "mode_transitions":                       # A4: B7 on the sure scope, blind where it differs
+        j["blind"].append("; ".join(parts))
+        return _decide(bar, j, log, holes)
+    (sv, why, gaps) = _order(bar, j, holes)
     wv, wwhy, _ = _order(bar, w, holes)
     v = sv if sv == FAIL or sv == wv == PASS else EI
     at = f" at t={w['at'][0]:.3f} s" if w["at"] else ""
     found = (f"passes too: sure worst {j['measured']:.6g} on n={j['n']}; wide worst {w['measured']:.6g} on n={w['n']}"
              if v == PASS else f"passes too: n={w['n']}" if wv == PASS else
              f"has a violation{at}, which may or may not be in scope" if wv == FAIL else f"reads {wv}: {wwhy}")
-    spans = ", ".join(f"[{a:.3f}, {b:.3f})" for a, b in merge(s for _, s in near))
-    j["info"].append(f"mode not known over {spans} s ({'; '.join(x[2] for x, _ in near)} may hide a MODE row): judged "
-                     f"without it; the wide scope (with it) {found}")
+    j["info"].append(f"{'; '.join(parts)}: judged without it; the wide scope (with it) {found}")
     if v == PASS:                                   # G318/G329: the wide pass's bound leads, as `measured` quotes it
         j["measured"], j["worst"], why = w["measured"], w["worst"], f"wide scope (quoted): {w['note']}; sure scope: {why}"
     return _decide(bar, j, log, holes, (v, why if v == sv else f"the sure scope reads {sv}", gaps))
@@ -234,7 +252,8 @@ def _order(bar, j, holes):
     elif not j["windows"] and unseen:                       # G233: an absence across a hole is not measured
         v, why = EI, "no window of the scope, and the absence is not measured: " + "; ".join(unseen[:5])
     elif not j["windows"]:
-        v, why = NA, "the scope stream is PRESENT and no window of the scope exists (measured)"   # rule 2
+        v, why = NA, ("the scope stream is PRESENT and no window of the scope exists (measured"      # rule 2, A5
+                      + (", given the assumption)" if j["given"] else ")"))
     elif j["violated"]:
         v, why = FAIL, j["note"]                                    # rule 3: a measured red, whatever n is
     elif ei:
@@ -252,7 +271,8 @@ def _decide(bar, j, log, holes, decided=None):
             j["info"].append(f"{k} firmware-dropped writes in [{a:.3f}, {b:.3f}] s (DSF.Dp), not located; "
                              f"{'excluded from n' if bar['kind'] == 'no_events' else 'judged across'} (design §3.3)")
     if log.integrity["dsf_dropped_max"] is None and scoped and not j["absent"]:          # G321
-        j["info"].append("DSF ABSENT: write loss is not measured; judged as if no MODE or ARM row was lost")
+        j["info"].append("DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes "
+                         "still count)")
     near = [(a, b) for a, b, _ in log.integrity["holes"] if j["at"] and a - j["at"][1] <= j["at"][0] <= b + j["at"][1]]
     if v == FAIL and near:                                            # G265: no checksum, so it may be garbage
         j["info"].append(f"the deciding sample at t={j['at'][0]:.3f} s sits beside a byte hole at "
@@ -268,35 +288,68 @@ def _decide(bar, j, log, holes, decided=None):
 
 def _start(bar, log, side):
     j = {"windows": [], "base": [], "absent": None, "blind": [], "info": [], "n": 0, "violated": False,
-         "measured": None, "worst": None, "nan": 0, "gaps": [], "used": set(), "note": None, "at": None}
+         "measured": None, "worst": None, "nan": 0, "gaps": [], "used": set(), "note": None, "at": None, "given": False}
     scope, wins = bar["scope"], [(log.t0, log.t1)]
     j["base"] = j["reach"] = wins
     if scope["armed"]:
         s = log.streams["arming"]
         if s.state != PRESENT:
             return {**j, "absent": f"the scope needs arming, which is {s.state}: {s.reason}"}
-        armed, first = armed_windows(log)
-        j["base"], j["reach"] = merge(armed), merge(armed + [(log.t0, first)])   # reach: arming ABSENT before `first`
-        lost = next((d for d in log.integrity["drop_intervals"] if d[1] >= first), None)  # G257 R3: rule 1, strict
-        if lost:
-            return {**j, "absent": f"arming is not known after the {lost[2]} firmware-dropped writes in [{lost[0]:.3f}, "
-                                   f"{lost[1]:.3f}] s (DSF.Dp): an ARM row may be among them"}
+        arm, first = side[2], side[2]["first"]      # A4: "could the scope be here" asks the WIDE arming set
+        j["base"], j["reach"], j["given"] = arm["wide"], merge(arm["wide"] + [(log.t0, first)]), arm["assume"]
+        if arm["assume"]:                                                                                # A5
+            j["info"].append(f"arming before t={first:.3f} s assumed {'disarmed' if arm['s1'] else 'armed'} (assume: {ASSUME})")
     if scope["modes"] is not None:
         why = _mode_absent(log)
         if why:
             return {**j, "absent": why}
         _mode_prefix(log, j)
         seen = [(a, b) for a, b, m in mode_windows(log) if m in scope["modes"]]
-        if side:                                    # G257 R2 / G311: _judge's sure scope, and its wide one to the log's ends
+        if bar["kind"] != "mode_transitions":      # G257 R2 / G311: _judge's sure scope, and its wide one to the log's ends
             seen = subtract(seen, intersect(side[1], j["base"])) if side[0] == "sure" else seen + side[1]
         wins = merge(intersect(wins, seen))
     if scope["armed"]:
-        if intersect(wins, [(log.t0, first)]):
+        if not arm["assume"] and intersect(wins, [(log.t0, first)]):
             return {**j, "absent": f"arming is ABSENT before the first ARM row at t={first:.3f} s (rule 4) "
                                    "and the scope reaches there"}
-        wins = merge(intersect(wins, j["base"]))
+        wins = merge(intersect(wins, arm[side[0]]))
     j["windows"] = wins
     return j
+
+
+def _arming(bar, log, lost):
+    """A3/A4: an `armed: true` scope's armed set, sure (A minus U_arm) and wide (A plus U_arm); None unless arming is
+    PRESENT. Each ARM row pins the state just BEFORE it (every transition starts from the opposite state), so U_arm is:
+    between two consecutive rows of the same state (a row is provably missing); from a loss ending at or after the first
+    row to the next row; and, under the assumption, the stretch BEFORE a loss starting at or before the first row (G339)."""
+    if not bar["scope"]["armed"] or log.streams["arming"].state != PRESENT:
+        return None
+    d, (A, first), assume = log.streams["arming"].data[0], armed_windows(log), ASSUME in bar["assume"]
+    ts, st, pre = d["t_s"], d["armed"], [(a, b, x) for a, b, x in lost if a <= first]
+    u = [(p, q, f"ARM rows at t={p:.3f} and {q:.3f} s are both {'arms' if a else 'disarms'}: a row is missing between them")
+         for p, q, a, b in zip(ts, ts[1:], st, st[1:]) if a == b]
+    u += [(a, (ts[bisect.bisect_right(ts, b):] or [log.t1])[0], x) for a, b, x in lost if b >= first]
+    u += [(log.t0, max(b for _, b, _ in pre) + TICK_S, "; ".join(x for *_, x in pre))] if assume and pre else []
+    span = merge(intersect([(a, b) for a, b, _ in u], [(log.t0, log.t1)]))
+    A = merge(A + [(log.t0, first)] * (assume and not st[0]))
+    return {"sure": subtract(A, span), "wide": merge(A + span), "first": first, "assume": assume, "s1": st[0],
+            "u": span, "why": [x for *_, x in u]}
+
+
+def assumptions(bars, log):
+    """A6: one object per declared assumption, saying what it did on THIS log (LOG_DISARMED is context, never read)."""
+    s, out = log.streams["arming"], []
+    for name in bars[0]["assume"]:
+        if s.state != PRESENT:
+            detail = f"{s.reason}: not applied, arming stays ABSENT"
+        else:
+            first, pre = s.data[0]["t_s"][0], [x for x in _losses(log, log_holes(log)) if x[0] <= s.data[0]["t_s"][0]]
+            detail = (f"first ARM row at t={first:.3f} s is {'an arm: disarmed' if s.data[0]['armed'][0] else 'a disarm: armed'}"
+                      f" before it" + (f"; {'; '.join(x[2] for x in pre)}: [t0, {max(x[1] for x in pre):.3f}] judged both ways"
+                                       if pre else ""))
+        out.append({"name": name, "text": ASSUMPTIONS[name], "applied": s.state == PRESENT, "detail": detail,
+                    "log_disarmed": sorted({x for _, x in log.params.get("LOG_DISARMED", ())}) or None})
+    return out
 
 
 def _mode_prefix(log, j):

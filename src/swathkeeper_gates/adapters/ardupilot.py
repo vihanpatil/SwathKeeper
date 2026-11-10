@@ -31,11 +31,16 @@ Firmware citations (design §11.1 items 1-2), read at tag Copter-4.5.5:
   EMPTY only inside the citation's premise (G238): a release V4.5.<n> firmware string with no suffix, and
   LOG_BACKEND_TYPE logged, constant and == 1 (bit 0 File only; the cited path is AP_Logger_File's).
 * arming. ARM rows come only from AP_Arming::Log_Write_Arm / Log_Write_Disarm, called by AP_Arming::arm() /
-  disarm() on a successful transition (event-only; a failed arm writes nothing). With LOG_DISARMED=0 the
-  base arm() sets armed and writes the row BEFORE AP_Arming_Copter::arm() calls
-  AP::logger().set_vehicle_armed(true), so AP_Logger_Backend::ShouldLog refuses the arm row, while the
-  disarm row is written. That explains a log whose only ARM row is a disarm, but 15 s persistence windows
-  after a disarm or a failed arm can also start a log disarmed, so the initial state stays ABSENT (rule 4).
+  disarm() on a successful transition (event-only; a failed arm writes nothing). Every transition starts from
+  the opposite state: arm() returns early if already armed and disarm() if already disarmed, and rows are
+  written only on success. With LOG_DISARMED=0 the base arm() sets armed and writes the row BEFORE
+  AP_Arming_Copter::arm() calls AP::logger().set_vehicle_armed(true), so AP_Logger_Backend::ShouldLog can
+  refuse the arm row while the disarm row is written. But logging persists 15 s after a disarm or a failed arm
+  and 150 s after a failsafe-type disarm (AP_Arming::check_forced_logging -> set_long_log_persist); an arm row
+  IS written inside a persistence window and after a file's first armed write (ShouldLog's critical
+  `have_logged_armed && !LOG_FILE_DSRMROT` path), so only a file's FIRST arm outside a persistence window is
+  refused; and a watchdog-armed reboot forces LOG_DISARMED=1 in RAM (AP_Logger::Init). So the initial state
+  stays ABSENT (rule 4) unless a bars file declares `assume: [arming_before_first_arm_row]` (bars.ASSUMPTIONS).
 """
 import contextlib
 import math
@@ -254,6 +259,8 @@ def read(path):
         if skipped and st[name].state == PRESENT:
             st[name].note = "; ".join(filter(None, (st[name].note, f"{', '.join(skipped)} rows not read")))
     st["mode"] = _stream("mode", rows, [("MODE", 0)], None, {"num": "ModeNum", "rsn": "Rsn"})
+    if "num" in st["mode"].absent_cols:                  # a MODE record without ModeNum names no mode (corpus log 22)
+        st["mode"] = Stream(ABSENT, st["mode"].source, reason=st["mode"].absent_cols["num"])
     if st["mode"].state == PRESENT:
         d = st["mode"].data[0]
         d["name"] = [table.get(n, f"UNKNOWN({n})") if table else None for n in d["num"]]

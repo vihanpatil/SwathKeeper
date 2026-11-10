@@ -328,6 +328,7 @@
  "exit_code": 1,
  "badge": "gates: could not tell \u00b7 7/8 measured (post-hoc)",
  "refusal": null,
+ "assumptions": [],
  "results": [
   {
    "id": "alt_floor",

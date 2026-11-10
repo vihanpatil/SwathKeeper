@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from swathkeeper_gates import allowlist, cli  # noqa: E402
 from swathkeeper_gates import verdict as V  # noqa: E402
+from swathkeeper_gates import bars as B  # noqa: E402
 from swathkeeper_gates.bars import EI, FAIL, NA, PASS  # noqa: E402
 from swathkeeper_gates.contract import Refusal  # noqa: E402
 from test_gates_adapter import flight_rows, write_synthetic_log  # noqa: E402
@@ -31,8 +32,8 @@ def decl(bar, verdict, expires=dt.date(2027, 1, 31)):
     return {"bar": bar, "verdict": verdict, "reason": "names the evidence", "expires": expires}
 
 
-def outcome(res, declared=(), prereg=REGISTERED):
-    return V.outcome(res, allowlist.compare(res, list(declared), TODAY), prereg, None)
+def outcome(res, declared=(), prereg=REGISTERED, assumed=0):
+    return V.outcome(res, allowlist.compare(res, list(declared), TODAY), prereg, None, assumed)
 
 
 class TestTheTable(unittest.TestCase):
@@ -65,6 +66,8 @@ class TestTheTable(unittest.TestCase):
         self.assertEqual(outcome(res, prereg={"status": "HASH_MATCH", "post_hoc": True})[1], "gates: pass · 1/1 measured (post-hoc)")
         self.assertEqual(outcome(res, prereg={"status": "NOT_REGISTERED", "post_hoc": False})[1],
                          "gates: pass · 1/1 measured (unregistered)")
+        self.assertEqual(outcome(results(("must", PASS), ("must", FAIL)), [decl("b1", FAIL)], {"status": "HASH_MATCH", "post_hoc": True},
+                                 1), (0, "gates: pass · 2/2 measured · 1 declared (1 FAIL, 0 EI) · 1 assumed (post-hoc)"))   # A7
 
     def test_the_exact_set_lists_every_leftover(self):
         res = results(("must", PASS), ("must", FAIL), ("must", NA))
@@ -107,17 +110,18 @@ bars:
      min_n: 100000, params: {channel: battery.voltage_v, bound: floor, limit: 18.6}}
 """
 KEYS = {"schema", "contract", "tool", "source", "integrity", "streams", "bars", "prereg", "results", "allowlist",
-        "exit_code", "badge", "refusal"}
+        "exit_code", "badge", "refusal", "assumptions"}
+ARMED_BARS = BARS.replace("scope: {armed: null, modes: null},\n     min_n: 1,", "scope: {armed: true, modes: null},\n     min_n: 1,", 1)
 RESULT_KEYS = {"id", "kind", "severity", "verdict", "measured", "bar", "n", "min_n", "scope", "instances_used",
                "worst_instance", "gaps", "note", "provenance", "param_in_log"}
 
 
 class TestTheJson(unittest.TestCase):
-    def run_cli(self, log_rows=None, sidecar=None):
+    def run_cli(self, log_rows=None, sidecar=None, bars=BARS):
         with tempfile.TemporaryDirectory() as d, contextlib.redirect_stdout(io.StringIO()), \
                 contextlib.redirect_stderr(io.StringIO()):
             log = write_synthetic_log(Path(d) / "f.bin", log_rows) if log_rows else Path(d) / "missing.bin"
-            (Path(d) / "bars.yaml").write_text(BARS)
+            (Path(d) / "bars.yaml").write_text(bars)
             if sidecar:
                 (Path(d) / "bars.yaml.prereg.json").write_text(sidecar)
             code = cli.main(["run", "--log", str(log), "--bars", str(Path(d) / "bars.yaml"), "--out", str(Path(d) / "v.json")])
@@ -129,6 +133,20 @@ class TestTheJson(unittest.TestCase):
         self.assertEqual([set(r) for r in v["results"]], [RESULT_KEYS] * 2)
         self.assertEqual([(r["verdict"], r["measured"] is None) for r in v["results"]], [(PASS, False), (EI, True)])
         self.assertEqual((v["source"]["path"], v["bars"]["path"]), ("f.bin", "bars.yaml"))   # basenames, never host paths
+
+    def test_the_assumptions_block_and_badge_and_an_untouched_arming_stream(self):
+        self.assertEqual(self.run_cli(flight_rows())[1]["assumptions"], [])
+        code, v = self.run_cli(flight_rows(), bars="assume: [arming_before_first_arm_row]\n" + ARMED_BARS)
+        self.assertEqual(v["assumptions"], [{"name": "arming_before_first_arm_row", "text": B.ASSUMPTIONS["arming_before_first_arm_row"],
+                                             "applied": True, "detail": "first ARM row at t=1.500 s is an arm: disarmed before it",
+                                             "log_disarmed": None}])
+        self.assertTrue(B.ASSUMPTIONS["arming_before_first_arm_row"].startswith("Before the first ARM row the vehicle is in the "
+                                                                              "opposite state of that row: armed before a first disarm"))
+        self.assertEqual((code, v["badge"]), (0, "gates: pass · 1/2 measured · 1 assumed (unregistered)"))  # mutant: applied count
+        self.assertEqual(v["streams"]["arming"], self.run_cli(flight_rows(), bars=ARMED_BARS)[1]["streams"]["arming"])
+        none = [x for x in flight_rows() if x[0] != "ARM"]
+        code, v = self.run_cli(none, bars="assume: [arming_before_first_arm_row]\n" + ARMED_BARS)
+        self.assertEqual((v["assumptions"][0]["applied"], v["badge"]), (False, "gates: could not tell · 0/2 measured · 1 assumed (unregistered)"))
 
     def test_a_refusal_has_the_same_keys_and_no_results(self):
         code, v = self.run_cli()

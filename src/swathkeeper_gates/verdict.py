@@ -10,7 +10,7 @@ from .bars import EI, FAIL, NA, PASS
 SCHEMA = "swathkeeper-verdict/1.0"
 
 
-def outcome(results, allow, prereg, refusal):
+def outcome(results, allow, prereg, refusal, assumed=0):
     """-> (exit code, badge). The §5 table, top to bottom."""
     if refusal:
         return 2, "gates: refused"
@@ -26,6 +26,8 @@ def outcome(results, allow, prereg, refusal):
     if matched:
         na = f", {matched.count(NA)} NA" if NA in matched else ""
         badge += f" · {len(matched)} declared ({matched.count(FAIL)} FAIL, {matched.count(EI)} EI{na})"
+    if assumed:                                     # A7: names DECLARED in the bars file, applied or not
+        badge += f" · {assumed} assumed"
     if prereg and prereg["post_hoc"]:
         badge += " (post-hoc)"
     elif prereg and prereg["status"] == "NOT_REGISTERED":
@@ -42,4 +44,4 @@ def dumps(verdict):
 def new(contract, tool):
     """Every §5 key, present from the start, so a refusal's JSON has the same shape as a verdict's."""
     keys = ("source", "integrity", "streams", "bars", "prereg", "allowlist", "exit_code", "badge", "refusal")
-    return {"schema": SCHEMA, "contract": contract, "tool": tool, **dict.fromkeys(keys), "results": []}
+    return {"schema": SCHEMA, "contract": contract, "tool": tool, **dict.fromkeys(keys), "assumptions": [], "results": []}
