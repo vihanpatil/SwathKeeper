@@ -12,7 +12,7 @@ import yaml
 
 from . import CONTRACT
 from .contract import (ABSENT, PRESENT, SERIES, Refusal, armed_windows, fired_gaps, gap_threshold, hits,
-                       in_windows, intersect, log_holes, median_period, merge, mode_windows, r6, subtract, witnessed)
+                       in_windows, intersect, log_holes, median_period, merge, mode_windows, r6, subtract, unsure, witnessed)
 
 PASS, FAIL, EI, NA = "PASS", "FAIL", "EVIDENCE_INSUFFICIENT", "NOT_APPLICABLE"
 SCHEMA = "swathkeeper-bars/1.0"
@@ -185,12 +185,45 @@ def check_modes(bars, log):
 
 def evaluate(bars, log):
     holes = log_holes(log)
-    return [_decide(b, KIND[b["kind"]](b, log, holes), log, holes) for b in bars]
+    return [_judge(b, KIND[b["kind"]], log, holes) for b in bars]
+
+
+def _losses(log, holes):
+    """Where a MODE or ARM row may be missing (G257, G314): each DSF.Dp rise and each log hole, as (a, b, what)."""
+    return ([(a, b, f"{k} firmware-dropped writes in [{a:.3f}, {b:.3f}] s (DSF.Dp)")
+             for a, b, k in log.integrity["drop_intervals"]] + [(a, b, f"a log hole [{a:.3f}, {b:.3f}] s") for a, b in holes])
+
+
+def _judge(bar, kind, log, holes):
+    """G257 R2: where the mode is unsure (contract.unsure) inside the range the scope could reach, a mode-scoped bar is
+    judged on the SURE scope (without it) and the WIDE scope (with it). The true scope lies between them and every kind
+    is monotone in its scope, so: FAIL iff the sure pass FAILs, PASS iff both PASS, else EI. What prints is the sure
+    pass's, except that a PASS quotes the wide pass's worst (the bound a reader may quote, G318)."""
+    r2, lost = bar["scope"]["modes"] is not None and bar["kind"] != "mode_transitions", _losses(log, holes)
+    u = unsure(log, lost)
+    j = kind(bar, log, holes, ("sure", u) if r2 else None)
+    near = [] if not r2 or j["absent"] else [(x, s) for x, s in zip(lost, u) if intersect([s], j["reach"])]
+    if not near:
+        return _decide(bar, j, log, holes)
+    (sv, why, gaps), w = _order(bar, j, holes), kind(bar, log, holes, ("wide", u))
+    wv, wwhy, _ = _order(bar, w, holes)
+    v = sv if sv == FAIL or sv == wv == PASS else EI
+    at = f" at t={w['at'][0]:.3f} s" if w["at"] else ""
+    found = (f"passes too: sure worst {j['measured']:.6g} on n={j['n']}; wide worst {w['measured']:.6g} on n={w['n']}"
+             if v == PASS else f"passes too: n={w['n']}" if wv == PASS else
+             f"has a violation{at}, which may or may not be in scope" if wv == FAIL else f"reads {wv}: {wwhy}")
+    spans = ", ".join(f"[{a:.3f}, {b:.3f})" for a, b in merge(s for _, s in near))
+    j["info"].append(f"mode not known over {spans} s ({'; '.join(x[2] for x, _ in near)} may hide a MODE row): judged "
+                     f"without it; the wide scope (with it) {found}")
+    if v == PASS:                                   # G318/G329: the wide pass's bound leads, as `measured` quotes it
+        j["measured"], j["worst"], why = w["measured"], w["worst"], f"wide scope (quoted): {w['note']}; sure scope: {why}"
+    return _decide(bar, j, log, holes, (v, why if v == sv else f"the sure scope reads {sv}", gaps))
 
 
 # ---- §3.2: the fixed order. The first rule that matches wins. --------------------------------------------
-def _decide(bar, j, log, holes):
-    j["gaps"] += [("log", None, a, b) for a, b in holes if hits((a, b), j["windows"])]       # G229, G231, G251
+def _order(bar, j, holes):
+    j["gaps"] += [("log", None, a, b) for a, b in holes                    # G229/G231/G251; B7 is blind instead (G320)
+                  if hits((a, b), j["windows"]) and bar["kind"] != "mode_transitions"]
     gaps = [{"stream": s, "instance": i, "t0": r6(a), "t1": r6(b)} for s, i, a, b in j["gaps"]]
     unseen = [f"hole [{a:.3f}, {b:.3f}] s" for a, b in holes if hits((a, b), j["base"])] + j["blind"]
     ei = [x for x in (j["nan"] and f"{j['nan']} non-finite (NaN/inf) sample(s) in scope (rule 6)",
@@ -208,10 +241,18 @@ def _decide(bar, j, log, holes):
         v, why = EI, "; ".join(ei)                                                      # rule 4
     else:
         v, why = PASS, j["note"]                                                        # rule 5
-    for a, b, k in log.integrity.get("drop_intervals", ()):          # G257: Dp-rise is B8's; the rest say so.
-        if hits((a, b), j["base"]):        # the base range: a dropped MODE row there could move a mode scope itself
+    return v, why, gaps
+
+
+def _decide(bar, j, log, holes, decided=None):
+    v, why, gaps = decided or _order(bar, j, holes)
+    scoped = bar["scope"]["modes"] or bar["scope"]["armed"] or bar["kind"] == "mode_transitions"
+    for a, b, k in log.integrity["drop_intervals"]:    # G257: B8 excludes it, R1-R3 judge it, the rest say so
+        if hits((a, b), j["base"]) and (bar["kind"] == "no_events" or not scoped):
             j["info"].append(f"{k} firmware-dropped writes in [{a:.3f}, {b:.3f}] s (DSF.Dp), not located; "
                              f"{'excluded from n' if bar['kind'] == 'no_events' else 'judged across'} (design §3.3)")
+    if log.integrity["dsf_dropped_max"] is None and scoped and not j["absent"]:          # G321
+        j["info"].append("DSF ABSENT: write loss is not measured; judged as if no MODE or ARM row was lost")
     near = [(a, b) for a, b, _ in log.integrity["holes"] if j["at"] and a - j["at"][1] <= j["at"][0] <= b + j["at"][1]]
     if v == FAIL and near:                                            # G265: no checksum, so it may be garbage
         j["info"].append(f"the deciding sample at t={j['at'][0]:.3f} s sits beside a byte hole at "
@@ -225,23 +266,30 @@ def _decide(bar, j, log, holes):
             "param_in_log": name and {"name": name, "values": sorted({x for _, x in log.params.get(name, ())}) or None}}
 
 
-def _start(bar, log):
+def _start(bar, log, side):
     j = {"windows": [], "base": [], "absent": None, "blind": [], "info": [], "n": 0, "violated": False,
          "measured": None, "worst": None, "nan": 0, "gaps": [], "used": set(), "note": None, "at": None}
     scope, wins = bar["scope"], [(log.t0, log.t1)]
-    j["base"] = wins
+    j["base"] = j["reach"] = wins
     if scope["armed"]:
         s = log.streams["arming"]
         if s.state != PRESENT:
             return {**j, "absent": f"the scope needs arming, which is {s.state}: {s.reason}"}
         armed, first = armed_windows(log)
-        j["base"] = merge(armed)
+        j["base"], j["reach"] = merge(armed), merge(armed + [(log.t0, first)])   # reach: arming ABSENT before `first`
+        lost = next((d for d in log.integrity["drop_intervals"] if d[1] >= first), None)  # G257 R3: rule 1, strict
+        if lost:
+            return {**j, "absent": f"arming is not known after the {lost[2]} firmware-dropped writes in [{lost[0]:.3f}, "
+                                   f"{lost[1]:.3f}] s (DSF.Dp): an ARM row may be among them"}
     if scope["modes"] is not None:
         why = _mode_absent(log)
         if why:
             return {**j, "absent": why}
         _mode_prefix(log, j)
-        wins = merge(intersect(wins, [(a, b) for a, b, m in mode_windows(log) if m in scope["modes"]]))
+        seen = [(a, b) for a, b, m in mode_windows(log) if m in scope["modes"]]
+        if side:                                    # G257 R2 / G311: _judge's sure scope, and its wide one to the log's ends
+            seen = subtract(seen, intersect(side[1], j["base"])) if side[0] == "sure" else seen + side[1]
+        wins = merge(intersect(wins, seen))
     if scope["armed"]:
         if intersect(wins, [(log.t0, first)]):
             return {**j, "absent": f"arming is ABSENT before the first ARM row at t={first:.3f} s (rule 4) "
@@ -303,9 +351,9 @@ def _scan(j, name, s, cols):
 
 
 # ---- the five kinds ------------------------------------------------------------------------------------
-def _series_bound(bar, log, holes):
+def _series_bound(bar, log, holes, side):
     """Every sample of every instance in scope (§3.2): every-sample IS the worst window."""
-    j, p = _start(bar, log), bar["params"]
+    j, p = _start(bar, log, side), bar["params"]
     name, col = p["channel"].split(".")
     s = log.streams[name]
     j["absent"] = j["absent"] or _absent(s, name, [col])
@@ -340,10 +388,10 @@ def _run_end(prev, nxt, thr, holes):
     return min([nxt] + [a for a, b in holes if prev <= a < nxt])     # a hole AFTER the run's last row (G255)
 
 
-def _gnss_quality(bar, log, holes):
+def _gnss_quality(bar, log, holes, side):
     """FAIL if a run of non-qualifying rows on any instance spans more than max_outage_s (0: any such row). A run
     ends at the next qualifying row, at the window's end, or at the start of a gap or hole."""
-    j, p, s = _start(bar, log), bar["params"], log.streams["gnss"]
+    j, p, s = _start(bar, log, side), bar["params"], log.streams["gnss"]
     j["absent"] = j["absent"] or _absent(s, "gnss", ["fix_type", "nsats"])
     if j["absent"]:
         return j
@@ -375,14 +423,14 @@ def _gnss_quality(bar, log, holes):
     return j
 
 
-def _containment(bar, log, holes):
+def _containment(bar, log, holes, side):
     """B6. Local metres: equirectangular ENU about the reference point (home for the log's cylinder, the
     first vertex for a YAML polygon), delta-lon wrapped at the antimeridian. The cylinder and the altitude cap
     (above home, on RelHomeAlt) are exact on samples (both peak at a chord's endpoint); the polygon and the
     exclusion circles are judged on every segment between consecutive samples, never across a fired gap or a
     NaN. A segment touching the polygon boundary without crossing it is inside (margin 0); one that crosses
     FAILs, and its depth outside is not computed."""
-    j, p, s = _start(bar, log), bar["params"], log.streams["position"]
+    j, p, s = _start(bar, log, side), bar["params"], log.streams["position"]
     if p["source"] == "log":
         f, h = log.fence, log.home
         why = (f["state"] != PRESENT and f"fence ABSENT: {f['reason']}") or (h["state"] != PRESENT and f"home ABSENT: {h['reason']}")
@@ -436,39 +484,51 @@ def _containment(bar, log, holes):
     return j
 
 
-def _mode_transitions(bar, log, holes):
+def _mode_transitions(bar, log, holes, side):
     """B7. n counts real transitions (row 2 onward); the startup row is checked as `<start> -> first` and reported
-    apart. A transition across a log hole (byte skip, or a gap in every raw stream at once) is not judged (a MODE row
-    may be in it), and the hole makes the bar EI; with no raw stream to witness the logger, B7 is EI."""
-    j = _start(bar, log)
+    apart. Across a log hole or a DSF.Dp drop interval the `from` is unknown (a MODE row may be in it): the transition
+    FAILs if no mode may enter its `to`, is judged if every mode may, else is not judged; either loss in the base range
+    makes the bar EI when some hidden row could fail it (G312, G320); with no raw stream to witness the logger, EI."""
+    j = _start(bar, log, side)
     j["absent"] = j["absent"] or _mode_absent(log)
     if j["absent"]:
         return j
     if bar["scope"]["modes"] is None:                 # a mode scope already added it in _start
         _mode_prefix(log, j)
     _witness(log, j)
-    d, allowed, bad = log.streams["mode"].data[0], bar["params"]["allowed"], []
+    d, allowed, bad, lost = log.streams["mode"].data[0], bar["params"]["allowed"], [], _losses(log, holes)
     ok = lambda a, b: any(f in ("*", a) and to in ("*", b) for f, to in allowed)
+    table = sorted(set(log.meta["mode_table"].values())) + ["UNKNOWN(?)"]   # G330: a hidden UNKNOWN(n) matches only "*"
+    if any(not ok(a, b) for a in table for b in table):     # G320: only then can a hidden row fail it (UNKNOWN covers <start>)
+        j["blind"] += [f"{x}, not located: a MODE row may be among them" for a, b, x in lost if hits((a, b), j["base"])]
     rsn = d.get("rsn", [None] * len(d["t_s"]))
-    names, ts = ["<start>"] + d["name"], [log.t0] + d["t_s"]
+    names, ts, how = ["<start>"] + d["name"], [log.t0] + d["t_s"], "outside the scope"
     for k in range(1, len(names)):
-        if not any(a <= ts[k] < b for a, b in j["windows"]) or any(hits(h, [(ts[k - 1], ts[k])]) for h in holes):
+        if not any(a <= ts[k] < b for a, b in j["windows"]):
+            continue
+        cut = next((x for a, b, x in lost if a <= ts[k] and b >= ts[k - 1]), None)    # G312/G313: closed-closed overlap
+        fine = [ok(f, names[k]) for f in ([names[k - 1]] if cut is None else table + ["<start>"] * (k == 1))]
+        some = any(fine) and not all(fine)                     # (iii): some lost `from` is allowed, some is not
+        if k == 1:                                                                      # G322
+            how = "judged" if cut is None else "not judged (from unknown)" if some else "judged on `to` alone (from unknown)"
+        if some:                                    # G326: blind even when the cutting loss lies outside the base
+            j["blind"].append(f"{cut}, not located: the mode entering {names[k]} at t={ts[k]:.3f} s may be lost")
             continue
         j["n"] += k > 1
-        if not ok(names[k - 1], names[k]):
-            bad.append(f"{names[k - 1]} -> {names[k]}{f' (Rsn {rsn[k - 1]})' if rsn[k - 1] is not None else ''} "
-                       f"at t={ts[k]:.3f} s")
+        if not any(fine):
+            bad.append(f"{'?' if cut else names[k - 1]} -> {names[k]}{f' (Rsn {rsn[k - 1]})' if rsn[k - 1] is not None else ''} "
+                       f"at t={ts[k]:.3f} s" + (f" (from unknown: {cut})" if cut else ""))
     j["measured"], j["violated"] = len(bad), bool(bad)
-    j["note"] = ("disallowed: " + "; ".join(bad) if bad else "every observed transition is allowed") + \
-        f"; the startup row <start> -> {names[1]} is judged but not counted in n"
+    j["note"] = ("disallowed: " + "; ".join(bad) if bad else "every judged transition is allowed") + \
+        f"; the startup row <start> -> {names[1]} is {how}, never counted in n"
     return j
 
 
-def _no_events(bar, log, holes):
+def _no_events(bar, log, holes, side):
     """B8. n is DROP-FREE SECONDS of scope: the scope up to the last DSF row, minus every interval in which
     DSF.Dp rose and every log hole (§3.3); a log hole in scope also makes the bar EI (an event may be in it), and so
     does having no raw stream to witness the logger. An event anywhere in scope is a measured red."""
-    j, p, s, g = _start(bar, log), bar["params"], log.streams["events"], log.integrity
+    j, p, s, g = _start(bar, log, side), bar["params"], log.streams["events"], log.integrity
     j["absent"] = (j["absent"] or (s.state == ABSENT and f"events ABSENT: {s.reason}")
                    or (g["dsf_dropped_max"] is None and f"dsf_dropped_max ABSENT: {g['reason']}"))
     if j["absent"]:

@@ -47,3 +47,19 @@ tests/README.md re-quote the totals — expected; the orchestrator owns the re-q
   note is tested against the scope's BASE range (accepted): a dropped MODE row there could move a mode scope.
 
 Related: [[feedback-red-first-fixtures]], [[evidence_consumption_seams]].
+
+**G257 v0.2.0 (2026-11-10, owner ruled "flip to v1.1"; built uncommitted on feat/gates-tool-dp-rule):**
+- `contract.unsure(log)` is the ONE U = [a, first MODE row > b else t1) helper; `bars._judge` is the ONE combine
+  (sure pass FAIL -> FAIL; both PASS -> PASS; else EI). Kinds take a `side` arg ("sure"/"wide"/None) passed to `_start`.
+- Sure pass subtracts U ∩ base; the WIDE pass adds raw U and `_judge` gates on U ∩ reach (reach = armed + [t0, first
+  ARM)). Round 1 clipped the wide pass to base too: QA G311 showed that hides the arming-ABSENT prefix (false green).
+- Round 2 (QA G311-G325, 2026-11-10): log holes are losses exactly like drop intervals (`bars._losses`); B7 judges a
+  transition with an unknown `from` on its `to` (none allowed -> FAIL, all -> judged, else skipped) instead of skipping
+  it (G312: skipping threw away a certain red on public corpus log 01); B7 is blind only if some pair (incl. from
+  `<start>`) is disallowed; overlaps are closed-closed; a PASS quotes the wide worst. Over-literal hole rule cost:
+  the G255 pin had to go unscoped (a hole ending AT a MODE row now makes that mode unsure: `t > y`).
+- A combined EI must not print the wide pass's worst value (the EI-prints-no-number test catches it).
+- Tarot flips to `could not tell · 7/8` (B7 n 0: both its transitions span the startup drop); Plane/test.BIN only
+  change tool.version + run_date. Tarot is now exit 1, so ci.yml has TWO continue-on-error Action probes.
+- Mutant harness pattern that worked: copy src/swathkeeper_gates + tests/test_gates_*.py into a scratch shadow,
+  `-k "not TestImportWall"` (it walks the real repo), parse `tests/test_gates_bars.py:<line>` from `--tb=short`.

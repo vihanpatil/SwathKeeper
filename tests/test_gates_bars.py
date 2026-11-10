@@ -32,6 +32,11 @@ def gnss(max_outage=0, **kw):
     return bar("gnss_quality", {"fix_min": 3, "sats_min": 6, "max_outage_s": max_outage}, **kw)
 
 
+def dropped(rows, at, dp=3):
+    """DSF.Dp reads `dp` from t=at on: one drop interval [at - 1, at] (DSF logs at 1 Hz), k = dp."""
+    return [(n, {**v, "Dp": dp} if n == "DSF" and v["TimeUS"] >= us(at) else v) for n, v in rows]
+
+
 def cut(rows, a, b, keep=()):
     """Rows with a < t < b removed (a clean hole), except messages in `keep`."""
     return [x for x in rows if x[0] in keep or not us(a) < x[1]["TimeUS"] < us(b)]
@@ -154,9 +159,10 @@ class TestKinds(unittest.TestCase):
         r = judge(gnss(3), parse(gps(flight_rows(), 25.0, 99.0, Status=1)))
         self.assertEqual(r["verdict"], B.FAIL)     # Q5 mutant: an outage open at the window end is dropped -> red
         self.assertAlmostEqual(r["measured"], 5.0, places=3)
-        # G255: a byte hole ENDING at the run's first row (shared timestamp, the ALT_HOLD window's start) must not cut it
+        # G255: a byte hole ENDING at the run's first row (shared timestamp) must not cut it. Unscoped since G314: that
+        # hole may hide a MODE row, so an ALT_HOLD scope starting there is no longer sure
         log, _ = zeroed(gps(flight_rows(), 10.0, 15.0, Status=1), span=(9.9, 10.0))
-        r = judge(gnss(4.9, modes=["ALT_HOLD"]), log)
+        r = judge(gnss(4.9), log)
         self.assertEqual((r["verdict"], round(r["measured"], 3)), (B.FAIL, 5.0))   # mutant: `prev <= a` -> any overlap
 
 
@@ -212,7 +218,8 @@ class TestModeTransitions(unittest.TestCase):
         self.assertEqual(judge(MODES, zeroed(flight_rows(), span=(22.0, 26.0))[0])["verdict"], B.EI)   # G231: after the last row
         no_alt = bar("mode_transitions", {"allowed": [["<start>", "STABILIZE"], ["ALT_HOLD", "LOITER"]]})
         r = judge(no_alt, zeroed(flight_rows(), span=(6.0, 8.0))[0])
-        self.assertEqual(r["verdict"], B.EI)           # Q7 mutant: STABILIZE -> ALT_HOLD judged across the hole -> FAIL
+        self.assertEqual(r["verdict"], B.FAIL)         # G312: no `from` may enter ALT_HOLD, so a hidden one is no excuse
+        self.assertIn("? -> ALT_HOLD (Rsn 1) at t=11.000 s (from unknown: a log hole", r["note"])
 
 
 class TestLoggerHoles(unittest.TestCase):
@@ -237,12 +244,12 @@ class TestNoEvents(unittest.TestCase):
     def test_n_is_drop_free_seconds(self):
         r = judge(bar("no_events", {"kinds": ["error"]}, min_n=40), parse(flight_rows()))
         self.assertEqual((r["verdict"], r["n"]), (B.EI, 30.0))               # mutant: n counts rows -> PASS -> red
-        rose = [(n, {**v, "Dp": 3} if n == "DSF" and v["TimeUS"] >= us(11) else v) for n, v in flight_rows()]
+        rose = dropped(flight_rows(), 11)
         self.assertEqual(judge(EVENTS, parse(rose))["n"], 29.0)             # the second in which Dp rose is not drop-free
         # G257 mutants: the note dropped; tested against the windows, not the base range (a LOITER bar misses it) -> red
-        for b, how in ((EVENTS, "excluded from n"), (batt(), "judged across"), (batt(modes=["LOITER"]), "judged across")):
-            self.assertIn(f"3 firmware-dropped writes in [{T0 + 10:.3f}, {T0 + 11:.3f}] s (DSF.Dp), not located; {how}",
-                          judge(b, parse(rose))["note"])
+        for b, how in ((EVENTS, "excluded from n"), (batt(), "judged across"), (batt(modes=["LOITER"]), "mode not known")):
+            self.assertIn(f"3 firmware-dropped writes in [{T0 + 10:.3f}, {T0 + 11:.3f}] s", judge(b, parse(rose))["note"])
+            self.assertIn(how, judge(b, parse(rose))["note"])
         log, _ = zeroed(flight_rows(), span=(12.0, 14.0))
         hole = log.integrity["holes"][0]
         self.assertEqual(judge(EVENTS, log)["n"], round(30.0 - (hole[1] - hole[0]), 3))   # G259 HM8: holes not subtracted
@@ -253,6 +260,125 @@ class TestNoEvents(unittest.TestCase):
     def test_a_lost_err_row_is_never_a_pass(self):
         log, _ = zeroed(flight_rows(events=STD + ((12.3, "ERR", 16),)), at=42)
         self.assertEqual(judge(EVENTS, log)["verdict"], B.EI)        # G229 mutant: byte holes ignored -> PASS -> red
+
+
+class TestDroppedWrites(unittest.TestCase):
+    """G257 as ruled 2026-11-10 (v0.2.0): k writes dropped in [a, b] may include a MODE or ARM row, so the mode is
+    unsure over U = [a, first MODE row after b, else the log's end). Fixture: STD, Dp rises at 11 -> [10, 11, 3]."""
+    R = staticmethod(lambda **kw: dropped(flight_rows(**kw), 11))
+    RTL = STD[:3] + ((20.0, "MODE", 6),)                                     # ALT_HOLD -> RTL at 20: disallowed by MODES
+
+    def test_b7_judges_a_transition_across_a_drop_on_every_from_it_could_have_had(self):
+        for at, n in ((10, 0), (13, 1), (11, 0)):     # G313 closed-closed: a MODE row AT b (10), AT a (11); control (13)
+            r = judge(MODES, parse(self.R() if at == 11 else dropped(flight_rows(), at)))
+            self.assertEqual((r["verdict"], r["n"]), (B.EI, n))      # mutants: R1 skip removed; half-open overlap -> red
+        self.assertIn(f"3 firmware-dropped writes in [{T0 + 10:.3f}, {T0 + 11:.3f}] s (DSF.Dp), not located: a MODE row may",
+                      r["note"])
+        self.assertEqual(judge(MODES, parse(dropped(flight_rows(events=self.RTL), 25)))["verdict"], B.FAIL)  # observed red wins
+        r = judge(MODES, parse(dropped(flight_rows(events=self.RTL), 16)))     # G312: nothing may enter RTL, from anywhere
+        self.assertEqual(r["verdict"], B.FAIL)
+        self.assertIn(f"? -> RTL (Rsn 1) at t={T0 + 20:.3f} s (from unknown: 3 firmware-dropped writes", r["note"])
+        anything = bar("mode_transitions", {"allowed": [["*", "*"]]})        # G320: no hidden row can fail it
+        self.assertEqual([judge(anything, parse(x))["verdict"] for x in (self.R(), dropped(flight_rows(), 0))], [B.PASS] * 2)
+        self.assertEqual(judge(anything, parse(self.R()))["n"], 2)
+        self.assertEqual(judge({**anything, "scope": {"armed": None, "modes": ["ALT_HOLD", "LOITER"]}}, parse(self.R()))["n"], 2)  # no R2 for B7
+        tarot = bar("mode_transitions", {"allowed": [["*", "STABILIZE"], ["*", "ALT_HOLD"], ["*", "LOITER"]]})
+        self.assertEqual(judge(tarot, parse(self.R()))["verdict"], B.EI)    # one mode missing: a hidden row could fail it
+        z = parse(dropped(flight_rows(), 0))
+        no_start = bar("mode_transitions", {"allowed": [[m, "*"] for m in sorted(set(z.meta["mode_table"].values()))]})
+        self.assertEqual(judge(no_start, z)["verdict"], B.EI)     # a hidden FIRST row is `<start> -> ?`, which may fail
+        self.assertEqual(judge(tarot, z)["verdict"], B.EI)        # no (iii) here: base blindness alone (M19: `a < b` only)
+        r = judge(MODES, z)                                        # [t0, t0] (corpus 08/09); M18/M19: `a < b` only -> red
+        self.assertEqual((r["verdict"], r["n"]), (B.EI, 1))
+        r = judge(MODES, parse(dropped(flight_rows(events=self.RTL), 0)))
+        self.assertIn("the startup row <start> -> STABILIZE is not judged (from unknown)", r["note"])     # G322
+        loiter = bar("mode_transitions", {"allowed": [["*", "LOITER"], ["LOITER", "*"]]}, modes=["LOITER"])
+        self.assertEqual(judge(loiter, parse(self.R()))["verdict"], B.EI)  # M7 mutant: blind over windows, not base -> red
+        self.assertEqual(judge(anything, zeroed(flight_rows(), span=(14.0, 15.0))[0])["verdict"], B.PASS)   # G331: Ni mutant
+        z = parse(dropped(flight_rows(), 12, 2))                       # G330: a hidden UNKNOWN(n) row matches only "*"
+        tbl = sorted(set(z.meta["mode_table"].values()))
+        every = bar("mode_transitions", {"allowed": [["<start>", "*"]] + [[a, b] for a in tbl for b in tbl]})
+        self.assertEqual(judge(every, z)["verdict"], B.EI)
+        self.assertEqual(judge(every, parse(dropped(flight_rows(), 25)))["verdict"], B.EI)   # after the last row: G320 alone
+
+    def test_a_loss_outside_the_base_still_blinds_a_transition_it_cuts(self):
+        """G326 (QA N1, N2): an armed LOITER B7; the loss sits where arming is off or ABSENT, so outside the base, but it
+        cuts the span of the LOITER entry at 25 s, whose hidden `from` may be ALT_HOLD (not allowed into LOITER)."""
+        b7 = bar("mode_transitions", {"allowed": [["<start>", "*"], ["*", "STABILIZE"], ["*", "ALT_HOLD"], ["STABILIZE", "LOITER"],
+                                                 ["LOITER", "*"]]}, armed=True, modes=["LOITER"])
+        tail = ((20.0, "ARM", 1), (25.0, "MODE", 5), (27.0, "MODE", 0), (28.0, "MODE", 5))
+        n1 = ((0.0, "MODE", 0), (2.0, "ARM", 1), (4.0, "ARM", 0)) + tail
+        self.assertEqual(judge(b7, parse(flight_rows(events=n1)))["verdict"], B.PASS)            # control
+        self.assertEqual(judge(b7, zeroed(flight_rows(events=n1), span=(10.0, 11.0))[0])["verdict"], B.EI)   # hole, disarmed
+        self.assertEqual(judge(b7, parse(dropped(flight_rows(events=((0.0, "MODE", 0),) + tail), 10, 2)))["verdict"], B.EI)
+
+    def test_a_mode_scoped_bar_is_judged_on_the_sure_and_the_wide_scope(self):
+        loiter, clean = batt(modes=["LOITER"]), judge(batt(modes=["LOITER"]), parse(flight_rows()))
+        r = judge(loiter, parse(self.R()))
+        self.assertEqual([r[k] for k in ("verdict", "n", "measured")], [B.PASS, clean["n"], clean["measured"]])  # swap -> red
+        self.assertIn("passes too: sure worst 24 on n=202; wide worst 24 on n=402", r["note"])
+        r = judge(loiter, parse(edit(self.R(), "BAT", 15.0, inst=1, Volt=20.01)))     # G318: a PASS quotes the wide bound
+        self.assertEqual((r["verdict"], r["n"], round(r["measured"], 2), r["worst_instance"]), (B.PASS, 202, 20.01, 1))
+        self.assertTrue(r["note"].startswith("n=202; wide scope (quoted): worst 20.01 on instance 1"), r["note"])   # G329
+        r = judge(loiter, parse(edit(self.R(), "BAT", 15.0, inst=1, Volt=19.0)))      # a red only inside U = [10, 20)
+        self.assertEqual((r["verdict"], r["measured"]), (B.EI, None))   # mutants: AND -> OR (PASS); FAIL from wide; U ends at b
+        self.assertIn(f"violation at t={T0 + 15:.3f} s, which may or may not be in scope", r["note"])
+        r = judge(loiter, parse(edit(self.R(), "BAT", 25.0, inst=1, Volt=19.0)))      # a red in the sure scope
+        self.assertEqual((r["verdict"], r["n"]), (B.FAIL, clean["n"]))
+        r = judge(batt(modes=["LOITER"], min_n=300), parse(self.R()))  # sure n 202 < 300, wide n 402: never a PASS
+        self.assertEqual(r["verdict"], B.EI)                            # mutant: sure/wide swapped -> PASS -> red
+        self.assertIn("n 202 < min_n 300", r["note"])
+        self.assertNotIn("worst", r["note"])                            # an EI prints no number a reader could quote
+        self.assertIn("passes too", r["note"])
+        # no MODE row after b: U runs to the log's end, so LOITER (entered AT b = 11) is never sure
+        r = judge(loiter, parse(dropped(flight_rows(events=STD[:2] + ((11.0, "MODE", 5),)), 11)))
+        self.assertEqual(r["verdict"], B.EI)                            # mutants: `t > b` -> `t >= b` / `t > a`; U ends at b
+        twice = dropped(dropped(flight_rows(events=STD + ((24.5, "MODE", 5),)), 5, 1), 25, 2)   # U2 = [25, end)
+        r = judge(loiter, parse(edit(twice, "BAT", 27.0, inst=1, Volt=19.0)))
+        self.assertEqual(r["verdict"], B.EI)                 # M16/M17: only the first U kept / subtracted -> FAIL -> red
+        hole = zeroed(edit(flight_rows(), "BAT", 15.0, inst=1, Volt=19.0), span=(12.0, 13.0))[0]
+        self.assertEqual(judge(loiter, hole)["verdict"], B.EI)      # G314: a hole may hide a MODE row as a drop may -> red
+        bat_gap = dropped(cut(flight_rows(), 13.0, 16.0, keep=("POS", "GPS", "XKF4", "MODE", "DSF")), 11)
+        self.assertEqual(judge(loiter, parse(bat_gap))["gaps"], [])     # M20: the wide pass's gap printed -> red
+        ne = judge(bar("no_events", {"kinds": ["error"]}, modes=["ALT_HOLD"]), parse(self.R()))
+        self.assertIn("excluded from n", ne["note"])                # M9 mutant: mode-scoped no_events loses its note -> red
+
+    def test_arming_is_unsure_after_a_drop_past_the_first_arm_row(self):
+        r = judge(batt(armed=True, modes=["LOITER"]), parse(edit(self.R(), "BAT", 25.0, inst=1, Volt=19.0)))
+        self.assertEqual(r["verdict"], B.EI)                             # mutant: R3 after FAIL -> FAIL -> red
+        self.assertIn(f"arming is not known after the 3 firmware-dropped writes in [{T0 + 10:.3f}, {T0 + 11:.3f}] s", r["note"])
+        self.assertNotIn("judged across", judge(batt(armed=True), parse(self.R()))["note"])   # M10 mutant -> red
+        for arm in (1.0, 0.5):        # G313: b == the first ARM row (t=2 s); M1: a drop [1, 2] straddling ARM at 1.5 s
+            ev = ((0.0, "MODE", 5), (arm, "ARM", 1))
+            self.assertIn("arming is not known", judge(batt(armed=True, modes=["LOITER"]), parse(dropped(flight_rows(events=ev), 1)))["note"])
+        # G311: U = [2, 4) lies before the first ARM row (t=6 s), where arming is ABSENT: the wide pass reaches it -> EI
+        early = STD[:1] + ((3.0, "MODE", 0), (5.0, "ARM", 1), (20.0, "MODE", 5))
+        for b in (batt(armed=True, modes=["LOITER"]), gnss(armed=True, modes=["LOITER"])):
+            with self.subTest(b["kind"]):     # M12 mutant: the R2 gate on hits(drop, base) -> PASS -> red
+                self.assertEqual(judge(b, parse(dropped(flight_rows(events=early), 2)))["verdict"], B.EI)
+        self.assertEqual(judge(batt(armed=True), parse(dropped(flight_rows(events=early), 2))), judge(batt(armed=True), parse(flight_rows(events=early))))
+        lone = ((0.0, "MODE", 0), (25.0, "MODE", 2), (29.0, "ARM", 0))     # QA Q8: was a vacuous NA "(measured)"
+        r = judge(batt(armed=True, modes=["LOITER"]), parse(edit(self.R(events=lone), "BAT", 15.0, inst=1, Volt=19.0)))
+        self.assertEqual(r["verdict"], B.EI)
+
+    def test_unscoped_series_bars_and_drop_free_logs_are_unchanged(self):
+        red = edit(flight_rows(), "BAT", 15.0, inst=1, Volt=19.0)
+        for rows in (flight_rows(), red):
+            a, b = judge(batt(), parse(rows)), judge(batt(), parse(dropped(rows, 11)))
+            self.assertEqual([a[k] for k in ("verdict", "n", "measured")], [b[k] for k in ("verdict", "n", "measured")])
+            self.assertIn("not located; judged across", b["note"])
+        blind = parse([x for x in flight_rows() if x[0] != "DSF"])            # G321: loss unmeasured, said so
+        self.assertEqual(["DSF ABSENT" in judge(b, blind)["note"] for b in (batt(), batt(modes=["LOITER"]), MODES)], [False, True, True])
+        clean = parse(flight_rows())         # (verdict, n) pinned from v0.1.0 on the drop-free log: the regression
+        panel = ((batt(), B.PASS, 602), (batt(modes=["LOITER"]), B.PASS, 202), (batt(modes=["AUTO"]), B.NA, 0),
+                 (batt(armed=True, modes=["LOITER"]), B.PASS, 202), (gnss(modes=["ALT_HOLD"]), B.PASS, 100),
+                 (bar("containment", {"source": "log"}, modes=["LOITER"]), B.PASS, 100), (MODES, B.PASS, 2),
+                 (bar("no_events", {"kinds": ["error"]}, modes=["ALT_HOLD"]), B.PASS, 10.0))
+        for b, v, n in panel:
+            with self.subTest(b["kind"], modes=b["scope"]["modes"]):
+                r = judge(b, clean)
+                self.assertEqual((r["verdict"], r["n"]), (v, n))
+                self.assertNotIn("wide scope", r["note"])
 
 
 DOC = """schema: swathkeeper-bars/1.0

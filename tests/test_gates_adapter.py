@@ -254,6 +254,10 @@ class TestStreams(unittest.TestCase):
         self.assertEqual((g["dsf_dropped_max"], g["drop_intervals"]), (3, [[T0 + 10, T0 + 11, 3]]))
         late = [(n, {**v, "Dp": 2} if n == "DSF" else v) for n, v in flight_rows() if not (n == "DSF" and v["TimeUS"] < us(5))]
         self.assertEqual(parse(late).integrity["drop_intervals"], [[T0, T0 + 5, 2]])   # Q4 mutant: Dp not 0 at start -> red
+        reset = [(n, {**v, "Dp": 5 if v["TimeUS"] < us(20) else 2} if n == "DSF" and v["TimeUS"] >= us(10) else v) for n, v in flight_rows()]
+        self.assertEqual(parse(reset).integrity["drop_intervals"], [[T0 + 9, T0 + 10, 5], [T0 + 19, T0 + 20, 2]])   # G323
+        zero = [(n, {**v, "Dp": 5 if v["TimeUS"] < us(20) else 0} if n == "DSF" and v["TimeUS"] >= us(10) else v) for n, v in flight_rows()]
+        self.assertEqual(parse(zero).integrity["drop_intervals"], [[T0 + 9, T0 + 10, 5]])   # G331: a reset to 0 drops nothing
         rows = flight_rows() + [("PARM", {"TimeUS": us(30.0), "Name": "FENCE_RADIUS", "Value": 50})]
         self.assertIn("changed in flight", parse(rows).fence.get("reason", ""))
         self.assertIn("disabled", parse(flight_rows(params={**PARAMS, "FENCE_ENABLE": 0})).fence.get("reason", ""))

@@ -205,8 +205,8 @@ def _dsf(integ, dsf, t0):
     if dsf.state == PRESENT and "dp" in dsf.data[0]:
         d, prev, tp = dsf.data[0], 0, t0
         for t, dp in zip(d["t_s"], d["dp"]):
-            if dp != prev:
-                integ["drop_intervals"].append([round(tp, 6), round(t, 6), dp - prev])
+            if dp - prev if dp >= prev else dp:          # G323: a decrease is a counter reset, never a negative count
+                integ["drop_intervals"].append([round(tp, 6), round(t, 6), dp - prev if dp >= prev else dp])
             prev, tp = dp, t
         integ.update(dsf_dropped_max=max(d["dp"]), drops_known_until_s=round(d["t_s"][-1], 6), reason=None)
     return integ

@@ -2,7 +2,7 @@
  "schema": "swathkeeper-verdict/1.0",
  "contract": "swathkeeper-flightlog/1.0",
  "tool": {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "python": "3.12.12",
   "deps": {
    "PyYAML": "6.0.3",
@@ -307,16 +307,26 @@
  "allowlist": {
   "path": null,
   "sha256": null,
-  "run_date_utc": "2026-11-06",
+  "run_date_utc": "2026-11-10",
   "declared": [],
-  "red": [],
+  "red": [
+   [
+    "mode_transitions",
+    "EVIDENCE_INSUFFICIENT"
+   ]
+  ],
   "matched": [],
-  "undeclared": [],
+  "undeclared": [
+   [
+    "mode_transitions",
+    "EVIDENCE_INSUFFICIENT"
+   ]
+  ],
   "vacuous": [],
   "expired": []
  },
- "exit_code": 0,
- "badge": "gates: pass \u00b7 8/8 measured (post-hoc)",
+ "exit_code": 1,
+ "badge": "gates: could not tell \u00b7 7/8 measured (post-hoc)",
  "refusal": null,
  "results": [
   {
@@ -377,7 +387,7 @@
    ],
    "worst_instance": 0,
    "gaps": [],
-   "note": "n=591; worst 2.421 on instance 0 at t=780.194 s, 1 window(s); instances present [0]; mode unknown for 0.101 s before the first MODE row (<= 1.0 s: left out of the scope); 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "note": "n=591; wide scope (quoted): worst 2.421 on instance 0 at t=780.194 s, 1 window(s); instances present [0]; sure scope: worst 2.421 on instance 0 at t=780.194 s, 1 window(s); instances present [0]; mode unknown for 0.101 s before the first MODE row (<= 1.0 s: left out of the scope); mode not known over [709.278, 732.936) s (15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp) may hide a MODE row): judged without it; the wide scope (with it) passes too: sure worst 2.421 on n=591; wide worst 2.421 on n=709",
    "provenance": {
     "text": "B2: log PARM LOIT_SPEED 1250 cm/s = 12.5 m/s, the Loiter speed the vehicle flew; WPNAV_SPEED governs neither AltHold nor Loiter and AltHold has no speed parameter, so there is no AltHold bar. Every GPS.Spd sample of every instance in LOITER. min_n 50 = 10 s of GPS at its logged 5 Hz.",
     "param": "LOIT_SPEED"
@@ -522,8 +532,8 @@
    "id": "mode_transitions",
    "kind": "mode_transitions",
    "severity": "must",
-   "verdict": "PASS",
-   "measured": 0,
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
    "bar": {
     "allowed": [
      [
@@ -549,7 +559,7 @@
    "instances_used": [],
    "worst_instance": null,
    "gaps": [],
-   "note": "n=1; every observed transition is allowed; the startup row <start> -> ALT_HOLD is judged but not counted in n; mode unknown for 0.101 s before the first MODE row (<= 1.0 s: left out of the scope); 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design \u00a73.3)",
+   "note": "n=1; 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located: a MODE row may be among them; mode unknown for 0.101 s before the first MODE row (<= 1.0 s: left out of the scope)",
    "provenance": {
     "text": "B7: every observed transition enters a mode of the log's own FLTMODE1-6 = 0,0,2,2,5,5 = {STABILIZE, ALT_HOLD, LOITER}. From \"*\" (any mode, or <start>) is exact here: a path through any other mode fails on entering it. min_n 1: one observed transition is a measurement."
    },

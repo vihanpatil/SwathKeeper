@@ -5,5 +5,5 @@ come out, and "could not tell" is a fourth word, never a green. Core = stdlib + 
 parsers are extras ([ardupilot] = pymavlink). Nothing here imports `fieldguard_planning`, and nothing
 there imports this (design §1; AST-pinned in tests/test_gates_cli.py).
 """
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 CONTRACT = "swathkeeper-flightlog/1.0"

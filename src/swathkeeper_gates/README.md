@@ -2,9 +2,8 @@
 
 Pre-registered evidence gates over an ArduPilot flight log. You write pass/fail bars in a YAML file, hash it before
 the run, and the tool judges a DataFlash `.bin` against it: one JSON verdict, one exit code. A bar the log cannot
-measure reads `could not tell`, which never scores green. Version 0.1.0 reads ArduPilot DataFlash only and has run on
-exactly the three public logs in `examples/`. Read
-[What this does NOT claim](https://github.com/vihanpatil/SwathKeeper/blob/main/src/swathkeeper_gates/README.md#what-this-does-not-claim) first.
+measure reads `could not tell`, which never scores green. Version 0.2.0 reads DataFlash only and has run on exactly the three public logs in `examples/`.
+Read [What this does NOT claim](https://github.com/vihanpatil/SwathKeeper/blob/main/src/swathkeeper_gates/README.md#what-this-does-not-claim) first.
 
 ## Install
 
@@ -20,7 +19,9 @@ pip install 'swathkeeper-gates[ardupilot] @ git+https://github.com/vihanpatil/Sw
 The `[ardupilot]` extra installs the parser, pymavlink, pinned to 2.4.50; without it a `.bin` refuses (exit 2) naming
 the extra. Measured 2026-11-09 in a fresh venv (macOS, Python 3.12.12): 3.5 s, installing swathkeeper-gates 0.1.0,
 pymavlink 2.4.50, PyYAML 6.0.3, lxml 6.1.3. Every output below was measured from an install at commit ecbe20c of
-this repository, before this file reached main, with no checkout of this repo.
+this repository, before this file reached main, with no checkout of this repo. On 0.2.0 the walkthrough's `run`
+output is unchanged (re-run 2026-11-10, exit 0), and on every push CI writes this exact bars file (checked by
+sha256), registers it against the Tarot log as step 3 does, and requires exit 0 with the bar line and badge of step 4.
 
 ## Walkthrough: one public log, one bar
 
@@ -47,9 +48,8 @@ skipped, 0 interior, `dsf_dropped_max` 15, `drop_intervals` `[[709.278081, 710.1
 
 ### 2. Write the bars
 
-Save this as `bars.yaml` (there is no template command; for all five kinds, copy
-[`examples/tarot_x4/bars.yaml`](https://github.com/vihanpatil/SwathKeeper/blob/main/examples/tarot_x4/bars.yaml)).
-It asks: did any battery sample fall below 18.6 V?
+Save this as `bars.yaml`. It asks: did any battery sample fall below 18.6 V? There is no template command; for all
+five kinds, copy [`examples/tarot_x4/bars.yaml`](https://github.com/vihanpatil/SwathKeeper/blob/main/examples/tarot_x4/bars.yaml).
 
 ```yaml
 schema: swathkeeper-bars/1.0
@@ -94,7 +94,7 @@ gates: refused
 ```
 
 `inspect` on a file that is not DataFlash refuses with exit 2 (`run` with the walkthrough's pinned sidecar refuses
-LOG_MISMATCH first). A PX4 ULog refuses with exit 2 too: 0.1 ships no PX4 adapter, and the message says so.
+LOG_MISMATCH first). A PX4 ULog refuses with exit 2 too: this version ships no PX4 adapter, and the message says so.
 
 ```
 $ swathkeeper-gates inspect --log random.file
@@ -136,8 +136,8 @@ tool's, and a newer minor refuses); `bars`, a list of at least one bar. Keys mar
 | `series_bound` | `channel` (one of the 16 below), `bound` (`floor` or `ceiling`), `limit` | every sample of every instance in scope against `limit` | samples in scope, all instances |
 | `gnss_quality` | `fix_min`, `sats_min`, `max_outage_s` | FAIL if a run of rows below `fix_min` or `sats_min` spans more than `max_outage_s` on any instance (0 = any such row). A run is measured to the next qualifying row, so one bad row at 5 Hz spans 0.2 s. `fix_type` is the AP_GPS Status enum (3 = 3D fix). | rows in scope |
 | `containment` | `source` (`log` or `yaml`), `polygon?`, `alt_max_rel_home_m?`, `exclusions?` | `log`: the FENCE_RADIUS cylinder about home and FENCE_ALT_MAX. FENCE_TYPE bits 4 (polygon) and 8 (minimum altitude) are not judged, so the Tarot geofence PASS covers the circle and the altitude cap only. `yaml`: needs a `polygon` of at least 3 `[lat, lon]`, not self-intersecting. `exclusions` are `{lat, lon, radius_m}` circles. Polygon and circles are judged on every segment between samples, never across a gap. | judged segments between consecutive samples |
-| `mode_transitions` | `allowed` | every observed transition is a listed `[from, to]` pair; `"*"` is any mode, `<start>` (only as a `from`) the log's start | transitions after the startup row |
-| `no_events` | `kinds` (only `error` in 0.1), `ignore?` | zero ERR rows outside the `ignore` list of `[Subsys, ECode]` pairs | drop-free seconds of scope |
+| `mode_transitions` | `allowed` | every observed transition is a listed `[from, to]` pair; `"*"` is any mode, `<start>` (only as a `from`) the log's start. A transition across a loss has an unknown `from`: FAIL if no mode could be allowed into the observed mode, judged and counted if every mode could, otherwise not judged and the bar reads EI (see lost writes below). | transitions after the startup row |
+| `no_events` | `kinds` (only `error` in 0.2.0), `ignore?` | zero ERR rows outside the `ignore` list of `[Subsys, ECode]` pairs | drop-free seconds of scope |
 
 ```
 position.lat  position.lon  position.alt_amsl_m  position.alt_rel_home_m  velocity.groundspeed_mps
@@ -151,9 +151,11 @@ number whose text is not plain decimal (`022`, `0x12`, `1_8.6`, `.inf`). An inva
 
 ## How a bar is decided (a fixed order: the first rule that matches wins)
 
-Two causes make a bar **blind**: (a) the mode is unknown for more than 1.0 s before the first MODE row, which applies
-to every bar that names a mode and to `mode_transitions` (1.0 s or less is only a note); (b) no PRESENT position,
-gnss or battery stream exists to witness the logger, which applies to `mode_transitions` and `no_events`.
+Three causes make a bar **blind**: (a) the mode is unknown for more than 1.0 s before the first MODE row, which
+applies to every bar that names a mode and to `mode_transitions` (1.0 s or less is only a note); (b) no PRESENT
+position, gnss or battery stream exists to witness the logger, which applies to `mode_transitions` and `no_events`;
+(c) for `mode_transitions`, a loss (defined under lost writes below) in its base range, unless its allowed set
+admits every transition.
 
 1. Something the bar needs is ABSENT: `EVIDENCE_INSUFFICIENT`. That is a needed stream or column; the arming, mode
    or vehicle the scope needs; for `containment` with `source: log`, the fence or home; for `no_events`,
@@ -171,6 +173,9 @@ max(1 s, 5 × the instance's median sample period); a log hole is an interior by
 raw series (position, gnss, battery) at once. In a QA probe on 2026-11-09 (not a committed verdict), the public
 ArduPlane log, whose first MODE row is 1.281 s after the log start, read EI with zero gaps on a mode-scoped bar and on
 a `[["*", "*"]]` `mode_transitions` bar (rule 5).
+
+A mode-scoped bar whose scope could reach a loss gets two passes of this same order, on a sure and a wide scope,
+and one combined verdict; the rule is under lost writes below.
 
 ## Exit codes and the badge
 
@@ -208,7 +213,7 @@ declaration nothing matches is `vacuous` (exit 1, `fail`), and on or after `expi
 naming no bar, or an EI/NA on a `should` bar refuses. The file's hash is in the verdict, and the count of matched
 declarations is on the badge.
 
-## What the adapter reads, and dropped writes
+## What the adapter reads, and lost writes
 
 POS, GPS, BAT, XKF4, NKF4, NKF9, MODE, ARM, ERR, DSF, PARM, MSG, VER, ORGN; not GPS2, BAT2 or CURR. Velocity keeps GPS
 rows with Status ≥ 3, ekf rows with SS ≠ 0; `alt_rel_home_m` starts at the first ORGN home row; arming before the
@@ -217,10 +222,23 @@ Copter-4.5.5 to every vehicle's release `V4.5.<n>` firmware string with no suffi
 logged, constant and == 1 and an ERR format is defined in the log; otherwise events are ABSENT. The citation is in
 the docstring of `adapters/ardupilot.py`. The fence's polygon and minimum-altitude bits are not judged.
 
-When `DSF.Dp` rises, the firmware dropped writes it does not locate. In 0.1 the rise interval is excluded from
-`no_events`' drop-free seconds; every other bar whose range it touches is judged across it, with this note (every
-other Tarot bar carries it; `no_errors` carries the excluded-from-n form). This behaviour is under review as open
-item G257 in ADR-023. If G257 is ruled a hole, the Tarot badge becomes `could not tell`.
+A **loss** is an interval in which `DSF.Dp` rose (the firmware dropped writes it does not locate) or a log hole; a
+MODE or ARM row may be inside it. After a loss the mode is unsure until the next MODE row (or the log's end).
+
+- **Mode-scoped bars** are then judged twice: on the sure scope (the observed windows minus the unsure stretch) and
+  on the wide scope (plus it). FAIL if the sure scope fails; PASS only if both pass; otherwise
+  `EVIDENCE_INSUFFICIENT`. On such a PASS the printed `measured` is the wide scope's worst value and n is the sure
+  scope's count; the note gives both (Tarot `speed_ceiling_loiter`: sure worst 2.421 on n=591, wide worst 2.421 on
+  n=709).
+- **`mode_transitions`**: a transition whose span contains a loss has an unknown `from`. It is a FAIL if no mode
+  could be allowed into the observed mode, judged and counted if every mode could, and otherwise not judged, and the
+  bar reads EI. A loss in the bar's base range also makes it EI, unless the allowed set admits every transition
+  (then no hidden row could fail it).
+- **`armed: true`** bars read EI when a drop interval ends at or after the first ARM row.
+- **Unscoped** `series_bound`, `gnss_quality` and `containment` bars are judged as before and print the note below;
+  `no_events` still excludes the interval from its drop-free seconds, and its note says "excluded from n".
+- **A log whose DSF is ABSENT** cannot count its losses: mode- and armed-dependent results carry the note "DSF
+  ABSENT: write loss is not measured; judged as if no MODE or ARM row was lost", and the verdict is unchanged.
 
 ```
 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp), not located; judged across (design §3.3)
@@ -231,14 +249,18 @@ item G257 in ADR-023. If G257 is ruled a hole, the Tarot badge becomes `could no
 Each holds `SOURCE.json` (url, sha256, size, licence), `bars.yaml`, its sidecar and `verdict.json`, never the log;
 the Tarot dir also holds `badge.svg`. CI re-fetches each log by sha256 and requires byte identity with the committed
 verdict apart from three leaves it excludes and shape-checks (`tool.python`, `tool.deps.PyYAML`,
-`allowlist.run_date_utc`). From the install above, the Tarot verdict reproduced on every scalar leaf (363) except
-`allowlist.run_date_utc`.
+`allowlist.run_date_utc`). On 2026-11-09, from the install above, the 0.1.0 Tarot verdict reproduced on every scalar
+leaf (363) except `allowlist.run_date_utc`. The committed verdicts below are 0.2.0's.
 
 | Directory | Log | Badge | Exit |
 |---|---|---|---|
-| [`examples/tarot_x4/`](https://github.com/vihanpatil/SwathKeeper/tree/main/examples/tarot_x4/) | Tarot X4, ArduCopter V4.5.5 | `gates: pass · 8/8 measured (post-hoc)` | 0 |
+| [`examples/tarot_x4/`](https://github.com/vihanpatil/SwathKeeper/tree/main/examples/tarot_x4/) | Tarot X4, ArduCopter V4.5.5 | `gates: could not tell · 7/8 measured (post-hoc)` | 1 |
 | [`examples/plane_nofix/`](https://github.com/vihanpatil/SwathKeeper/tree/main/examples/plane_nofix/) | ArduPlane V4.7.0-beta5, no GPS fix | `gates: fail · 1/5 measured (post-hoc)` | 1 |
 | [`examples/pymavlink_test_bin/`](https://github.com/vihanpatil/SwathKeeper/tree/main/examples/pymavlink_test_bin/) | pymavlink `test.BIN`, ArduPlane V3.8.2-dev | `gates: could not tell · 3/6 measured (post-hoc)` | 1 |
+
+None of the three reads `pass`. The Tarot's 15 dropped writes fall in the first 0.9 s of its log, so its
+mode-transition bar (a `must`) reads could not tell and its other seven bars pass. Five of those seven carry the
+"judged across" note above, `speed_ceiling_loiter` the sure/wide note, and `no_errors` the excluded-from-n note.
 
 ## What this does NOT claim
 
@@ -254,7 +276,8 @@ verdict apart from three leaves it excludes and shape-checks (`tool.python`, `to
   first battery and EKF rows. The build's draft run printed the measured values of six of the eight bars, and the
   first registered verdict printed all eight before the file was re-registered. So the Tarot results are
   demonstrations, not tests. Its bars were registered after the log existed (post-hoc), and its bars, sidecar and
-  verdict were first committed together, so git orders nothing there. A 142 s low hover was expected to pass them.
+  verdict were first committed together, so git orders nothing there. A 142 s low hover was expected to pass them, and under 0.2.0 it does not: the
+  dropped writes in its first 0.9 s leave its mode-transition bar unable to tell.
 - Pre-registration binds a run to a text, not a date: the date claim is the sidecar's git commit, which a committer
   can forge, and the sidecar's `written_utc` is recorded as untrusted.
 - A truncated log reads as a shorter flight; only a pinned log hash ties a verdict to a file. DataFlash has no
@@ -262,5 +285,5 @@ verdict apart from three leaves it excludes and shape-checks (`tool.python`, `to
   a core column, a multi-home log, a mid-flight Dp rise, or `LOG_BACKEND_TYPE` other than 1.
 
 The why, with each rejected alternative: [`docs/design/GATES_TOOL_DESIGN.md`](https://github.com/vihanpatil/SwathKeeper/blob/main/docs/design/GATES_TOOL_DESIGN.md).
-What the build measured, and the open items: ADR-023 and its amendment 1 in
+What the build measured, and the open items: ADR-023 and its amendments in
 [`docs/DECISIONS.md`](https://github.com/vihanpatil/SwathKeeper/blob/main/docs/DECISIONS.md).

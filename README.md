@@ -2,10 +2,10 @@
 
 [![CI](https://github.com/vihanpatil/SwathKeeper/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vihanpatil/SwathKeeper/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![swathkeeper-gates on a public Tarot X4 log: gates: pass · 8/8 measured (post-hoc)](examples/tarot_x4/badge.svg)](examples/tarot_x4/verdict.json)
+[![swathkeeper-gates on a public Tarot X4 log: gates: could not tell · 7/8 measured (post-hoc)](examples/tarot_x4/badge.svg)](examples/tarot_x4/verdict.json)
 
 *The third badge is the evidence-gate tool (`swathkeeper-gates`, ADR-023) judging a public ArduCopter log nobody
-here flew — `gates: pass · 8/8 measured (post-hoc)` — re-fetched by sha256 and re-judged on every CI run against
+here flew — `gates: could not tell · 7/8 measured (post-hoc)` — re-fetched by sha256 and re-judged on every CI run against
 [its committed verdict](examples/tarot_x4/verdict.json), so the image cannot drift from the number. To run it on
 your own log: [`src/swathkeeper_gates/README.md`](src/swathkeeper_gates/README.md).*
 

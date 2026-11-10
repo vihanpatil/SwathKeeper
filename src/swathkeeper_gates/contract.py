@@ -154,6 +154,13 @@ def mode_windows(log):
     return list(zip(ts, ts[1:] + [log.t1], d["name"]))
 
 
+def unsure(log, lost):
+    """G257/G314: a MODE row may be missing in each (a, b, ...) of `lost` (drop intervals and log holes), so the mode is
+    unsure over [a, t_next), t_next the first MODE row after b, else the log's end. Outside these the rows are the mode."""
+    ts = (log.streams["mode"].data.get(0) or {"t_s": []})["t_s"]
+    return [(a, (ts[bisect.bisect_right(ts, b):] or [log.t1])[0]) for a, b, *_ in lost]
+
+
 def armed_windows(log):
     """Known-armed intervals from the ARM rows, and the time before which arming is ABSENT (rule 4)."""
     d = log.streams["arming"].data[0]
