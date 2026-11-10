@@ -212,3 +212,15 @@ Docs: SHIP-AFTER-FIXES. Every probe number reproduced from probe_*.json EXCEPT:
   scope, DSF-ABSENT "verdict unchanged" (G335 residual); G350 "pre-registered before the build" unsupported; G351
   BUILD_LOG "one real flight and no outside log" self-contradicts.
 **Lesson:** a population label is a claim; check it in the bytes (SIM records, MSG banner) before counting by it.
+
+## Round 12 — the dogfood record eval/results/gates_dogfood_20261110 (20 SITL logs 00000045-64), 2026-11-10 — G352-G356
+Every count reproduced from the 20 verdict JSONs (7 pass / 12 fail / 1 could not tell; batch.json 0/20 rows disagree;
+log sha256s match the copies; WP_SPD 8/6/6; ranges 3.932-4.008, 5.002-5.008, 5.996-6.003; GUIDED 4.86-6.09 s; margin
+4.960 x19; EKF 0.08-0.37; 0 drops/holes). Raw pymavlink on 64, 47, 63: speed 3.993/5.008/5.996, margin 4.960, SV
+0.19/0.23/0.14, n 382/748/1498 all equal. Polygon = config rectangle +15 m to 7 dp. Only red in the 12 = the speed bar.
+- G352 MAJOR claims: the batch is an UNBOOKED speed sweep (encounter_batch.sh --speeds -> fly_pipeline ENC_SPEED "explicit
+  WP_SPD for an UNBOOKED experiment"); the committed booking is 5.0 (ADR-020 am. 3). bars.yaml + README call WP_SPD "the
+  booking"; the 6.0 flights exceed booked x1.10 = 5.5, so "not about the vehicle" overstates. Fix the README only
+  (editing registered bars text breaks the pin).
+- G353 "within 0.2 % in every flight" false for 45 (3.932, -1.7 %); G354 "76 MB" = 75.0 MB; G355 no RTL/LAND row ever
+  flown (end-mode entries unexercised); G356 blind defensible, disclose primary-choice basis + a-priori sample rates.

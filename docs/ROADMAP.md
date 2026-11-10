@@ -168,8 +168,12 @@ as a tool feature. Scored on three public logs (`examples/*/verdict.json`). Unco
    the private kit, linking the tool's front door `src/swathkeeper_gates/README.md` (2026-11-09) **only after it is on `main`**;
    its INTERESTED rule unchanged. **Owed before the first post, measured 2026-11-10:** the posts must carry the corpus numbers (the tool
    could tell on 130 of 495 probe verdicts, 180 of 495 with the declared arming assumption; `no_events` never read PASS) and must position
-   the tool against ArduPilot's own LogAnalyzer and DroneKit-LA, which this repo has never compared itself to; the tool has still never
-   judged a SwathKeeper flight (no DataFlash log from this project's SITL is on the host). **Kill criterion, fixed before the first post: 0 of 10 posts yields a real log
+   the tool against ArduPilot's own LogAnalyzer and DroneKit-LA, which this repo has never compared itself to; the tool first judged
+   SwathKeeper flights on 2026-11-10 (`eval/results/gates_dogfood_20261110/`: 20 SITL encounter runs; the rule-chosen primary reads
+   `pass · 5/6 measured · 1 assumed`), which exposed two gaps to close or state first: a bar cannot take its limit from the log's own
+   parameter (an unbooked speed sweep failed a fixed ceiling on 12 flights, none of which exceeded its own commanded speed by more than
+   0.2 %), and `no_events` cannot be told on
+   this project's own firmware. **Kill criterion, fixed before the first post: 0 of 10 posts yields a real log
    or a scheduled follow-up → "strong portfolio, no product" — stop.**
 
 Claims ceiling unchanged: **sim-demonstrated, evidence-gated** for the drone; the tool claims nothing beyond what its own

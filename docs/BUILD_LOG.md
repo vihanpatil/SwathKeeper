@@ -37,8 +37,15 @@ key against 130 without.** The corpus crash (a MODE record with no ModeNum colum
 real-log success path: the tool README's one-bar walkthrough, pinned by sha256, must pass on the Tarot log and print the README's
 own lines. Process notes worth keeping: specify rules as sets and bounds, not prose (three of the day's false greens were
 boundary or direction errors in a sentence); measure on a corpus before tightening a rule; and a second Claude session flew the
-sim from the same checkout all afternoon, so every commit here names its own files. Still true and unfixed: the tool has never
-judged a SwathKeeper flight, `no_events` cannot pass on any firmware but a 4.5.x release, and nobody outside this repo has run it.
+sim from the same checkout all afternoon, so every commit here names its own files. **Late the same day the tool judged SwathKeeper's own flights for the first time** (`eval/results/gates_dogfood_20261110/`): twenty SITL
+encounter runs another session had flown that afternoon, copied read-only out of the container, with six bars written from the committed
+design and the primary log's parameters before any flight data was read. The rule-chosen primary reads `pass · 5/6 measured · 1 assumed`:
+the first multi-bar pass the tool has printed. Across all twenty: 7 pass, 12 fail, 1 could not tell — and the 12 fails are correct measurements against
+a bar that encodes one commanded speed: the session swept `WP_SPD` (4, 5, 6 m/s) in unbooked experiments and the bar's ceiling came from
+the primary's parameter; no flight exceeded its own commanded speed by more than 0.2 %, though the six 6.0 m/s runs do sit outside the
+committed 5.0 m/s booking, by design. A bar cannot take its limit from the log's own parameter, which is the next usability gap. A verdict there says
+nothing about bird clearance: a DataFlash log carries no bird. Still true and unfixed: `no_events` cannot pass on any firmware but a
+4.5.x release (could not tell on 20 of 20 of our own flights), and nobody outside this repo has run the tool.
 
 ## 2026-11-09 — the tool gets a front door, and a stranger's run says it is usable
 

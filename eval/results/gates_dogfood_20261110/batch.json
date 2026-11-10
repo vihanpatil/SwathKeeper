@@ -1,0 +1,1163 @@
+{
+ "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+ "tool": "0.2.0",
+ "primary": "00000064.BIN",
+ "flights": [
+  {
+   "log": "00000045.BIN",
+   "sha256": "bf715b31cc99f62ea33f33c91dacffbc34b9f1d718df88ab3f139bf03dec83f0",
+   "size_bytes": 1134592,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 21.499086,
+   "modes": [
+    "AUTO",
+    "AUTO"
+   ],
+   "guided_window_s": [],
+   "arm_rows": 0,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: could not tell \u00b7 2/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 108,
+     "measured": 3.932000160217285
+    },
+    "gnss_quality_armed": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 1,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000046.BIN",
+   "sha256": "ba4597b7947170e33221826c493ea8d7f860f79f5a9f72b3849a6e439d3a81f2",
+   "size_bytes": 4022272,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 81.501286,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    4.865
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: pass \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 0,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 383,
+     "measured": 3.995000123977661
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 374,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 746,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1494,
+     "measured": 0.09
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000047.BIN",
+   "sha256": "e5f77ee7d01e82a2fcd5314e02e56dfee5578974214189378720dc9b3edb673e",
+   "size_bytes": 3862528,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 78.20141,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.324
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    5.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 365,
+     "measured": 5.008000373840332
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 356,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 712,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1426,
+     "measured": 0.23
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000048.BIN",
+   "sha256": "d667e923c144d86ff0d435c76016aff1da423f01532fbc052c6c8eea410a2aae",
+   "size_bytes": 3809280,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 77.181753,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.892
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    6.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 356,
+     "measured": 6.002000331878662
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 360,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 719,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1440,
+     "measured": 0.18
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000049.BIN",
+   "sha256": "3592337d199cd23d29cea7f38351eeeb9c56ba540ab7812ef2912c38e5664d11",
+   "size_bytes": 3956736,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 80.256719,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.016
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: pass \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 0,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 376,
+     "measured": 3.996000289916992
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 373,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 747,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1496,
+     "measured": 0.37
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000050.BIN",
+   "sha256": "47280bd313b76b299d35e5d3a09b93d6898f9746d433c8e217770734c913e04d",
+   "size_bytes": 3829760,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 77.591622,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.79
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    5.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 360,
+     "measured": 5.00600004196167
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 359,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 716,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1434,
+     "measured": 0.11
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000051.BIN",
+   "sha256": "b615148806432058c57e18adf5078c8d208bfb6652781e6daf8b21ecd6f33469",
+   "size_bytes": 3842048,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 77.816547,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.79
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    6.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 360,
+     "measured": 6.000000476837158
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 359,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 717,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1436,
+     "measured": 0.08
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000052.BIN",
+   "sha256": "beb542ca54f2b1b53cb4de92abdd783e14a14dc52fd75cce8aca806832a8845c",
+   "size_bytes": 3960832,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 80.261711,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.009
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: pass \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 0,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 377,
+     "measured": 3.994000196456909
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 375,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 748,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1498,
+     "measured": 0.08
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000053.BIN",
+   "sha256": "23eb7756bd57ef587754f3d89af971898f30f08ea1c083d528dd026ea19d5648",
+   "size_bytes": 3809280,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 77.101785,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.665
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    5.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 357,
+     "measured": 5.002000331878662
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 359,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 716,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1434,
+     "measured": 0.08
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000054.BIN",
+   "sha256": "ca9b72ffb096d9f4c480f5535bb8775793cf66638380794a516179c4d96e6ab2",
+   "size_bytes": 3817472,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 77.341702,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.778
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    6.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 358,
+     "measured": 6.00100040435791
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 359,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 717,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1436,
+     "measured": 0.09
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000055.BIN",
+   "sha256": "1dd0bd94b742f47c3b68ad96feaf1d0a3bf0ee8261a6157825c9e9ff54217f3f",
+   "size_bytes": 3936256,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 79.741958,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    4.894
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: pass \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 0,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 374,
+     "measured": 3.9930002689361572
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 374,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 747,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1496,
+     "measured": 0.17
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000056.BIN",
+   "sha256": "0a88fcf8914fe9aa73d33029c5a528c6509a742a3f1273d3289263aa40303482",
+   "size_bytes": 3874816,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 78.529303,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.685
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    5.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 364,
+     "measured": 5.005000114440918
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 358,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 716,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1434,
+     "measured": 0.18
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000057.BIN",
+   "sha256": "0c472b9a481d23c99ee869751e2f6b5a6f9f126837fb375f5b5ee25c650e464e",
+   "size_bytes": 3776512,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 76.439002,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.532
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    6.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 355,
+     "measured": 6.003000259399414
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 357,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 713,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1428,
+     "measured": 0.08
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000058.BIN",
+   "sha256": "fd0c657f25f7a5091d3744f949b9e868fedf0069d516105404e53fdf2dd1ae04",
+   "size_bytes": 3952640,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 80.361694,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    4.941
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: pass \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 0,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 377,
+     "measured": 4.008000373840332
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 373,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 745,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1492,
+     "measured": 0.08
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000059.BIN",
+   "sha256": "70c3ae2bb25964f1b3012e56d86d220b9a41bdb181c05f54f104d8d8b65c66e5",
+   "size_bytes": 3923968,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 79.486973,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.618
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    5.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 369,
+     "measured": 5.004000186920166
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 359,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 715,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1432,
+     "measured": 0.17
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000060.BIN",
+   "sha256": "54c4c6903eee92fcc1c00306d1663fc0067d51802e351aae8a8f38e99bc54d15",
+   "size_bytes": 3772416,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 76.371027,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.605
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    6.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 354,
+     "measured": 6.002000331878662
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 358,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 714,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1430,
+     "measured": 0.08
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000061.BIN",
+   "sha256": "102e29380491d779a5e0cebc235f3da1b45a960f6b1dce3651997688c7a1c257",
+   "size_bytes": 3956736,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 80.223681,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.012
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: pass \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 0,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 377,
+     "measured": 3.995000123977661
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 375,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 748,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1498,
+     "measured": 0.17
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000062.BIN",
+   "sha256": "0fa139b627e9406bdfb9eac8a25ab67b9668e474e789eb4a11cc9e84a7305fbf",
+   "size_bytes": 3866624,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 78.326322,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    5.306
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    5.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 365,
+     "measured": 5.00700044631958
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 356,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 711,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1424,
+     "measured": 0.09
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000063.BIN",
+   "sha256": "936d04459c63b84361dee6a70420f78de62043d72e51a8b5f78015a58c707a21",
+   "size_bytes": 3907584,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 79.212057,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    6.089
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    6.0
+   ],
+   "badge": "gates: fail \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 1,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "FAIL",
+     "n": 366,
+     "measured": 5.996000289916992
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 362,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 722,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1446,
+     "measured": 0.14
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  },
+  {
+   "log": "00000064.BIN",
+   "sha256": "b8ac24b4aec61aa00694bdafd9b92ad6d24448e58a1a17a06494be8a67d69fa2",
+   "size_bytes": 4009984,
+   "firmware": "ArduCopter V4.8.0-dev",
+   "duration_s": 81.316351,
+   "modes": [
+    "AUTO",
+    "AUTO",
+    "GUIDED",
+    "AUTO"
+   ],
+   "guided_window_s": [
+    4.945
+   ],
+   "arm_rows": 1,
+   "drop_intervals": 0,
+   "log_holes": 0,
+   "wp_spd_in_log": [
+    4.0
+   ],
+   "badge": "gates: pass \u00b7 5/6 measured \u00b7 1 assumed (post-hoc)",
+   "exit_code": 0,
+   "bars_sha256": "539aefde5860f8df62f052c8d8c1082b587571814d7981bbc7447a08b08e6a1e",
+   "tool": "0.2.0",
+   "results": {
+    "speed_ceiling_auto": {
+     "verdict": "PASS",
+     "n": 382,
+     "measured": 3.9930002689361572
+    },
+    "gnss_quality_armed": {
+     "verdict": "PASS",
+     "n": 375,
+     "measured": 0.0
+    },
+    "designed_modes_only": {
+     "verdict": "PASS",
+     "n": 3,
+     "measured": 0
+    },
+    "field_geofence": {
+     "verdict": "PASS",
+     "n": 748,
+     "measured": 4.960000038146973
+    },
+    "ekf_vel_ceiling_armed": {
+     "verdict": "PASS",
+     "n": 1498,
+     "measured": 0.19
+    },
+    "no_errors": {
+     "verdict": "EVIDENCE_INSUFFICIENT",
+     "n": 0,
+     "measured": null
+    }
+   }
+  }
+ ]
+}
