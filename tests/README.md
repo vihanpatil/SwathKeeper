@@ -15,12 +15,12 @@ of one measured invariant with nothing that failed when they disagreed; since 20
 `tests/test_suite_totals_one_home.py` fails when they do. Re-quote all three or none.)*
 
 ```bash
-python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1479, OK (skipped=9) — the original CI invocation
+python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1501, OK (skipped=9) — the original CI invocation
 python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 429 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1898 passed, 1 FAILED, 9 skipped, 0 xfail
+python3 -m pytest tests -q                                  # both at once: 1920 passed, 1 FAILED, 9 skipped, 0 xfail
 ```
 
-**The consistency check that matters:** 1479 + 429 = 1908 = 1898 + 1 + 9. If those two sides
+**The consistency check that matters:** 1501 + 429 = 1930 = 1920 + 1 + 9. If those two sides
 disagree, a file is invisible to one of the runners — which has happened before and is exactly what
 the second, separate CI job exists to prevent.
 
@@ -28,7 +28,7 @@ the second, separate CI job exists to prevent.
 gated on gitignored local artifacts — the 2026-09-11 wiring-flight log (4), `eval/results/spike_scores.json`
 (1), the adopted clip's `.npy` frames (2) and the seed-42 spike clip (1) — so a developer host that still
 holds those files reads `skipped=1` (the one unconditional skip, `test_safety_scenarios_pending.py:216`) and
-`1877 passed`. Same tree, same sum; only the split moves. CI is a fresh checkout, so this is CI's split.
+`1928 passed` (arithmetic, not a measurement: the 8 artifact-gated skips become passes). Same tree, same sum; only the split moves. CI is a fresh checkout, so this is CI's split.
 
 **The 1 failure is deliberate and load-bearing:** `test_ci_evidence_gate…test_step_passes_on_the_
 committed_evidence` is red because the committed 2026-08-25 take breached its GT-CPA bar and the

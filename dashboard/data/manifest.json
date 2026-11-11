@@ -6,7 +6,8 @@
  "flights": [
   "live_flight_log_20260818T144711Z",
   "live_flight_log_20260823T004031Z",
-  "live_flight_log_20260825T210402Z"
+  "live_flight_log_20260825T210402Z",
+  "live_flight_log_20261111T202709Z"
  ],
  "generated_by": "scripts/build_dashboard_data.py",
  "sources": [
@@ -45,6 +46,12 @@
    "path": "eval/results/bird_drive_20260825T210030Z_applied.jsonl",
    "role": "bird ground truth (applied set_pose poses)",
    "sha256": "2637c64f0ff34352f005eedfc7fb7898c451043e86fefcf3865b684a9048e75b"
+  },
+  {
+   "bytes": 47236,
+   "path": "eval/results/bird_drive_20261111T202537Z_applied.jsonl",
+   "role": "bird ground truth (applied set_pose poses)",
+   "sha256": "35185acd58961405c05a5d5332b283273a6a25c87b7f83133fcd56419eccd150"
   },
   {
    "bytes": 106216,
@@ -105,6 +112,12 @@
    "path": "eval/results/live_flight_log_20260825T210402Z.json",
    "role": "live flight log (read in place; never copied)",
    "sha256": "c08607b8b50eb64eb5e45b20fbf4d065de4964e1db46716bdaabe6f2b0b928c0"
+  },
+  {
+   "bytes": 411473,
+   "path": "eval/results/live_flight_log_20261111T202709Z.json",
+   "role": "live flight log (read in place; never copied)",
+   "sha256": "2dfff0d68b3a41892511758583170bde8179fbdba9ffdd8a6d1180445ee23c32"
   }
  ],
  "verify_a_copy": "shasum -a 256 <path> and compare with the sha256 below",

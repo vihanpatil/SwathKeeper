@@ -6,6 +6,8 @@
   "executor_params": {
     "resume_clear_ticks": 3,
     "guided_ceiling_ticks": 310,
+    "dodge_arrival_radius_m": 2.0,
+    "relatch_after_arrival_only": true,
     "relatch_threshold_m": 3.0,
     "vertical_margin_m": 1.0
   },
@@ -590,6 +592,124 @@
       2.0,
       15.0
     ]
+  ],
+  "flown_heading_rad": [
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708,
+    1.5708
   ],
   "coverage_ledger": [
     {
@@ -5393,6 +5513,7 @@
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 37,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5400,6 +5521,7 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
@@ -5417,8 +5539,8 @@
       "tick": 38,
       "kind": "latch",
       "setpoint_enu": [
-        30.0,
-        52.0,
+        40.0,
+        42.0,
         15.0
       ],
       "previous_setpoint_enu": null,
@@ -5433,19 +5555,23 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        52.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.0,
           1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": 1.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5454,6 +5580,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5477,11 +5604,11 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 1.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        52.0,
+        40.0,
+        42.0,
         15.0
       ],
       "latch_action": "latch"
@@ -5492,6 +5619,7 @@
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 38,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5499,6 +5627,7 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
@@ -5507,19 +5636,23 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        52.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.0,
           1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": 3.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5528,6 +5661,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5551,11 +5685,11 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        50.0,
+        40.0,
+        40.0,
         15.0
       ],
       "latch_action": "recommand_latched"
@@ -5566,6 +5700,7 @@
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 39,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5573,46 +5708,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
       "seq": 44,
       "tick": 40,
-      "kind": "relatch",
-      "setpoint_enu": [
-        30.0,
-        48.0,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        30.0,
-        52.0,
-        15.0
-      ],
-      "offset_m": 4.0,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 45,
-      "tick": 40,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        48.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.0,
           1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": 1.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5621,6 +5742,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5644,21 +5766,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 1.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        48.0,
+        40.0,
+        38.0,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 46,
+      "seq": 45,
       "tick": 41,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 40,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5666,27 +5789,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 47,
+      "seq": 46,
       "tick": 41,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        48.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.0,
           1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": -1.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5695,6 +5823,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5718,21 +5847,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance -1.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        46.0,
+        40.0,
+        36.0,
         15.0
       ],
-      "latch_action": "recommand_latched"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 48,
+      "seq": 47,
       "tick": 42,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 41,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5740,35 +5870,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 49,
-      "tick": 42,
-      "kind": "relatch",
-      "setpoint_enu": [
-        30.0,
-        44.0,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        30.0,
-        48.0,
-        15.0
-      ],
-      "offset_m": 4.0,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 50,
+      "seq": 48,
       "tick": 42,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        44.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
@@ -5779,7 +5891,11 @@
           1.0
         ],
         "swept_tree_clearance_m": 8.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5788,6 +5904,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5811,21 +5928,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
         30.0,
         44.0,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 51,
+      "seq": 49,
       "tick": 43,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 42,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5833,16 +5951,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 52,
+      "seq": 50,
       "tick": 43,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        44.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
@@ -5853,7 +5972,11 @@
           1.0
         ],
         "swept_tree_clearance_m": 8.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5862,6 +5985,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5885,21 +6009,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
         30.0,
         42.0,
         15.0
       ],
-      "latch_action": "recommand_latched"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 53,
+      "seq": 51,
       "tick": 44,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 43,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5907,16 +6032,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 54,
+      "seq": 52,
       "tick": 44,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        44.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
@@ -5927,7 +6053,11 @@
           -0.0
         ],
         "swept_tree_clearance_m": 5.071,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5936,6 +6066,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5959,7 +6090,7 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 5.07 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 5.07 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
         20.0,
@@ -5969,11 +6100,12 @@
       "latch_action": "relatch_refused_degenerate"
     },
     {
-      "seq": 55,
+      "seq": 53,
       "tick": 45,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 44,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -5981,35 +6113,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 56,
-      "tick": 45,
-      "kind": "relatch",
-      "setpoint_enu": [
-        30.0,
-        18.0,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        30.0,
-        44.0,
-        15.0
-      ],
-      "offset_m": 26.0,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 57,
+      "seq": 54,
       "tick": 45,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        18.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
@@ -6020,7 +6134,11 @@
           -1.0
         ],
         "swept_tree_clearance_m": 8.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6029,6 +6147,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6052,21 +6171,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
         30.0,
         18.0,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 58,
+      "seq": 55,
       "tick": 46,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 45,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -6074,16 +6194,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 59,
+      "seq": 56,
       "tick": 46,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        18.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
@@ -6094,7 +6215,11 @@
           -1.0
         ],
         "swept_tree_clearance_m": 8.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6103,6 +6228,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6126,21 +6252,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
         30.0,
         16.0,
         15.0
       ],
-      "latch_action": "recommand_latched"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 60,
+      "seq": 57,
       "tick": 47,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 46,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -6148,46 +6275,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 61,
-      "tick": 47,
-      "kind": "relatch",
-      "setpoint_enu": [
-        30.0,
-        14.0,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        30.0,
-        18.0,
-        15.0
-      ],
-      "offset_m": 4.0,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 62,
+      "seq": 58,
       "tick": 47,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        14.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": 90.0,
         "away_unit": [
           0.0,
           -1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": -1.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6196,6 +6309,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6219,21 +6333,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance -1.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        14.0,
+        40.0,
+        24.0,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 63,
+      "seq": 59,
       "tick": 48,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 47,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -6241,27 +6356,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 64,
+      "seq": 60,
       "tick": 48,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        14.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": 90.0,
         "away_unit": [
           0.0,
           -1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": 1.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6270,6 +6390,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6293,21 +6414,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 1.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        12.0,
+        40.0,
+        22.0,
         15.0
       ],
-      "latch_action": "recommand_latched"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 65,
+      "seq": 61,
       "tick": 49,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 48,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -6315,46 +6437,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 66,
-      "tick": 49,
-      "kind": "relatch",
-      "setpoint_enu": [
-        30.0,
-        10.0,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        30.0,
-        14.0,
-        15.0
-      ],
-      "offset_m": 4.0,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "intruder_0"
-    },
-    {
-      "seq": 67,
+      "seq": 62,
       "tick": 49,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        10.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": 90.0,
         "away_unit": [
           0.0,
           -1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": 3.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6363,6 +6471,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6386,21 +6495,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        10.0,
+        40.0,
+        20.0,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 68,
+      "seq": 63,
       "tick": 50,
       "kind": "detection",
       "track_id": "intruder_0",
       "frame_id": 49,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         30.0,
@@ -6408,27 +6518,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 69,
+      "seq": 64,
       "tick": 50,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        30.0,
-        10.0,
+        40.0,
+        42.0,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": 90.0,
         "away_unit": [
           0.0,
           -1.0
         ],
-        "swept_tree_clearance_m": 8.0,
+        "swept_tree_clearance_m": 1.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 0.0,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6437,6 +6552,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6460,17 +6576,17 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 8.00 m",
+      "policy_reason": "divert +90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 1.00 m",
       "track_id": "intruder_0",
       "policy_setpoint_enu": [
-        30.0,
-        8.0,
+        40.0,
+        18.0,
         15.0
       ],
-      "latch_action": "recommand_latched"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 70,
+      "seq": 65,
       "tick": 51,
       "kind": "proceed",
       "position_enu": [
@@ -6480,6 +6596,14 @@
       ],
       "wp_index": 1,
       "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 27.857,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
         "clear_ticks": 1,
         "required": 3,
         "ticks_in_guided": 14,
@@ -6487,7 +6611,7 @@
       }
     },
     {
-      "seq": 71,
+      "seq": 66,
       "tick": 52,
       "kind": "proceed",
       "position_enu": [
@@ -6497,6 +6621,14 @@
       ],
       "wp_index": 1,
       "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 29.732,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
         "clear_ticks": 2,
         "required": 3,
         "ticks_in_guided": 15,
@@ -6504,23 +6636,7 @@
       }
     },
     {
-      "seq": 72,
-      "tick": 53,
-      "kind": "resume",
-      "trigger": "threat_cleared",
-      "resumed_wp_index": 1,
-      "wp_index_at_takeover": 1,
-      "resumed_same_waypoint": true,
-      "latched_setpoint_enu": [
-        30.0,
-        10.0,
-        15.0
-      ],
-      "clear_ticks_required": 3,
-      "ticks_in_guided": 16
-    },
-    {
-      "seq": 73,
+      "seq": 67,
       "tick": 53,
       "kind": "proceed",
       "position_enu": [
@@ -6528,10 +6644,24 @@
         12.0,
         15.0
       ],
-      "wp_index": 1
+      "wp_index": 1,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 31.623,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 3,
+        "required": 3,
+        "ticks_in_guided": 16,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 74,
+      "seq": 68,
       "tick": 54,
       "kind": "proceed",
       "position_enu": [
@@ -6539,10 +6669,24 @@
         10.0,
         15.0
       ],
-      "wp_index": 1
+      "wp_index": 1,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 33.526,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 4,
+        "required": 3,
+        "ticks_in_guided": 17,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 75,
+      "seq": 69,
       "tick": 55,
       "kind": "proceed",
       "position_enu": [
@@ -6550,10 +6694,24 @@
         8.0,
         15.0
       ],
-      "wp_index": 1
+      "wp_index": 1,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 35.44,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 5,
+        "required": 3,
+        "ticks_in_guided": 18,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 76,
+      "seq": 70,
       "tick": 56,
       "kind": "proceed",
       "position_enu": [
@@ -6561,10 +6719,24 @@
         6.0,
         15.0
       ],
-      "wp_index": 1
+      "wp_index": 1,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 37.363,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 6,
+        "required": 3,
+        "ticks_in_guided": 19,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 77,
+      "seq": 71,
       "tick": 57,
       "kind": "proceed",
       "position_enu": [
@@ -6572,10 +6744,24 @@
         4.0,
         15.0
       ],
-      "wp_index": 1
+      "wp_index": 1,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 39.294,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 7,
+        "required": 3,
+        "ticks_in_guided": 20,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 78,
+      "seq": 72,
       "tick": 58,
       "kind": "proceed",
       "position_enu": [
@@ -6583,10 +6769,24 @@
         2.0,
         15.0
       ],
-      "wp_index": 1
+      "wp_index": 1,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 41.231,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 8,
+        "required": 3,
+        "ticks_in_guided": 21,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 79,
+      "seq": 73,
       "tick": 59,
       "kind": "proceed",
       "position_enu": [
@@ -6594,10 +6794,24 @@
         2.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 40.311,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 9,
+        "required": 3,
+        "ticks_in_guided": 22,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 80,
+      "seq": 74,
       "tick": 60,
       "kind": "proceed",
       "position_enu": [
@@ -6605,10 +6819,24 @@
         4.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 38.328,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 10,
+        "required": 3,
+        "ticks_in_guided": 23,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 81,
+      "seq": 75,
       "tick": 61,
       "kind": "proceed",
       "position_enu": [
@@ -6616,10 +6844,24 @@
         6.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 36.346,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 11,
+        "required": 3,
+        "ticks_in_guided": 24,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 82,
+      "seq": 76,
       "tick": 62,
       "kind": "proceed",
       "position_enu": [
@@ -6627,10 +6869,24 @@
         8.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 34.366,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 12,
+        "required": 3,
+        "ticks_in_guided": 25,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 83,
+      "seq": 77,
       "tick": 63,
       "kind": "proceed",
       "position_enu": [
@@ -6638,10 +6894,24 @@
         10.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 32.388,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 13,
+        "required": 3,
+        "ticks_in_guided": 26,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 84,
+      "seq": 78,
       "tick": 64,
       "kind": "proceed",
       "position_enu": [
@@ -6649,10 +6919,24 @@
         12.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 30.414,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 14,
+        "required": 3,
+        "ticks_in_guided": 27,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 85,
+      "seq": 79,
       "tick": 65,
       "kind": "proceed",
       "position_enu": [
@@ -6660,10 +6944,24 @@
         14.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 28.443,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 15,
+        "required": 3,
+        "ticks_in_guided": 28,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 86,
+      "seq": 80,
       "tick": 66,
       "kind": "proceed",
       "position_enu": [
@@ -6671,10 +6969,24 @@
         16.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 26.476,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 16,
+        "required": 3,
+        "ticks_in_guided": 29,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 87,
+      "seq": 81,
       "tick": 67,
       "kind": "proceed",
       "position_enu": [
@@ -6682,10 +6994,24 @@
         18.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 24.515,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 17,
+        "required": 3,
+        "ticks_in_guided": 30,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 88,
+      "seq": 82,
       "tick": 68,
       "kind": "proceed",
       "position_enu": [
@@ -6693,10 +7019,24 @@
         20.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 22.561,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 18,
+        "required": 3,
+        "ticks_in_guided": 31,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 89,
+      "seq": 83,
       "tick": 69,
       "kind": "proceed",
       "position_enu": [
@@ -6704,10 +7044,24 @@
         22.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.616,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 19,
+        "required": 3,
+        "ticks_in_guided": 32,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 90,
+      "seq": 84,
       "tick": 70,
       "kind": "proceed",
       "position_enu": [
@@ -6715,10 +7069,24 @@
         24.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 18.682,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 20,
+        "required": 3,
+        "ticks_in_guided": 33,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 91,
+      "seq": 85,
       "tick": 71,
       "kind": "proceed",
       "position_enu": [
@@ -6726,10 +7094,24 @@
         26.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 16.763,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 21,
+        "required": 3,
+        "ticks_in_guided": 34,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 92,
+      "seq": 86,
       "tick": 72,
       "kind": "proceed",
       "position_enu": [
@@ -6737,10 +7119,24 @@
         28.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 14.866,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 22,
+        "required": 3,
+        "ticks_in_guided": 35,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 93,
+      "seq": 87,
       "tick": 73,
       "kind": "proceed",
       "position_enu": [
@@ -6748,10 +7144,24 @@
         30.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 13.0,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 23,
+        "required": 3,
+        "ticks_in_guided": 36,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 94,
+      "seq": 88,
       "tick": 74,
       "kind": "proceed",
       "position_enu": [
@@ -6759,10 +7169,24 @@
         32.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 11.18,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 24,
+        "required": 3,
+        "ticks_in_guided": 37,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 95,
+      "seq": 89,
       "tick": 75,
       "kind": "proceed",
       "position_enu": [
@@ -6770,10 +7194,24 @@
         34.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 9.434,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 25,
+        "required": 3,
+        "ticks_in_guided": 38,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 96,
+      "seq": 90,
       "tick": 76,
       "kind": "proceed",
       "position_enu": [
@@ -6781,10 +7219,24 @@
         36.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 7.81,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 26,
+        "required": 3,
+        "ticks_in_guided": 39,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 97,
+      "seq": 91,
       "tick": 77,
       "kind": "proceed",
       "position_enu": [
@@ -6792,10 +7244,24 @@
         38.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 6.403,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 27,
+        "required": 3,
+        "ticks_in_guided": 40,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 98,
+      "seq": 92,
       "tick": 78,
       "kind": "proceed",
       "position_enu": [
@@ -6803,10 +7269,24 @@
         40.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 5.385,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 28,
+        "required": 3,
+        "ticks_in_guided": 41,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 99,
+      "seq": 93,
       "tick": 79,
       "kind": "proceed",
       "position_enu": [
@@ -6814,10 +7294,24 @@
         42.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 5.0,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 29,
+        "required": 3,
+        "ticks_in_guided": 42,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 100,
+      "seq": 94,
       "tick": 80,
       "kind": "proceed",
       "position_enu": [
@@ -6825,10 +7319,24 @@
         44.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 5.385,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 30,
+        "required": 3,
+        "ticks_in_guided": 43,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 101,
+      "seq": 95,
       "tick": 81,
       "kind": "proceed",
       "position_enu": [
@@ -6836,10 +7344,24 @@
         46.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 6.403,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 31,
+        "required": 3,
+        "ticks_in_guided": 44,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 102,
+      "seq": 96,
       "tick": 82,
       "kind": "proceed",
       "position_enu": [
@@ -6847,10 +7369,24 @@
         48.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 7.81,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 32,
+        "required": 3,
+        "ticks_in_guided": 45,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 103,
+      "seq": 97,
       "tick": 83,
       "kind": "proceed",
       "position_enu": [
@@ -6858,10 +7394,24 @@
         50.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 9.434,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 33,
+        "required": 3,
+        "ticks_in_guided": 46,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 104,
+      "seq": 98,
       "tick": 84,
       "kind": "proceed",
       "position_enu": [
@@ -6869,10 +7419,24 @@
         52.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 11.18,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 34,
+        "required": 3,
+        "ticks_in_guided": 47,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 105,
+      "seq": 99,
       "tick": 85,
       "kind": "proceed",
       "position_enu": [
@@ -6880,10 +7444,24 @@
         54.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 13.0,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 35,
+        "required": 3,
+        "ticks_in_guided": 48,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 106,
+      "seq": 100,
       "tick": 86,
       "kind": "proceed",
       "position_enu": [
@@ -6891,10 +7469,24 @@
         56.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 14.866,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 36,
+        "required": 3,
+        "ticks_in_guided": 49,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 107,
+      "seq": 101,
       "tick": 87,
       "kind": "proceed",
       "position_enu": [
@@ -6902,10 +7494,24 @@
         58.0,
         15.0
       ],
-      "wp_index": 2
+      "wp_index": 2,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 16.763,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 37,
+        "required": 3,
+        "ticks_in_guided": 50,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 108,
+      "seq": 102,
       "tick": 88,
       "kind": "proceed",
       "position_enu": [
@@ -6913,10 +7519,24 @@
         58.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 25.612,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 38,
+        "required": 3,
+        "ticks_in_guided": 51,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 109,
+      "seq": 103,
       "tick": 89,
       "kind": "proceed",
       "position_enu": [
@@ -6924,10 +7544,24 @@
         56.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 24.413,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 39,
+        "required": 3,
+        "ticks_in_guided": 52,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 110,
+      "seq": 104,
       "tick": 90,
       "kind": "proceed",
       "position_enu": [
@@ -6935,10 +7569,24 @@
         54.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 23.324,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 40,
+        "required": 3,
+        "ticks_in_guided": 53,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 111,
+      "seq": 105,
       "tick": 91,
       "kind": "proceed",
       "position_enu": [
@@ -6946,10 +7594,24 @@
         52.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 22.361,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 41,
+        "required": 3,
+        "ticks_in_guided": 54,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 112,
+      "seq": 106,
       "tick": 92,
       "kind": "proceed",
       "position_enu": [
@@ -6957,10 +7619,24 @@
         50.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 21.541,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 42,
+        "required": 3,
+        "ticks_in_guided": 55,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 113,
+      "seq": 107,
       "tick": 93,
       "kind": "proceed",
       "position_enu": [
@@ -6968,10 +7644,24 @@
         48.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.881,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 43,
+        "required": 3,
+        "ticks_in_guided": 56,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 114,
+      "seq": 108,
       "tick": 94,
       "kind": "proceed",
       "position_enu": [
@@ -6979,10 +7669,24 @@
         46.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.396,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 44,
+        "required": 3,
+        "ticks_in_guided": 57,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 115,
+      "seq": 109,
       "tick": 95,
       "kind": "proceed",
       "position_enu": [
@@ -6990,10 +7694,24 @@
         44.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.1,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 45,
+        "required": 3,
+        "ticks_in_guided": 58,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 116,
+      "seq": 110,
       "tick": 96,
       "kind": "proceed",
       "position_enu": [
@@ -7001,10 +7719,24 @@
         42.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.0,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 46,
+        "required": 3,
+        "ticks_in_guided": 59,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 117,
+      "seq": 111,
       "tick": 97,
       "kind": "proceed",
       "position_enu": [
@@ -7012,10 +7744,24 @@
         40.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.1,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 47,
+        "required": 3,
+        "ticks_in_guided": 60,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 118,
+      "seq": 112,
       "tick": 98,
       "kind": "proceed",
       "position_enu": [
@@ -7023,10 +7769,24 @@
         38.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.396,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 48,
+        "required": 3,
+        "ticks_in_guided": 61,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 119,
+      "seq": 113,
       "tick": 99,
       "kind": "proceed",
       "position_enu": [
@@ -7034,10 +7794,24 @@
         36.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 20.881,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 49,
+        "required": 3,
+        "ticks_in_guided": 62,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 120,
+      "seq": 114,
       "tick": 100,
       "kind": "proceed",
       "position_enu": [
@@ -7045,10 +7819,24 @@
         34.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 21.541,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 50,
+        "required": 3,
+        "ticks_in_guided": 63,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 121,
+      "seq": 115,
       "tick": 101,
       "kind": "proceed",
       "position_enu": [
@@ -7056,10 +7844,24 @@
         32.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 22.361,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 51,
+        "required": 3,
+        "ticks_in_guided": 64,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 122,
+      "seq": 116,
       "tick": 102,
       "kind": "proceed",
       "position_enu": [
@@ -7067,10 +7869,24 @@
         30.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 23.324,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 52,
+        "required": 3,
+        "ticks_in_guided": 65,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 123,
+      "seq": 117,
       "tick": 103,
       "kind": "proceed",
       "position_enu": [
@@ -7078,10 +7894,24 @@
         28.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 24.413,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 53,
+        "required": 3,
+        "ticks_in_guided": 66,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 124,
+      "seq": 118,
       "tick": 104,
       "kind": "proceed",
       "position_enu": [
@@ -7089,10 +7919,24 @@
         26.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 25.612,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 54,
+        "required": 3,
+        "ticks_in_guided": 67,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 125,
+      "seq": 119,
       "tick": 105,
       "kind": "proceed",
       "position_enu": [
@@ -7100,10 +7944,24 @@
         24.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 26.907,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 55,
+        "required": 3,
+        "ticks_in_guided": 68,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 126,
+      "seq": 120,
       "tick": 106,
       "kind": "proceed",
       "position_enu": [
@@ -7111,10 +7969,24 @@
         22.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 28.284,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 56,
+        "required": 3,
+        "ticks_in_guided": 69,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 127,
+      "seq": 121,
       "tick": 107,
       "kind": "proceed",
       "position_enu": [
@@ -7122,10 +7994,24 @@
         20.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 29.732,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 57,
+        "required": 3,
+        "ticks_in_guided": 70,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 128,
+      "seq": 122,
       "tick": 108,
       "kind": "proceed",
       "position_enu": [
@@ -7133,10 +8019,24 @@
         18.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 31.241,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 58,
+        "required": 3,
+        "ticks_in_guided": 71,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 129,
+      "seq": 123,
       "tick": 109,
       "kind": "proceed",
       "position_enu": [
@@ -7144,10 +8044,24 @@
         16.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 32.802,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 59,
+        "required": 3,
+        "ticks_in_guided": 72,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 130,
+      "seq": 124,
       "tick": 110,
       "kind": "proceed",
       "position_enu": [
@@ -7155,10 +8069,24 @@
         14.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 34.409,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 60,
+        "required": 3,
+        "ticks_in_guided": 73,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 131,
+      "seq": 125,
       "tick": 111,
       "kind": "proceed",
       "position_enu": [
@@ -7166,10 +8094,24 @@
         12.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 36.056,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 61,
+        "required": 3,
+        "ticks_in_guided": 74,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 132,
+      "seq": 126,
       "tick": 112,
       "kind": "proceed",
       "position_enu": [
@@ -7177,10 +8119,24 @@
         10.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 37.736,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 62,
+        "required": 3,
+        "ticks_in_guided": 75,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 133,
+      "seq": 127,
       "tick": 113,
       "kind": "proceed",
       "position_enu": [
@@ -7188,10 +8144,24 @@
         8.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 39.446,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 63,
+        "required": 3,
+        "ticks_in_guided": 76,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 134,
+      "seq": 128,
       "tick": 114,
       "kind": "proceed",
       "position_enu": [
@@ -7199,10 +8169,24 @@
         6.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 41.183,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 64,
+        "required": 3,
+        "ticks_in_guided": 77,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 135,
+      "seq": 129,
       "tick": 115,
       "kind": "proceed",
       "position_enu": [
@@ -7210,10 +8194,24 @@
         4.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 42.942,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 65,
+        "required": 3,
+        "ticks_in_guided": 78,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 136,
+      "seq": 130,
       "tick": 116,
       "kind": "proceed",
       "position_enu": [
@@ -7221,1018 +8219,1032 @@
         2.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 44.721,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          40.0,
+          42.0,
+          15.0
+        ],
+        "clear_ticks": 66,
+        "required": 3,
+        "ticks_in_guided": 79,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 137,
+      "seq": 131,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 138,
+      "seq": 132,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 139,
+      "seq": 133,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 140,
+      "seq": 134,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 141,
+      "seq": 135,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 142,
+      "seq": 136,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 143,
+      "seq": 137,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 144,
+      "seq": 138,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 145,
+      "seq": 139,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 146,
+      "seq": 140,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 147,
+      "seq": 141,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 148,
+      "seq": 142,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 149,
+      "seq": 143,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 150,
+      "seq": 144,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 151,
+      "seq": 145,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 152,
+      "seq": 146,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 153,
+      "seq": 147,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 154,
+      "seq": 148,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 155,
+      "seq": 149,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 156,
+      "seq": 150,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 157,
+      "seq": 151,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 158,
+      "seq": 152,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 159,
+      "seq": 153,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 160,
+      "seq": 154,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 161,
+      "seq": 155,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 162,
+      "seq": 156,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 163,
+      "seq": 157,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 164,
+      "seq": 158,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 165,
+      "seq": 159,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 166,
+      "seq": 160,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 167,
+      "seq": 161,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 168,
+      "seq": 162,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 169,
+      "seq": 163,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 170,
+      "seq": 164,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 171,
+      "seq": 165,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 172,
+      "seq": 166,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 173,
+      "seq": 167,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 174,
+      "seq": 168,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 175,
+      "seq": 169,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 176,
+      "seq": 170,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 177,
+      "seq": 171,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 178,
+      "seq": 172,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 179,
+      "seq": 173,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 180,
+      "seq": 174,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 181,
+      "seq": 175,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 182,
+      "seq": 176,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 183,
+      "seq": 177,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 184,
+      "seq": 178,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 185,
+      "seq": 179,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 186,
+      "seq": 180,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 187,
+      "seq": 181,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 188,
+      "seq": 182,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 189,
+      "seq": 183,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 190,
+      "seq": 184,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 191,
+      "seq": 185,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 192,
+      "seq": 186,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 193,
+      "seq": 187,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 194,
+      "seq": 188,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 195,
+      "seq": 189,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 196,
+      "seq": 190,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 197,
+      "seq": 191,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 198,
+      "seq": 192,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 199,
+      "seq": 193,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 200,
+      "seq": 194,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 201,
+      "seq": 195,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 202,
+      "seq": 196,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 203,
+      "seq": 197,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 204,
+      "seq": 198,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 205,
+      "seq": 199,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 206,
+      "seq": 200,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 207,
+      "seq": 201,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 208,
+      "seq": 202,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 209,
+      "seq": 203,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 210,
+      "seq": 204,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 211,
+      "seq": 205,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 212,
+      "seq": 206,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 213,
+      "seq": 207,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 214,
+      "seq": 208,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 215,
+      "seq": 209,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 216,
+      "seq": 210,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 217,
+      "seq": 211,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 218,
+      "seq": 212,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 219,
+      "seq": 213,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 220,
+      "seq": 214,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 221,
+      "seq": 215,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 222,
+      "seq": 216,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 223,
+      "seq": 217,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 224,
+      "seq": 218,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 225,
+      "seq": 219,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 226,
+      "seq": 220,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 227,
+      "seq": 221,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 228,
+      "seq": 222,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 229,
+      "seq": 223,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 230,
+      "seq": 224,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 231,
+      "seq": 225,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 232,
+      "seq": 226,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 233,
+      "seq": 227,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 234,
+      "seq": 228,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 235,
+      "seq": 229,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 236,
+      "seq": 230,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 237,
+      "seq": 231,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 238,
+      "seq": 232,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 239,
+      "seq": 233,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 240,
+      "seq": 234,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 241,
+      "seq": 235,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 242,
+      "seq": 236,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 243,
+      "seq": 237,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 244,
+      "seq": 238,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 245,
+      "seq": 239,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 246,
+      "seq": 240,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 247,
+      "seq": 241,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 248,
+      "seq": 242,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 249,
+      "seq": 243,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 250,
+      "seq": 244,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 251,
+      "seq": 245,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 252,
+      "seq": 246,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 253,
+      "seq": 247,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 254,
+      "seq": 248,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 255,
+      "seq": 249,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 256,
+      "seq": 250,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 257,
+      "seq": 251,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 258,
+      "seq": 252,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 259,
+      "seq": 253,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 260,
+      "seq": 254,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 261,
+      "seq": 255,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 262,
+      "seq": 256,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 263,
+      "seq": 257,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 264,
+      "seq": 258,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 265,
+      "seq": 259,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 266,
+      "seq": 260,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 267,
+      "seq": 261,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 268,
+      "seq": 262,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 269,
+      "seq": 263,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 270,
+      "seq": 264,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 271,
+      "seq": 265,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 272,
+      "seq": 266,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 273,
+      "seq": 267,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 274,
+      "seq": 268,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 275,
+      "seq": 269,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 276,
+      "seq": 270,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 277,
+      "seq": 271,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 278,
+      "seq": 272,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 279,
+      "seq": 273,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 280,
+      "seq": 274,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 281,
+      "seq": 275,
       "tick": 116,
       "kind": "divert_audit_summary",
       "n_diverts": 13,

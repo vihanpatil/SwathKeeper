@@ -262,6 +262,23 @@ TRUTH_BINDINGS = {
     # 2026-08-25 real-detection take: gt_cpa_m 0.0067 m, BREACH. Marker beside it and deliberately
     # NOT in ACKNOWLEDGED_BREACH_STEMS -- a NEW breach is a FAILED flight, not recorded history.
     "live_flight_log_20260825T210402Z": "bird_drive_20260825T210030Z_applied.jsonl",
+    # 2026-11-11 BOOKED head-on take 3 (ADR-020 am. 8): the first VALID avoidance take -- gt_cpa_m
+    # 9.6138 m (8.8013 m gated), every depth bar measured, booking honoured. Track drove bird_0 only
+    # (config/birds/headon_lane15.json); bird_1/bird_2 are declared static by its sidecar.
+    "live_flight_log_20261111T202709Z": "bird_drive_20261111T202537Z_applied.jsonl",
+}
+
+# THE BOOKING THAT AUTHORISED A COMMITTED TAKE, pinned the same way (2026-11-11). `--booking` is the
+# launcher's and the operator's contract, but CI scores a committed log with neither a flag nor a
+# `<stem>.booking.json` sidecar -- a sidecar at eval/results/ would match the evidence glob
+# `*flight_log*.json` and be scored as a flight log. So a committed BOOKED take names its artifact
+# here: a FILENAME beside the log, resolved like TRUTH_BINDINGS -- a reviewed pin, a hard problem when
+# the file is missing, and a `--booking` that contradicts it is refused rather than obeyed. A log
+# that is NOT pinned here and carries no sidecar keeps the NO BOOKING BOUND warning, as before.
+BOOKING_BINDINGS = {
+    # 2026-11-11 BOOKED head-on take 3: flown with `fly_pipeline.sh encounter --booking` on the
+    # 2026-09-07 artifact (5.0 m/s), window median 2.936 m/s = 0.587x booked.
+    "live_flight_log_20261111T202709Z": "booking_gate_20260907T064136Z.json",
 }
 
 # --- schema-2 contract (written by avoidance_node.py's `run` block) -----------------------------
@@ -594,6 +611,9 @@ class BirdTruth(NamedTuple):
     rate of spawn answers is reported with a denominator instead of blending into truth coverage."""
     positions: List[tuple]
     from_spawn: bool
+    # A world bird this run's own sidecar DECLARED undriven (2026-11-11): the <static> model at its
+    # spawn pose for the whole flight, scored there. See `TruthTrack.declared_static_bird_ids`.
+    declared_static: bool = False
 
 
 class TruthTrack:
@@ -623,11 +643,60 @@ class TruthTrack:
         # from a path that actually flew through the real one).
         self.landed_counts = {b: len(self.timeline.get(b, ())) for b in self.birds}
         self.unknown_bird_ids = sorted(set(self.timeline) - set(self.birds))
-        self.unobserved_bird_ids = sorted(b for b, n in self.landed_counts.items() if n == 0)
+        # DECLARED-STATIC BIRDS (2026-11-11). A scenario config can drive a SUBSET of the world's
+        # birds -- config/birds/headon_lane15.json drives bird_0 down the lane while bird_1 and
+        # bird_2 stay the <static> models gen_farm_world placed exactly where farm_world_birds.json
+        # spawns them. Their spawn poses ARE their positions for the whole flight: an observation of
+        # the world as generated, not an invention -- but only when THIS run's own sidecar says so,
+        # falsifiably. `bird_drive_<UTC>.json` beside the applied log names the scenario config it
+        # drove and its bird set, and the declaration is accepted only if (a) that config exists in
+        # this repo and is not the world config itself, (b) its bird set EQUALS the sidecar's
+        # `bird_ids`, (c) that set EQUALS the birds with a landed call, and (d) it is a proper subset
+        # of the world's birds. Anything else -- no sidecar, a legacy sidecar without the fields, a
+        # driver that died before reaching a declared bird, the world config with a bird missing --
+        # leaves the bird UNOBSERVED and refused exactly as before; the wrong take's track cannot
+        # satisfy (c) by accident. The booked 2026-11-11 head-on takes are what this is for: every
+        # other bar measured and passed, and the verdict hung on two birds nobody drove.
+        self.declared_static_bird_ids, self.declaration = self._declared_static()
+        self.unobserved_bird_ids = sorted(b for b, n in self.landed_counts.items()
+                                          if n == 0 and b not in self.declared_static_bird_ids)
 
     @classmethod
     def load(cls, path: Path, birds_config: Path = DEFAULT_BIRDS_CONFIG) -> "TruthTrack":
         return cls(path, read_applied_log(Path(path)), load_birds(Path(birds_config)))
+
+    def _declared_static(self) -> Tuple[List[str], Optional[str]]:
+        """(world birds this run's sidecar DECLARED undriven, the declaration as one line) -- the
+        four conditions in `__init__`; ([], None) unless every one of them holds."""
+        name = self.path.name
+        if not name.endswith("_applied.jsonl"):
+            return [], None
+        sidecar_path = self.path.with_name(name[: -len("_applied.jsonl")] + ".json")
+        try:
+            sidecar = json.loads(sidecar_path.read_text())
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return [], None
+        if not isinstance(sidecar, dict):
+            return [], None
+        config_name, driven = sidecar.get("config_name"), sidecar.get("bird_ids")
+        if (not isinstance(config_name, str) or not config_name or not isinstance(driven, list)
+                or not driven or not all(isinstance(b, str) for b in driven)):
+            return [], None
+        config_path = DEFAULT_BIRDS_CONFIG.parent / Path(config_name).name
+        if config_path.name == DEFAULT_BIRDS_CONFIG.name or not config_path.exists():
+            return [], None
+        try:
+            scenario_ids = {b["bird_id"] for b in load_birds(config_path)}
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+            return [], None
+        driven_set = set(driven)
+        landed = {b for b, n in self.landed_counts.items() if n > 0}
+        world = set(self.birds)
+        if not (scenario_ids == driven_set == landed and driven_set < world):
+            return [], None
+        return (sorted(world - driven_set),
+                f"{sidecar_path.name}: config {config_path.name} drives {sorted(driven_set)}, every "
+                f"declared bird landed a set_pose call and no other bird did")
 
     def _spawn_pos(self, bird_id: str) -> Tuple[float, float, float]:
         """Where a bird sits before its first landed call: `waypoints[0]`, EXACT, not modelled --
@@ -664,6 +733,11 @@ class TruthTrack:
         for bird_id in self.birds:
             entries = self.timeline.get(bird_id)
             if not entries:
+                if bird_id in self.declared_static_bird_ids:
+                    # The <static> model at its spawn pose, by this run's own declaration. Not a
+                    # spawn ANSWER (`from_spawn`, the wrong-track signature): nothing was ever going
+                    # to move it, and the counter that measures wrong tracks must not see it.
+                    out[bird_id] = BirdTruth([self._spawn_pos(bird_id)], False, True)
                 continue                                # never driven -> not an observation at all
             found = pose_from_applied(entries, t_sim_s)
             from_spawn = found is None or found[0] is None
@@ -726,6 +800,33 @@ def _lerp3(a: Tuple[float, float, float], b: Tuple[float, float, float],
     this is the same constant-velocity-between-samples assumption the polyline itself already makes
     -- no new modelling, just the existing one evaluated between two vertices."""
     return (a[0] + s * (b[0] - a[0]), a[1] + s * (b[1] - a[1]), a[2] + s * (b[2] - a[2]))
+
+
+def _min_dist_3d_to_polyline(point, path) -> float:
+    """Smallest 3D distance from `point` to the polyline `path` (vertices and segments; unreadable
+    vertices are skipped, and a path with no readable vertex gives inf). Reporting only -- the CPA
+    gate scores the same bird through `ground_truth_cpa`'s own vertical scoping."""
+    pts = []
+    for p in path or []:
+        try:
+            pts.append((float(p[0]), float(p[1]), float(p[2])))
+        except (TypeError, ValueError, IndexError):
+            pts.append(None)
+    best = math.inf
+    for q in pts:
+        if q is not None:
+            best = min(best, math.dist(point, q))
+    for a, b in zip(pts, pts[1:]):
+        if a is None or b is None:
+            continue
+        ab = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+        l2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2]
+        if l2 <= 0.0:
+            continue
+        ap = (point[0] - a[0], point[1] - a[1], point[2] - a[2])
+        frac = max(0.0, min(1.0, (ap[0] * ab[0] + ap[1] * ab[1] + ap[2] * ab[2]) / l2))
+        best = min(best, math.dist(point, _lerp3(a, b, frac)))
+    return best
 
 
 def pose_windows(truth: TruthTrack) -> List[Tuple[str, Tuple[float, float, float], float, float]]:
@@ -1744,6 +1845,100 @@ def _flown_point(log, tick) -> Optional[Tuple[float, float, float]]:
         return None
 
 
+def _flown_point_at(log, t_sim_s) -> Optional[Tuple[float, float, float]]:
+    """The drone's recorded position at absolute sim second `t_sim_s`, interpolated linearly between
+    the two ticks whose stamps bracket it (`_lerp3` -- the polyline's own constant-velocity-between-
+    samples assumption, nothing new). None when the instant is unstamped, outside the stamped span,
+    or when a bounding vertex is unreadable; a FROZEN bracket (two ticks, one stamp) is skipped
+    because it cannot place a point in time, and its neighbour answers for the shared stamp. The
+    caller falls back to the consuming tick's own vertex and says so."""
+    t = _num(t_sim_s)
+    run = log.get("run") if isinstance(log, dict) else None
+    stamps = (run or {}).get("tick_stamp_sim_s") if isinstance(run, dict) else None
+    path = log.get("flown_path_enu") if isinstance(log, dict) else None
+    if t is None or not isinstance(stamps, list) or not isinstance(path, list):
+        return None
+    for i in range(min(len(stamps), len(path)) - 1):
+        a, b = _num(stamps[i]), _num(stamps[i + 1])
+        if a is None or b is None or b <= a or not (a <= t <= b):
+            continue
+        pa, pb = _flown_point(log, i + 1), _flown_point(log, i + 2)
+        if pa is None or pb is None:
+            return None
+        return _lerp3(pa, pb, (t - a) / (b - a))
+    return None
+
+
+def _flown_heading(log, tick) -> Optional[float]:
+    """`flown_heading_rad[tick - 1]` -- the yaw the executor recorded with that tick's vertex (since
+    2026-11-11), or None on a legacy log / an entry the caller left unstamped. Same index relation
+    as `_flown_point`: one per `step()`, on every branch."""
+    headings = log.get("flown_heading_rad") if isinstance(log, dict) else None
+    if not isinstance(headings, list) or not isinstance(tick, int) or isinstance(tick, bool):
+        return None
+    if not (1 <= tick <= len(headings)):
+        return None
+    return _num(headings[tick - 1])
+
+
+def _flown_heading_at(log, t_sim_s) -> Optional[float]:
+    """The recorded yaw at absolute sim second `t_sim_s`, interpolated along the SHORTEST ARC between
+    the two bracketing ticks (-170 deg and +170 deg meet at 180 deg, not at 0). The bracketing rules
+    are `_flown_point_at`'s; None when the log carries no yaw list or either bounding yaw is
+    missing."""
+    t = _num(t_sim_s)
+    run = log.get("run") if isinstance(log, dict) else None
+    stamps = (run or {}).get("tick_stamp_sim_s") if isinstance(run, dict) else None
+    headings = log.get("flown_heading_rad") if isinstance(log, dict) else None
+    if t is None or not isinstance(stamps, list) or not isinstance(headings, list):
+        return None
+    for i in range(min(len(stamps), len(headings)) - 1):
+        a, b = _num(stamps[i]), _num(stamps[i + 1])
+        if a is None or b is None or b <= a or not (a <= t <= b):
+            continue
+        ha, hb = _num(headings[i]), _num(headings[i + 1])
+        if ha is None or hb is None:
+            return None
+        delta = math.atan2(math.sin(hb - ha), math.cos(hb - ha))      # the shortest arc
+        return ha + delta * (t - a) / (b - a)
+    return None
+
+
+AXIS_COURSE = "COURSE over ground"
+AXIS_YAW_FRAME = "logged YAW at the frame instant"
+AXIS_YAW_TICK = "logged YAW at the consuming tick"
+
+
+def forward_axis(log, det) -> Optional[Tuple[Tuple[float, float], Tuple[float, float, float], str]]:
+    """((E, N) unit forward axis, camera-body origin ENU, which of the three it is) for one
+    `depth_detections` entry, or None when the artifact offers neither a yaw nor a course.
+
+    THE SUBSTITUTION BAR 4 USED TO MAKE, AND WHEN IT STILL DOES. The pre-registered bar wants the
+    body-forward axis at the PAIRED pose. A log that carries `flown_heading_rad` (the executor
+    writes it since 2026-11-11) gives it: the yaw at the detection's FRAME instant when the event is
+    stamped (`stamp_s`; shortest-arc interpolation between the bounding ticks, the drone's position
+    interpolated to the same instant), else the consuming tick's own yaw and vertex. A log without
+    it falls back to COURSE over ground at the tick, exactly as before -- exact while the vehicle
+    translates the way it points and wrong by the crab angle when it does not. Measured where that
+    mattered: on the 2026-11-11 booked head-on take the course swung through south and then east
+    while the GUIDED sidestep braked and translated, and 14 of 26 detections read "behind the
+    camera" on it while the frame-joined range error to the same bird was 0.05-0.21 m."""
+    tick, t_frame = det.get("tick"), det.get("stamp_s")
+    yaw = origin = how = None
+    if isinstance(log, dict) and isinstance(log.get("flown_heading_rad"), list):
+        if t_frame is not None:
+            yaw, origin, how = (_flown_heading_at(log, t_frame), _flown_point_at(log, t_frame),
+                                AXIS_YAW_FRAME)
+        if yaw is None or origin is None:
+            yaw, origin, how = _flown_heading(log, tick), det.get("drone_enu"), AXIS_YAW_TICK
+    if yaw is not None and origin is not None:
+        return (math.cos(yaw), math.sin(yaw)), tuple(origin), how
+    course = _course_unit(log, tick)
+    if course is None or det.get("drone_enu") is None:
+        return None
+    return course, det["drone_enu"], AXIS_COURSE
+
+
 def accepted_maneuver_ticks(log) -> List[int]:
     """Ticks carrying an ACCEPTED `maneuver` event -- the dodges this flight actually commanded.
     Bars 4 and 6 are scoped to these: a `gate_reject` is the backstop refusing to fly a point, and
@@ -1769,9 +1964,13 @@ def depth_detections(log) -> List[dict]:
     disagree about what "detection range" means. 3D, not horizontal, because that is what a depth
     camera measures and what the acquisition budget is expressed in.
 
-    `hint` is `_ABSENT` when the event carries no `static_map_hint` KEY at all -- which is what the
-    executor writes today -- and that is a different fact from a null hint. Bar 6 depends on the
-    distinction."""
+    `hint` is `_ABSENT` when the event carries no `static_map_hint` KEY at all -- what the executor
+    wrote before 2026-11-10 -- and that is a different fact from a null hint. Bar 6 depends on the
+    distinction.
+
+    `stamp_s` is the FRAME's own sim stamp (`_log_detection` writes it since 2026-11-11), None on a
+    legacy event. Bar 3b joins the truth at that instant when it has one; the tick-based `range_m`
+    above stays what bars 4 and 5 read, exactly as pre-registered."""
     out: List[dict] = []
     for ev in log.get("events") or []:
         if not isinstance(ev, dict) or ev.get("kind") != "detection":
@@ -1780,7 +1979,8 @@ def depth_detections(log) -> List[dict]:
         pos = ev.get("position_enu")
         entry = {"tick": tick, "position_enu": None, "range_m": None,
                  "hint": ev.get("static_map_hint", _ABSENT),
-                 "track_id": ev.get("track_id"), "drone_enu": None}
+                 "track_id": ev.get("track_id"), "drone_enu": None,
+                 "stamp_s": _num(ev.get("stamp_s"))}
         try:
             entry["position_enu"] = (float(pos[0]), float(pos[1]), float(pos[2]))
         except (TypeError, ValueError, IndexError):
@@ -1842,22 +2042,27 @@ def acquisition_plausibility(log, run, det) -> Optional[str]:
             f"this sensor can measure, and the number deciding authorisation is bounded by "
             f"nothing. `avoidance_node._depth_detector_log_block` writes both off the seam that "
             f"flew; a block missing them did not come from that writer. {_bar(5)}")
-    course = _course_unit(log, tick)
-    if (course is not None and det["position_enu"] is not None and det["drone_enu"] is not None
-            and depth_bearing_deg(det["position_enu"], det["drone_enu"], course) is None):
+    axis = forward_axis(log, det)
+    if (axis is not None and det["position_enu"] is not None
+            and depth_bearing_deg(det["position_enu"], axis[1], axis[0]) is None):
+        unit, _origin, how = axis
         return (
             f"ACQUISITION BEHIND THE CAMERA at tick {tick}: the {rng:.3f} m this bar would credit "
-            f"is the distance to a point at or BEHIND the forward camera's image plane, on a "
-            f"course of ({course[0]:+.3f}, {course[1]:+.3f}). A forward depth camera cannot "
+            f"is the distance to a point at or BEHIND the forward camera's image plane, on "
+            f"{'a course' if how == AXIS_COURSE else 'a logged yaw'} of "
+            f"({unit[0]:+.3f}, {unit[1]:+.3f}). A forward depth camera cannot "
             f"measure what is behind it, so this is a wrong pose pair or a wrong un-projection, "
             f"not an acquisition. "
             + ("Bar 4 says the same thing about the same detection, from the maneuver side. "
                if tick in accepted_maneuver_ticks(log) else
                "Bar 4 does NOT catch it here: that bar is scoped to ACCEPTED maneuvers, as "
                "pre-registered, and this tick carries none. ")
-            + f"NOTE THE ONE SUBSTITUTION: the log records no orientation, so the forward axis is "
-            f"the vehicle's COURSE over ground -- at 180 deg off it that substitution cannot be "
-            f"what produced this. {_bar(5)}")
+            + (f"NOTE THE ONE SUBSTITUTION: the log records no orientation, so the forward axis is "
+               f"the vehicle's COURSE over ground -- at 180 deg off it that substitution cannot be "
+               f"what produced this. " if how == AXIS_COURSE else
+               f"No substitution: the forward axis is the {how} (`flown_heading_rad`), i.e. where "
+               f"the camera really pointed. ")
+            + f"{_bar(5)}")
     detector = run.get("detector") if isinstance(run, dict) else None
     half = _frustum_half_angles_rad(detector.get("intrinsics") if isinstance(detector, dict)
                                     else None)
@@ -1987,13 +2192,15 @@ def _frustum_half_angles_rad(intr) -> Optional[Tuple[float, float]]:
 def _course_unit(log, tick) -> Optional[Tuple[float, float]]:
     """The vehicle's horizontal COURSE at `tick`, as a unit (E, N), or None if it did not move.
 
-    THE SUBSTITUTION THIS GATE MAKES, IN ONE PLACE. Bar 4 needs the body-forward axis at the paired
-    pose and the flight log records no orientation at all -- `DroneState.heading_rad` reaches the
-    executor and is never written down. Course over ground is the only heading evidence the artifact
-    carries: exact in a noiseless sim while the vehicle translates the way it points, and wrong by
-    exactly the crab angle when it does not (a GUIDED dodge can translate sideways while holding
-    yaw). Measured over the WIDEST bracket the tick has -- the previous vertex to the next -- so the
-    baseline is a whole tick period rather than half of one."""
+    THE SUBSTITUTION THIS GATE MAKES ON A LEGACY LOG, IN ONE PLACE. Bar 4 needs the body-forward
+    axis at the paired pose; a log written before 2026-11-11 records no orientation at all
+    (`DroneState.heading_rad` reached the executor and was not written down -- `flown_heading_rad`
+    carries it now, see `forward_axis`). For those logs course over ground is the only heading
+    evidence the artifact carries: exact in a noiseless sim while the vehicle translates the way it
+    points, and wrong by exactly the crab angle when it does not (a GUIDED dodge brakes and
+    translates sideways while holding or slewing yaw). Measured over the WIDEST bracket the tick has
+    -- the previous vertex to the next -- so the baseline is a whole tick period rather than half of
+    one."""
     before, here, after = (_flown_point(log, tick - 1), _flown_point(log, tick),
                            _flown_point(log, tick + 1))
     for a, b in ((before, after), (here, after), (before, here)):
@@ -2041,8 +2248,9 @@ def gate_depth_frustum(log, run) -> Tuple[List[str], List[str], bool]:
     pose pair (the seam pairs a frame to the pose at its own gz stamp, and a stale pair at cruise is
     metres of position error), a wrong un-projection, or a detection carried over from a frame that
     is no longer the latest. The failure modes it catches are tens of metres wide; the substitution
-    it makes (course for yaw) is degrees wide, and every checked detection prints its own margin so
-    a marginal failure is diagnosable rather than mysterious."""
+    it makes on a LEGACY log (course for yaw, see `forward_axis`) is degrees wide in cruise and
+    unbounded in a braking sidestep, and every checked detection prints its own margin and the axis
+    it was judged on, so a marginal failure is diagnosable rather than mysterious."""
     problems: List[str] = []
     notes: List[str] = []
     detector = run.get("detector") if isinstance(run, dict) else None
@@ -2070,19 +2278,27 @@ def gate_depth_frustum(log, run) -> Tuple[List[str], List[str], bool]:
     h_deg, v_deg = math.degrees(half[0]), math.degrees(half[1])
     checked: List[str] = []
     no_course: List[int] = []
+    by_axis = {AXIS_YAW_FRAME: 0, AXIS_YAW_TICK: 0, AXIS_COURSE: 0}
+    has_yaw_list = isinstance(log.get("flown_heading_rad"), list)
     for d in feeding:
-        course = _course_unit(log, d["tick"])
-        if course is None or d["position_enu"] is None or d["drone_enu"] is None:
+        axis = forward_axis(log, d)
+        if axis is None or d["position_enu"] is None:
             no_course.append(d["tick"])
             continue
-        bearing = depth_bearing_deg(d["position_enu"], d["drone_enu"], course)
+        unit, origin, how = axis
+        by_axis[how] += 1
+        word = "a course" if how == AXIS_COURSE else "a logged yaw"
+        bearing = depth_bearing_deg(d["position_enu"], origin, unit)
         if bearing is None:
             problems.append(
                 f"DETECTION BEHIND THE CAMERA at tick {d['tick']}: the detection un-projects to a "
-                f"point at or behind the forward camera's image plane, on a course of "
-                f"({course[0]:+.3f}, {course[1]:+.3f}). A forward depth camera cannot measure "
+                f"point at or behind the forward camera's image plane, on {word} of "
+                f"({unit[0]:+.3f}, {unit[1]:+.3f}). A forward depth camera cannot measure "
                 f"something behind it, so this detection was not made by this sensor at this pose "
-                f"-- a wrong pose pair or a wrong un-projection. {_bar(4)}")
+                f"-- a wrong pose pair or a wrong un-projection. "
+                + ("" if how == AXIS_COURSE else
+                   f"The axis is the {how} (`flown_heading_rad`), not a course proxy. ")
+                + f"{_bar(4)}")
             continue
         az, el, depth = bearing
         checked.append(f"tick {d['tick']} az {az:+.2f} deg el {el:+.2f} deg depth {depth:.3f} m")
@@ -2093,23 +2309,36 @@ def gate_depth_frustum(log, run) -> Tuple[List[str], List[str], bool]:
                 f"+/-{v_deg:.3f} deg v (derived from intrinsics fx={_num(intr.get('fx'))!r} "
                 f"fy={_num(intr.get('fy'))!r} {intr.get('image_width_px')!r}x"
                 f"{intr.get('image_height_px')!r}). The sensor could not have made this detection "
-                f"at this pose, and an accepted maneuver was flown on it. NOTE THE ONE "
-                f"SUBSTITUTION before hunting the seam: the log records no orientation, so the "
-                f"forward axis here is the vehicle's COURSE over ground "
-                f"({course[0]:+.3f}, {course[1]:+.3f}) -- if this failure is marginal it may be a "
-                f"crab angle, and the fix for THAT is to log the tick's yaw "
-                f"(`DroneState.heading_rad` reaches the executor and is never written down). "
-                f"{_bar(4)}")
+                f"at this pose, and an accepted maneuver was flown on it. "
+                + (f"NOTE THE ONE SUBSTITUTION before hunting the seam: this log records no "
+                   f"orientation, so the forward axis here is the vehicle's COURSE over ground "
+                   f"({unit[0]:+.3f}, {unit[1]:+.3f}) -- if this failure is marginal it may be a "
+                   f"crab angle; logs written since 2026-11-11 carry the yaw (`flown_heading_rad`) "
+                   f"and are judged on it. " if how == AXIS_COURSE else
+                   f"No substitution: the forward axis is the {how} "
+                   f"({unit[0]:+.3f}, {unit[1]:+.3f}), i.e. where the camera really pointed, so "
+                   f"this is the seam's own geometry. ")
+                + f"{_bar(4)}")
     if checked:
+        if by_axis[AXIS_COURSE] and not (by_axis[AXIS_YAW_FRAME] or by_axis[AXIS_YAW_TICK]):
+            axis_note = "Forward axis = COURSE over ground (the log records no orientation)"
+        else:
+            axis_note = (f"Forward axis = logged YAW (`flown_heading_rad`, written since 2026-11-11): "
+                         f"{by_axis[AXIS_YAW_FRAME]} at the detection's frame instant (shortest-arc "
+                         f"interpolation between the bounding ticks, origin interpolated to the same "
+                         f"instant), {by_axis[AXIS_YAW_TICK]} at the consuming tick"
+                         + (f", {by_axis[AXIS_COURSE]} on COURSE over ground where no yaw was "
+                            f"recorded" if by_axis[AXIS_COURSE] else ""))
         notes.append(
             f"frustum containment: {len(checked)} of {len(feeding)} detection(s) behind accepted "
             f"maneuver(s) checked against +/-{h_deg:.3f} deg h / +/-{v_deg:.3f} deg v [" +
-            "; ".join(checked) + f"]. Forward axis = COURSE over ground (the log records no "
-            f"orientation), camera origin offset {DEPTH_MOUNT_FORWARD_M:g} m forward of the body "
-            f"origin. [{_bar(4)}]")
+            "; ".join(checked) + f"]. {axis_note}, camera origin offset "
+            f"{DEPTH_MOUNT_FORWARD_M:g} m forward of the body origin. [{_bar(4)}]")
     if no_course:
         line = (f"FRUSTUM CONTAINMENT UNMEASURED on {len(no_course)} of {len(feeding)} detection(s) "
-                f"behind accepted maneuver(s) (first tick {no_course[0]}): the vehicle's own path "
+                f"behind accepted maneuver(s) (first tick {no_course[0]}): "
+                + (f"no yaw is recorded at that tick and " if has_yaw_list else "")
+                + f"the vehicle's own path "
                 f"records no movement either side of that tick, so there is no course to use as the "
                 f"forward axis and no orientation was logged. Never a PASS. [{_bar(4)}]")
         if len(no_course) == len(feeding):
@@ -2215,9 +2444,31 @@ def depth_range_error(log, truth, report) -> Tuple[List[str], List[str], bool]:
         return problems, notes, False
     stamps = (log.get("run") or {}).get("tick_stamp_sim_s") or []
     matches: List[dict] = []
+    # THE JOIN INSTANT (2026-11-11). A detection is a measurement of ONE render, the frame stamped
+    # `stamp_s`; the executor consumes it one to three ticks later (0.2 s frame period + 0.16 s
+    # median tick latency), and the bird keeps flying in between. At ~10 m/s head-on closing that
+    # is 1-4 m, and it is where the 2026-11-10 batch's p95 2.6 m came from (min 0.03 m): the clock,
+    # not the sensor. So a frame-stamped event is joined to the truth AT ITS FRAME INSTANT, with the
+    # drone's own position interpolated to that instant (`_flown_point_at`), and its measured range
+    # re-read against that same position -- both ranges then refer to one instant and one vantage,
+    # which is the only comparison that isolates the sensor. An event with no `stamp_s` (every log
+    # written before `_log_detection` carried it) is joined at the consuming TICK's stamp exactly as
+    # before, and the note names which join produced the number. Nothing is re-scored silently.
     for d in dets:
         tick = d["tick"]
-        t = _num(stamps[tick - 1]) if isinstance(tick, int) and 1 <= tick <= len(stamps) else None
+        t_tick = _num(stamps[tick - 1]) if isinstance(tick, int) and 1 <= tick <= len(stamps) else None
+        t_frame = d.get("stamp_s")
+        if t_frame is not None:
+            t, join = t_frame, "frame"
+            drone = _flown_point_at(log, t_frame)
+            interpolated = drone is not None
+            if drone is None:
+                drone = d["drone_enu"]              # outside the stamped span: the tick's vertex
+            measured = math.dist(d["position_enu"], drone)
+            age = (t_tick - t_frame) if t_tick is not None else None
+        else:
+            t, join, drone, measured = t_tick, "tick", d["drone_enu"], d["range_m"]
+            interpolated, age = False, None
         cands = truth.candidates_at(t)
         if not cands:
             continue
@@ -2227,11 +2478,12 @@ def depth_range_error(log, truth, report) -> Tuple[List[str], List[str], bool]:
                 assoc = math.dist(d["position_enu"], pos)
                 if best is None or assoc < best["assoc_m"]:
                     best = {"bird_id": bird_id, "assoc_m": assoc,
-                            "truth_range_m": math.dist(pos, d["drone_enu"])}
+                            "truth_range_m": math.dist(pos, drone)}
         if best is None:
             continue
-        best.update({"tick": tick, "t_sim_s": t, "range_m": d["range_m"],
-                     "err_m": abs(d["range_m"] - best["truth_range_m"])})
+        best.update({"tick": tick, "t_sim_s": t, "range_m": measured,
+                     "err_m": abs(measured - best["truth_range_m"]),
+                     "join": join, "interpolated": interpolated, "age_s": age})
         matches.append(best)
     if not matches:
         notes.append(
@@ -2247,21 +2499,45 @@ def depth_range_error(log, truth, report) -> Tuple[List[str], List[str], bool]:
     cpa_tick = (report or {}).get("tick")
     at_cpa = (min(matches, key=lambda m: abs(m["tick"] - cpa_tick))
               if isinstance(cpa_tick, int) else None)
+    frame_joined = [m for m in matches if m["join"] == "frame"]
+    tick_joined = [m for m in matches if m["join"] == "tick"]
+    ages = sorted(m["age_s"] for m in frame_joined if m["age_s"] is not None)
+    age_text = (f"detection age (tick stamp - frame stamp) median {_nearest_rank(ages, 0.5):.3f} s, "
+                f"max {ages[-1]:.3f} s" if ages else "detection age unreadable (no tick stamp)")
+    tick_clause = (
+        f"joined at the consuming TICK's stamp: {'these events' if not frame_joined else 'they'} "
+        f"carry no `stamp_s` (`_log_detection` writes the frame stamp since 2026-11-11), so a "
+        f"closing bird's closing speed x detection age (0.1-0.4 s) is INSIDE this error -- p95 "
+        f"2.6 m on the 2026-11-10 head-on batch at ~10 m/s closing, min 0.03 m. A tick-joined "
+        f"number is a CLOCK finding until a frame-stamped log says otherwise")
+    if frame_joined and not tick_joined:
+        join_text = (f"every match joined at its FRAME instant (`stamp_s`), the drone's position "
+                     f"interpolated to it on {sum(1 for m in frame_joined if m['interpolated'])} of "
+                     f"{len(frame_joined)} (the rest fell back to the consuming tick's vertex); "
+                     f"{age_text}")
+    elif tick_joined and not frame_joined:
+        join_text = f"every match {tick_clause}"
+    else:
+        join_text = (f"{len(frame_joined)} match(es) joined at their FRAME instant (`stamp_s`; "
+                     f"drone position interpolated on "
+                     f"{sum(1 for m in frame_joined if m['interpolated'])}; {age_text}) and "
+                     f"{len(tick_joined)} {tick_clause}")
     notes.append(
         f"range_estimate_error_m over {len(matches)} of {len(dets)} detection(s) with truth: p95 "
         f"{p95:.4f} m, max {errs[-1]:.4f} m, min {errs[0]:.4f} m (bar "
         f"{DEPTH_RANGE_ERROR_BAR_M:g} m; the segmenter's own scored p95 was 0.1076 m over 63 "
-        f"matches). Each detection is associated to the NEAREST truth bird at its own instant -- "
-        f"the seam has no tracker, so there is no id to join on -- and the worst association "
-        f"distance here is {max(m['assoc_m'] for m in matches):.3f} m. [{_bar(3)}]")
+        f"matches). Each detection is associated to the NEAREST truth bird at the instant it is "
+        f"joined on -- the seam has no tracker, so there is no id to join on -- and the worst "
+        f"association distance here is {max(m['assoc_m'] for m in matches):.3f} m. The join: "
+        f"{join_text}. [{_bar(3)}]")
     if at_cpa is not None:
         notes.append(
             f"range_estimate_error_at_cpa_m {at_cpa['err_m']:.4f} m (bar "
             f"{DEPTH_RANGE_ERROR_BAR_M:g} m): detection at tick {at_cpa['tick']} measured "
             f"{at_cpa['range_m']:.3f} m against {at_cpa['truth_range_m']:.3f} m true to "
-            f"{at_cpa['bird_id']} (association {at_cpa['assoc_m']:.3f} m), the detection nearest "
-            f"the gt-CPA tick {cpa_tick}. GATED -- unlike the monocular estimator, which could "
-            f"never be. [{_bar(3)}]")
+            f"{at_cpa['bird_id']} (association {at_cpa['assoc_m']:.3f} m, {at_cpa['join']}-joined), "
+            f"the detection nearest the gt-CPA tick {cpa_tick}. GATED -- unlike the monocular "
+            f"estimator, which could never be. [{_bar(3)}]")
         if at_cpa["err_m"] > DEPTH_RANGE_ERROR_BAR_M:
             problems.append(
                 f"RANGE ERROR OVER BAR AT CPA: {at_cpa['err_m']:.4f} m at tick {at_cpa['tick']} "
@@ -2271,7 +2547,10 @@ def depth_range_error(log, truth, report) -> Tuple[List[str], List[str], bool]:
                 f"computed from at the moment that decided the flight. A large association "
                 f"distance here means the detection was matched to a bird it is not, which is the "
                 f"same finding wearing a different hat: the artifact cannot say what was ranged. "
-                f"{_bar(3)}")
+                + ("TICK-JOINED (no `stamp_s` on this event): closing speed x detection age is "
+                   "inside this number -- a clock finding, not yet a sensor one. "
+                   if at_cpa["join"] == "tick" else "")
+                + f"{_bar(3)}")
     else:
         notes.append(f"range_estimate_error_at_cpa_m UNMEASURED: this flight has no gt-CPA tick to "
                      f"anchor the at-CPA sample to. Never a PASS. [{_bar(3)}]")
@@ -2280,7 +2559,11 @@ def depth_range_error(log, truth, report) -> Tuple[List[str], List[str], bool]:
             f"RANGE ERROR OVER BAR: p95 {p95:.4f} m over {len(matches)} matched detection(s) "
             f"exceeds the {DEPTH_RANGE_ERROR_BAR_M:g} m bar -- the statistic the segmenter's score "
             f"was written in (0.1076 m over 63 matches). A depth camera that cannot hold half a "
-            f"metre is being read as a measurement when it is an estimate. {_bar(3)}")
+            f"metre is being read as a measurement when it is an estimate. "
+            + (f"{len(tick_joined)} of {len(matches)} match(es) are TICK-JOINED (no `stamp_s`), so "
+               f"closing speed x detection age is inside this p95 -- a clock finding on those until "
+               f"a frame-stamped log says otherwise. " if tick_joined else "")
+            + f"{_bar(3)}")
     return problems, notes, True
 
 
@@ -3059,8 +3342,34 @@ def gate_booked_speed(log, run, log_path: Path,
     is_avoidance = source in (DET_NDVI_BLOB, DET_DEMO_VIRTUAL, DET_DEPTH_BLOB)
 
     sidecar = booking_path_for(log_path)
-    chosen = Path(booking_arg) if booking_arg is not None else (sidecar if sidecar.exists()
-                                                                else None)
+    pinned_name = BOOKING_BINDINGS.get(Path(log_path).stem)
+    pinned = Path(log_path).with_name(pinned_name) if pinned_name else None
+    if pinned is not None:
+        if booking_arg is not None and Path(booking_arg).name != pinned.name:
+            problems.append(
+                f"--booking {Path(booking_arg).name} CONTRADICTS the reviewed binding for this "
+                f"flight: {Path(log_path).stem!r} is pinned to {pinned.name} in BOOKING_BINDINGS "
+                f"in scripts/{Path(__file__).name}. A pin the command line can override is not a "
+                f"pin -- pass the bound artifact, or change the binding in a reviewed diff.")
+            return problems, notes
+        if sidecar.exists() and sidecar.name != pinned.name:
+            problems.append(
+                f"TWO BOOKINGS FOR ONE TAKE: {Path(log_path).stem!r} is pinned to {pinned.name} in "
+                f"BOOKING_BINDINGS and {sidecar.name} also sits beside the log. One take has ONE "
+                f"authorisation -- remove the sidecar, or change the binding in a reviewed diff.")
+            return problems, notes
+        if booking_arg is None and not pinned.exists():
+            problems.append(
+                f"no booking: {Path(log_path).stem!r} is pinned to {pinned.name} in BOOKING_BINDINGS "
+                f"in scripts/{Path(__file__).name}, but that file is not beside the log ({pinned}). "
+                f"A binding is not a hint to fall back from -- restore the artifact beside the log, "
+                f"or pass it with --booking (same filename).")
+            return problems, notes
+    chosen = (Path(booking_arg) if booking_arg is not None
+              else sidecar if sidecar.exists()
+              else pinned if pinned is not None else None)
+    bound_how = ("--booking" if booking_arg is not None else "the sidecar beside the log"
+                 if sidecar.exists() else "the reviewed BOOKING_BINDINGS pin")
     if chosen is None:
         notes.append(
             (f"NO BOOKING BOUND -- WARNING: this is an AVOIDANCE take (detector source {source!r}) "
@@ -3153,7 +3462,7 @@ def gate_booked_speed(log, run, log_path: Path,
         f"booking {Path(chosen).name}: booked_speed_mps {booked:.3f} | {line} | ratio "
         f"{ratio:.3f} (bar {BOOKED_SPEED_TOLERANCE:.2f}x = {bar:.3f} m/s, applied to the MEDIAN of "
         f"the whole flight AND to the median of each encounter window; p90 and max are context -- "
-        f"the waypoint speed is a cap and transients cross it)")
+        f"the waypoint speed is a cap and transients cross it) -- bound via {bound_how}")
     # THE TAIL, NAMED RATHER THAN LEFT TO THE READER. Still not gated: a p90 on a mission with
     # turnarounds is mission geometry, not a violated cap, and gating it would fail honest takes.
     # It is what pointed at the encounter-window gate above, so it stays printed.
@@ -3934,6 +4243,20 @@ def check_schema2(path: Path, log: dict, truth_arg: Optional[Path] = None,
                          f"segment covered that window")
             notes.append("truth landed set_pose calls per bird: "
                          + " ".join(f"{b}={n}" for b, n in sorted(truth.landed_counts.items())))
+            if truth.declared_static_bird_ids:
+                fp = log.get("flown_path_enu") or []
+                dists = ", ".join(
+                    f"{b} {_min_dist_3d_to_polyline(truth._spawn_pos(b), fp):.3f} m"
+                    for b in truth.declared_static_bird_ids)
+                notes.append(
+                    f"birds {truth.declared_static_bird_ids} DECLARED UNDRIVEN by the track's own "
+                    f"sidecar ({truth.declaration}): they are the <static> models gen_farm_world "
+                    f"placed at their {DEFAULT_BIRDS_CONFIG.name} spawn poses, unmoved for the whole "
+                    f"flight, and they are SCORED THERE as static obstacles in the CPA above (min 3D "
+                    f"distance from the flown polyline: {dists}). Not invented: the declaration is "
+                    f"the driver's own, and it is refused unless the named config exists in this "
+                    f"repo, its bird set equals the sidecar's and the landed set, and that set is a "
+                    f"proper subset of the world's birds.")
             if truth.unobserved_bird_ids:
                 problems.append(
                     f"truth track {truth.path.name} has NO landed set_pose call for "

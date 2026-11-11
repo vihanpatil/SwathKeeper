@@ -33,7 +33,7 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
    thing here: three live flights, **three** bird-clearance breaches (see the safety asterisk).
    **Most engineering time lives in the detect → avoid → resume → honest-debt loop.** **2026-11-10: the owner
    reopened this loop (ADR-022 am. 5); four scripted depth-camera encounters flew in one day under ADR-013 am. 20,
-   gt_cpa 0.021 → 0.839 → 0.039 m on the lane-patrol bird (its last strikes had zero detections: a lane-end U-turn and an astern overtake, outside a forward camera's view), then **9.568 m on the owner's head-on scenario** (ADR-013 am. 21), then **20 of 20 head-on encounters cleared 3.00 m** (min 5.42 / median 9.52 / max 9.82 m; `docs/encounters/BATCH_20261110T194048Z.md`) — unbooked experiments, the checker still INVALID on range-error association and no booking m against the 3.00 m bar — unbooked EXPERIMENTS, not evidence.**
+   gt_cpa 0.021 → 0.839 → 0.039 m on the lane-patrol bird (its last strikes had zero detections: a lane-end U-turn and an astern overtake, outside a forward camera's view), then **9.568 m on the owner's head-on scenario** (ADR-013 am. 21), then **20 of 20 head-on encounters cleared 3.00 m** (min 5.42 / median 9.52 / max 9.82 m; `docs/encounters/BATCH_20261110T194048Z.md`) — unbooked EXPERIMENTS, not evidence. **2026-11-11: the first VALID avoidance take** — booked at 5.0 m/s, head-on, gt_cpa_m 9.6138 m (8.8013 m gated), every depth bar measured, scored VALID at flight time and committed as evidence (`eval/results/live_flight_log_20261111T202709Z.json`, ADR-020 am. 8). ONE evidence-gated clearance; the asterisk below still comes first.**
 2. **NDVI health mapping** — works end to end (720/720 cells, 5.0 Hz) and is **FROZEN** since
    2026-08-26: it is the working demo, not open work. The world authors no health variation.
 3. **Farmer-facing dashboard** — **BUILT 2026-08-26** (ADR-018), static and light. The proof, not
@@ -86,11 +86,14 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   (`tests/test_ci_evidence_gate.py`'s committed-evidence step). R2 passed live 2026-08-25 (min swept
   clearance 1.340 m, 8 candidate rejections); **R3 shipped and has never fired live** (missed by
   15 mm). Birds have no `<collision>` geometry and are teleported, so the offline gate is the
-  entire safety system.
-- **Forward depth camera (ADR-020/021): built, commissioned, scored 7/7 — FLOWN ONCE as a no-target wiring
-  flight (2026-09-11, ADR-020 am. 6):** delivery 1.000, 5345/5345 frames, 0 drops, runtime p95 12.98 ms PASS /
-  max 141.16 ms FAIL (log INVALID); D5/D6 at the booked 5.0 m/s still UNMEASURED (window median 4.27). Booked to
-  46.0 m at 5.0 m/s on parked, noiseless renders; no committed log carries a `depth_blob` detection of a bird.
+  entire safety system. **Since 2026-11-11 there is also ONE VALID booked clearance — 9.6138 m, head-on, forward depth
+  camera, every depth bar measured (ADR-020 am. 8). Say both: three breaches on the nadir-era flights, one evidence-gated
+  clearance on the forward camera; not a batch, not a product.**
+- **Forward depth camera (ADR-020/021): built, commissioned, scored 7/7 — and FLOWN AGAINST A BIRD since 2026-11-10** (the
+  2026-09-11 wiring flight was no-target, INVALID on its 141.16 ms runtime max): across 24 encounters it acquires the 0.18 m bird at
+  40–45 m (one at 32.2 m); the committed 2026-11-11 booked take carries 29 `depth_blob` detections, frame-joined range error p95
+  0.1687 m, detect rate 99.64 %, runtime p95 10.5 / max 13.0 ms. D5/D6 at a 5.0 m/s CRUISE remain UNMEASURED (encounter windows
+  run at ~2.9 m/s because the dodge brakes). Booked to 46.0 m at 5.0 m/s on parked renders; in-flight acquisition sits below that.
 - Real-detector contract = **ADR-009**: detections carry `stamp_s` (policy staleness gate); bird
   position from apparent-size ray, **never** ground-plane projection (fail-dangerous at altitude).
 - Coverage-ledger honesty = commanded setpoints are **never** recorded as flown (regression-pinned

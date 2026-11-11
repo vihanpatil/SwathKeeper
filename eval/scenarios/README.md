@@ -90,6 +90,7 @@ the plan is logged as a `requeue_event`; it terminates `covered` if later imaged
   "scenario": "<name>", "seed": 42,
   "cell_size_m": 2.5, "swath_half_width_m": 7.5,
   "flown_path_enu": [[e, n, u], "..."],
+  "flown_heading_rad": [yaw_rad, "..."],
   "coverage_ledger": [{"cell_id": "cell_3_7", "status": "covered"}, "..."],
   "requeue_events": [{"cell_id": "cell_3_7", "t_s": 12.4}],
   "detection": {"ground_truth": "<path>", "detections": "<path>"}

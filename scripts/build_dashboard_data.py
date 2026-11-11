@@ -78,6 +78,9 @@ FLIGHT_STEMS = (
     "live_flight_log_20260818T144711Z",
     "live_flight_log_20260823T004031Z",
     "live_flight_log_20260825T210402Z",
+    # 2026-11-11: the first VALID avoidance take -- booked head-on encounter, forward depth camera,
+    # gt_cpa_m 9.6138 m (ADR-020 am. 8). Truth and booking are pinned in the gate.
+    "live_flight_log_20261111T202709Z",
 )
 
 # The stitched clips the NDVI view offers. Both are committed, both PASS check_tree_positions, and

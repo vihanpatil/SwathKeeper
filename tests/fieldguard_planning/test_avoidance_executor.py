@@ -767,3 +767,24 @@ class TestDodgeCompletion(unittest.TestCase):
     def test_a_non_positive_radius_is_refused(self):
         with self.assertRaises(ValueError):
             _exec(dodge_arrival_radius_m=0.0)
+
+
+class TestTheFlightLogCarriesTheHeading(unittest.TestCase):
+    """2026-11-11: `flown_heading_rad[i]` is the yaw the executor was handed with `flown_path_enu[i]`,
+    one per step on every branch, so the flight-log gate's frustum bar can stop substituting course
+    over ground for where the camera pointed (14 of 26 detections read "behind the camera" on that
+    proxy during the booked head-on take's sidestep)."""
+
+    def test_one_heading_per_vertex_on_every_branch(self):
+        ex, _sink = _exec()
+        ex.step(DroneState(position_enu=(30.0, 20.0, 15.0), heading_rad=0.3, current_wp_index=3),
+                _proceed())
+        ex.step(DroneState(position_enu=(30.0, 21.0, 15.0), heading_rad=1.2, current_wp_index=3),
+                _divert((40.0, 21.0, 15.0)))
+        ex.step(DroneState(position_enu=(30.0, 22.0, 15.0), heading_rad=-2.5, current_wp_index=3),
+                AvoidanceManeuver(decision=Decision.HOLD))
+        ex.finalize()
+        log = ex.flight_log("heading_test", 0, 2.5)
+        self.assertEqual(len(log["flown_heading_rad"]), len(log["flown_path_enu"]))
+        self.assertEqual(log["flown_heading_rad"], [0.3, 1.2, -2.5])
+        self.assertEqual(len(log["flown_path_enu"]), 3)

@@ -22,6 +22,9 @@ Flight-log contract (also in eval/scenarios/README.md -- keep the two in sync):
                                       # swath is 6.886 m (coverage.derive_swath_half_width_m,
                                       # ADR-016) -- a log states the swath it was computed with
     "flown_path_enu": [[e,n,u], ...], # ACTUAL flown path incl. every avoidance deviation
+    "flown_heading_rad": [yaw, ...],  # the yaw handed to the executor with each vertex (ENU rad,
+                                      # null if the caller had none; since 2026-11-11) -- the
+                                      # flight-log gate's frustum bar reads it instead of course
     "coverage_ledger": [{"cell_id": str, "status": "covered"|"debt"}, ...],  # terminal, one per cell
     "requeue_events": [{"cell_id": str, "t_s": float}, ...],                 # audit trail (optional)
     "detection": {                    # for the "no missed bird" family; feeds eval/score.py verbatim

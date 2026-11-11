@@ -402,6 +402,7 @@ class AvoidanceExecutor:
 
         self.mode: str = MODE_AUTO
         self.flown_path: List[Tuple[float, float, float]] = []
+        self.flown_heading: List[Optional[float]] = []  # yaw per vertex (2026-11-11); see _record_position
         self.event_log: List[dict] = []
         self.coverage_ledger: List[dict] = []          # populated by finalize()
         self.requeue_events: List[dict] = []            # populated by finalize()
@@ -434,6 +435,14 @@ class AvoidanceExecutor:
             "detection",
             track_id=det.track_id,
             frame_id=det.frame_id,
+            # The FRAME's own sim stamp (ADR-009's `stamp_s`), written beside the consuming tick
+            # since 2026-11-11. A detection measures ONE render; the executor consumes it one to
+            # three ticks later (frame period 0.2 s + tick latency), and a closing bird keeps flying
+            # in between -- so a truth join at the tick instant puts closing speed x detection age
+            # into the range-error bar (p95 2.6 m on the 2026-11-10 head-on batch at ~10 m/s
+            # closing, min 0.03 m). The checker joins a stamped event at its frame instant; None
+            # (the --demo bird, unstamped sources) is joined at the tick, and the artifact says so.
+            stamp_s=det.stamp_s,
             confidence=det.confidence,
             position_enu=det.position_enu,
             source=det.source,
@@ -444,8 +453,17 @@ class AvoidanceExecutor:
             decision=maneuver.decision.value,
         )
 
-    def _record_position(self, point_enu: Tuple[float, float, float]) -> None:
+    def _record_position(self, point_enu: Tuple[float, float, float],
+                         heading_rad: Optional[float] = None) -> None:
+        """One vertex per step, on every branch -- and, since 2026-11-11, the yaw that went with it:
+        `flown_heading_rad[i]` belongs to `flown_path_enu[i]`. The flight-log gate's frustum bar
+        needs the body-forward axis at the paired pose; until this list existed it substituted COURSE
+        over ground, which swings through south and east while a GUIDED sidestep brakes and
+        translates -- the 2026-11-11 booked head-on take read 14 of 26 detections "behind the camera"
+        on that proxy while the frame-joined range error to the same bird was 0.05-0.21 m. None =
+        the caller had no heading; the gate then falls back to the course and says so."""
         self.flown_path.append(point_enu)
+        self.flown_heading.append(None if heading_rad is None else float(heading_rad))
 
     def _at_risk_cells(self, point_enu: Tuple[float, float, float]) -> List[str]:
         """Cells within one swath width of `point_enu` -- the audit-only "what was this patch of
@@ -600,7 +618,7 @@ class AvoidanceExecutor:
                          dodge_dist_to_latched_m=(None if latched is None else
                                                   round(_dist_xy(drone_state.position_enu, latched), 3)),
                          dodge_arrival_radius_m=self.dodge_arrival_radius_m)
-        self._record_position(drone_state.position_enu)
+        self._record_position(drone_state.position_enu, drone_state.heading_rad)
         self._log("proceed", position_enu=drone_state.position_enu,
                   wp_index=drone_state.current_wp_index,
                   **({"resume_pending": pending} if pending else {}),
@@ -624,7 +642,7 @@ class AvoidanceExecutor:
         # double-count it against the ledger's swath computation beyond what a stationary hover
         # legitimately images.
         self.sink.send_setpoint_enu(drone_state.position_enu)
-        self._record_position(drone_state.position_enu)
+        self._record_position(drone_state.position_enu, drone_state.heading_rad)
         # How close the hold itself is to the nearest threat this decision names. NOT a gate -- a
         # HOLD honours no bar -- but the artifact must show the number rather than leave the
         # question to an argument (QA round 3, 2026-08-24, finding 2). None when the maneuver names
@@ -754,7 +772,7 @@ class AvoidanceExecutor:
                       track_id=self._track_id(maneuver))
             self._latched_setpoint = setpoint
 
-        self._record_position(drone_state.position_enu)  # where the drone ACTUALLY is this tick
+        self._record_position(drone_state.position_enu, drone_state.heading_rad)  # where the drone ACTUALLY is this tick
         self.sink.send_setpoint_enu(setpoint)            # (re)command the vetted dodge target
         # The commanded setpoint is deliberately NOT recorded into flown_path: a command is not a
         # position. Recording it let a never-visited cell finalize as COVERED (found 2026-08-18) --
@@ -866,6 +884,7 @@ class AvoidanceExecutor:
             "swath_half_width_m": self.swath_half_width_m,
             "executor_params": self.executor_params(),
             "flown_path_enu": [list(p) for p in self.flown_path],
+            "flown_heading_rad": list(self.flown_heading),
             "coverage_ledger": self.coverage_ledger,
             "requeue_events": self.requeue_events,
             "events": self.event_log,

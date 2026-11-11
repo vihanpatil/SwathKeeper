@@ -325,5 +325,16 @@ the way: the GUIDED command path works (3 m lateral in ≈2.2–2.5 s sim from h
 `eval/results/encounters/<UTC>/`, gitignored. The owner then chose the **head-on scenario** for the batch (a forward camera cannot see an astern overtake or a
 bird arriving mid U-turn; ADR-013 am. 21): one bird down the lane once, one northbound pass. Pilot at 5 m/s: acquired
 at 44.9 m, dodge 8.36 m, **gt_cpa_m 9.568 m** — the first scored encounter above the 3.00 m bar. **The 20-run batch: 20 of 20 cleared 3.00 m** (gt_cpa_m min 5.416, median 9.523, max 9.823 m; acquisition 39.8–45.2 m on nineteen, 32.2 m on the one that read 5.4 m; one takeover, one resume, 8.2–8.7 m of sidestep per run; `docs/encounters/BATCH_20261110T194048Z.md`). B's kill criterion did not fire. Unbooked experiments; the checker reads INVALID on every run for its range-error association bars and the missing booking.
-**Next:** book one head-on take properly (`--booking`) so a clearance can be called evidence; then the sensor-coverage
-question (a second aperture, or an encounter definition that excludes astern geometry) goes to the owner.
+**2026-11-11 — booked, and VALID.** Three booked head-on takes on the 2026-09-07 artifact (5.0 m/s), one command each
+(`scripts/fly_pipeline.sh encounter --booking eval/results/booking_gate_20260907T064136Z.json --mission headon_lane15 --birds
+config/birds/headon_lane15.json --detection-source depth`). Each exposed a gap in the ARTIFACT, closed before the next (ADR-020
+am. 8): the range-error bar had joined truth at the consuming tick instead of the frame (p95 2.6 → 0.205 m once `stamp_s` was
+logged); the frustum bar used course over ground for yaw (14 of 26 detections "behind the camera" mid-sidestep until
+`flown_heading_rad` was logged); and the two world birds the head-on config does not drive are now declared static by the driver's
+sidecar and scored at their spawn poses. **Take 3: VALID, exit 0, at flight time — gt_cpa_m 9.6138 m (8.8013 m gated), acquired
+at 44.926 m, range error p95 0.1687 m, encounter-window speed 0.587× booked** — committed as
+`eval/results/live_flight_log_20261111T202709Z.json` (pinned truth + booking), the fourth flight in the dashboard. It is ONE
+evidence-gated head-on clearance in sim; the 2026-08-25 breach and the declared CI red stand. Takes 1–2 and every bar's reading:
+`docs/encounters/BOOKED_20261111.md`.
+**Next:** the sensor-coverage question goes to the owner (a second aperture, or an encounter definition that excludes astern
+geometry); then a booked BATCH (≥ 20) under the same gate, and the ADR-022 option-B call on that evidence.

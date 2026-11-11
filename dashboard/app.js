@@ -1321,7 +1321,7 @@ function detectorSource(f) {
   const demoTracks = f.log.events.some(e => e.kind === 'detection'
     && typeof e.track_id === 'string' && e.track_id.startsWith('demo_'));
   if (tag === 'ndvi_blob') return { tag, phrase: 'A fused NDVI frame off the live render produced this detection — nothing was injected — and the policy ranged it from the apparent-size ray' };
-  if (tag === 'depth_blob') return { tag, phrase: 'A forward depth frame produced this detection — nothing was injected — and the range is the depth the sensor measured' };
+  if (tag === 'depth_blob') return { tag, phrase: 'A forward depth frame off the live render produced this detection — nothing was injected — and the range is the depth the sensor measured' };
   if (tag === 'demo_virtual' || (!tag && demoTracks)) return { tag: tag || 'demo_virtual', phrase: 'This threat was INJECTED: `--demo` places a virtual bird at a fixed point, so the position the loop reacted to is a constant the node chose rather than anything a camera saw' };
   return { tag: null, phrase: 'This log does not name the detector that produced its detections, so the page will not tell you where they came from' };
 }

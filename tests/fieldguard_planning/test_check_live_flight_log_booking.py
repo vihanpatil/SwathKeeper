@@ -756,3 +756,69 @@ class TestCli(Harness):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+# ================================================================================================
+# 5. BOOKING_BINDINGS -- the artifact that authorised a COMMITTED take, pinned like its truth track
+# ================================================================================================
+class TestBookingBindings(Harness):
+    """2026-11-11: CI scores a committed log with no flag and no sidecar (a `<stem>.booking.json` at
+    eval/results/ would match the evidence glob and be scored as a flight log), so the artifact that
+    authorised a committed BOOKED take is pinned by stem, exactly like TRUTH_BINDINGS -- and a pin
+    is a pin: a contradicting flag is refused, a missing artifact is a problem, a second booking
+    beside the log is two bookings."""
+    STEM = "live_flight_log_PINNED"
+    NAME = STEM + ".json"
+    ART = "booking_gate_PINNED.json"
+
+    def _pin(self):
+        return mock.patch.dict(checker.BOOKING_BINDINGS, {self.STEM: self.ART})
+
+    def test_a_pinned_booking_binds_with_no_flag_and_no_sidecar(self):
+        booking_artifact(self.dir / self.ART, BOOKED_MPS)
+        with self._pin():
+            status, messages = self.check(flight_at(10.0), name=self.NAME)
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("FLOWN FASTER THAN BOOKED", blob)
+        self.assertIn("bound via the reviewed BOOKING_BINDINGS pin", blob)
+        with self._pin():
+            status, messages = self.check(flight_at(5.0), name=self.NAME)
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.VALID, blob)
+        self.assertNotIn("NO BOOKING BOUND", blob)
+
+    def test_a_flag_that_contradicts_the_pin_is_refused_not_obeyed(self):
+        booking_artifact(self.dir / self.ART, BOOKED_MPS)
+        loose = booking_artifact(self.dir / "booking_gate_LOOSE.json", 12.0)
+        with self._pin():
+            status, messages = self.check(flight_at(10.0), booking=loose, name=self.NAME)
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("CONTRADICTS the reviewed binding", blob)
+        self.assertNotIn("FLOWN FASTER THAN BOOKED", blob)     # nothing was scored against the loose one
+
+    def test_a_pinned_artifact_that_is_missing_is_a_problem_not_a_fallback(self):
+        with self._pin():                                       # nothing written beside the log
+            status, messages = self.check(flight_at(5.0), name=self.NAME)
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("is pinned to booking_gate_PINNED.json in BOOKING_BINDINGS", blob)
+        self.assertIn("not beside the log", blob)
+
+    def test_a_sidecar_that_disagrees_with_the_pin_is_two_bookings(self):
+        booking_artifact(self.dir / self.ART, BOOKED_MPS)
+        booking_artifact(checker.booking_path_for(self.dir / self.NAME), 8.0)
+        with self._pin():
+            status, messages = self.check(flight_at(5.0), name=self.NAME)
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("TWO BOOKINGS FOR ONE TAKE", blob)
+
+    def test_an_unpinned_log_is_unchanged(self):
+        status, messages = self.check(flight_at(5.0))
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.VALID, blob)
+        self.assertIn("NO BOOKING BOUND -- WARNING", blob)
+        self.assertNotIn("bound via", blob)
+

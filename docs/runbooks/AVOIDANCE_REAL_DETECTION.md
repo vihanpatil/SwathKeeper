@@ -249,6 +249,17 @@ scripts/fly_pipeline.sh --booking eval/results/booking_gate_20260907T064136Z.jso
 *(`--booking` is the **launcher's** flag; the six-intrinsic flags in §0f belong to
 `predict_forward_lead.py`. Env `SWATHKEEPER_BOOKING` does the same; the flag wins.)*
 
+**A SCRIPTED take books end to end with the same flag on the encounter runner** (2026-11-11, ADR-020 am. 8):
+
+```bash
+scripts/fly_pipeline.sh encounter --booking eval/results/booking_gate_20260907T064136Z.json \
+        --mission headon_lane15 --birds config/birds/headon_lane15.json --detection-source depth
+```
+
+Bringup, the avoidance node armed after takeoff, the flight, evidence-first teardown, and the score — with `--booking` passed
+through to `check_live_flight_log.py` and the run's log, bird track and sidecars moved into `eval/results/encounters/<UTC>/`.
+The three 2026-11-11 takes were flown exactly so; the third is the committed VALID take.
+
 That artifact books **5.0 m/s → `param set WP_SPD 5.0`**. The parameter is `WP_SPD`, **in m/s**,
 not `WPNAV_SPEED` in cm/s: at ADR-004's pinned ArduPilot SHA, ArduCopter registers AC_WPNav under
 the group prefix `WP_` (`Parameters.cpp:370`) and `AC_WPNav.cpp:17` reads `// 0 was SPEED` — the old
