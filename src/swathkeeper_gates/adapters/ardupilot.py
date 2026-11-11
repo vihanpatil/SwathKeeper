@@ -80,6 +80,12 @@ def _mute():
             os.close(f)
 
 
+def _t(m):
+    """THE contract time of a record: TimeUS on the 1 us grid. The raw product is not (7_200_000 * 1e-6 is
+    7.199999999999999, below the rounded loss bound 7.2 on ~30 % of ticks), which broke same-tick closed ties."""
+    return round(m.TimeUS * 1e-6, 6)
+
+
 def _decode(path):
     try:
         from pymavlink import DFReader
@@ -100,7 +106,7 @@ def _decode(path):
                 if name in rows:
                     rows[name].append(m)
                 if name in CLOCK and "TimeUS" in m.fmt.colhash:
-                    t = m.TimeUS * 1e-6
+                    t = _t(m)
                     holes += [sorted((t if tb is None else tb, t)) + [nb] for tb, nb in pending]   # streams interleave
                     pending, lo, hi = [], t if lo is None else min(lo, t), t if hi is None else max(hi, t)
             defined = {f.name for f in r.formats.values()}
@@ -137,7 +143,7 @@ def _stream(name, rows, sources, inst_col, cols, src=None):
                 absent[c] = f"{msg}.{mc} is a bare integer ('{f.format[f.colhash[mc]]}'): units unknown"
         plan.append((msg, inst_col if inst_col in f.colhash else None, dflt))
     keep = [(c, mc) for c, mc in cols.items() if c not in absent]
-    rows_out = ((getattr(m, ic) if ic else dflt, m.TimeUS * 1e-6, [getattr(m, mc) for _, mc in keep])
+    rows_out = ((getattr(m, ic) if ic else dflt, _t(m), [getattr(m, mc) for _, mc in keep])
                 for msg, ic, dflt in plan for m in rows[msg])
     return series(name, src, rows_out, [c for c, _ in keep], absent)
 
@@ -228,7 +234,7 @@ def read(path):
     params, bad_parm = {}, sorted({m.Name for m in rows["PARM"] if not math.isfinite(m.Value)})
     for m in rows["PARM"]:
         if math.isfinite(m.Value):
-            params.setdefault(m.Name, []).append((m.TimeUS * 1e-6, m.Value))
+            params.setdefault(m.Name, []).append((_t(m), m.Value))
     st = {"position": _stream("position", rows, [("POS", 0)], None,
                               {"lat": "Lat", "lon": "Lng", "alt_amsl_m": "Alt", "alt_rel_home_m": "RelHomeAlt"}),
           "velocity": _measured(rows, ["GPS"], "Status", lambda v: v >= 3, "no 3D fix (Status < 3)",
@@ -244,7 +250,7 @@ def read(path):
         st["ekf"] = _measured(rows, [m for m, _ in src], "SS", lambda v: v != 0, "EKF reported no solution (SS 0)",
                               lambda rw: _stream("ekf", rw, src, "C", EKF, None if rows["XKF4"] else
                                                  "EKF2: NKF4 = core 0, NKF9 = core 1, or NKF4 by C (SV, SP, SH, SM)"))
-    pos, t_home = st["position"], min((m.TimeUS * 1e-6 for m in rows["ORGN"] if getattr(m, "Type", None) == 1), default=None)
+    pos, t_home = st["position"], min((_t(m) for m in rows["ORGN"] if getattr(m, "Type", None) == 1), default=None)
     if pos.state == PRESENT and "alt_rel_home_m" in pos.data[0]:
         d = pos.data[0]
         if t_home is None:
@@ -290,13 +296,14 @@ def read(path):
     absent = {"vehicle": why, "hardware": None if board else "no '<board> <uid>' MSG row",
               "params": bad_parm and f"PARM rows with a non-finite value not read: {bad_parm}"}
     meta = {"format": "ardupilot-dataflash", "adapter": "ardupilot", "vehicle": vehicle, "firmware": firmware,
+            "params_nonfinite": [(_t(m), m.Name) for m in rows["PARM"] if not math.isfinite(m.Value)],  # D1
             "version": version, "hardware": board, "mode_table": table, "counts": dict(sorted(counts.items())),
             "records_decoded": sum(counts.values()), "parser": {"pymavlink": metadata.version("pymavlink")},
             "absent": {k: r for k, r in absent.items() if r},
             "log_gpst_start": gw and {"t_s": round(gw[0], 6), "gps_week": gw[1], "gps_ms": gw[2],
                                       "label": "GPS time, not UTC: the 18 s leap offset is not applied"}}
     integ = _dsf(integ, _stream("dsf", rows, [("DSF", 0)], None, {"dp": "Dp"}), t0)
-    return FlightLog(meta, integ, st, _home(rows), params, _fence(params), t0, t_last + TICK_S)
+    return FlightLog(meta, integ, st, _home(rows), params, _fence(params), t0, round(t_last + TICK_S, 6))
 
 
 def _modes():

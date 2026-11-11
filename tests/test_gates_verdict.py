@@ -148,6 +148,43 @@ class TestTheJson(unittest.TestCase):
         code, v = self.run_cli(none, bars="assume: [arming_before_first_arm_row]\n" + ARMED_BARS)
         self.assertEqual((v["assumptions"][0]["applied"], v["badge"]), (False, "gates: could not tell · 0/2 measured · 1 assumed (unregistered)"))
 
+    def test_p6_exit_codes_of_a_limit_that_follows_a_parameter(self):
+        from test_gates_bars import U4, dropped, fast, parm     # noqa: E402 (fixtures shared with the bars tests)
+        spd = lambda sev, modes="null": ("  - {id: spd, kind: series_bound, severity: %s, provenance: {text: t}, scope: {armed: "
+                                         "null, modes: %s},\n     min_n: 1, params: {channel: velocity.groundspeed_mps, bound: "
+                                         "ceiling, limit: {param: WP_SPD, scale: 1.1, accept: [0, 50]}}}\n" % (sev, modes))
+        rows = flight_rows()
+        cases = (("should FAIL", spd("should"), parm(fast(rows, 12.0), U4), FAIL, 1),
+                 ("should EI: outside accept", spd("should"), parm(rows, (-0.5, 60.0)), EI, 0),
+                 ("should EI: no row", spd("should"), rows, EI, 0),
+                 ("should EI: non-finite row", spd("should"), parm(rows, U4, (12.0, float("nan"))), EI, 0),
+                 ("should EI: unsure", spd("should"), parm(dropped(rows, 11), U4, (20.0, 4.0)), EI, 0),
+                 ("should EI: pre-first-row", spd("should"), parm(rows, (5.0, 4.0)), EI, 0),
+                 ("must EI", spd("must"), parm(rows, (5.0, 4.0)), EI, 1),
+                 ("must NA", spd("must", "[AUTO]"), parm(rows, U4), NA, 1))
+        for name, extra, log, want, code in cases:
+            with self.subTest(name):               # mutant: the per-sample limit read as `absent` -> a FAIL lost -> red
+                got, v = self.run_cli(log, bars=BARS + extra)
+                self.assertEqual((got, v["results"][2]["verdict"]), (code, want))
+                self.assertEqual([set(r) for r in v["results"]], [RESULT_KEYS] * 2 + [RESULT_KEYS | {"limit_in_log"}])
+
+    def test_p14_both_assumptions_are_counted_and_the_text_prints_verbatim(self):
+        from test_gates_bars import U4, parm     # noqa: E402
+        both = ("assume: [arming_before_first_arm_row, limit_before_first_parm_row]\n" + ARMED_BARS +
+                "  - {id: spd, kind: series_bound, severity: should, provenance: {text: t}, scope: {armed: null, modes: null},\n"
+                "     min_n: 1, params: {channel: velocity.groundspeed_mps, bound: ceiling, limit: {param: WP_SPD, scale: 1.1, "
+                "accept: [0, 50]}}}\n")
+        code, v = self.run_cli(parm(flight_rows(), U4), bars=both)
+        self.assertEqual((code, v["badge"]), (0, "gates: pass · 2/3 measured · 2 assumed (unregistered)"))
+        self.assertEqual(v["assumptions"][1], {
+            "name": "limit_before_first_parm_row", "applied": True, "detail": "WP_SPD: first PARM row at t=0.500 s; no drop "
+            "interval removed", "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that "
+            "row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the "
+            "log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after "
+            "the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read "
+            "could not tell. The tool does not verify this."})
+        self.assertEqual(v["results"][2]["limit_in_log"], {"rows": [[0.5, 4.0]], "n_rows": 1, "at_worst": 1.1 * 4.0})
+
     def test_a_refusal_has_the_same_keys_and_no_results(self):
         code, v = self.run_cli()
         self.assertEqual((code, set(v), v["results"], v["badge"]), (2, KEYS, [], "gates: refused"))

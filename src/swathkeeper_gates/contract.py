@@ -68,12 +68,12 @@ def series(name, source, rows, cols, absent_cols=None):
 
 
 def median_period(ts):
-    return statistics.median(b - a for a, b in zip(ts, ts[1:])) if len(ts) > 1 else 0.0
+    return statistics.median(r6(b - a) for a, b in zip(ts, ts[1:])) if len(ts) > 1 else 0.0   # G374: spans on the grid
 
 
 def gap_threshold(ts):
     """Rule 5: a gap is longer than max(1 s, 5p), p = this instance's own median sample period."""
-    return max(1.0, 5.0 * median_period(ts))
+    return r6(max(1.0, 5.0 * median_period(ts)))
 
 
 def in_windows(ts, windows):
@@ -88,7 +88,7 @@ def fired_gaps(ts, windows):
     thr, out = gap_threshold(ts), []
     for a, b in windows:
         seq = [a, *ts[bisect.bisect_left(ts, a):bisect.bisect_left(ts, b)], b]
-        out += [(x, y) for x, y in zip(seq, seq[1:]) if y - x > thr]
+        out += [(x, y) for x, y in zip(seq, seq[1:]) if r6(y - x) > thr]
     return out
 
 
@@ -106,7 +106,7 @@ def log_holes(log):
         s = log.streams[name]
         for d in s.data.values() if s.state == PRESENT else ():
             ts, thr = d["t_s"], gap_threshold(d["t_s"])
-            gaps = [(x, y) for x, y in zip(ts, ts[1:]) if y - x > thr]
+            gaps = [(x, y) for x, y in zip(ts, ts[1:]) if r6(y - x) > thr]
             common = gaps if common is None else intersect(common, gaps)
     return merge(out + (common or []))
 
