@@ -290,7 +290,7 @@ A sample is not judged when:
 
 - it sits at or before the parameter's first PARM row: the startup dump takes time, and the value before it is not logged;
 - a loss (a DSF.Dp drop interval or a log hole) meets the stretch from that previous row to the sample: a change row
-  may be lost in it, and a parameter is logged at startup and then only when it changes, so no later row re-pins it;
+  may be lost in it, and a parameter is logged at startup and then only when it changes, so often no later row re-pins it;
 - a candidate lies outside `accept`: a disabled threshold such as `BATT_LOW_VOLT 0`, or a configuration the bar was
   not written for. The note says how many of those samples break the logged value anyway;
 - a candidate row's value is not finite, or two rows on the sample's timestamp disagree about the verdict.
@@ -337,7 +337,8 @@ gates: pass · 1/1 measured · 1 assumed (unregistered)
 Exit 0. The note leads with `limit 18.6 = 1 x BATT_LOW_VOLT 18.6 (PARM row at t=709.297 s)`, and the assumption's
 detail reads `BATT_LOW_VOLT: first PARM row at t=709.297 s; removed 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp)`.
 Without the `assume` line the same file reads `gates: could not tell · 0/1 measured (unregistered)`, exit 1: the
-Tarot's 15 dropped writes span its parameter dump, so the limit is unsure for all 1419 samples.
+interval in which the Tarot's 15 writes were dropped holds `BATT_LOW_VOLT`'s first row, so the limit is unsure for
+all 1419 samples.
 
 **Names and units change between releases.** `WPNAV_SPEED` is in cm/s through Copter 4.6.3 and `WP_SPD` in m/s from
 Copter 4.7.0 (read from the ArduPilot source at those tags). A bar naming one reads `could not tell` on a log that
@@ -409,7 +410,7 @@ one autotest run, ArduCopter-heavy; the mode-scoped probe bar uses each log's do
 **Parameter-following limits, same corpus, 2026-11-11.** Four unscoped bars per judged log, following `WPNAV_SPEED`,
 `WP_SPD`, `BATT_LOW_VOLT` and `FS_EKF_THRESH`: 23 of 132 verdicts were measurable without
 `limit_before_first_parm_row` and 36 of 132 with it. All 13 it changed went from could not tell to PASS, on four logs
-whose startup drops span the parameter dump and two with samples before it. Most of what stays could not tell is not
+whose startup drops overlap the parameter dump and two with samples at or before the parameter's first row. Most of what stays could not tell is not
 the limit's doing. Of the 96 such verdicts with the key, 37 lack the bar's stream and 32 name a parameter the log does
 not carry (13 logs carry `WPNAV_SPEED`, 12 `WP_SPD`, none both); among the other 27, 26 name a gap or hole in scope, 6 a
 loss that may hide a parameter row, 5 too few samples and 2 a `BATT_LOW_VOLT` of 0, outside `accept` (a verdict can name
@@ -444,7 +445,7 @@ before it logged a disarm. No verdict there says anything about bird clearance: 
 - A limit that follows a parameter judges the LOGGED configuration only. ArduPilot does not log every change (read at
   tag Copter-4.5.5): a value set in memory without a save, which is what a script's `param:set` does, writes no PARM
   row; a row can be refused without being counted in DSF.Dp, for example one written from another thread while the
-  startup dump runs; and drops after the last DSF row are never counted. A saved change can take effect before its row
+  startup dump runs; and drops after the last DSF row are never reported. A saved change can take effect before its row
   is written. None of this is visible to the tool, with or without the assumption. A PASS says the vehicle obeyed the
   values the log shows, inside the range the author accepted, and nothing about whether those values were safe.
 - A truncated log reads as a shorter flight; only a pinned log hash ties a verdict to a file. DataFlash has no

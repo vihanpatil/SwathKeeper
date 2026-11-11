@@ -13,8 +13,9 @@ flights were commanded at 4, 5 and 6 m/s. A `series_bound` limit can now be `{pa
 PARM rows supply the value (ADR-023 am. 4, commit 0ba712d).
 
 The order of work was the lesson of 2026-11-10 applied. **Measure first:** before any rule was written, a scan of the
-40-log corpus and the 20 sim logs showed that in all 8 corpus logs with a loss the first drop interval spans the
-startup parameter dump, that samples precede a parameter's first row in 13 logs, and that `BATT_LOW_VOLT` is 0 on 2.
+40-log corpus and the 20 sim logs showed that in all 8 corpus logs with a loss a drop interval that begins at the
+log's start overlaps the startup parameter dump, that a watched parameter's first row comes after the log's first
+timestamp in 13 of the 33 judged corpus logs and in all 20 sim logs, and that `BATT_LOW_VOLT` is 0 on 2.
 **Rule second:** the orchestrator's draft bridged the stretch before the first row silently; the lead overruled it as
 the same undeclared inference refused for arming, corrected two of its inequalities, and made `accept` required.
 **Attack before code:** QA attacked the ruled design while the builder worked and found a sentence in the fixed
@@ -33,6 +34,15 @@ turn green: their `WP_SPD` is outside the booked range the `must` bar accepts. O
 parameter-following probe verdicts were measurable without the key and 36 with it; most of what stays could not tell
 is an ABSENT stream (37) or a parameter the log does not carry (32). QA's build attack: no false green, one crash and
 six untested behaviours, all closed; 58 builder mutants and 19 of QA's 22 killed, 3 equivalent.
+
+QA's last pass, on the fixes and on this record, found two things. One of the fixes had a regression (G375): the gap
+threshold was rounded to the 1 µs grid, sometimes up, so a gap half a microsecond over it was missed. QA's suggested
+repair, no rounding at all, was measured before it was built and fires a false gap on 14 % of exact ties; the
+threshold now sits on a 0.1 µs grid, exact against the integer rule on 800,000 random cases (e79f6ef), and no verdict
+moved on the corpus, the 20 sim flights or the three examples. And seven sentences of the orchestrator's write-up were
+wrong or unsupported, among them the suite split, quoted as measured before the run had finished. They are corrected;
+the split was then measured on a clean clone (a bare export has no `.git`, and seven tests that ask git what is
+committed error there).
 
 Still true: none of the three public examples reads `pass`; `no_events` cannot pass off a 4.5.x release (the lead made
 NOT closing that in v1 the cut that pays for this build); nobody outside the repo has run the tool. One question went

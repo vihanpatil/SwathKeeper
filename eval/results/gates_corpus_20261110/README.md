@@ -56,10 +56,10 @@ limits are realistic, so a FAIL is a measurement against that parameter in every
 | `speed_wp` | 0 / 0 / 33 | 0 / 0 / 33 |
 | `batt_low` | 11 / 3 / 19 | 16 / 3 / 14 |
 | `ekf_thresh` | 4 / 1 / 28 | 8 / 1 / 24 |
-| could-not-tell verdicts whose only cause is the limit's | 14 | 1 |
+| could-not-tell verdicts whose only cause is the limit's (too few samples set aside) | 14 | 1 |
 
 - The key changed 13 verdicts, all from could not tell to PASS: ten on logs 01, 02, 08 and 09, whose startup drop
-  interval spans the parameter dump, and three on logs 17 and 23, which have samples at or before the parameter's
+  interval overlaps the parameter dump, and three on logs 17 and 23, which have samples at or before the parameter's
   first row. The key applied on 29 logs; on 4 no followed parameter has a row.
 - What stays could not tell with the key (96 verdicts; a verdict can name several causes, the two ABSENT causes are
   exclusive): the bar's stream is ABSENT in 37; the log does not carry the named parameter in 32; a gap or hole in
