@@ -13,13 +13,16 @@ time since 2026-08-24. Day 1 (ADR-022 am. 5, ADR-013 am. 20–21): one command f
 (`scripts/fly_pipeline.sh encounter`); four lane-patrol runs isolated five control-law faults (a 12 m trigger → 45 m, a reversal
 candidate → an on-track sidestep, an altitude-blind tree margin, an absence-based resume, a flickering side rule); the owner chose a
 head-on scenario a forward camera can see, and a 20-run batch cleared 3.00 m twenty times (min 5.42 m) — experiments, not
-evidence. Day 2 (ADR-020 am. 8): three BOOKED takes on the 2026-09-07 artifact, each closing a gap in the artifact the previous
-one exposed — the range-error bar's tick-instant truth join (p95 2.6 → 0.205 m once the frame stamp was logged), the frustum
-bar's course-for-yaw proxy (14 of 26 detections "behind the camera" mid-sidestep until the yaw was logged), and the two undriven
-world birds now declared static by the driver's sidecar and scored at spawn. Take 3 scored **VALID at flight time: gt_cpa_m
-9.6138 m, every depth bar measured, booking honoured** — committed as evidence with pinned truth and booking, the fourth flight in
-the dashboard. What it is: one evidence-gated head-on clearance in sim. What it is not: a batch, a product, or a reason to drop
-the asterisk. Record: `docs/encounters/BOOKED_20261111.md`.
+evidence. Day 2 (ADR-020 am. 8): three BOOKED takes on the 2026-09-07 artifact, a checker change between each — the range-error
+bar's tick-instant truth join (take 1 reads 0.21 m frame-joined against 2.08 m tick-joined once the frame stamp was logged), the
+frustum bar's course-for-yaw proxy (14 of 26 detections "behind the camera" mid-sidestep until the yaw was logged), and the two
+undriven world birds, refused on takes 1 and 2, now scored static at spawn when the driver's sidecar declares them (a gate-rule
+change, not an artifact one). Take 3 scored **VALID at flight time and by the committed checker: gt_cpa_m 9.6138 m (7.99 m
+gated), every depth bar measured, booking honoured** — committed as evidence with pinned truth and hashed booking, the fourth
+flight in the dashboard. A same-day QA round (27 findings) hardened the three changes and corrected this record's numbers. What
+it is: one head-on clearance VALID under the flight-log gate, in sim, third attempt, rules changed between attempts, with the
+booking's own preconditions (the am. 5 tall-obstacle re-score, the §0b ruling) still open for the owner. What it is not: a batch,
+a product, or a reason to drop the asterisk. Record: `docs/encounters/BOOKED_20261111.md`.
 
 ## 2026-11-09 — the tool gets a front door, and a stranger's run says it is usable
 

@@ -258,7 +258,8 @@ scripts/fly_pipeline.sh encounter --booking eval/results/booking_gate_20260907T0
 
 Bringup, the avoidance node armed after takeoff, the flight, evidence-first teardown, and the score — with `--booking` passed
 through to `check_live_flight_log.py` and the run's log, bird track and sidecars moved into `eval/results/encounters/<UTC>/`.
-The three 2026-11-11 takes were flown exactly so; the third is the committed VALID take.
+The three 2026-11-11 takes were flown exactly so; the third is the committed take, VALID under the flight-log gate — with
+the am. 5 tall-obstacle re-score this page's §0f/§0b chain requires still owed (ADR-020 am. 8).
 
 That artifact books **5.0 m/s → `param set WP_SPD 5.0`**. The parameter is `WP_SPD`, **in m/s**,
 not `WPNAV_SPEED` in cm/s: at ADR-004's pinned ArduPilot SHA, ArduCopter registers AC_WPNav under

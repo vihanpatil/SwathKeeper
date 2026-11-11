@@ -165,6 +165,32 @@ historical breaches. What CI *does* gate here: the regenerate-and-diff reproduci
 ledger/geofence assertions in `test_safety_scenarios_pending.py` (kept non-skippable by the
 committed-fixture assertion in `tests/test_ci_evidence_gate.py`).
 
+**Since 2026-11-11 no fixture completes a dodge (ADR-013 am. 20).** The executor now counts a dodge
+done only once the vehicle arrives within `DODGE_ARRIVAL_RADIUS_M` = 2.0 m of the latched setpoint,
+and refuses a relatch until then (`RELATCH_AFTER_ARRIVAL_ONLY`). The scripted path never goes to that
+setpoint, so every fixture now takes over once, latches once, and **ends in GUIDED with no resume**.
+Measured per fixture, before (`08dfdb6`) → after (this regeneration):
+
+| fixture | maneuver | relatch | hold | resume | requeue_events |
+|---|---|---|---|---|---|
+| `cov_bird_over_cell` | 13 → 13 | 5 → 0 | 0 → 0 | 1 → 0 | 376 → 376 |
+| `cov_bird_at_turnaround` | 8 → 10 | 7 → 0 | 2 → 0 | 1 → 0 | 206 → 256 |
+| `cov_two_birds_simultaneous` | 16 → 16 | 9 → 0 | 0 → 0 | 1 → 0 | 460 → 460 |
+| `geo_avoid_into_tree` | 11 → 11 | 8 → 0 | 0 → 0 | 1 → 0 | 320 → 320 |
+
+Takeover (1) and latch (1) are unchanged in all four. So are the coverage ledger (720 cells, 144
+debt), the flown path and the set of requeued cell ids, all byte-compared against `08dfdb6`. The
+ledger and geofence assertions still test something real. **What none of these fixtures exercises
+any more is "avoid, return to the next waypoint"** (the v1 resume, ADR-002). That behaviour is covered by
+`tests/fieldguard_planning/test_avoidance_executor.py::TestDodgeCompletion` and by the committed
+live flight evidence, not by this directory. The same regeneration replaced the constant +N heading
+with each leg's course (see `leg_courses()` in the generator). The fixtures have no attitude, and the
+old value recorded a yaw 180° off the path on every southbound leg in `flown_heading_rad`. That change
+alters the headings and four maneuver events, all of them refused relatches. Two changed the policy's
+*proposed* setpoint (`cov_bird_over_cell` seq 52, `relatch_refused_degenerate`; `cov_bird_at_turnaround`
+seq 35, `relatch_refused_in_progress`). Two changed only a debug bearing in the last digit
+(`geo_avoid_into_tree` seq 111 and 117). No executed setpoint moved.
+
 **Runnable-now** scenarios are asserted by `tests/fieldguard_planning/test_coverage.py` and
 `test_mission_geofence.py` against the *current* mission — they are the baseline the avoidance loop
 must not regress below. **Pending** scenarios are asserted by `test_safety_scenarios_pending.py`,

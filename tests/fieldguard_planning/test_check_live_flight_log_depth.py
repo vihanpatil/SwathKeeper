@@ -221,7 +221,8 @@ class Harness(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.dir = Path(self.tmp.name)
 
-    def write_truth(self, records, stamp="20260907T120000Z", config_name=None, bird_ids=None):
+    def write_truth(self, records, stamp="20260907T120000Z", config_name=None, bird_ids=None,
+                    config=None):
         """`config_name` / `bird_ids` model the driver's declaration of the scenario it drove
         (`drive_birds.py` sidecar fields); left out, the sidecar is the legacy shape."""
         applied = self.dir / f"bird_drive_{stamp}_applied.jsonl"
@@ -231,6 +232,8 @@ class Harness(unittest.TestCase):
                                 else list(bird_ids))}
         if config_name is not None:
             sidecar["config_name"] = config_name
+        if config is not None:
+            sidecar["config"] = config
         (self.dir / f"bird_drive_{stamp}.json").write_text(json.dumps(sidecar))
         applied.write_text("".join(json.dumps(r) + "\n" for r in records))
         return applied
@@ -501,8 +504,9 @@ class TestBar3RangeError(Harness):
         self.assertIn("p95 0.0000 m", text)
         self.assertIn("joined at its FRAME instant", text)
         self.assertIn("interpolated to it on 1 of 1", text)
-        self.assertIn("median 0.300 s", text)
+        self.assertIn("median 0.300", text)
         self.assertIn("frame-joined", text)
+        self.assertIn("the last ranged frame before the pass", text)
 
     def test_the_same_detection_without_a_frame_stamp_is_tick_joined_and_reads_the_clock(self):
         """Joined at tick 3 (100.4): the pose in effect is the one landed at 100.2 (x 89.5), the
@@ -514,8 +518,82 @@ class TestBar3RangeError(Harness):
         self.assertIn("2.0000 m", text)
         self.assertIn("every match joined at the consuming TICK's stamp", text)
         self.assertIn("TICK-JOINED (no `stamp_s` on this event)", text)
-        self.assertIn("1 of 1 match(es) are TICK-JOINED", text)
+        self.assertIn("1 of 1 gated sample(s) are TICK-JOINED", text)
         self.assertIn("tick-joined", text)
+
+    def test_a_frame_stamp_in_the_future_is_a_problem_and_the_event_is_scored_at_the_tick(self):
+        """QA 2026-11-11 (probe V5): a stamp 1000 s in the future used to pick a truth instant with no
+        truth, the event dropped out, and a biased log read VALID on 2 of 29. Now: a PROBLEM, and the
+        event is scored at the consuming tick so its error is still measured."""
+        text = self.assertInvalid(self.check(self.closing_log(stamp_s=1100.1),
+                                             truth=self.closing_truth()),
+                                  "FRAME STAMP IN THE FUTURE")
+        self.assertIn("RANGE ERROR OVER BAR AT CPA", text)       # 2.0 m, tick-joined
+        self.assertIn("tick-joined", text)
+
+    def test_a_stale_frame_stamp_is_a_problem(self):
+        """Older than the policy's max_detection_age_s (1.0 s): the staleness gate should have dropped
+        it, so a logged one is a wrong stamp or a gate that did not run."""
+        self.assertInvalid(self.check(self.closing_log(stamp_s=98.0), truth=self.closing_truth()),
+                           "FRAME STAMP STALE")
+
+    def test_a_detection_the_truth_cannot_answer_is_a_problem_not_a_smaller_denominator(self):
+        """The truth track ends at 100.002 s; the detection is at 100.3 s. The old code skipped it
+        and printed UNMEASURED as a note; now the bar says it scored 0 of 1, as a PROBLEM."""
+        truth = self.write_truth(truth_records([(t, {"bird_0": (91.5, 50.0, CRUISE_Z)})
+                                                for t in TRUTH_SIM[:2]]))
+        self.assertInvalid(self.check(self.closing_log(stamp_s=100.3), truth=truth),
+                           "RANGE ERROR UNSCORED on 1 of 1")
+
+    def test_two_consumptions_of_one_frame_are_one_sample(self):
+        """The executor logs the latest detection on every tick until a new frame arrives (take 3:
+        29 events, 18 frames). Under the frame join the repeats are identical, so percentiles and
+        ages run over FRAMES; the consumption count is printed beside them."""
+        det3 = detection_event(tick=3, pos=(91.5, 50.0, CRUISE_Z), stamp_s=100.1, frame_id=812)
+        det4 = detection_event(tick=4, pos=(91.5, 50.0, CRUISE_Z), stamp_s=100.1, frame_id=812)
+        events = encounter_events(det=det3)
+        events.insert(2, det4)
+        log = depth_log(events=events)
+        text = self.assertValid(self.check(log, truth=self.closing_truth()))
+        self.assertIn("over 1 rendered frame(s) (2 consumption event(s)), 2 of 2 detection event(s)", text)
+        self.assertIn("p95 0.0000 m", text)
+
+    AMBIG_RECS = None
+
+    def _ambiguous_truth(self):
+        """bird_0 at A until 100.0985 s, then B 2 m further; the bracket of the B call spans
+        100.0995..100.1005 s, so a frame stamped 100.1 cannot say which pose it rendered."""
+        a, b = (91.5, 50.0, CRUISE_Z), (93.5, 50.0, CRUISE_Z)
+        return self.write_truth(truth_records(
+            [(99.8, {"bird_0": a}), (100.0, {"bird_0": a}), (100.0985, {"bird_0": b}),
+             (100.2, {"bird_0": b}), (100.4, {"bird_0": b}), (100.6, {"bird_0": b}),
+             (100.8, {"bird_0": b}), (101.0, {"bird_0": b})]))
+
+    def test_an_ambiguous_bracket_is_reported_not_gated_and_alone_it_is_unmeasured(self):
+        """QA 2026-11-11: the nearer candidate let the bracket buy accuracy; the farther one made the
+        bar measure the bird's teleport step (every take read p95 2.1-2.3 m that way against 0.17 m
+        unambiguous). Neither is the sensor. One ambiguous frame and nothing else: UNMEASURED, a
+        problem, never a PASS -- and both candidate readings are printed."""
+        text = self.assertInvalid(self.check(self.closing_log(stamp_s=100.1),
+                                             truth=self._ambiguous_truth()),
+                                  "RANGE ERROR UNMEASURED: every one of the 1 matched sample(s)")
+        self.assertIn("Nearer-candidate errors read p95 0.0000 m and farther 2.0000 m", text)
+
+    def test_the_gate_rests_on_the_unambiguous_frames_and_counts_the_rest(self):
+        """An unambiguous frame at 100.3 (consumed at tick 4) beside the ambiguous one at 100.1:
+        gated over the one unambiguous sample (0 m), the ambiguous one counted with both readings."""
+        det3 = detection_event(tick=3, pos=(91.5, 50.0, CRUISE_Z), stamp_s=100.1, frame_id=812)
+        det4 = detection_event(tick=4, pos=(93.5, 50.0, CRUISE_Z), stamp_s=100.3, frame_id=813)
+        events = encounter_events(det=det3)
+        events.insert(2, det4)
+        text = self.assertValid(self.check(depth_log(events=events), truth=self._ambiguous_truth()))
+        self.assertIn("p95 0.0000 m, max 0.0000 m, min 0.0000 m over the 1 unambiguously placed", text)
+        self.assertIn("1 of 2 sample(s) fell inside a set_pose bracket", text)
+        self.assertIn("NOT gated", text)
+        self.assertIn("unambiguous truth", text)
+
+    def test_the_future_bound_is_the_nodes_own_clock_domain_bound(self):
+        self.assertEqual(checker.FRAME_STAMP_FUTURE_BOUND_S, node.CLOCK_DOMAIN_BOUND_S)
 
     def test_the_drone_position_is_interpolated_to_the_frame_instant(self):
         """`_flown_point_at`: linear between the bracketing ticks, None outside the stamped span,
@@ -997,7 +1075,7 @@ class TestBar4UsesTheLoggedYaw(Harness):
         text = self.assertInvalid(self.green(log, truth_pos=pos), "DETECTION BEHIND THE CAMERA")
         self.assertIn("on a course of (+1.000, +0.000)", text)
         self.assertIn("ACQUISITION BEHIND THE CAMERA", text)
-        self.assertIn("NOTE THE ONE SUBSTITUTION", text)
+        self.assertIn("NOTE THE SUBSTITUTION", text)
 
     def test_a_yaw_that_really_points_away_from_the_detection_still_fails(self):
         """The yaw is read, not trusted blindly: camera facing SOUTH, bird NORTH -> behind, and the
@@ -1006,6 +1084,31 @@ class TestBar4UsesTheLoggedYaw(Harness):
         text = self.assertInvalid(self.green(log, truth_pos=pos), "DETECTION BEHIND THE CAMERA")
         self.assertIn("on a logged yaw of", text)
         self.assertIn("not a course proxy", text)
+
+    def test_a_nan_yaw_is_refused_not_read_as_inside(self):
+        """QA 2026-11-11: a NaN yaw gave a NaN azimuth, and NaN compares inside every half-angle, so a
+        detection 40 deg off-axis or dead astern scored VALID. Now the entry is refused twice: by the
+        yaw-list check and by bar 4 at the detection."""
+        log, pos = self._north_bird_log(headings=[float("nan")] * 5)
+        text = self.assertInvalid(self.green(log, truth_pos=pos), "YAW UNREADABLE")
+        self.assertIn("flown_heading_rad carries 5 unreadable entries", text)
+        self.assertNotIn("frustum containment: 1 of 1", text)
+        behind, pos2 = self._north_bird_log(headings=[float("nan")] * 5)
+        behind["events"] = encounter_events(det=detection_event(
+            pos=(DRONE_AT_DET[0] - 40.0, DRONE_AT_DET[1], CRUISE_Z)))
+        self.assertInvalid(self.green(behind, truth_pos=(DRONE_AT_DET[0] - 40.0, DRONE_AT_DET[1],
+                                                        CRUISE_Z)), "YAW UNREADABLE")
+
+    def test_a_null_yaw_is_a_declared_absence_and_falls_back_to_course(self):
+        log, pos = self._north_bird_log(headings=[None] * 5)
+        text = self.assertInvalid(self.green(log, truth_pos=pos), "DETECTION BEHIND THE CAMERA")
+        self.assertIn("on a course of (+1.000, +0.000)", text)
+        self.assertIn("5 null", text)
+
+    def test_the_yaw_list_must_be_one_per_vertex(self):
+        log, pos = self._north_bird_log(headings=[self.NORTH] * 4)
+        self.assertInvalid(self.green(log, truth_pos=pos),
+                           "flown_heading_rad has 4 entries but flown_path_enu has 5")
 
     def test_the_yaw_is_interpolated_along_the_shortest_arc(self):
         log = depth_log()
@@ -1104,6 +1207,52 @@ class TestDeclaredStaticBirds(Harness):
         truth = self.write_truth(self.bird0_only())              # bird_ids ['bird_0'], no config
         self.assertInvalid(self.check(depth_log(), truth=truth),
                            "NO landed set_pose call for ['bird_1', 'bird_2']")
+
+    def test_a_sidecar_whose_birds_disagree_with_the_named_config_declares_nothing(self):
+        """Condition (b): headon_lane15.json drives bird_0; a sidecar claiming bird_1 for it is not a
+        declaration of that scenario, whatever landed."""
+        recs = truth_records([(t, {"bird_1": (95.0, 95.0, 1.0)}) for t in TRUTH_SIM],
+                             park_undriven=False)
+        truth = self.write_truth(recs, config_name=self.HEADON, bird_ids=["bird_1"])
+        text = self.assertInvalid(self.check(depth_log(), truth=truth), "NO landed set_pose call")
+        self.assertNotIn("DECLARED UNDRIVEN", text)
+
+    def test_duplicate_bird_ids_declare_nothing(self):
+        truth = self.write_truth(self.bird0_only(), config_name=self.HEADON,
+                                 bird_ids=["bird_0", "bird_0"])
+        self.assertInvalid(self.check(depth_log(), truth=truth), "NO landed set_pose call")
+
+    def test_config_and_config_name_must_name_the_same_file(self):
+        truth = self.write_truth(self.bird0_only(), config_name=self.HEADON, bird_ids=["bird_0"],
+                                 config="/workspace/fieldguard/config/birds/farm_world_birds.json")
+        self.assertInvalid(self.check(depth_log(), truth=truth), "NO landed set_pose call")
+        agreeing = self.write_truth(self.bird0_only(), config_name=self.HEADON, bird_ids=["bird_0"],
+                                    config="/workspace/fieldguard/config/birds/" + self.HEADON)
+        self.assertValid(self.check(depth_log(), truth=agreeing))
+
+    def test_a_path_in_config_name_resolves_only_under_config_birds(self):
+        """The basename is what is looked up, so nothing outside config/birds/ can be named."""
+        truth = self.write_truth(self.bird0_only(), config_name="../../etc/" + self.HEADON,
+                                 bird_ids=["bird_0"])
+        self.assertValid(self.check(depth_log(), truth=truth))          # = config/birds/headon_lane15.json
+        truth = self.write_truth(self.bird0_only(), config_name="/tmp/no_such_scenario.json",
+                                 bird_ids=["bird_0"])
+        self.assertInvalid(self.check(depth_log(), truth=truth), "NO landed set_pose call")
+
+    def test_a_static_bird_is_held_to_the_bar_after_the_drivers_last_landed_call(self):
+        """QA 2026-11-11: candidates_at() answers nothing past the track's last landed call, so the CPA
+        join stops scoring a declared-static bird there -- but a parked bird does not move when the
+        driver stops. The whole-flight 3D conjunct catches a path through its spawn pose."""
+        truth = checker.TruthTrack.load(self.write_truth(
+            truth_records([(t, {"bird_0": DET_POS}) for t in TRUTH_SIM[:3]], park_undriven=False),
+            config_name=self.HEADON, bird_ids=["bird_0"]))
+        sp = truth._spawn_pos("bird_1")
+        path = [[50.0, 50.0, CRUISE_Z], [51.0, 50.0, CRUISE_Z],
+                [sp[0] - 1.0, sp[1], sp[2] + 3.0], [sp[0], sp[1], sp[2] + 3.0],
+                [sp[0] + 1.0, sp[1], sp[2] + 3.0]]
+        log = depth_log(path=path)
+        text = self.assertInvalid(self.check(log, truth=truth.path), "STATIC BIRD BREACH")
+        self.assertIn("bird_1", text)
 
     def test_a_config_that_is_not_in_this_repo_declares_nothing(self):
         truth = self.write_truth(self.bird0_only(), config_name="no_such_scenario.json",

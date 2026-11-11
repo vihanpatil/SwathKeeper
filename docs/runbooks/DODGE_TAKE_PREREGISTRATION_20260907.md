@@ -423,3 +423,64 @@ denominator (this counter, not the host bench, settles the container question).
 **new, dated `## OUTCOME (<UTC>)` section appended at the end**, naming the log, the truth track,
 the booking, and the class from §3 the result fell into. A pre-registration that is edited after
 the result is not a pre-registration; it is a narrative.
+
+## OUTCOME (2026-11-11T20:00:57Z → 20:03:35Z) — booked take 1 of 3
+
+*Appended 2026-11-11T21:24Z by qa-safety-reviewer, after all three takes flew. It is late: no section was written at flight time (QA finding). Numbers come from `docs/encounters/booked_20261111/take1_live_flight_log_20261111T200326Z.checker.txt`, the checker as deployed AT FLIGHT TIME.*
+* **Log:** `eval/results/encounters/20261111T200057Z/live_flight_log_20261111T200326Z.json` (main checkout; gitignored, NOT committed; sha256 `c0e91e1a5eda82c19df493478f31c3204ad86b2189f0fecc0366f22aafa17550`).
+  **Truth:** `eval/results/encounters/20261111T200057Z/bird_drive_20261111T200152Z_applied.jsonl` (gitignored; sha256 `b98c314dafe385655b9bee33bd5cb93a29c8e209a2825ebac5ae77c283017464`).
+  **Booking:** `eval/results/booking_gate_20260907T064136Z.json`, 5.0 m/s, `param set WP_SPD 5.0` in the sent recipe. Mission `headon_lane15`, birds `config/birds/headon_lane15.json`, `--detection-source depth`.
+* **§3 class: INVALID.** §6 step 1 (THE gate) printed `INVALID`, exit 1, and gave TWO refusals:
+  (a) bar 4, `DETECTION BEHIND THE CAMERA` on 14 detections (ticks 19–32), with 12 of 26 checked. The forward axis was COURSE over ground because the log carried no orientation.
+  (b) bird_1/bird_2 were refused because they had no landed `set_pose` call (bird_0=191, bird_1=0, bird_2=0).
+  Neither reason appears word for word in §3's INVALID list. Bar 4 is a P1 bar written after §3, and (b) is closest to AMBIGUOUS "partial truth coverage". Both classes re-fly, and the gate's word was INVALID.
+* **Gated numbers:** gt_cpa_m **9.5285 m** to bird_0 (tick 63; vertical sep 3.8400 m, 3D 10.2731 m). gt_cpa_gated_m **8.3447 m** after a 1.1837 m freeze debit.
+  First detection **42.633 m** at tick 3 (bar 33.591). Range error p95 **0.2051 m** over 26/26 frame-joined, **0.0771 m** at CPA (bar 0.5).
+  Frustum: **12 of 26** inside, plus the 14 refusals above. Encounter-window median **3.374 m/s = 0.675×** booked. Whole flight median 0.557, max 6.217 = 1.243× (not gated).
+  Detect rate 96.86 % of 287. Wall p95 10.326 / max 14.528 ms, n = 287. Frame-shape drops 0 of 287; `no_pose_pair` drops 9.
+  Reported, NOT gated: the bird was inside the threat cylinder on 40 ticks and the loop engaged on 0 of them.
+* **What decided it:** the two refusals. Every value bar the checker printed cleared, and the INVALID still stands.
+* **Booking:** booked on the 2026-09-07 artifact. The am. 5 tall-obstacle re-score is still owed, so the booking's precondition is open. §4's §0b conflict (P3 item 1) is still unratified in `docs/DECISIONS.md`, so by §4 this take is unauthorised by its own procedure. 46.0 m is not quoted.
+* **Gate changes:** one was already in force before this take (ADR-020 am. 8 (1), after the 2026-11-10 batch): the executor writes `stamp_s` and bar 3b joins truth at the frame instant (26/26 here).
+  Made before take 2 (am. 8 (2)): the executor writes `flown_heading_rad`, and bars 4/5 read the logged yaw instead of course. That is an artifact field plus a gate-rule change.
+
+## OUTCOME (2026-11-11T20:12:57Z → 20:15:38Z) — booked take 2 of 3
+
+*Appended 2026-11-11T21:24Z, late, as above. Source: `docs/encounters/booked_20261111/take2_live_flight_log_20261111T201530Z.checker.txt` (flight-time checker).*
+* **Log:** `eval/results/encounters/20261111T201257Z/live_flight_log_20261111T201530Z.json` (gitignored, NOT committed; sha256 `876e56a53fb83f158d7475add18a9f3fd2a926632f0a93b28943750d4a2c6303`).
+  **Truth:** `eval/results/encounters/20261111T201257Z/bird_drive_20261111T201354Z_applied.jsonl` (gitignored; sha256 `1e835d6034854723559f77475f63e17249eebbd44f1a2695cfa866f077f6dc77`).
+  **Booking:** `eval/results/booking_gate_20260907T064136Z.json`, 5.0 m/s, `WP_SPD 5.0` injected. Same mission, birds and source as take 1.
+* **§3 class: INVALID** (THE gate: `INVALID`, exit 1). One refusal decided it: bird_1/bird_2 had no landed `set_pose` call (bird_0=193, bird_1=0, bird_2=0), and the checker printed "NOT scored at their spawn pose".
+  The closest §3 wording is AMBIGUOUS "partial truth coverage", but the gate said INVALID. Bar 4 cleared on the logged yaw.
+* **Gated numbers:** gt_cpa_m **9.6208 m** (tick 94; vertical sep 3.8200 m, 3D 10.3514 m). gt_cpa_gated_m **8.5001 m** after a 1.1207 m debit.
+  First detection **43.229 m** at tick 24. Range error p95 **0.1550 m** over 30/30, **0.0626 m** at CPA.
+  Frustum **30 of 30**. Encounter-window median **2.820 m/s = 0.564×**.
+  Detect rate 99.65 % of 292. Wall p95 10.512 / max 13.007 ms, n = 292. Frame-shape drops 0 of 292.
+  Reported, NOT gated: the bird was in the threat cylinder on 31 ticks and the loop engaged on 0.
+* **The artifact already carried what the next gate reads.** The driver's sidecar `bird_drive_20261111T201354Z.json` declares `bird_ids: ['bird_0']` for config `headon_lane15.json`, the same declaration take 3's sidecar makes. The gate refused anyway.
+* **Booking:** booked on the 2026-09-07 artifact. The am. 5 tall-obstacle re-score is still owed, so the booking's precondition is open. §0b / P3 item 1 is still unratified (§4: unauthorised by its own procedure).
+* **Gate change before take 3** (am. 8 (3)): world birds that the driver's sidecar declares undriven are now SCORED at their spawn poses as static obstacles, where before they were refused.
+  This is a **gate-rule change, not an artifact change**: nothing new was written into the take-3 artifact to satisfy it.
+  am. 8 says take 2 re-scores VALID under that rule. That re-score was not re-run for this section.
+
+## OUTCOME (2026-11-11T20:24:37Z → 20:27:18Z) — booked take 3 of 3
+
+*Appended 2026-11-11T21:24Z, late, as above. Source: `docs/encounters/booked_20261111/take3_live_flight_log_20261111T202709Z.checker.txt` (flight-time checker).*
+* **Log:** `eval/results/live_flight_log_20261111T202709Z.json` (committed; sha256 `2dfff0d68b3a41892511758583170bde8179fbdba9ffdd8a6d1180445ee23c32`, byte-identical to the run-folder copy).
+  **Truth:** `eval/results/bird_drive_20261111T202537Z_applied.jsonl` (committed; sha256 `35185acd58961405c05a5d5332b283273a6a25c87b7f83133fcd56419eccd150`).
+  **Booking:** `eval/results/booking_gate_20260907T064136Z.json` (sha256 `1a6fcc1f…abde`), 5.0 m/s, `WP_SPD 5.0` injected.
+* **Verdict:** `VALID`, exit 0. Every §3 PASS bullet that the checker prints is met: CPA ≥ 3.00 m, both speed medians ≤ 5.5 m/s, acquisition ≥ 33.591 m, wall 25/100 ms, detect rate ≥ 0.90, frame-shape 0, all 29 static_map_hints null, gz_clock_stream with 0 violations.
+* **§3 class: closest to PASS, but NOT a clean §3 PASS.** Four reasons:
+  (i) The booking's am. 5 precondition is open: the take was booked on the 2026-09-07 artifact, and the am. 5 tall-obstacle re-score is still owed.
+  (ii) §0b / P3 item 1 is still unratified, so by §4 the take is unauthorised by its own procedure.
+  (iii) The checker text prints no R2 lateral-tree-margin line, so §3's R2 bullet cannot be read from it. R3 shows only `relatch_refused_degenerate=0` and `gate_rejects=0`.
+  (iv) Forking paths: this accepted take is the THIRD attempt, and the gate rules changed between attempts. Gap 3 was a gate-rule change, not an artifact change.
+* **Gated numbers:** gt_cpa_m **9.6138 m** to bird_0 (tick 92; vertical sep 3.8200 m, 3D 10.3450 m). gt_cpa_gated_m **8.8013 m** after a 0.8125 m debit.
+  bird_1 / bird_2 scored as static obstacles at 15.155 / 10.230 m.
+  First detection **44.926 m** at tick 23. Range error p95 **0.1687 m** over 29/29 frame-joined, **0.0780 m** at CPA.
+  Frustum **29 of 29** on the logged yaw. Encounter-window median **2.936 m/s = 0.587×** booked. Whole flight median 0.741, max 6.817 = 1.363× (not gated).
+  Detect rate 99.64 % of 278. Wall p95 **10.701** / max 20.702 ms, n = 278. Frame-shape drops 0 of 278.
+  Reported, NOT gated: the bird was in the threat cylinder on 22 ticks and the loop engaged on 0.
+  ADR-020 am. 8 quotes this take's wall p95 as "10.5 ms". The checker prints 10.701; 10.512 is take 2's figure.
+* **What it buys, and no more:** n = 1 VALID head-on clearance at 5.0 m/s, sim-demonstrated and evidence-gated, with one driven bird that passed 3.82 m below cruise.
+  It is not a §1 PASS. The 2026-08-25 breach, its declared CI red and the three-breach safety asterisk all stand. No gate changes after this take are recorded here.

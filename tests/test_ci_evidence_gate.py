@@ -52,6 +52,8 @@ SCENARIOS_DIR = REPO_ROOT / "eval" / "scenarios"
 
 sys.path.insert(0, str(SCENARIOS_DIR))
 import generate_flight_logs as GEN  # noqa: E402  (the generator IS the scenario set's one source)
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+import check_live_flight_log as checker  # noqa: E402  (its reviewed pins name the files a hermetic tree needs)
 
 # The step whose `run:` block is executed below. Matched on a fragment of its `name:` so the step can
 # be reworded without silently un-testing it -- if the fragment stops matching, the helper raises.
@@ -120,6 +122,26 @@ def _tracked(pathspec: str):
     return [p for p in out.stdout.splitlines() if p]
 
 
+def _pinned_evidence():
+    """Every committed file the checker's reviewed pins name, resolved BESIDE the logs as the gate does.
+
+    `TRUTH_BINDINGS` names an applied-pose log (whose `bird_drive_<stamp>.json` sidecar declares which
+    birds it drove) and `BOOKING_BINDINGS` names the booking artifact; the gate makes a MISSING pinned
+    file a hard problem, so a hermetic tree without them reports a SECOND, undeclared INVALID that the
+    one declared red then hides. A pin value is a filename, or a (filename, sha256) tuple/list."""
+    names = set()
+    for value in list(checker.TRUTH_BINDINGS.values()) + list(checker.BOOKING_BINDINGS.values()):
+        name = value if isinstance(value, str) else value[0]
+        names.add(name)
+        if name.endswith("_applied.jsonl"):
+            names.add(name[:-len("_applied.jsonl")] + ".json")
+    return sorted(rel for name in names for rel in _tracked(f"eval/results/{name}"))
+
+
+_VERDICT_LINE = re.compile(r"^\[check_live_flight_log\] (INVALID|ACKNOWLEDGED SAFETY FINDING|VALID)\b"
+                           r".*?(live_flight_log_[^\s/]+?)\.json", re.M)
+
+
 class TestLiveFlightLogGateHasEvidence(unittest.TestCase):
     """The gate must be shown files, and must say so when it is not."""
 
@@ -164,11 +186,22 @@ class TestLiveFlightLogGateHasEvidence(unittest.TestCase):
         (QA finding G47) a real-detector log is scored against the applied-pose log committed BESIDE
         it, so a tree with the flight logs but not the tracks makes the gate report "no truth track"
         -- which would send whoever sees this test go red hunting a binding bug instead of reading
-        the flight's actual verdict."""
+        the flight's actual verdict. Likewise every file a pin names (`_pinned_evidence`): the
+        2026-11-11 booked take scores INVALID in a tree without its BOOKING_BINDINGS artifact."""
+        proc, logs = self._run_step_on_committed_evidence()
+        self.assertEqual(proc.returncode, 0,
+                         msg=f"the committed evidence no longer passes its own gate.\n"
+                             f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
+        n_logs = len([p for p in logs if p.endswith(".json")])
+        self.assertIn(f"matched: {n_logs}", proc.stdout)
+
+    def _run_step_on_committed_evidence(self):
+        """The real ci.yml evidence step, in a tmp tree holding ONLY committed copies: the logs and
+        their markers, the bird tracks, and every file the checker's pins name."""
         script = _step_run_block(EVIDENCE_STEP)
         logs = _tracked("eval/results/live_flight_log_*")
         self.assertTrue(logs, "no committed live flight-log evidence at all")
-        tracked = logs + _tracked("eval/results/bird_drive_*")
+        tracked = sorted(set(logs + _tracked("eval/results/bird_drive_*") + _pinned_evidence()))
         with tempfile.TemporaryDirectory() as tmp:
             os.symlink(REPO_ROOT / "scripts", Path(tmp) / "scripts")
             (Path(tmp) / "eval" / "results").mkdir(parents=True)
@@ -176,11 +209,33 @@ class TestLiveFlightLogGateHasEvidence(unittest.TestCase):
                 (Path(tmp) / rel).write_bytes((REPO_ROOT / rel).read_bytes())
             proc = subprocess.run(["bash", "-c", script], cwd=tmp,
                                   capture_output=True, text=True)
-        self.assertEqual(proc.returncode, 0,
-                         msg=f"the committed evidence no longer passes its own gate.\n"
-                             f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
-        n_logs = len([p for p in logs if p.endswith(".json")])
-        self.assertIn(f"matched: {n_logs}", proc.stdout)
+        return proc, logs
+
+    def test_the_declared_red_is_exactly_one_log(self):
+        """The step's exit 1 is the ONE declared red (tests/test_known_red_allowlist.py), and an exit code
+        cannot say how many logs failed: a second INVALID hides behind the first. So the per-log verdict
+        set is asserted EXACTLY -- the acknowledged breaches ACKNOWLEDGED, the 2026-08-25 breach the ONLY
+        INVALID, and every other committed log VALID (derived, so a fifth log is covered on arrival)."""
+        proc, logs = self._run_step_on_committed_evidence()
+        out = proc.stdout + proc.stderr
+        verdicts = {}
+        for word, stem in _VERDICT_LINE.findall(out):
+            self.assertNotIn(stem, verdicts, msg=f"{stem} has two verdict headlines:\n{out}")
+            verdicts[stem] = word
+        stems = sorted(Path(p).stem for p in logs if p.endswith(".json"))
+        declared_invalid = "live_flight_log_20260825T210402Z"
+        acknowledged = set(checker.ACKNOWLEDGED_BREACH_STEMS)
+        expected = {s: ("ACKNOWLEDGED SAFETY FINDING" if s in acknowledged
+                        else "INVALID" if s == declared_invalid else "VALID") for s in stems}
+        self.assertIn(declared_invalid, stems, "the declared-red log is no longer committed")
+        self.assertTrue(acknowledged <= set(stems), "an acknowledged breach is no longer committed")
+        self.assertIn("live_flight_log_20261111T202709Z", stems)
+        self.assertEqual(expected["live_flight_log_20261111T202709Z"], "VALID")
+        self.assertEqual(verdicts, expected,
+                         msg=f"the per-log verdicts are not exactly the declared set -- an undeclared "
+                             f"INVALID is hiding behind the one declared red.\n{out}")
+        self.assertEqual(len(verdicts), len(stems))
+        self.assertNotEqual(proc.returncode, 0, msg="the declared INVALID no longer fails the step")
 
 
 class TestMissionGeofenceGateIsArmed(unittest.TestCase):

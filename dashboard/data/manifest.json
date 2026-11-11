@@ -18,6 +18,12 @@
    "sha256": "73a73dd60ac668304ae3aab6e63ea1e88e8a125d90b651fe8afdfff0a7fb6b19"
   },
   {
+   "bytes": 2818,
+   "path": "config/birds/headon_lane15.json",
+   "role": "declared bird scenario config (its undriven world birds are scored at spawn)",
+   "sha256": "cef52430398040b7369ff211bd86cccda275bb90741e9c652eb899d30fe183c1"
+  },
+  {
    "bytes": 1175,
    "path": "config/field_polygon.json",
    "role": "field polygon + home",
@@ -42,16 +48,34 @@
    "sha256": "0d907578c0ece91426aa2d15d41d2096c39466503858f8116970735ddb11cf79"
   },
   {
+   "bytes": 976,
+   "path": "eval/results/bird_drive_20260825T210030Z.json",
+   "role": "bird driver run sidecar (declares the scenario config and bird set)",
+   "sha256": "1112129612e5706f35159bbe391bcb43157f769a52b85910099c6c29ad98d827"
+  },
+  {
    "bytes": 548284,
    "path": "eval/results/bird_drive_20260825T210030Z_applied.jsonl",
    "role": "bird ground truth (applied set_pose poses)",
    "sha256": "2637c64f0ff34352f005eedfc7fb7898c451043e86fefcf3865b684a9048e75b"
   },
   {
+   "bytes": 945,
+   "path": "eval/results/bird_drive_20261111T202537Z.json",
+   "role": "bird driver run sidecar (declares the scenario config and bird set)",
+   "sha256": "0d66565e5328514f5961896c740f72dd2be3bfa63827ab1aecc773fc7e5e6e73"
+  },
+  {
    "bytes": 47236,
    "path": "eval/results/bird_drive_20261111T202537Z_applied.jsonl",
    "role": "bird ground truth (applied set_pose poses)",
    "sha256": "35185acd58961405c05a5d5332b283273a6a25c87b7f83133fcd56419eccd150"
+  },
+  {
+   "bytes": 4565,
+   "path": "eval/results/booking_gate_20260907T064136Z.json",
+   "role": "booking artifact (pinned in BOOKING_BINDINGS; the gate holds the take to it)",
+   "sha256": "1a6fcc1f7372a5b489660570bb3ce741d5d8792891740ff6f14b777d5262abde"
   },
   {
    "bytes": 106216,

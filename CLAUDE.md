@@ -33,7 +33,7 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
    thing here: three live flights, **three** bird-clearance breaches (see the safety asterisk).
    **Most engineering time lives in the detect → avoid → resume → honest-debt loop.** **2026-11-10: the owner
    reopened this loop (ADR-022 am. 5); four scripted depth-camera encounters flew in one day under ADR-013 am. 20,
-   gt_cpa 0.021 → 0.839 → 0.039 m on the lane-patrol bird (its last strikes had zero detections: a lane-end U-turn and an astern overtake, outside a forward camera's view), then **9.568 m on the owner's head-on scenario** (ADR-013 am. 21), then **20 of 20 head-on encounters cleared 3.00 m** (min 5.42 / median 9.52 / max 9.82 m; `docs/encounters/BATCH_20261110T194048Z.md`) — unbooked EXPERIMENTS, not evidence. **2026-11-11: the first VALID avoidance take** — booked at 5.0 m/s, head-on, gt_cpa_m 9.6138 m (8.8013 m gated), every depth bar measured, scored VALID at flight time and committed as evidence (`eval/results/live_flight_log_20261111T202709Z.json`, ADR-020 am. 8). ONE evidence-gated clearance; the asterisk below still comes first.**
+   gt_cpa 0.021 → 0.839 → 0.039 m on the lane-patrol bird (its last strikes had zero detections: a lane-end U-turn and an astern overtake, outside a forward camera's view), then **9.568 m on the owner's head-on scenario** (ADR-013 am. 21), then **20 of 20 head-on encounters cleared 3.00 m** (min 5.42 / median 9.52 / max 9.82 m; `docs/encounters/BATCH_20261110T194048Z.md`) — unbooked EXPERIMENTS, not evidence. **2026-11-11: the first VALID avoidance take** — booked at 5.0 m/s on the 2026-09-07 artifact, head-on, gt_cpa_m 9.6138 m (7.9898 m gated), every depth bar measured, VALID under the flight-log gate and committed as evidence (`eval/results/live_flight_log_20261111T202709Z.json`, ADR-020 am. 8) — the third of three attempts with gate rules changed between them, and with the booking's own preconditions OPEN (the am. 5 tall-obstacle re-score was not run; §0b's status is unratified). ONE take; the asterisk below still comes first.**
 2. **NDVI health mapping** — works end to end (720/720 cells, 5.0 Hz) and is **FROZEN** since
    2026-08-26: it is the working demo, not open work. The world authors no health variation.
 3. **Farmer-facing dashboard** — **BUILT 2026-08-26** (ADR-018), static and light. The proof, not
@@ -45,8 +45,9 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   3 birds teleported by `drive_birds.py` (no collision geometry — they cannot hit anything).
 - **Sensing**: simulated NDVI camera (dual-band: Red + synthetic NIR), nadir. The NDVI+RGB
   comparison arm was **RETIRED 2026-08-26** (the RGB R channel *is* the Red band). A **forward
-  `depth_camera`** (ADR-020/021) is commissioned + scored and has **flown once (2026-09-11, a no-target wiring flight; log INVALID on the
-  runtime max bar; it has never seen a bird in the air)**.
+  `depth_camera`** (ADR-020/021) is commissioned + scored and **has flown against a bird since 2026-11-10** (24 head-on
+  encounters; the 2026-11-11 booked take 3 is committed VALID under the flight-log gate, ADR-020 am. 8; the 2026-09-11 wiring
+  flight was no-target and INVALID on its runtime max bar).
 - **Perception**: lightweight detector on NDVI frames + a **pre-known static-obstacle map** (trees
   geofenced from a pre-flight boundary survey — a legitimate real ag assumption). This separates
   "known static obstacle" from "genuinely unplanned dynamic obstacle" (the real hard problem).
@@ -86,14 +87,17 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   (`tests/test_ci_evidence_gate.py`'s committed-evidence step). R2 passed live 2026-08-25 (min swept
   clearance 1.340 m, 8 candidate rejections); **R3 shipped and has never fired live** (missed by
   15 mm). Birds have no `<collision>` geometry and are teleported, so the offline gate is the
-  entire safety system. **Since 2026-11-11 there is also ONE VALID booked clearance — 9.6138 m, head-on, forward depth
-  camera, every depth bar measured (ADR-020 am. 8). Say both: three breaches on the nadir-era flights, one evidence-gated
-  clearance on the forward camera; not a batch, not a product.**
+  entire safety system. **Since 2026-11-11 there is also ONE booked clearance VALID under the flight-log gate — 9.6138 m
+  (7.99 m gated), head-on, forward depth camera, every depth bar measured, booking preconditions open (ADR-020 am. 8). Say
+  both: three breaches on the nadir-era flights, one gate-VALID clearance on the forward camera; not a batch, not a product.**
 - **Forward depth camera (ADR-020/021): built, commissioned, scored 7/7 — and FLOWN AGAINST A BIRD since 2026-11-10** (the
-  2026-09-11 wiring flight was no-target, INVALID on its 141.16 ms runtime max): across 24 encounters it acquires the 0.18 m bird at
-  40–45 m (one at 32.2 m); the committed 2026-11-11 booked take carries 29 `depth_blob` detections, frame-joined range error p95
-  0.1687 m, detect rate 99.64 %, runtime p95 10.5 / max 13.0 ms. D5/D6 at a 5.0 m/s CRUISE remain UNMEASURED (encounter windows
-  run at ~2.9 m/s because the dodge brakes). Booked to 46.0 m at 5.0 m/s on parked renders; in-flight acquisition sits below that.
+  2026-09-11 wiring flight was no-target, INVALID on its 141.16 ms runtime max): over the 24 head-on encounters since (the pilot,
+  the 20-run batch, the 3 booked takes) it acquired the 0.18 m bird at 39.8–45.2 m on 23 and 32.2 m on one. The committed
+  2026-11-11 take 3: 18 depth frames (29 consumption events), frame-joined range error p95 0.1687 m over the 7 frames the truth
+  places unambiguously, detect rate 99.64 %, runtime p95 10.701 / max 20.702 ms. D5/D6 at a 5.0 m/s CRUISE remain UNMEASURED
+  (encounter windows run at ~2.9 m/s because the dodge brakes). Booked to 46.0 m at 5.0 m/s on parked renders — clutter robustness
+  demonstrated to 28 m (ADR-020 am. 5's mandatory qualifier), in-flight acquisition sits below 46.0, and **the am. 5 tall-obstacle
+  re-score that gates any depth-camera booking is still owed**.
 - Real-detector contract = **ADR-009**: detections carry `stamp_s` (policy staleness gate); bird
   position from apparent-size ray, **never** ground-plane projection (fail-dangerous at altitude).
 - Coverage-ledger honesty = commanded setpoints are **never** recorded as flown (regression-pinned

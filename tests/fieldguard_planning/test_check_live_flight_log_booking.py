@@ -815,6 +815,31 @@ class TestBookingBindings(Harness):
         self.assertEqual(status, checker.INVALID, blob)
         self.assertIn("TWO BOOKINGS FOR ONE TAKE", blob)
 
+    def test_a_pin_with_a_hash_refuses_a_changed_artifact(self):
+        booking_artifact(self.dir / self.ART, BOOKED_MPS)
+        with mock.patch.dict(checker.BOOKING_BINDINGS, {self.STEM: (self.ART, "0" * 64)}):
+            status, messages = self.check(flight_at(5.0), name=self.NAME)
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("BOOKING ARTIFACT CHANGED", blob)
+        import hashlib
+        sha = hashlib.sha256((self.dir / self.ART).read_bytes()).hexdigest()
+        with mock.patch.dict(checker.BOOKING_BINDINGS, {self.STEM: (self.ART, sha)}):
+            status, messages = self.check(flight_at(5.0), name=self.NAME)
+        self.assertEqual(status, checker.VALID, " ".join(messages))
+
+    def test_a_same_named_booking_from_another_directory_contradicts_the_pin(self):
+        """QA 2026-11-11: the first pin compared filenames, so a same-named file elsewhere stood in."""
+        booking_artifact(self.dir / self.ART, BOOKED_MPS)
+        other = self.dir / "elsewhere"
+        other.mkdir()
+        loose = booking_artifact(other / self.ART, 12.0)
+        with self._pin():
+            status, messages = self.check(flight_at(10.0), booking=loose, name=self.NAME)
+        blob = " ".join(messages)
+        self.assertEqual(status, checker.INVALID, blob)
+        self.assertIn("CONTRADICTS the reviewed binding", blob)
+
     def test_an_unpinned_log_is_unchanged(self):
         status, messages = self.check(flight_at(5.0))
         blob = " ".join(messages)
