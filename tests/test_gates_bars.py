@@ -398,6 +398,14 @@ class TestQaRound2(unittest.TestCase):
                 for n, v in red_at(flight_rows(events=disarm), 1.3)]          # loss [1, 1.3 - 1 us]: U = [t0, 2.3) abs
         self.assertEqual(judge(ARMED, parse(dropped(rows, 1.3 - 1e-6)), AS)["verdict"], B.FAIL)   # S-h: raw end 2.3000000000000003
 
+    def test_g375_the_gap_threshold_is_exact_on_the_half_microsecond(self):
+        """theta = max(1 s, 5 x median of the us spans), a multiple of 0.5 us; a gap fires iff span > theta, strictly."""
+        fires = lambda us: bool(fired_gaps(ts := [round(u * 1e-6, 6) for u in us], [(ts[0], ts[-1] + 1e-6)]))
+        half = [0, 200_000, 400_000, 600_000, 800_000, 1_000_001, 1_200_002, 1_400_003]   # median 0.2000005: theta 1.0000025
+        self.assertEqual([fires(half + [half[-1] + g]) for g in (1_000_003, 1_000_002)], [True, False])  # (a) M1 r6; (b)
+        odd = [k * 200_003 for k in range(9)]                     # median 0.200003 s: theta exactly 1.000015 s
+        self.assertEqual([fires(odd + [odd[-1] + g]) for g in (1_000_015, 1_000_016)], [False, True])    # (c) M2 raw 5.0*m
+
     def test_g373_a_fail_says_what_the_limit_did_not_judge(self):
         r = judge(spd(), W((-0.5, self.NAN), (10.0, 4.0), rows=fast(flight_rows(), 20.0)))
         self.assertEqual((r["verdict"], r["n"]), (B.FAIL, 200))

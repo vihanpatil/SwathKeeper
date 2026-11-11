@@ -72,8 +72,10 @@ def median_period(ts):
 
 
 def gap_threshold(ts):
-    """Rule 5: a gap is longer than max(1 s, 5p), p = this instance's own median sample period."""
-    return r6(max(1.0, 5.0 * median_period(ts)))
+    """Rule 5: a gap is longer than max(1 s, 5p), p = this instance's own median sample period. p is a whole or half
+    microsecond (a median of grid spans), so 5p is a multiple of 0.5 us: rounded to 0.1 us (G375), never to the 1 us
+    grid (which rounds a half up and misses a real gap) and never left raw (5.0 * 0.200003 sits one ulp below 1.000015)."""
+    return round(max(1.0, 5.0 * median_period(ts)), 7)
 
 
 def in_windows(ts, windows):
