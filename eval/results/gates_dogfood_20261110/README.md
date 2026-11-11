@@ -52,3 +52,65 @@ QA (G352 to G356) recounted all twenty verdicts and re-derived MODE and ARM rows
 EKF ratio with raw pymavlink on `00000064`, `00000047` and `00000063`: every value equals the tool's, including n.
 The logs themselves are not committed (75.0 MB); `batch.json` records each one's sha256 and size. They live in the sim
 container's volume at `/root/ardu_ws/src/ardupilot/logs/`.
+
+## Addendum 2026-11-11: the same 20 flights, with a ceiling that follows each log's own WP_SPD (tool 0.3.0)
+
+The first gap named above, that a bar cannot take its limit from the log's own parameter, is closed in tool 0.3.0.
+This is the run that was fixed before that tool existed.
+
+**What was registered, and when.** `bars_param.yaml` (sha256 `8d69c04250776978d89f495bafce48172700324c4b2739413616b338a31ff3dc`)
+and `bars_param_key.yaml` (sha256 `e6fa82d568be3f67b3c06120b8cadbe1fa1436d5652a0f2433e0950726e2367d`) were committed
+in c57bcf8 and pushed before a 0.3.0 tool existed to run them; 0.2.0 refuses both. They are the 2026-11-10 file with
+one change: the literal 4.4 m/s ceiling becomes two bars that follow PARM `WP_SPD`. The second file differs from the
+first only by declaring `limit_before_first_parm_row`. Not blind: the 2026-11-10 run had already printed each log's
+`WP_SPD` and its fastest AUTO sample. Each run was registered post-hoc with its own sidecar pinning its log; the two
+committed sidecars pin the primary, `00000064.BIN`.
+
+| Bar | Severity | Limit | Accepted `WP_SPD` |
+|---|---|---|---|
+| `speed_ceiling_auto` | must | 1.1 x `WP_SPD` | 1.0 to 5.0 m/s, the committed booking (ADR-020 am. 3) |
+| `speed_commanded_auto` | should | 1.1 x `WP_SPD` | 1.0 to 6.0 m/s, the whole unbooked sweep |
+
+**Results, all 20 logs, no flight FAILs in either file.**
+
+| Commanded `WP_SPD` | Logs | `speed_ceiling_auto` (must) | `speed_commanded_auto` (should) | Fastest AUTO sample | File reads |
+|---|---|---|---|---|---|
+| 4.0 m/s | 8 (45 46 49 52 55 58 61 64) | PASS against 4.4; log 52 could not tell without the key | the same | 4.008 (log 58) | pass on 6 without the key, 7 with it; log 45 could not tell |
+| 5.0 m/s | 6 (47 50 53 56 59 62) | PASS against 5.5 | PASS against 5.5 | 5.008 (log 47) | pass on 6 |
+| 6.0 m/s | 6 (48 51 54 57 60 63) | could not tell: 6.0 is outside 1.0 to 5.0 | PASS against 6.6000000000000005 | 6.003 (log 57) | could not tell on 6, exit 1 |
+
+| File | pass | fail | could not tell |
+|---|---|---|---|
+| `bars.yaml`, literal 4.4 m/s (2026-11-10, tool 0.2.0) | 7 | 12 | 1 |
+| `bars_param.yaml` | 12 | 0 | 8 |
+| `bars_param_key.yaml` | 13 | 0 | 7 |
+
+The primary, `00000064.BIN`, reads `gates: pass · 6/7 measured · 1 assumed (post-hoc)` and with the key
+`gates: pass · 6/7 measured · 2 assumed (post-hoc)`. Its speed note: `limit 4.4 = 1.1 x WP_SPD 4 (PARM row at
+t=29.088 s); n=382; worst 3.993`.
+
+**What it shows.**
+
+- The 12 FAILs of 2026-11-10 were a literal limit meeting a swept parameter. On all 12 logs the `should` bar now
+  reads PASS: no flight exceeded 1.1 x its own commanded speed, and the fastest sample is within 0.2 % of the command
+  in every group.
+- The six 6.0 m/s flights do not turn green. Their `WP_SPD` is outside the range the `must` bar accepts, so that bar
+  reads could not tell and the file exits 1. That is the committed 5.0 m/s booking stated as a bar: the tool does not
+  call an out-of-range configuration a violation, and it does not let it pass.
+- Log 52 reads could not tell without the key because ONE GPS sample, at speed 0.0, carries the same timestamp as
+  `WP_SPD`'s first PARM row (t=29.824188 s). Nothing before a parameter's first row is judged unless the bars file
+  says so. With the key it passes on n=377. That is 1 log in 20.
+- Log 45, the killed run, passes both speed bars on n=108 and still reads could not tell, because its armed-scoped
+  bars have no ARM row to stand on, as on 2026-11-10.
+- None of the 20 logs has a drop interval or a log hole, so the rule that a lost write may hide a parameter change is
+  not exercised here. It is exercised on the public corpus (`../gates_corpus_20261110/README.md`, addendum).
+
+**What it does not show.** Nothing about bird clearance. A PASS on the `should` bar says a flight stayed within 10 %
+of the speed it was commanded, not that the speed was booked. Still open, as above: `no_errors` reads could not
+tell on all 20, and a log with no ARM row cannot stand an armed scope.
+
+QA recounted every figure here from the verdict files and re-derived the speed bar on logs 48, 52 and 58 from the
+raw bytes with pymavlink: sample counts, the worst sample and the PARM row times match the tool.
+
+Files: `bars_param.yaml`, `bars_param_key.yaml`, their sidecars, `verdict_param_00000064.json`,
+`verdict_param_key_00000064.json`, `batch_param.json` (both files, all 20 logs, every bar).

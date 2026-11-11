@@ -1,0 +1,2471 @@
+[
+ {
+  "id": "00",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 2/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": null,
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=224.613 s; no drop interval removed | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: first PARM row at t=224.598 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "FAIL",
+    "n": 753,
+    "measured": 5.602231502532959,
+    "limit_in_log": {
+     "rows": [
+      [
+       224.612686,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 5.5
+    },
+    "note": "limit 5.5 = 0.011 x WPNAV_SPEED 500 (PARM row at t=224.613 s); n=753; worst 5.60223 on instance 0 at t=370.132 s, 1 window(s); instances present [0]; DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 3004,
+    "measured": 0.79,
+    "limit_in_log": {
+     "rows": [
+      [
+       224.597623,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=224.598 s); n=3004; worst 0.79 on instance 0 at t=373.779 s, 1 window(s); instances present [0, 1]; DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"
+   }
+  }
+ },
+ {
+  "id": "01",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 3/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.3.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=152.294 s; removed 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=152.294 s; removed 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp) | FS_EKF_THRESH: first PARM row at t=152.294 s; removed 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 1678,
+    "measured": 10.03600025177002,
+    "limit_in_log": {
+     "rows": [
+      [
+       152.294058,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=152.294 s); n=1678; worst 10.036 on instance 0 at t=381.597 s, 1 window(s); instances present [0]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 3356,
+    "measured": 12.587977409362793,
+    "limit_in_log": {
+     "rows": [
+      [
+       152.294058,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=152.294 s); n=3356; worst 12.588 on instance 0 at t=152.297 s, 1 window(s); instances present [0]; all 3356 judged samples equal 12.588; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 6712,
+    "measured": 0.06,
+    "limit_in_log": {
+     "rows": [
+      [
+       152.294058,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=152.294 s); n=6712; worst 0.06 on instance 1 at t=471.097 s, 1 window(s); instances present [0, 1]; 8 firmware-dropped writes in [152.294, 152.625] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   }
+  }
+ },
+ {
+  "id": "02",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 3/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.3.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=164.014 s; removed 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=164.014 s; removed 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp) | FS_EKF_THRESH: first PARM row at t=164.014 s; removed 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 1315,
+    "measured": 9.918000221252441,
+    "limit_in_log": {
+     "rows": [
+      [
+       164.013535,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=164.014 s); n=1315; worst 9.918 on instance 0 at t=320.791 s, 1 window(s); instances present [0]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 2629,
+    "measured": 12.587977409362793,
+    "limit_in_log": {
+     "rows": [
+      [
+       164.013535,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=164.014 s); n=2629; worst 12.588 on instance 0 at t=164.091 s, 1 window(s); instances present [0]; all 2629 judged samples equal 12.588; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 5258,
+    "measured": 0.04,
+    "limit_in_log": {
+     "rows": [
+      [
+       164.013535,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=164.014 s); n=5258; worst 0.04 on instance 0 at t=170.491 s, 1 window(s); instances present [0, 1]; 9 firmware-dropped writes in [164.014, 164.653] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   }
+  }
+ },
+ {
+  "id": "03",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V3.6.8",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=101.844 s; removed 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=101.867 s; removed 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp) | FS_EKF_THRESH: first PARM row at t=101.757 s; removed 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       101.843552,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 275,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       101.866741,
+       13.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=275; 2 gap(s) or hole(s) in scope (rule 5); limit BATT_LOW_VOLT not usable on 755 sample(s): 755 where a loss meets [previous PARM row, sample] and may hide a row, t in [129.508, 227.111] s; 66 firmware-dropped writes in [101.728, 102.430] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       101.756824,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: XKF4 has no C column: instance unidentifiable"
+   }
+  }
+ },
+ {
+  "id": "04",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V3.6.8",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=1471.803 s; removed 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=1471.829 s; removed 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp) | FS_EKF_THRESH: first PARM row at t=1471.761 s; removed 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       1471.802992,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 2728,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       1471.82904,
+       13.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=2728; 2 gap(s) or hole(s) in scope (rule 5); 358 firmware-dropped writes in [1470.810, 1472.849] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       1471.761369,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: XKF4 has no C column: instance unidentifiable"
+   }
+  }
+ },
+ {
+  "id": "05",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 2/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.6.2",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=69.509 s; no drop interval removed | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: first PARM row at t=69.503 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 112,
+    "measured": 0.23800000548362732,
+    "limit_in_log": {
+     "rows": [
+      [
+       69.508581,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=69.509 s); n=112; worst 0.238 on instance 0 at t=86.003 s, 1 window(s); instances present [0]"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 446,
+    "measured": 0.1,
+    "limit_in_log": {
+     "rows": [
+      [
+       69.503351,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=69.503 s); n=446; worst 0.1 on instance 1 at t=72.822 s, 1 window(s); instances present [0, 1]"
+   }
+  }
+ },
+ {
+  "id": "06",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 3/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.6.2",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=236.947 s; no drop interval removed | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=236.954 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=236.941 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 791,
+    "measured": 8.322999954223633,
+    "limit_in_log": {
+     "rows": [
+      [
+       236.946602,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=236.947 s); n=791; worst 8.323 on instance 0 at t=342.609 s, 1 window(s); instances present [0]"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1581,
+    "measured": 13.607139587402344,
+    "limit_in_log": {
+     "rows": [
+      [
+       236.953512,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=236.954 s); n=1581; worst 13.6071 on instance 0 at t=303.768 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 3162,
+    "measured": 0.3,
+    "limit_in_log": {
+     "rows": [
+      [
+       236.941344,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=236.941 s); n=3162; worst 0.3 on instance 1 at t=308.268 s, 1 window(s); instances present [0, 1]"
+   }
+  }
+ },
+ {
+  "id": "07",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.5.7",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=26.664 s; removed 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=26.672 s; removed 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp) | FS_EKF_THRESH: first PARM row at t=26.660 s; removed 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 7,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       26.664384,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=7; 8 gap(s) or hole(s) in scope (rule 5); n 7 < min_n 10; limit WPNAV_SPEED not usable on 99 sample(s): 99 where a loss meets [previous PARM row, sample] and may hide a row, t in [30.146, 55.746] s; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 14,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       26.671608,
+       14.399999618530273
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=14; 8 gap(s) or hole(s) in scope (rule 5); limit BATT_LOW_VOLT not usable on 198 sample(s): 198 where a loss meets [previous PARM row, sample] and may hide a row, t in [30.127, 55.827] s; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 28,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       26.659623,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=28; 12 gap(s) or hole(s) in scope (rule 5); limit FS_EKF_THRESH not usable on 396 sample(s): 396 where a loss meets [previous PARM row, sample] and may hide a row, t in [30.126, 55.826] s; 1 firmware-dropped writes in [26.726, 27.502] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   }
+  }
+ },
+ {
+  "id": "08",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 2/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.0.2",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=5.139 s; removed 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=5.158 s; removed 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp) | FS_EKF_THRESH: first PARM row at t=5.130 s; removed 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 686,
+    "measured": 1.100000023841858,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.13891,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 5.5
+    },
+    "note": "limit 5.5 = 0.011 x WPNAV_SPEED 500 (PARM row at t=5.139 s); n=686; worst 1.1 on instance 0 at t=79.100 s, 1 window(s); instances present [0]; velocity: 43 of 729 GPS rows excluded: no 3D fix (Status < 3); 730 GPS2 rows not read; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1460,
+    "measured": 13.833273887634277,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.158362,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=5.158 s); n=1460; worst 13.8333 on instance 0 at t=111.840 s, 1 window(s); instances present [0]; 1 firmware-dropped writes in [5.123, 5.123] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row); 1 firmware-dropped writes in [5.123, 6.124] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.129871,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "09",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 2/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.0.2",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=5.585 s; removed 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=5.604 s; removed 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp) | FS_EKF_THRESH: first PARM row at t=5.576 s; removed 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 983,
+    "measured": 1.124000072479248,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.584895,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 5.5
+    },
+    "note": "limit 5.5 = 0.011 x WPNAV_SPEED 500 (PARM row at t=5.585 s); n=983; worst 1.124 on instance 0 at t=190.934 s, 1 window(s); instances present [0]; velocity: 983 GPS2 rows not read; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1966,
+    "measured": 13.21027946472168,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.604456,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=5.604 s); n=1966; worst 13.2103 on instance 0 at t=160.287 s, 1 window(s); instances present [0]; 1 firmware-dropped writes in [5.569, 5.569] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row); 1 firmware-dropped writes in [5.569, 6.570] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.576159,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "10",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": null,
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=17.141 s; no drop interval removed | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: first PARM row at t=17.129 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       17.141091,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9328,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       17.128503,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=9328; 1 gap(s) or hole(s) in scope (rule 5); DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"
+   }
+  }
+ },
+ {
+  "id": "11",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "12",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "13",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "14",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.5.7",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=547.649 s; removed 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp) | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: first PARM row at t=547.627 s; removed 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp)"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 666,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       547.64893,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=666; 3 gap(s) or hole(s) in scope (rule 5); limit WPNAV_SPEED not usable on 470 sample(s): 470 where a loss meets [previous PARM row, sample] and may hide a row, t in [1140.611, 1234.412] s; 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1332,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       547.62655,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=1332; 2 gap(s) or hole(s) in scope (rule 5); limit FS_EKF_THRESH not usable on 939 sample(s): 939 where a loss meets [previous PARM row, sample] and may hide a row, t in [1140.573, 1234.473] s; ekf: 1 of 2272 XKF4 rows excluded: EKF reported no solution (SS 0); 128 firmware-dropped writes in [547.668, 548.593] s (DSF.Dp), not located; judged across (design \u00a73.3) for the limit (assume: limit_before_first_parm_row)"
+   }
+  }
+ },
+ {
+  "id": "15",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "16",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "17",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 2/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V4.6.2",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=835.726 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=836.006 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "FAIL",
+    "n": 2176,
+    "measured": 43.564903259277344,
+    "limit_in_log": {
+     "rows": [
+      [
+       835.726097,
+       45.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 45.0
+    },
+    "note": "limit 45 = 1 x BATT_LOW_VOLT 45 (PARM row at t=835.726 s); n=2176; worst 43.5649 on instance 0 at t=970.686 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 10884,
+    "measured": 0.35,
+    "limit_in_log": {
+     "rows": [
+      [
+       836.006399,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=836.006 s); n=10884; worst 0.35 on instance 0 at t=924.705 s, 1 window(s); instances present [0, 1]"
+   }
+  }
+ },
+ {
+  "id": "18",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": null,
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": false,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: no PARM row"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter BATT_LOW_VOLT has no PARM row in this log"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "19",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "20",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "21",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V4.5.7",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": false,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: no PARM row"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "22",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V4.5.7",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=1.000 s; no drop interval removed | FS_EKF_THRESH: no PARM row"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "FAIL",
+    "n": 4800,
+    "measured": 12.5,
+    "limit_in_log": {
+     "rows": [
+      [
+       1.0,
+       22.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 22.0
+    },
+    "note": "limit 22 = 1 x BATT_LOW_VOLT 22 (PARM row at t=1.000 s); n=4800; worst 12.5 on instance 1 at t=1.000 s, 1 window(s); instances present [0, 1]; DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: 0 of 4800 XKF4 rows measured anything: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "23",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 3/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.6.3",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: first PARM row at t=102.371 s; no drop interval removed | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=102.377 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=102.364 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 202,
+    "measured": 2.19100022315979,
+    "limit_in_log": {
+     "rows": [
+      [
+       102.370644,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=102.371 s); n=202; worst 2.191 on instance 0 at t=123.503 s, 1 window(s); instances present [0]"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 405,
+    "measured": 22.969160079956055,
+    "limit_in_log": {
+     "rows": [
+      [
+       102.376524,
+       21.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 21.0
+    },
+    "note": "limit 21 = 1 x BATT_LOW_VOLT 21 (PARM row at t=102.377 s); n=405; worst 22.9692 on instance 0 at t=134.663 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 810,
+    "measured": 0.59,
+    "limit_in_log": {
+     "rows": [
+      [
+       102.364399,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=102.364 s); n=810; worst 0.59 on instance 0 at t=123.563 s, 1 window(s); instances present [0, 1]"
+   }
+  }
+ },
+ {
+  "id": "24",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V3.9.0-beta1",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": false,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: no PARM row"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "25",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V3.9.0-beta1",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": false,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: no PARM row"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "26",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 2/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.447 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.447 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.447 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 646,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=646; 2 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 647 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1483,
+    "measured": 12.188541412353516,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.447 s); n=1483; worst 12.1885 on instance 0 at t=47.439 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "FAIL",
+    "n": 2936,
+    "measured": 3.29,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=2.447 s); n=2936; worst 3.29 on instance 0 at t=103.839 s, 1 window(s); instances present [0, 1]; ekf: 20 of 2956 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "27",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.445 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.445 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.445 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 20,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=20; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 20 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 8,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=8; 2 gap(s) or hole(s) in scope (rule 5); n 8 < min_n 10; ekf: 20 of 28 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "28",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.445 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.445 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.445 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 20,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=20; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 20 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 10,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=10; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 30 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "29",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.450 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.450 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.450 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 565,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.449853,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=565; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 566 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1012,
+    "measured": 12.187081336975098,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.449853,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.450 s); n=1012; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1994,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.449853,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=1994; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 2014 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "30",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.447 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.447 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.447 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 117,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=117; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 118 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 159,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.447 s); n=159; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 159 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 288,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=288; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 308 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "31",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.447 s; no drop interval removed | BATT_LOW_VOLT: no PARM row | FS_EKF_THRESH: first PARM row at t=2.447 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 73,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=73; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 74 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 354,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=354; 2 gap(s) or hole(s) in scope (rule 5); ekf: 16 of 370 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "32",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.445 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.445 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.445 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 13,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=13; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 13 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: 0 of 16 XKF4 rows measured anything: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "33",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.445 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.445 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.445 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1015,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=1015; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 1016 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "FAIL",
+    "n": 1911,
+    "measured": 9.595019340515137,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ],
+      [
+       4.50653,
+       11.5
+      ],
+      [
+       4.507363,
+       11.5
+      ]
+     ],
+     "n_rows": 3,
+     "at_worst": 11.5
+    },
+    "note": "limit 11.5 = 1 x BATT_LOW_VOLT 11.5 (PARM row at t=4.507 s); n=1911; worst 9.59502 on instance 0 at t=189.039 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 3792,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=3792; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 3812 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "34",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.445 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.445 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.445 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 29,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=29; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 29 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 28,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=28; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 48 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "35",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.447 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.447 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.447 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 3,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=3; 1 gap(s) or hole(s) in scope (rule 5); n 3 < min_n 10; velocity: 237 of 240 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 496,
+    "measured": 12.177748680114746,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.447 s); n=496; worst 12.1777 on instance 0 at t=18.139 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 962,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=962; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 982 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "36",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.550 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.550 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.550 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.549813,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 13,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.549813,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.550 s); n=13; worst 12.6 on instance 0 at t=2.640 s, 1 window(s); instances present [0]; all 13 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.549813,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: 0 of 14 XKF4 rows measured anything: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "37",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: first PARM row at t=2.445 s; no drop interval removed | BATT_LOW_VOLT: first PARM row at t=2.445 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.445 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1092,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=1092; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 1093 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 2065,
+    "measured": 12.187081336975098,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=2065; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 4100,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=4100; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 4120 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "38",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 1/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduRover V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=51.422 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=51.422 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       51.421923,
+       0.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 9 sample(s): 9 where the parameter is outside accept (0 of them break 1 x every logged value they may have had), t in [52.242, 60.642] s"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 18,
+    "measured": 0.0,
+    "limit_in_log": {
+     "rows": [
+      [
+       51.421923,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=51.422 s); n=18; worst 0 on instance 0 at t=51.842 s, 1 window(s); instances present [0, 1]; all 18 judged samples equal 0"
+   }
+  }
+ },
+ {
+  "id": "39",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured \u00b7 1 assumed (unregistered)",
+  "refusal": null,
+  "firmware": "ArduRover V4.8.0-dev",
+  "assumptions": [
+   {
+    "name": "limit_before_first_parm_row",
+    "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+    "applied": true,
+    "detail": "WPNAV_SPEED: no PARM row | WP_SPD: no PARM row | BATT_LOW_VOLT: first PARM row at t=2.362 s; no drop interval removed | FS_EKF_THRESH: first PARM row at t=2.362 s; no drop interval removed"
+   }
+  ],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.361555,
+       0.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 1 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 220 sample(s): 220 where the parameter is outside accept (0 of them break 1 x every logged value they may have had), t in [2.442, 48.642] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 428,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.361555,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=428; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 448 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ }
+]

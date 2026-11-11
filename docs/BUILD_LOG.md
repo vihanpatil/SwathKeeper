@@ -6,6 +6,38 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-11-11 — tool 0.3.0: a limit that follows the log's own parameter, and a rounding bug that was holding ties by luck
+
+The owner said build it: yesterday's dogfood had failed 12 of 20 sim flights on one literal 4.4 m/s ceiling while the
+flights were commanded at 4, 5 and 6 m/s. A `series_bound` limit can now be `{param, scale?, accept}`: the log's own
+PARM rows supply the value (ADR-023 am. 4, commit 0ba712d).
+
+The order of work was the lesson of 2026-11-10 applied. **Measure first:** before any rule was written, a scan of the
+40-log corpus and the 20 sim logs showed that in all 8 corpus logs with a loss the first drop interval spans the
+startup parameter dump, that samples precede a parameter's first row in 13 logs, and that `BATT_LOW_VOLT` is 0 on 2.
+**Rule second:** the orchestrator's draft bridged the stretch before the first row silently; the lead overruled it as
+the same undeclared inference refused for arming, corrected two of its inequalities, and made `accept` required.
+**Attack before code:** QA attacked the ruled design while the builder worked and found a sentence in the fixed
+assumption text that was false and a rule (a non-finite row voids the whole bar) that turned a certain violation into
+exit 0 on a `should` bar; the lead reversed its own cut. **Acceptance fixed before the tool existed:** two bars files
+for the 20 sim flights and a corpus probe were committed and pushed (c57bcf8) while 0.2.0 still refused them.
+
+What the build found that nobody asked for: 0.2.0 rounded loss bounds to 1 µs and compared them with raw
+`TimeUS * 1e-6` row times, which differ on about 30 % of ticks. The same-tick rules ruled closed on 2026-11-10 held by
+luck. All times now enter on the 1 µs grid; corpus log 03 was a live case (its first drop interval starts on the first
+MODE row's tick). No verdict, n, exit code or badge moved on 86 existing verdict files.
+
+Measured on the final build: the 20 sim flights read 13 pass, 0 fail, 7 could not tell with the new key declared (12 /
+0 / 8 without: one flight has ONE sample on the tick of the parameter's first row). The six 6.0 m/s flights do not
+turn green: their `WP_SPD` is outside the booked range the `must` bar accepts. On the corpus, 23 of 132
+parameter-following probe verdicts were measurable without the key and 36 with it; most of what stays could not tell
+is an ABSENT stream (37) or a parameter the log does not carry (32). QA's build attack: no false green, one crash and
+six untested behaviours, all closed; 58 builder mutants and 19 of QA's 22 killed, 3 equivalent.
+
+Still true: none of the three public examples reads `pass`; `no_events` cannot pass off a 4.5.x release (the lead made
+NOT closing that in v1 the cut that pays for this build); nobody outside the repo has run the tool. One question went
+to the owner: whether the same loss rule should apply to the fence a `containment` bar reads from the log's parameters.
+
 ## 2026-11-10 — tool 0.2.0: the first measurement of what the tool can tell, and two rules built against it
 
 The day began with the owner's ruling on G257 ("flip": a dropped write must not be a footnote on a green) and a direct question:

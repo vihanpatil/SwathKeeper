@@ -63,3 +63,13 @@ Related: [[feedback-red-first-fixtures]], [[evidence_consumption_seams]].
   change tool.version + run_date. Tarot is now exit 1, so ci.yml has TWO continue-on-error Action probes.
 - Mutant harness pattern that worked: copy src/swathkeeper_gates + tests/test_gates_*.py into a scratch shadow,
   `-k "not TestImportWall"` (it walks the real repo), parse `tests/test_gates_bars.py:<line>` from `--tb=short`.
+
+**0.3.0 parameter-following limit (2026-11-11, SPEC v2 + v2.1 delta; built uncommitted on feat/gates-tool-dp-rule):**
+- Float trap: `TimeUS * 1e-6` != `round(., 6)` on ~29 % of microsecond ticks (raw is always the LOWER one), and the adapter
+  ROUNDS drop/hole bounds but not row times. Any closed `a <= t` against a loss bound misses on those ticks. The new
+  limit code compares in r6 space (pinned: loss at rel 6.2 s); 0.2.0's `_arming` (`a <= first`) and B7 (`a <= ts[k]`)
+  compared raw too -- FIXED AT THE ROOT 2026-11-11 (fix round 1): `adapters.ardupilot._t` puts every contract time on the
+  1 us grid (t1 too). Side effect: a median_period_s that is a half-us tie can flip its 6th decimal (plane_nofix: 2 leaves).
+- Non-finite PARM rows live in `log.meta["params_nonfinite"]` [(t, name)] (unserialised); `log.params` stays finite-only.
+- Two sorts of one list make a "sort dropped" mutant equivalent: keep exactly one sort (in `_parm_rows`).
+- pytest-subtests prints `SUBFAILED(<desc with spaces>) tests/...`: a mutant parser regex must allow spaces there.

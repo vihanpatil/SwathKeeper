@@ -1,0 +1,16 @@
+== probe_param_nokey.json 33 logs
+   speed_wpnav PASS 3 FAIL 1 EI 29 {'loss': 6, 'min_n': 6, 'stream_absent': 9, 'gap_or_hole': 2, 'param_absent': 14}
+   speed_wp PASS 0 FAIL 0 EI 33 {'param_absent': 17, 'stream_absent': 9, 'gap_or_hole': 7, 'min_n': 1}
+   batt_low PASS 11 FAIL 3 EI 19 {'stream_absent': 8, 'loss': 7, 'min_n': 9, 'gap_or_hole': 4, 'param_absent': 1, 'pre_first_row': 1, 'outside_accept': 2}
+   ekf_thresh PASS 4 FAIL 1 EI 28 {'loss': 4, 'min_n': 5, 'stream_absent': 11, 'gap_or_hole': 13, 'pre_first_row': 2}
+   EI total 109 | causes named: {'loss': 17, 'min_n': 21, 'stream_absent': 37, 'gap_or_hole': 26, 'param_absent': 32, 'pre_first_row': 3, 'outside_accept': 2}
+   EI whose only causes are the limit's (min_n aside): {'loss': 10, 'pre_first_row': 3, 'outside_accept': 1} = 14
+   EI naming any limit cause: 22
+== probe_param_key.json 33 logs
+   speed_wpnav PASS 7 FAIL 1 EI 25 {'stream_absent': 9, 'loss': 2, 'gap_or_hole': 2, 'min_n': 1, 'param_absent': 14}
+   speed_wp PASS 0 FAIL 0 EI 33 {'param_absent': 17, 'stream_absent': 9, 'gap_or_hole': 7, 'min_n': 1}
+   batt_low PASS 16 FAIL 3 EI 14 {'stream_absent': 8, 'loss': 2, 'gap_or_hole': 4, 'param_absent': 1, 'outside_accept': 2, 'min_n': 2}
+   ekf_thresh PASS 8 FAIL 1 EI 24 {'stream_absent': 11, 'loss': 2, 'gap_or_hole': 13, 'min_n': 1}
+   EI total 96 | causes named: {'stream_absent': 37, 'loss': 6, 'gap_or_hole': 26, 'min_n': 5, 'param_absent': 32, 'outside_accept': 2}
+   EI whose only causes are the limit's (min_n aside): {'outside_accept': 1} = 1
+   EI naming any limit cause: 8

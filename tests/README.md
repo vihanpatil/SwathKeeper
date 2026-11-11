@@ -16,17 +16,17 @@ of one measured invariant with nothing that failed when they disagreed; since 20
 
 ```bash
 python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1450, OK (skipped=9) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 442 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1882 passed, 1 FAILED, 9 skipped, 0 xfail
+python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 472 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1912 passed, 1 FAILED, 9 skipped, 0 xfail
 ```
 
-**The consistency check that matters:** 1450 + 442 = 1892 = 1882 + 1 + 9. If those two sides
+**The consistency check that matters:** 1450 + 472 = 1922 = 1912 + 1 + 9. If those two sides
 disagree, a file is invisible to one of the runners — which has happened before and is exactly what
 the second, separate CI job exists to prevent.
 
-*(Re-quoted 2026-11-10 for tool 0.2.0's 13 new host-side tests. The COUNTS are measured, by collection on a clean export of the
-commit: 1450 + 442 = 1892. The pass / fail / skip split was not re-run on the host that day, because another session was flying
-the sim on it; it is the 2026-11-05 split carried forward and is confirmed by the PR's CI run, a fresh checkout.)*
+*(Re-quoted 2026-11-11 for tool 0.3.0's 30 new host-side tests: 1450 + 472 = 1922. Counts AND the pass / fail / skip split were
+measured that day by running all three commands on a clean export of the commit, with the pinned venv and the sim idle. The
+2026-11-10 quote, 1450 + 442 = 1892, had its counts by collection only and its split from CI.)*
 
 **The 9 skips are a FRESH-checkout figure** (measured in a clean worktree with the pinned venv): 8 of them are
 gated on gitignored local artifacts — the 2026-09-11 wiring-flight log (4), `eval/results/spike_scores.json`

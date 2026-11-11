@@ -2,7 +2,7 @@
 
 Pre-registered evidence gates over an ArduPilot flight log. You write pass/fail bars in a YAML file, hash it before
 the run, and the tool judges a DataFlash `.bin` against it: one JSON verdict, one exit code. A bar the log cannot
-measure reads `could not tell`, which never scores green. Version 0.2.0 reads DataFlash only. It has published verdicts on exactly the three public logs in `examples/`, and a measurability probe ran it on 40 more public logs on 2026-11-10.
+measure reads `could not tell`, which never scores green. Version 0.3.0 reads DataFlash only. It has published verdicts on exactly the three public logs in `examples/`, and a measurability probe ran it on 40 more public logs on 2026-11-10.
 Read [What this does NOT claim](https://github.com/vihanpatil/SwathKeeper/blob/main/src/swathkeeper_gates/README.md#what-this-does-not-claim) first.
 
 ## Install
@@ -19,8 +19,8 @@ pip install 'swathkeeper-gates[ardupilot] @ git+https://github.com/vihanpatil/Sw
 The `[ardupilot]` extra installs the parser, pymavlink, pinned to 2.4.50; without it a `.bin` refuses (exit 2) naming
 the extra. Measured 2026-11-09 in a fresh venv (macOS, Python 3.12.12): 3.5 s, installing swathkeeper-gates 0.1.0,
 pymavlink 2.4.50, PyYAML 6.0.3, lxml 6.1.3. Every output below was measured from an install at commit ecbe20c of
-this repository, before this file reached main, with no checkout of this repo. On 0.2.0 the walkthrough's `run`
-output is unchanged (re-run 2026-11-10, exit 0), and on every push CI writes this exact bars file (checked by
+this repository, before this file reached main, with no checkout of this repo. On 0.3.0 the walkthrough's `run`
+output is unchanged (re-run 2026-11-11, exit 0), and on every push CI writes this exact bars file (checked by
 sha256), registers it against the Tarot log as step 3 does, and requires exit 0 with the bar line and badge of step 4.
 
 ## Walkthrough: one public log, one bar
@@ -121,18 +121,18 @@ tool's, and a newer minor refuses); `bars`, a list of at least one bar. Keys mar
 | `id` | `[a-z0-9_]{1,40}`, unique in the file |
 | `kind` | one of the five kinds below |
 | `severity` | `must` or `should` (see exit codes). A file with zero `must` bars refuses. |
-| `provenance` | `{text, param?}`. `text` says where the limit came from. `param` names a PARM whose logged value(s) the verdict prints beside the limit; it never changes the verdict. |
+| `provenance` | `{text, param?}`. `text` says where the limit came from. `param` names a PARM whose logged value(s) the verdict prints beside the limit; it never changes the verdict (when the limit follows a parameter, it must name that one). |
 | `scope` | `{armed, modes}`, both required. `armed: true` judges known-armed intervals only, `null` the whole log; `false` refuses. Without the `assume` key, `armed: true` reads EVIDENCE_INSUFFICIENT whenever the scope reaches before the first ARM row (arming before it is ABSENT, rule 4), and every log has such a stretch; with the key, see Declared assumptions below. `modes: [names]` judges only those modes, `null` any mode. Names must be spelt as pymavlink spells them for the vehicle resolved from the log's firmware string (e.g. `LOITER`, `ALT_HOLD`), or the run refuses; with the vehicle unresolved, every bar that names a mode reads `EVIDENCE_INSUFFICIENT`, and so does `mode_transitions` even when it names no mode. |
 | `min_n` | an integer of at least 1; required, no default |
 | `params` | per kind, below |
 
 | Kind | `params` | Judges | n counts |
 |---|---|---|---|
-| `series_bound` | `channel` (one of the 16 below), `bound` (`floor` or `ceiling`), `limit` | every sample of every instance in scope against `limit` | samples in scope, all instances |
+| `series_bound` | `channel` (one of the 16 below), `bound` (`floor` or `ceiling`), `limit` (a number, or `{param, scale?, accept}`: see A limit that follows the log's own parameter) | every sample of every instance in scope against `limit` | samples in scope, all instances (judged samples only, when the limit follows a parameter) |
 | `gnss_quality` | `fix_min`, `sats_min`, `max_outage_s` | FAIL if a run of rows below `fix_min` or `sats_min` spans more than `max_outage_s` on any instance (0 = any such row). A run is measured to the next qualifying row, so one bad row at 5 Hz spans 0.2 s. `fix_type` is the AP_GPS Status enum (3 = 3D fix). | rows in scope |
 | `containment` | `source` (`log` or `yaml`), `polygon?`, `alt_max_rel_home_m?`, `exclusions?` | `log`: the FENCE_RADIUS cylinder about home and FENCE_ALT_MAX. FENCE_TYPE bits 4 (polygon) and 8 (minimum altitude) are not judged, so the Tarot geofence PASS covers the circle and the altitude cap only. `yaml`: needs a `polygon` of at least 3 `[lat, lon]`, not self-intersecting. `exclusions` are `{lat, lon, radius_m}` circles. Polygon and circles are judged on every segment between samples, never across a gap. | judged segments between consecutive samples |
 | `mode_transitions` | `allowed` | every observed transition is a listed `[from, to]` pair; `"*"` is any mode, `<start>` (only as a `from`) the log's start. A transition across a loss has an unknown `from`: FAIL if no mode could be allowed into the observed mode, judged and counted if every mode could, otherwise not judged and the bar reads EI (see lost writes below). | transitions after the startup row |
-| `no_events` | `kinds` (only `error` in 0.2.0), `ignore?` | zero ERR rows outside the `ignore` list of `[Subsys, ECode]` pairs | drop-free seconds of scope |
+| `no_events` | `kinds` (only `error` in 0.3.0), `ignore?` | zero ERR rows outside the `ignore` list of `[Subsys, ECode]` pairs | drop-free seconds of scope |
 
 ```
 position.lat  position.lon  position.alt_amsl_m  position.alt_rel_home_m  velocity.groundspeed_mps
@@ -146,12 +146,13 @@ number whose text is not plain decimal (`022`, `0x12`, `1_8.6`, `.inf`). An inva
 
 ## How a bar is decided (a fixed order: the first rule that matches wins)
 
-Three causes make a bar **blind**: (a) the mode is unknown for more than 1.0 s before the first MODE row, which
+Four causes make a bar **blind**: (a) the mode is unknown for more than 1.0 s before the first MODE row, which
 applies to every bar that names a mode and to `mode_transitions` (1.0 s or less is only a note); (b) no PRESENT
 position, gnss or battery stream exists to witness the logger, which applies to `mode_transitions` and `no_events`;
 (c) for `mode_transitions`, a loss (defined under lost writes below) in its base range, unless its allowed set
 admits every transition, and a loss that cuts a transition the tool cannot judge, even when that loss lies outside
-the base range.
+the base range; (d) for a `series_bound` whose limit follows a parameter, any in-scope sample whose limit cannot be
+used (A limit that follows the log's own parameter, below).
 
 1. Something the bar needs is ABSENT: `EVIDENCE_INSUFFICIENT`. That is a needed stream or column; the arming, mode or
    vehicle the scope needs; for `containment` with `source: log`, the fence or home; for `no_events`, `dsf_dropped_max`;
@@ -208,9 +209,11 @@ naming no bar, or an EI/NA on a `should` bar refuses. The file's hash is in the 
 
 ## Declared assumptions (`assume`)
 
-`assume` is an optional top-level key of the bars file: a list of names from a closed set; 0.2.0 knows exactly one,
-`arming_before_first_arm_row`. An unknown name, a duplicate or an empty list refuses, and so does declaring it while
-no bar has `armed: true`. It is part of the bars text, so `prereg` hashes it; a 0.1.0 tool refuses a file using it.
+`assume` is an optional top-level key of the bars file: a list of names from a closed set of two. This section describes
+`arming_before_first_arm_row`; `limit_before_first_parm_row` (0.3.0) is described under A limit that follows the log's
+own parameter. An unknown name, a duplicate or an empty list refuses, and so does a name no bar uses: the first needs a
+bar with `armed: true`, the second a bar whose limit follows a parameter. It is part of the bars text, so `prereg`
+hashes it; a tool older than a name refuses a file using it.
 
 > Before the first ARM row the vehicle is in the opposite state of that row: armed before a first disarm, disarmed before a first arm. A log with no ARM row is not covered: arming stays ABSENT. The tool does not verify this.
 
@@ -259,6 +262,87 @@ max(1 s, 5 sample periods) is not a loss, so a file opened by a failed arm and f
 leave a short disarmed stretch assumed armed; that errs towards a red, never a green. A log without DSF rows reports
 no dropped rows. Firmware other than Copter 4.5.5 is assumed, not read. A log with no ARM row stays could not tell.
 
+## A limit that follows the log's own parameter
+
+Since 0.3.0 a `series_bound` limit may be a mapping instead of a number. The limit is then `scale` times the value
+the log's own PARM rows give for `param`, so one bars file can judge flights flown at different settings.
+
+```yaml
+params: {channel: velocity.groundspeed_mps, bound: ceiling, limit: {param: WP_SPD, scale: 1.1, accept: [1.0, 5.0]}}
+```
+
+| Key | Value |
+|---|---|
+| `param` | a parameter name, `[A-Z][A-Z0-9_]{0,15}`. Names are never aliased. |
+| `scale?` | a finite number above 0, default 1. A unit conversion goes here: the tool does not know a parameter's unit. |
+| `accept` | required: `[LO, HI]`, the closed range of raw parameter values the bar is written for. `scale` times each end must be finite. |
+
+The mapping is legal only at `series_bound.params.limit`. A `provenance.param` naming a different parameter refuses.
+A 0.2.0 tool refuses the mapping.
+
+**What the bar means.** "The vehicle stayed within its own logged configuration", for a configuration inside
+`accept`. It does not say that configuration was safe. Registration no longer fixes the number: it fixes the formula
+and the envelope from `scale` x LO to `scale` x HI, and the log supplies the value.
+
+**How a sample is judged.** Its candidates are the latest PARM row of the parameter strictly before it, plus any row
+on its own timestamp. It is a violation only if it breaks `scale` x every candidate, clean only if it breaks none.
+A sample is not judged when:
+
+- it sits at or before the parameter's first PARM row: the startup dump takes time, and the value before it is not logged;
+- a loss (a DSF.Dp drop interval or a log hole) meets the stretch from that previous row to the sample: a change row
+  may be lost in it, and a parameter is logged at startup and then only when it changes, so no later row re-pins it;
+- a candidate lies outside `accept`: a disabled threshold such as `BATT_LOW_VOLT 0`, or a configuration the bar was
+  not written for. The note says how many of those samples break the logged value anyway;
+- a candidate row's value is not finite, or two rows on the sample's timestamp disagree about the verdict.
+
+One unjudged sample in scope makes the bar read `could not tell`, unless another sample is a certain violation: that
+stays FAIL, and its note names the unjudged samples too. n counts judged samples only. A parameter with no PARM row
+in the log reads `could not tell`.
+
+**The assumption `limit_before_first_parm_row`** is the second name `assume` accepts. Its fixed text:
+
+> Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.
+
+With it, a sample at or before the first row is judged against that row's value, and a drop interval that begins at
+or before that row, or at the log's start, no longer makes the limit unsure. A log hole, a later drop interval and a
+first row more than 5 s after the log's start are never covered. It changes no mode or arming judgement.
+
+**What prints.** Each such result carries `limit_in_log`: `rows` (the first 8 `[t_s, value]` rows by time, `null` for
+a non-finite value), `n_rows`, and `at_worst`, the limit the worst sample was judged against (`null` unless the
+verdict is PASS or FAIL). On PASS and FAIL the note leads with the arithmetic. The assumption's entry in `assumptions`
+gives each followed parameter's first row and the drop intervals it discarded.
+
+**Example**, the walkthrough's battery floor following the Tarot's own `BATT_LOW_VOLT` (0.3.0, 2026-11-11):
+
+```yaml
+schema: swathkeeper-bars/1.0
+contract: swathkeeper-flightlog/1.0
+assume: [limit_before_first_parm_row]
+bars:
+  - id: batt_floor
+    kind: series_bound
+    severity: must
+    provenance: {text: "the log's own BATT_LOW_VOLT, accepted for a 6S pack at 3.0 to 3.6 V per cell", param: BATT_LOW_VOLT}
+    scope: {armed: null, modes: null}
+    min_n: 30
+    params: {channel: battery.voltage_v, bound: floor, limit: {param: BATT_LOW_VOLT, accept: [18.0, 21.6]}}
+```
+
+```
+$ swathkeeper-gates run --log tarot.bin --bars bars.yaml --out verdict.json
+  PASS                   must   batt_floor           n=1419      measured=23.48213005065918
+gates: pass · 1/1 measured · 1 assumed (unregistered)
+```
+
+Exit 0. The note leads with `limit 18.6 = 1 x BATT_LOW_VOLT 18.6 (PARM row at t=709.297 s)`, and the assumption's
+detail reads `BATT_LOW_VOLT: first PARM row at t=709.297 s; removed 15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp)`.
+Without the `assume` line the same file reads `gates: could not tell · 0/1 measured (unregistered)`, exit 1: the
+Tarot's 15 dropped writes span its parameter dump, so the limit is unsure for all 1419 samples.
+
+**Names and units change between releases.** `WPNAV_SPEED` is in cm/s through Copter 4.6.3 and `WP_SPD` in m/s from
+Copter 4.7.0 (read from the ArduPilot source at those tags). A bar naming one reads `could not tell` on a log that
+carries the other.
+
 ## What the adapter reads, and lost writes
 
 POS, GPS, BAT, XKF4, NKF4, NKF9, MODE, ARM, ERR, DSF, PARM, MSG, VER, ORGN; not GPS2, BAT2 or CURR. Velocity keeps GPS
@@ -291,7 +375,8 @@ Each holds `SOURCE.json` (url, sha256, size, licence), `bars.yaml`, its sidecar 
 the Tarot dir also holds `badge.svg`. CI re-fetches each log by sha256 and requires byte identity with the committed
 verdict apart from three leaves it excludes and shape-checks (`tool.python`, `tool.deps.PyYAML`,
 `allowlist.run_date_utc`). On 2026-11-09, from the install above, the 0.1.0 Tarot verdict reproduced on every scalar
-leaf (363) except `allowlist.run_date_utc`. The committed verdicts below are 0.2.0's.
+leaf (363) except `allowlist.run_date_utc`. The committed verdicts below are 0.3.0's: every verdict, n and badge in
+them is what 0.2.0 printed.
 
 | Directory | Log | Badge | Exit |
 |---|---|---|---|
@@ -321,6 +406,23 @@ transition bar allowing only the modes each log used lost 5 of its 19 measurable
 one autotest run, ArduCopter-heavy; the mode-scoped probe bar uses each log's dominant mode
 (`eval/results/gates_corpus_20261110/`).
 
+**Parameter-following limits, same corpus, 2026-11-11.** Four unscoped bars per judged log, following `WPNAV_SPEED`,
+`WP_SPD`, `BATT_LOW_VOLT` and `FS_EKF_THRESH`: 23 of 132 verdicts were measurable without
+`limit_before_first_parm_row` and 36 of 132 with it. All 13 it changed went from could not tell to PASS, on four logs
+whose startup drops span the parameter dump and two with samples before it. Most of what stays could not tell is not
+the limit's doing. Of the 96 such verdicts with the key, 37 lack the bar's stream and 32 name a parameter the log does
+not carry (13 logs carry `WPNAV_SPEED`, 12 `WP_SPD`, none both); among the other 27, 26 name a gap or hole in scope, 6 a
+loss that may hide a parameter row, 5 too few samples and 2 a `BATT_LOW_VOLT` of 0, outside `accept` (a verdict can name
+several). The `WP_SPD` bar was measurable on no corpus log. The limits are realistic, so the 5 FAILs are measurements
+against a waypoint-speed or failsafe parameter in every mode, not findings about a vehicle.
+
+**This project's own flights, 2026-11-10 and 2026-11-11.** 20 SITL logs of the SwathKeeper drone, not public: with a
+literal 4.4 m/s ceiling, 7 pass, 12 fail and 1 could not tell, because the flights were commanded at 4, 5 and 6 m/s.
+With the ceiling following each log's `WP_SPD` inside the booked range (1.0 to 5.0 m/s) and the key declared, 13 pass,
+none fails, and 7 read could not tell: the six flights commanded at 6.0 m/s, outside that range, and one run killed
+before it logged a disarm. No verdict there says anything about bird clearance: a DataFlash log carries no bird
+(`eval/results/gates_dogfood_20261110/`).
+
 ## What this does NOT claim
 
 - The tool comes from a sim-demonstrated drone repo. Its authors have flown nothing real, and that drone's own
@@ -330,7 +432,8 @@ one autotest run, ArduCopter-heavy; the mode-scoped probe bar uses each log's do
 - A verdict claims nothing beyond what it prints: these bars, this file (by sha256), this parser version, this date.
   PASS means every measured sample met the bar; between samples it says nothing, except where `containment` judges
   segments, and never across a gap. A PASS says nothing about any vehicle's safety. The tool has published verdicts on
-  exactly the three public logs in `examples/`; the probe above ran it on 40 more, and it reads no other format.
+  exactly the three public logs in `examples/`; the probe above ran it on 40 more and on 20 SITL logs of this
+  project's own drone, and it reads no other format.
 - Before the Tarot bars were written, the authors had seen its modes, error count, GNSS status, peak altitude and
   first battery and EKF rows. The build's draft run printed the measured values of six of the eight bars, and the
   first registered verdict printed all eight before the file was re-registered. So the Tarot results are
@@ -338,6 +441,12 @@ one autotest run, ArduCopter-heavy; the mode-scoped probe bar uses each log's do
   verdict were first committed together, so git orders nothing there. A 142 s low hover was expected to pass them,
   and under 0.2.0 it does not: the dropped writes in its first 0.9 s leave its mode-transition bar unable to tell.
 - Pre-registration binds a run to a text, not a date (step 3); the sidecar's `written_utc` is recorded as untrusted.
+- A limit that follows a parameter judges the LOGGED configuration only. ArduPilot does not log every change (read at
+  tag Copter-4.5.5): a value set in memory without a save, which is what a script's `param:set` does, writes no PARM
+  row; a row can be refused without being counted in DSF.Dp, for example one written from another thread while the
+  startup dump runs; and drops after the last DSF row are never counted. A saved change can take effect before its row
+  is written. None of this is visible to the tool, with or without the assumption. A PASS says the vehicle obeyed the
+  values the log shows, inside the range the author accepted, and nothing about whether those values were safe.
 - A truncated log reads as a shorter flight; only a pinned log hash ties a verdict to a file. DataFlash has no
   checksum, so a corrupted record with an intact header decodes as values. Never exercised on: a real EKF2 log with
   a core column, a multi-home log, or `LOG_BACKEND_TYPE` other than 1. The three scored examples contain no

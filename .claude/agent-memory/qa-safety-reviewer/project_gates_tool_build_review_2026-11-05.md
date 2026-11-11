@@ -224,3 +224,31 @@ log sha256s match the copies; WP_SPD 8/6/6; ranges 3.932-4.008, 5.002-5.008, 5.9
   (editing registered bars text breaks the pin).
 - G353 "within 0.2 % in every flight" false for 45 (3.932, -1.7 %); G354 "76 MB" = 75.0 MB; G355 no RTL/LAND row ever
   flown (end-mode entries unexercised); G356 blind defensible, disclose primary-choice basis + a-priori sample rates.
+
+## Round 13 — paper attack on the RULED param-limit spec (SPEC_v2, tool 0.3.0), 2026-11-11 — G357-G368; BUILD WITH CHANGES
+Method: no import of the working tree; 0.2.0 scratch venv + scratchpad/qa357/measure.py over corpus + dogfood; AP @4.5.5 source.
+- G357 MAJOR: fixed text "losses after the first row still read could not tell" is false: ShouldLog refuses NON-main-thread
+  writes UNCOUNTED while the startup writer runs (Backend.cpp:449) -> scripted set_and_save's IO-thread PARM row vanishes, no
+  Dp, no hole -> PASS on the stale dump value. Evidence limit: declare, cannot detect.
+- G358 MAJOR (G312 class): "any non-finite row -> whole bar EI" hides an earlier certain FAIL on a should bar; scripting
+  set_by_name has no NaN guard (GCS PARAM_SET and set_float do). Sound only because the adapter drops the row's time.
+- G359 MAJOR builder risk: Lambda_N must stay private to the limit; filtering the shared `lost` leaks into mode/arming unsure.
+- G360 out-of-accept relabels a certain violation EI (declared via property 4's carve-out) -> exit 0 on should.
+- G361 key reach past t_1 = 0.331..1.089 s on all 8 corpus drop logs (unbounded in principle, holes included).
+- G362 PARM rows precede log.t0 (07/14 WPNAV_SPEED -0.062/-0.019 s; 08/09 dump -3.6 s); _losses anchors interval 1 at t0, so
+  `a <= t_1` fails and the key is a silent no-op (fail-safe EI, applied:true).
+- Recount: SPEC_v1 sec 0 "all DSF.Dp drop intervals" false (6 log holes in 03/07/14); scan.py bad_parm reads
+  integrity["params"], which never exists (meta.absent holds it): non-finite PARM rows 0/33. GCS PARAM_SET logs TWO rows
+  (main + IO thread; corpus 33 at 2.062/2.063 s).
+
+## Round 14 — the BUILT 0.3.0 (param limits + 1 us grid), 2026-11-11 — G369-G374; SHIP WITH FIXES
+Tools (scratchpad/qa369/): oracle.py = independent re-impl of SPEC v2+v2.1 for unscoped param ceilings, 3000 random
+fixtures, 0 diffs; hunt.py/extra.py/kill2.py fixtures; mut.py 22 QA mutants. Killed 19 (Q4, Q20 only by the builder's
+suite); equivalent Q13/Q16/Q18. SIX non-equivalent mutants survive the builder's suite: r6 in the 5 s bound, `a<=t1` in
+the keyed pre-row unsure (n only), other-name NaN rows, strict `x == S*v` clean, raw time at the PARM site and at the
+NaN-row site (K4: same-tick NaN dropped -> EI becomes PASS = false green on regression).
+- G369: scale 1e+308 -> S*v = inf -> verdict.py allow_nan=False -> "internal error, no verdict (exit 2)".
+- Recount: 3(a)-(c), (e) reproduce (raw pymavlink 52/58/48: n 377/377/356, worst 3.994/4.008/6.002; 33: 1911 BAT, min
+  9.595 @189.039 s, rows 10.5@t0, 11.5@4.506530/4.507363). (d) wrong reason: 03 speed = no GPS rows, 14 batt = no BAT rows.
+- Rounding at ingestion sound: noise only flips exact-boundary ties (fail-safe for gaps; a false FAIL for a gnss run of
+  exactly max_outage_s: 10.3-10.1 = 0.20000000000000107).

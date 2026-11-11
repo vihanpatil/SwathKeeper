@@ -1,0 +1,619 @@
+{
+ "schema": "swathkeeper-verdict/1.0",
+ "contract": "swathkeeper-flightlog/1.0",
+ "tool": {
+  "version": "0.3.0",
+  "python": "3.12.12",
+  "deps": {
+   "PyYAML": "6.0.3",
+   "pymavlink": "2.4.50"
+  }
+ },
+ "source": {
+  "path": "00000064.BIN",
+  "sha256": "b8ac24b4aec61aa00694bdafd9b92ad6d24448e58a1a17a06494be8a67d69fa2",
+  "size_bytes": 4009984,
+  "format": "ardupilot-dataflash",
+  "adapter": "ardupilot",
+  "vehicle": "ArduCopter",
+  "firmware": "ArduCopter V4.8.0-dev",
+  "hardware": null,
+  "absent": {
+   "hardware": "no '<board> <uid>' MSG row"
+  },
+  "duration_s": 81.316351,
+  "records_decoded": 82050,
+  "record_counts": {
+   "AHR2": 814,
+   "ANG": 814,
+   "ARM": 1,
+   "ATT": 814,
+   "BARO": 1628,
+   "CMD": 6,
+   "CTUN": 814,
+   "D32": 1,
+   "DCM": 813,
+   "DSF": 81,
+   "DU32": 82,
+   "EV": 328,
+   "FILE": 268,
+   "FMT": 193,
+   "FMTU": 201,
+   "GPA": 407,
+   "GPS": 407,
+   "GUIP": 43,
+   "IMU": 4064,
+   "LDET": 95,
+   "MAG": 2442,
+   "MAV": 81,
+   "MAVC": 1,
+   "MISE": 6,
+   "MODE": 4,
+   "MOTB": 814,
+   "MSG": 26,
+   "MULT": 15,
+   "ORGN": 4,
+   "PARM": 1390,
+   "PIDA": 814,
+   "PIDE": 814,
+   "PIDN": 814,
+   "PIDP": 814,
+   "PIDR": 814,
+   "PIDY": 814,
+   "PM": 8,
+   "POS": 814,
+   "PSCD": 813,
+   "PSCE": 813,
+   "PSCN": 813,
+   "RATE": 814,
+   "RCI2": 813,
+   "RCIN": 813,
+   "RCO2": 813,
+   "RCOU": 813,
+   "RTC": 2,
+   "SIM": 814,
+   "SIM2": 32526,
+   "SPOL": 8,
+   "SRTL": 92,
+   "SURF": 3254,
+   "TERR": 82,
+   "UART": 164,
+   "UNIT": 38,
+   "VER": 1,
+   "VIBE": 1626,
+   "XKF1": 1628,
+   "XKF2": 1628,
+   "XKF3": 1628,
+   "XKF4": 1628,
+   "XKF5": 814,
+   "XKFM": 64,
+   "XKFS": 1628,
+   "XKQ": 1628,
+   "XKT": 32,
+   "XKTV": 319,
+   "XKV1": 163,
+   "XKV2": 163,
+   "XKY0": 1626,
+   "XKY1": 1626
+  },
+  "log_gpst_start": {
+   "t_s": 29.142617,
+   "gps_week": 2444,
+   "gps_ms": 246954000,
+   "label": "GPS time, not UTC: the 18 s leap offset is not applied"
+  }
+ },
+ "integrity": {
+  "bytes_skipped": 0,
+  "bytes_skipped_interior": 0,
+  "bytes_skipped_trailing": 0,
+  "holes": [],
+  "dsf_dropped_max": 0,
+  "dsf_rows": 81,
+  "drop_intervals": [],
+  "drops_known_until_s": 109.409322,
+  "reason": null
+ },
+ "streams": {
+  "position": {
+   "state": "PRESENT",
+   "source": "POS (Lat, Lng, Alt, RelHomeAlt)",
+   "reason": null,
+   "note": null,
+   "n": 814,
+   "instances": {
+    "0": {
+     "n": 814,
+     "t_first": 29.102631,
+     "t_last": 110.401988,
+     "median_period_s": 0.099967,
+     "max_gap_s": 0.100967
+    }
+   },
+   "absent_columns": {}
+  },
+  "velocity": {
+   "state": "PRESENT",
+   "source": "GPS by I (Spd)",
+   "reason": null,
+   "note": null,
+   "n": 407,
+   "instances": {
+    "0": {
+     "n": 407,
+     "t_first": 29.142617,
+     "t_last": 110.342008,
+     "median_period_s": 0.199933,
+     "max_gap_s": 0.200933
+    }
+   },
+   "absent_columns": {}
+  },
+  "gnss": {
+   "state": "PRESENT",
+   "source": "GPS by I (Status, NSats, HDop, GWk, GMS)",
+   "reason": null,
+   "note": null,
+   "n": 407,
+   "instances": {
+    "0": {
+     "n": 407,
+     "t_first": 29.142617,
+     "t_last": 110.342008,
+     "median_period_s": 0.199933,
+     "max_gap_s": 0.200933
+    }
+   },
+   "absent_columns": {}
+  },
+  "battery": {
+   "state": "ABSENT",
+   "source": "BAT by Inst (Volt, Curr)",
+   "reason": "no BAT rows",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "ekf": {
+   "state": "PRESENT",
+   "source": "XKF4 by C (SV, SP, SH, SM)",
+   "reason": null,
+   "note": null,
+   "n": 1628,
+   "instances": {
+    "0": {
+     "n": 814,
+     "t_first": 29.102631,
+     "t_last": 110.401988,
+     "median_period_s": 0.099967,
+     "max_gap_s": 0.100967
+    },
+    "1": {
+     "n": 814,
+     "t_first": 29.102631,
+     "t_last": 110.401988,
+     "median_period_s": 0.099967,
+     "max_gap_s": 0.100967
+    }
+   },
+   "absent_columns": {}
+  },
+  "mode": {
+   "state": "PRESENT",
+   "source": "MODE (ModeNum, Rsn)",
+   "reason": null,
+   "note": null,
+   "n": 4,
+   "instances": {
+    "0": {
+     "n": 4,
+     "t_first": 29.085637,
+     "t_last": 54.442587,
+     "median_period_s": 4.945,
+     "max_gap_s": 20.409951
+    }
+   },
+   "absent_columns": {},
+   "windows": [
+    [
+     29.085637,
+     29.087636,
+     "AUTO"
+    ],
+    [
+     29.087636,
+     49.497587,
+     "AUTO"
+    ],
+    [
+     49.497587,
+     54.442587,
+     "GUIDED"
+    ],
+    [
+     54.442587,
+     110.401989,
+     "AUTO"
+    ]
+   ]
+  },
+  "arming": {
+   "state": "PRESENT",
+   "source": "ARM (ArmState)",
+   "reason": null,
+   "note": null,
+   "n": 1,
+   "instances": {
+    "0": {
+     "n": 1,
+     "t_first": 103.945158,
+     "t_last": 103.945158,
+     "median_period_s": 0.0,
+     "max_gap_s": 0.0
+    }
+   },
+   "absent_columns": {},
+   "armed_intervals": [],
+   "absent_before_s": 103.945158
+  },
+  "events": {
+   "state": "ABSENT",
+   "source": "ERR (Subsys, ECode)",
+   "reason": "zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+   "note": null,
+   "n": 0,
+   "instances": {},
+   "absent_columns": {}
+  },
+  "home": {
+   "state": "PRESENT",
+   "lat": -35.3632621,
+   "lon": 149.1652374,
+   "alt_amsl_m": 584.19
+  },
+  "fence": {
+   "state": "ABSENT",
+   "reason": "fence disabled (FENCE_ENABLE 0)"
+  },
+  "params": {
+   "state": "PRESENT",
+   "n": 1378
+  }
+ },
+ "bars": {
+  "path": "bars_param_key.yaml",
+  "sha256": "e6fa82d568be3f67b3c06120b8cadbe1fa1436d5652a0f2433e0950726e2367d",
+  "schema": "swathkeeper-bars/1.0"
+ },
+ "prereg": {
+  "status": "HASH_MATCH",
+  "sidecar": "bars_param_key.yaml.prereg.json",
+  "sidecar_sha256": "afe8fd2d48049e7d064ef62038990a7fdc7e4e46237de713d9747d3809a23da1",
+  "bars_sha256": "e6fa82d568be3f67b3c06120b8cadbe1fa1436d5652a0f2433e0950726e2367d",
+  "bars_sha256_registered": "e6fa82d568be3f67b3c06120b8cadbe1fa1436d5652a0f2433e0950726e2367d",
+  "log_sha256_pinned": "b8ac24b4aec61aa00694bdafd9b92ad6d24448e58a1a17a06494be8a67d69fa2",
+  "post_hoc": true,
+  "written_utc_untrusted": "2026-11-11T21:15:41+00:00"
+ },
+ "allowlist": {
+  "path": null,
+  "sha256": null,
+  "run_date_utc": "2026-11-11",
+  "declared": [],
+  "red": [],
+  "matched": [],
+  "undeclared": [],
+  "vacuous": [],
+  "expired": []
+ },
+ "exit_code": 0,
+ "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+ "refusal": null,
+ "assumptions": [
+  {
+   "name": "arming_before_first_arm_row",
+   "text": "Before the first ARM row the vehicle is in the opposite state of that row: armed before a first disarm, disarmed before a first arm. A log with no ARM row is not covered: arming stays ABSENT. The tool does not verify this.",
+   "applied": true,
+   "detail": "first ARM row at t=103.945 s is a disarm: armed before it",
+   "log_disarmed": [
+    0.0
+   ]
+  },
+  {
+   "name": "limit_before_first_parm_row",
+   "text": "Up to and including its first PARM row, a parameter a bar takes from PARM held that row's value, and no row of it was lost in a DSF.Dp drop interval that begins at or before that row or at the log's start, including the part of that interval after the row. Not covered: a first row more than 5 s after the log's start, log holes, and later drop intervals; these losses, which the log counts or shows, still read could not tell. The tool does not verify this.",
+   "applied": true,
+   "detail": "WP_SPD: first PARM row at t=29.088 s; no drop interval removed"
+  }
+ ],
+ "results": [
+  {
+   "id": "speed_ceiling_auto",
+   "kind": "series_bound",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 3.9930002689361572,
+   "bar": {
+    "channel": "velocity.groundspeed_mps",
+    "bound": "ceiling",
+    "limit": {
+     "param": "WP_SPD",
+     "scale": 1.1,
+     "accept": [
+      1.0,
+      5.0
+     ]
+    }
+   },
+   "n": 382,
+   "min_n": 100,
+   "scope": {
+    "armed": null,
+    "modes": [
+     "AUTO"
+    ]
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.088 s); n=382; worst 3.993 on instance 0 at t=67.742 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+   "provenance": {
+    "text": "The mission speed THIS log commanded (PARM WP_SPD, m/s) plus the same 10 % author-chosen margin as the 2026-11-10 file, accepted only inside the committed booking: WP_SPD from 1.0 to 5.0 m/s (ADR-020 am. 3 books 5.0 m/s). A log commanded outside the booking is not judged by this bar. Every GPS sample of every instance in AUTO. min_n 100 = 20 s at 5 Hz.",
+    "param": "WP_SPD"
+   },
+   "param_in_log": {
+    "name": "WP_SPD",
+    "values": [
+     4.0
+    ]
+   },
+   "limit_in_log": {
+    "rows": [
+     [
+      29.087636,
+      4.0
+     ]
+    ],
+    "n_rows": 1,
+    "at_worst": 4.4
+   }
+  },
+  {
+   "id": "speed_commanded_auto",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 3.9930002689361572,
+   "bar": {
+    "channel": "velocity.groundspeed_mps",
+    "bound": "ceiling",
+    "limit": {
+     "param": "WP_SPD",
+     "scale": 1.1,
+     "accept": [
+      1.0,
+      6.0
+     ]
+    }
+   },
+   "n": 382,
+   "min_n": 100,
+   "scope": {
+    "armed": null,
+    "modes": [
+     "AUTO"
+    ]
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.088 s); n=382; worst 3.993 on instance 0 at t=67.742 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+   "provenance": {
+    "text": "The same ceiling with the accepted range widened to the 2026-11-10 session's whole unbooked sweep, WP_SPD from 1.0 to 6.0 m/s: did the vehicle stay within 10 % of whatever speed it was commanded. It says nothing about whether that speed was booked. Every GPS sample of every instance in AUTO. min_n 100.",
+    "param": "WP_SPD"
+   },
+   "param_in_log": {
+    "name": "WP_SPD",
+    "values": [
+     4.0
+    ]
+   },
+   "limit_in_log": {
+    "rows": [
+     [
+      29.087636,
+      4.0
+     ]
+    ],
+    "n_rows": 1,
+    "at_worst": 4.4
+   }
+  },
+  {
+   "id": "gnss_quality_armed",
+   "kind": "gnss_quality",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 0.0,
+   "bar": {
+    "fix_min": 3,
+    "sats_min": 6,
+    "max_outage_s": 0
+   },
+   "n": 375,
+   "min_n": 100,
+   "scope": {
+    "armed": true,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=375; every row in scope qualifies; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)",
+   "provenance": {
+    "text": "AUTHOR-CHOSEN: while armed, every GPS row of every instance has a 3D fix and at least 6 satellites (max_outage_s 0 = every row). min_n 100 = 20 s at 5 Hz."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "designed_modes_only",
+   "kind": "mode_transitions",
+   "severity": "must",
+   "verdict": "PASS",
+   "measured": 0,
+   "bar": {
+    "allowed": [
+     [
+      "*",
+      "AUTO"
+     ],
+     [
+      "*",
+      "GUIDED"
+     ],
+     [
+      "*",
+      "RTL"
+     ],
+     [
+      "*",
+      "LAND"
+     ]
+    ]
+   },
+   "n": 3,
+   "min_n": 1,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)",
+   "provenance": {
+    "text": "ADR-006: the avoidance takes authority AUTO -> GUIDED and hands back GUIDED -> AUTO; the mission ends in RTL or LAND. Every observed transition must ENTER one of those four modes. Under LOG_DISARMED 0 the log starts at arming, so the startup row is covered by \"*\". min_n 1: one observed transition is a measurement."
+   },
+   "param_in_log": null
+  },
+  {
+   "id": "field_geofence",
+   "kind": "containment",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 4.960000038146973,
+   "bar": {
+    "source": "yaml",
+    "polygon": [
+     [
+      -35.3633967,
+      149.1650718
+     ],
+     [
+      -35.3633967,
+      149.1662284
+     ],
+     [
+      -35.3625883,
+      149.1662284
+     ],
+     [
+      -35.3625883,
+      149.1650718
+     ]
+    ],
+    "alt_max_rel_home_m": 20.0
+   },
+   "n": 748,
+   "min_n": 100,
+   "scope": {
+    "armed": true,
+    "modes": null
+   },
+   "instances_used": [
+    0
+   ],
+   "worst_instance": 0,
+   "gaps": [],
+   "note": "n=748; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=40.903 s; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)",
+   "provenance": {
+    "text": "The committed field polygon (config/field_polygon.json: 75 x 60 m about home) expanded by 15 m, one lane spacing, AUTHOR-CHOSEN because lane 1 lies on the west edge and a dodge is commanded up to 10 m sideways; and never more than 20 m above home (mission altitude 15.0 m + 5 m, author-chosen). While armed, every position sample and segment. min_n 100 segments = 10 s at 10 Hz.",
+    "param": "RTL_ALT_M"
+   },
+   "param_in_log": {
+    "name": "RTL_ALT_M",
+    "values": [
+     15.0
+    ]
+   }
+  },
+  {
+   "id": "ekf_vel_ceiling_armed",
+   "kind": "series_bound",
+   "severity": "should",
+   "verdict": "PASS",
+   "measured": 0.19,
+   "bar": {
+    "channel": "ekf.vel_ratio",
+    "bound": "ceiling",
+    "limit": 0.8
+   },
+   "n": 1498,
+   "min_n": 200,
+   "scope": {
+    "armed": true,
+    "modes": null
+   },
+   "instances_used": [
+    0,
+    1
+   ],
+   "worst_instance": 1,
+   "gaps": [],
+   "note": "n=1498; worst 0.19 on instance 1 at t=102.203 s, 1 window(s); instances present [0, 1]; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)",
+   "provenance": {
+    "text": "AUTHOR-CHOSEN: XKF4.SV <= 0.8 on every logged core while armed. 0.8 equals the logged FS_EKF_THRESH; this is not the firmware's EKF failsafe logic. min_n 200 = 10 s at 10 Hz on each of two cores.",
+    "param": "FS_EKF_THRESH"
+   },
+   "param_in_log": {
+    "name": "FS_EKF_THRESH",
+    "values": [
+     0.800000011920929
+    ]
+   }
+  },
+  {
+   "id": "no_errors",
+   "kind": "no_events",
+   "severity": "should",
+   "verdict": "EVIDENCE_INSUFFICIENT",
+   "measured": null,
+   "bar": {
+    "kinds": [
+     "error"
+    ]
+   },
+   "n": 0,
+   "min_n": 60,
+   "scope": {
+    "armed": null,
+    "modes": null
+   },
+   "instances_used": [],
+   "worst_instance": null,
+   "gaps": [],
+   "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])",
+   "provenance": {
+    "text": "AUTHOR-CHOSEN: zero ERR rows in drop-free logging. Expected to read could not tell on this firmware when no ERR row exists: the reading that lets zero ERR rows count is cited for 4.5.x releases only. min_n 60 s."
+   },
+   "param_in_log": null
+  }
+ ]
+}
