@@ -1,0 +1,628 @@
+{
+ "c00": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 224.602247
+ },
+ "c01": {
+  "drop_intervals": [
+   [
+    152.294058,
+    152.624759,
+    8
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 152.294058
+ },
+ "c02": {
+  "drop_intervals": [
+   [
+    164.013535,
+    164.653279,
+    9
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 164.013535
+ },
+ "c03": {
+  "drop_intervals": [
+   [
+    101.727821,
+    102.430468,
+    66
+   ],
+   [
+    129.493026,
+    130.495674,
+    92
+   ],
+   [
+    208.671753,
+    210.67647,
+    85
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [
+   [
+    153.508695,
+    175.214898
+   ]
+  ],
+  "home": "ABSENT",
+  "t0": 101.727821
+ },
+ "c04": {
+  "drop_intervals": [
+   [
+    1470.810385,
+    1472.848637,
+    358
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 1470.810385
+ },
+ "c05": {
+  "N": 1,
+  "blind_line": "fence not usable on 1 sample(s): cylinder: 1 at or before the first row of FENCE_ENABLE, FENCE_TYPE, FENCE_RADIUS, home (ORGN Type 1), t in [69.523, 69.523] s; altitude cap: 1 at or before the first row of FENCE_ENABLE, FENCE_TYPE, FENCE_ALT_MAX, home (ORGN Type 1), t in [69.523, 69.523] s",
+  "buckets": {
+   "altitude cap pre": 1,
+   "cylinder pre": 1
+  },
+  "drop_intervals": [],
+  "fence": "PRESENT",
+  "fence_reason": null,
+  "fence_type": 7,
+  "first_rows": {
+   "FENCE_ALT_MAX": 69.577736,
+   "FENCE_ENABLE": 69.577564,
+   "FENCE_RADIUS": 69.577763,
+   "FENCE_TYPE": 69.577674,
+   "home (ORGN Type 1)": 69.590311
+  },
+  "holes": [],
+  "home": "PRESENT",
+  "n_pos": 223,
+  "n_ruled": 221,
+  "n_today": 222,
+  "pos_first": 69.522932,
+  "t0": 69.522259
+ },
+ "c06": {
+  "N": 1,
+  "blind_line": "fence not usable on 1 sample(s): cylinder: 1 at or before the first row of FENCE_ENABLE, FENCE_TYPE, FENCE_RADIUS, home (ORGN Type 1), t in [236.969, 236.969] s; altitude cap: 1 at or before the first row of FENCE_ENABLE, FENCE_TYPE, FENCE_ALT_MAX, home (ORGN Type 1), t in [236.969, 236.969] s",
+  "buckets": {
+   "altitude cap pre": 1,
+   "cylinder pre": 1
+  },
+  "drop_intervals": [],
+  "fence": "PRESENT",
+  "fence_reason": null,
+  "fence_type": 7,
+  "first_rows": {
+   "FENCE_ALT_MAX": 237.015865,
+   "FENCE_ENABLE": 237.015784,
+   "FENCE_RADIUS": 237.015894,
+   "FENCE_TYPE": 237.015811,
+   "home (ORGN Type 1)": 237.030805
+  },
+  "holes": [],
+  "home": "PRESENT",
+  "n_pos": 1581,
+  "n_ruled": 1579,
+  "n_today": 1580,
+  "pos_first": 236.968572,
+  "t0": 236.967671
+ },
+ "c07": {
+  "drop_intervals": [
+   [
+    26.726263,
+    27.501539,
+    1
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [
+   [
+    28.026813,
+    30.126533
+   ],
+   [
+    31.146516,
+    33.226545
+   ],
+   [
+    35.746469,
+    37.826555
+   ],
+   [
+    38.826754,
+    40.926516
+   ]
+  ],
+  "home": "ABSENT",
+  "t0": 26.726263
+ },
+ "c08": {
+  "drop_intervals": [
+   [
+    5.123489,
+    5.123489,
+    1
+   ],
+   [
+    5.123489,
+    6.124361,
+    1
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 5.123489
+ },
+ "c09": {
+  "drop_intervals": [
+   [
+    5.569317,
+    5.569317,
+    1
+   ],
+   [
+    5.569317,
+    6.57033,
+    1
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 5.569317
+ },
+ "c10": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_ENABLE / FENCE_TYPE not logged",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 17.130653
+ },
+ "c11": {
+  "refused": "DataFlash decode found no timestamped contract record"
+ },
+ "c12": {
+  "refused": "DataFlash decode found no timestamped contract record"
+ },
+ "c13": {
+  "refused": "DataFlash decode found no timestamped contract record"
+ },
+ "c14": {
+  "drop_intervals": [
+   [
+    547.667631,
+    548.593465,
+    128
+   ]
+  ],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [
+   [
+    682.074161,
+    1140.573986
+   ]
+  ],
+  "home": "ABSENT",
+  "t0": 547.667631
+ },
+ "c15": {
+  "refused": "DataFlash decode found no timestamped contract record"
+ },
+ "c16": {
+  "refused": "DataFlash decode found no timestamped contract record"
+ },
+ "c17": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_TYPE 4: no circle/alt-max bit, or its parameter is unlogged",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 835.504839
+ },
+ "c18": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_ENABLE / FENCE_TYPE not logged",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 0.0
+ },
+ "c19": {
+  "refused": "DataFlash decode found no timestamped contract record"
+ },
+ "c20": {
+  "refused": "DataFlash decode found no timestamped contract record"
+ },
+ "c21": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_ENABLE / FENCE_TYPE not logged",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 10.0
+ },
+ "c22": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_ENABLE / FENCE_TYPE not logged",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 1.0
+ },
+ "c23": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 102.362797
+ },
+ "c24": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_ENABLE / FENCE_TYPE not logged",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 366.307171
+ },
+ "c25": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_ENABLE / FENCE_TYPE not logged",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 252.455228
+ },
+ "c26": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 2.447354
+ },
+ "c27": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 2.444855
+ },
+ "c28": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 2.444855
+ },
+ "c29": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 2.449853
+ },
+ "c30": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 2.447354
+ },
+ "c31": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 2.447354
+ },
+ "c32": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 2.444855
+ },
+ "c33": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 2.444855
+ },
+ "c34": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 2.444855
+ },
+ "c35": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 2.447354
+ },
+ "c36": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 2.549813
+ },
+ "c37": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 2.444855
+ },
+ "c38": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 51.421923
+ },
+ "c39": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 0.122451
+ },
+ "plane_nofix": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "ABSENT",
+  "t0": 28.415431
+ },
+ "pymavlink_test_bin": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "FENCE_ENABLE / FENCE_TYPE not logged",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 81.795742
+ },
+ "s45": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 29.480752
+ },
+ "s46": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 28.669027
+ },
+ "s47": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 30.53519
+ },
+ "s48": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 30.529409
+ },
+ "s49": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 30.546362
+ },
+ "s50": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 31.466098
+ },
+ "s51": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 31.536079
+ },
+ "s52": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 29.823189
+ },
+ "s53": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 31.186174
+ },
+ "s54": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 30.965259
+ },
+ "s55": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 32.154793
+ },
+ "s56": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 30.933291
+ },
+ "s57": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 30.547357
+ },
+ "s58": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 31.875949
+ },
+ "s59": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 29.892655
+ },
+ "s60": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 30.700033
+ },
+ "s61": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 24.539985
+ },
+ "s62": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 24.981715
+ },
+ "s63": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 28.870704
+ },
+ "s64": {
+  "drop_intervals": [],
+  "fence": "ABSENT",
+  "fence_reason": "fence disabled (FENCE_ENABLE 0)",
+  "holes": [],
+  "home": "PRESENT",
+  "t0": 29.085637
+ },
+ "tarot_x4": {
+  "N": 1420,
+  "blind_line": "fence not usable on 1420 sample(s): cylinder: 2 at or before the first row of FENCE_ENABLE, FENCE_TYPE, FENCE_RADIUS, home (ORGN Type 1), t in [709.279, 709.379] s; cylinder: 1418 where a loss meets [previous row, sample] of FENCE_ENABLE, FENCE_TYPE, FENCE_RADIUS, home (ORGN Type 1) and may hide a row (15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp)), t in [709.479, 851.179] s; altitude cap: 2 at or before the first row of FENCE_ENABLE, FENCE_TYPE, FENCE_ALT_MAX, home (ORGN Type 1), t in [709.279, 709.379] s; altitude cap: 1418 where a loss meets [previous row, sample] of FENCE_ENABLE, FENCE_TYPE, FENCE_ALT_MAX and may hide a row (15 firmware-dropped writes in [709.278, 710.184] s (DSF.Dp)), t in [709.479, 851.179] s",
+  "buckets": {
+   "altitude cap pre": 2,
+   "altitude cap unsure": 1418,
+   "cylinder pre": 2,
+   "cylinder unsure": 1418
+  },
+  "drop_intervals": [
+   [
+    709.278081,
+    710.1837,
+    15
+   ]
+  ],
+  "fence": "PRESENT",
+  "fence_reason": null,
+  "fence_type": 7,
+  "first_rows": {
+   "FENCE_ALT_MAX": 709.371948,
+   "FENCE_ENABLE": 709.371834,
+   "FENCE_RADIUS": 709.371975,
+   "FENCE_TYPE": 709.37189,
+   "home (ORGN Type 1)": 709.37919
+  },
+  "holes": [],
+  "home": "PRESENT",
+  "n_pos": 1420,
+  "n_ruled": 0,
+  "n_today": 1419,
+  "pos_first": 709.278678,
+  "t0": 709.278081
+ }
+}
