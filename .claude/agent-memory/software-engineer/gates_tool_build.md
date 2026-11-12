@@ -47,3 +47,29 @@ tests/README.md re-quote the totals — expected; the orchestrator owns the re-q
   note is tested against the scope's BASE range (accepted): a dropped MODE row there could move a mode scope.
 
 Related: [[feedback-red-first-fixtures]], [[evidence_consumption_seams]].
+
+**G257 v0.2.0 (2026-11-10, owner ruled "flip to v1.1"; built uncommitted on feat/gates-tool-dp-rule):**
+- `contract.unsure(log)` is the ONE U = [a, first MODE row > b else t1) helper; `bars._judge` is the ONE combine
+  (sure pass FAIL -> FAIL; both PASS -> PASS; else EI). Kinds take a `side` arg ("sure"/"wide"/None) passed to `_start`.
+- Sure pass subtracts U ∩ base; the WIDE pass adds raw U and `_judge` gates on U ∩ reach (reach = armed + [t0, first
+  ARM)). Round 1 clipped the wide pass to base too: QA G311 showed that hides the arming-ABSENT prefix (false green).
+- Round 2 (QA G311-G325, 2026-11-10): log holes are losses exactly like drop intervals (`bars._losses`); B7 judges a
+  transition with an unknown `from` on its `to` (none allowed -> FAIL, all -> judged, else skipped) instead of skipping
+  it (G312: skipping threw away a certain red on public corpus log 01); B7 is blind only if some pair (incl. from
+  `<start>`) is disallowed; overlaps are closed-closed; a PASS quotes the wide worst. Over-literal hole rule cost:
+  the G255 pin had to go unscoped (a hole ending AT a MODE row now makes that mode unsure: `t > y`).
+- A combined EI must not print the wide pass's worst value (the EI-prints-no-number test catches it).
+- Tarot flips to `could not tell · 7/8` (B7 n 0: both its transitions span the startup drop); Plane/test.BIN only
+  change tool.version + run_date. Tarot is now exit 1, so ci.yml has TWO continue-on-error Action probes.
+- Mutant harness pattern that worked: copy src/swathkeeper_gates + tests/test_gates_*.py into a scratch shadow,
+  `-k "not TestImportWall"` (it walks the real repo), parse `tests/test_gates_bars.py:<line>` from `--tb=short`.
+
+**0.3.0 parameter-following limit (2026-11-11, SPEC v2 + v2.1 delta; built uncommitted on feat/gates-tool-dp-rule):**
+- Float trap: `TimeUS * 1e-6` != `round(., 6)` on ~29 % of microsecond ticks (raw is always the LOWER one), and the adapter
+  ROUNDS drop/hole bounds but not row times. Any closed `a <= t` against a loss bound misses on those ticks. The new
+  limit code compares in r6 space (pinned: loss at rel 6.2 s); 0.2.0's `_arming` (`a <= first`) and B7 (`a <= ts[k]`)
+  compared raw too -- FIXED AT THE ROOT 2026-11-11 (fix round 1): `adapters.ardupilot._t` puts every contract time on the
+  1 us grid (t1 too). Side effect: a median_period_s that is a half-us tie can flip its 6th decimal (plane_nofix: 2 leaves).
+- Non-finite PARM rows live in `log.meta["params_nonfinite"]` [(t, name)] (unserialised); `log.params` stays finite-only.
+- Two sorts of one list make a "sort dropped" mutant equivalent: keep exactly one sort (in `_parm_rows`).
+- pytest-subtests prints `SUBFAILED(<desc with spaces>) tests/...`: a mutant parser regex must allow spaces there.

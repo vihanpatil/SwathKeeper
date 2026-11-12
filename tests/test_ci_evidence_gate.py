@@ -384,7 +384,8 @@ TODAY = _dt.datetime.now(_dt.timezone.utc).date()                               
 def _canonical(obj) -> str:
     """The tool's own serialisation; the checker requires every committed JSON file in this form (QA G277)."""
     return json.dumps(obj, indent=1, allow_nan=False) + "\n"
-TAROT_BADGE = "gates: pass · 8/8 measured (post-hoc)"                 # the README badge, verbatim (ADR-023)
+TAROT_BADGE = "gates: could not tell · 7/8 measured (post-hoc)"       # the README badge, verbatim (ADR-023, v0.2.0 G257)
+WALKTHROUGH_SHA256 = "185074c12430389f65ec6f071ab988fc1f4e4d67e3ba0ee2f28183cfea563884"   # tool README lines 55-64 (G325)
 TAROT_LABEL = "tarot_x4 · public log"                                  # scripts/check_gates_examples.BADGE_LABELS
 FAKE_BADGE = "gates: pass · 2/3 measured (post-hoc)"
 
@@ -855,7 +856,7 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
 
     def test_the_readme_badge_is_the_tarot_verdict_verbatim_and_regenerates_byte_identical(self):
         verdict = json.loads((REPO_ROOT / "examples" / "tarot_x4" / "verdict.json").read_text())
-        self.assertEqual((verdict["badge"], verdict["exit_code"]), (TAROT_BADGE, 0))
+        self.assertEqual((verdict["badge"], verdict["exit_code"]), (TAROT_BADGE, 1))
         svg = REPO_ROOT / "examples" / "tarot_x4" / "badge.svg"
         self.assertTrue(_tracked("examples/tarot_x4/badge.svg"), "the README badge SVG is not committed")
         proc = subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "render_gates_badge.py"),
@@ -865,7 +866,7 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
         self.assertIn(TAROT_BADGE, svg.read_text(), "the SVG does not carry the badge string verbatim")
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
         from render_gates_badge import render_svg
-        self.assertNotEqual(render_svg(TAROT_LABEL, TAROT_BADGE.replace("8/8", "7/8")), svg.read_text(),
+        self.assertNotEqual(render_svg(TAROT_LABEL, TAROT_BADGE.replace("7/8", "6/8")), svg.read_text(),
                             msg="--check would pass a different badge: the comparison is vacuous")
         readme = (REPO_ROOT / "README.md").read_text()
         self.assertIn("examples/tarot_x4/badge.svg", readme, "README.md does not show the badge")
@@ -877,6 +878,7 @@ class TestCommittedGateExamplesAreConsistent(unittest.TestCase):
         from render_gates_badge import render_svg
         green = 'fill="#4c1"'
         self.assertIn(green, render_svg("x", "gates: pass · 1/1 measured"))
+        self.assertIn("· 1 assumed (post-hoc)", render_svg("x", "gates: pass · 1/1 measured · 1 assumed (post-hoc)"))   # A7
         for word in ("fail", "could not tell", "refused", "passing", "PASS", "green"):
             with self.subTest(word=word):
                 self.assertNotIn(green, render_svg("x", f"gates: {word} · 1/1 measured"), msg=f"{word!r} painted green")
@@ -913,7 +915,7 @@ class TestGatesJobKeepsEveryGateReporting(unittest.TestCase):
 
     def test_the_two_action_steps_judge_their_own_logs_with_their_own_bars(self):
         steps = dict(_job_steps(GATES_JOB))
-        tarot = " ".join(next(b for n, b in steps.items() if "Tarot X4 must PASS" in n))
+        tarot = " ".join(next(b for n, b in steps.items() if "Tarot X4 must exit 1" in n))
         plane = " ".join(next(b for n, b in steps.items() if "must FAIL this step" in n))
         for body, name in ((tarot, "tarot_x4"), (plane, "plane_nofix")):
             self.assertIn("uses: ./.github/actions/swathkeeper-gates", body)
@@ -921,23 +923,26 @@ class TestGatesJobKeepsEveryGateReporting(unittest.TestCase):
             self.assertIn(f"examples/{name}/bars.yaml", body)
         self.assertNotIn("tarot_x4", plane, "the no-softening probe must run the log whose correct verdict is exit 1")
 
-    def test_only_the_no_softening_probe_carries_continue_on_error_and_the_assertions_really_assert(self):
+    def test_only_the_no_softening_probes_carry_continue_on_error_and_the_assertions_really_assert(self):
         """QA G273: `[ … ] || true` and a dropped CODE check in the assertion steps survived. So the two assertion
-        bodies are EXECUTED here with OUTCOME / CODE / BADGE set the way a softened Action run would set them."""
+        bodies are EXECUTED here with OUTCOME / CODE / BADGE set the way a softened Action run would set them. Since
+        v0.2.0 (G257) both demo logs' correct verdict is exit 1, so exactly two steps are soft, each asserted next."""
         steps = _job_steps(GATES_JOB)
         soft = [i for i, (_, body) in enumerate(steps) if any(ln.startswith("continue-on-error") for ln in body)]
-        self.assertEqual(len(soft), 1, msg=f"continue-on-error on {[steps[i][0] for i in soft]}")
-        self.assertIn("plane_nofix", " ".join(steps[soft[0]][1]), "the probe must be the log whose correct verdict is exit 1")
-        self.assertIn(PLANE_ASSERT_STEP, steps[soft[0] + 1][0], "the step right after the probe must assert its outcome")
+        self.assertEqual(len(soft), 2, msg=f"continue-on-error on {[steps[i][0] for i in soft]}")
+        for i, name, check in zip(soft, ("tarot_x4", "plane_nofix"), (TAROT_ASSERT_STEP, PLANE_ASSERT_STEP)):
+            self.assertIn(f"examples/{name}/bars.yaml", " ".join(steps[i][1]), "a probe must be a log whose correct verdict is exit 1")
+            self.assertIn(check, steps[i + 1][0], "the step right after a probe must assert its outcome")
         tarot_badge = json.loads((REPO_ROOT / "examples" / "tarot_x4" / "verdict.json").read_text())["badge"]
         plane_badge = json.loads((REPO_ROOT / "examples" / "plane_nofix" / "verdict.json").read_text())["badge"]
         cases = ((PLANE_ASSERT_STEP, "failure", "1", plane_badge, 0),       # the honest run: the step was red, exit 1
                  (PLANE_ASSERT_STEP, "success", "0", plane_badge, 1),       # a softened Action: green on a FAIL log
                  (PLANE_ASSERT_STEP, "failure", "2", plane_badge, 1),       # red for the wrong reason (a refusal)
                  (PLANE_ASSERT_STEP, "failure", "1", tarot_badge, 1),       # red with the wrong verdict
-                 (TAROT_ASSERT_STEP, "success", "0", tarot_badge, 0),
-                 (TAROT_ASSERT_STEP, "failure", "1", tarot_badge, 1),
-                 (TAROT_ASSERT_STEP, "success", "0", plane_badge, 1))
+                 (TAROT_ASSERT_STEP, "failure", "1", tarot_badge, 0),
+                 (TAROT_ASSERT_STEP, "success", "0", tarot_badge, 1),
+                 (TAROT_ASSERT_STEP, "failure", "2", tarot_badge, 1),
+                 (TAROT_ASSERT_STEP, "failure", "1", plane_badge, 1))
         with tempfile.TemporaryDirectory() as tmp:
             os.symlink(sys.executable, Path(tmp) / "python3")
             env = {**os.environ, "PATH": f"{tmp}{os.pathsep}{os.environ.get('PATH', '')}"}
@@ -948,6 +953,43 @@ class TestGatesJobKeepsEveryGateReporting(unittest.TestCase):
                     self.assertEqual(proc.returncode != 0, want != 0,
                                      msg=f"[{step}] OUTCOME={outcome} CODE={code} -> exit {proc.returncode}, expected {want}\n{proc.stdout}{proc.stderr}")
 
+
+    def test_the_success_path_runs_the_readme_walkthrough_bars_and_asserts_a_green(self):
+        """QA G325/G332: both real-log probes exit 1, so one step trio runs the Action's green path on the Tarot log with
+        the tool README's walkthrough: its bars written inline and hashed, registered with `prereg` as the README does, and
+        the run's bar line and badge required verbatim in the README, so the README and CI cannot drift apart silently."""
+        steps = dict(_job_steps(GATES_JOB))
+        lines = next(b for n, b in steps.items() if "The Action's success path" in n)
+        for want in ("uses: ./.github/actions/swathkeeper-gates", "steps.demo-logs.outputs.tarot_x4", "walkthrough_bars.yaml"):
+            self.assertIn(want, " ".join(lines))
+        self.assertFalse(any(ln.startswith("continue-on-error") for ln in lines), "the green path may not be soft")
+        block = lambda text: text.split("### 2. Write the bars", 1)[1].split("```yaml\n", 1)[1].split("```", 1)[0]
+        readme = (REPO_ROOT / "src" / "swathkeeper_gates" / "README.md").read_text()
+        self.assertEqual(hashlib.sha256(block(readme).encode()).hexdigest(), WALKTHROUGH_SHA256,
+                         msg="the README walkthrough's bars changed: re-pin it here and in ci.yml together")
+        self.assertEqual(block("moved prose\n" + readme.replace("## Install", "## Install it")), block(readme))   # by content
+        self.assertNotEqual(block(readme.replace("min_n: 30", "min_n: 31")), block(readme))
+        green, verdict = "gates: pass · 1/1 measured (post-hoc)", {"verdict": "PASS", "severity": "must", "id": "batt_floor",
+                                                                   "n": 1419, "measured": 23.48213005065918}
+        with tempfile.TemporaryDirectory() as tmp:
+            os.symlink(sys.executable, Path(tmp) / "python3")
+            (Path(tmp) / "swathkeeper-gates").write_text('#!/bin/bash\necho "$@" > "$RUNNER_TEMP/called"\n')
+            (Path(tmp) / "swathkeeper-gates").chmod(0o755)
+            env = {**os.environ, "PATH": f"{tmp}{os.pathsep}{os.environ.get('PATH', '')}", "RUNNER_TEMP": tmp, "TAROT": "t.bin"}
+            write = subprocess.run(["bash", "-c", _step_run_block("one-bar walkthrough bars")], capture_output=True, text=True, env=env)
+            self.assertEqual(write.returncode, 0, msg=write.stdout + write.stderr)   # the heredoc hashes as pinned
+            called = Path(tmp) / "called"                 # the README's step 3, so the badge reads (post-hoc)
+            self.assertEqual(called.exists() and called.read_text().split(), ["prereg", "--bars", f"{tmp}/walkthrough_bars.yaml", "--log", "t.bin"])
+            for outcome, code, badge, n, want in (("success", "0", green, 1419, 0), ("failure", "1", green, 1419, 1),
+                                                  ("success", "0", TAROT_BADGE, 1419, 1), ("success", "1", green, 1419, 1),
+                                                  ("success", "0", "gates: pass · 1/1 measured (unregistered)", 1419, 1),
+                                                  ("success", "0", green, 1418, 1)):          # the README's n drifted
+                with self.subTest(outcome=outcome, code=code, badge=badge[-14:], n=n):
+                    (Path(tmp) / "v.json").write_text(json.dumps({"results": [{**verdict, "n": n}]}))
+                    proc = subprocess.run(["bash", "-c", _step_run_block("the walkthrough step passed")], capture_output=True, cwd=REPO_ROOT,
+                                          text=True, env={**env, "OUTCOME": outcome, "CODE": code, "BADGE": badge,
+                                                          "VERDICT": f"{tmp}/v.json"}, timeout=60)
+                    self.assertEqual(proc.returncode != 0, want != 0, msg=proc.stdout + proc.stderr)
 
 class TestTheActionNeverSoftensTheExitCode(unittest.TestCase):
     """`.github/actions/swathkeeper-gates/run.sh`, with a stub tool and with the real one. The composite action's

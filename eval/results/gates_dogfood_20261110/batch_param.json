@@ -1,0 +1,3395 @@
+{
+ "tool": "0.3.0",
+ "variants": {
+  "bars_param.yaml": {
+   "bars_sha256": "8d69c04250776978d89f495bafce48172700324c4b2739413616b338a31ff3dc",
+   "flights": [
+    {
+     "log": "00000045.BIN",
+     "sha256": "bf715b31cc99f62ea33f33c91dacffbc34b9f1d718df88ab3f139bf03dec83f0",
+     "badge": "gates: could not tell \u00b7 3/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": false,
+       "detail": "no ARM rows: not applied, arming stays ABSENT"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 108,
+       "measured": 3.932000160217285,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.481751,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.482 s); n=108; worst 3.932 on instance 0 at t=49.580 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 108,
+       "measured": 3.932000160217285,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.481751,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.482 s); n=108; worst 3.932 on instance 0 at t=49.580 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 1,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=1; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000046.BIN",
+     "sha256": "ba4597b7947170e33221826c493ea8d7f860f79f5a9f72b3849a6e439d3a81f2",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.378 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 383,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.670027,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=28.670 s); n=383; worst 3.995 on instance 0 at t=67.171 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 383,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.670027,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=28.670 s); n=383; worst 3.995 on instance 0 at t=67.171 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=374; every row in scope qualifies; arming before t=103.378 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 746,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=746; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=40.551 s; arming before t=103.378 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1494,
+       "measured": 0.09,
+       "limit_in_log": null,
+       "note": "n=1494; worst 0.09 on instance 1 at t=101.650 s, 1 window(s); instances present [0, 1]; arming before t=103.378 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000047.BIN",
+     "sha256": "e5f77ee7d01e82a2fcd5314e02e56dfee5578974214189378720dc9b3edb673e",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.759 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.537189,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.537 s); n=365; worst 5.008 on instance 0 at t=62.875 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.537189,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.537 s); n=365; worst 5.008 on instance 0 at t=62.875 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 356,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=356; every row in scope qualifies; arming before t=101.759 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 712,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=712; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.337 s; arming before t=101.759 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1426,
+       "measured": 0.23,
+       "limit_in_log": null,
+       "note": "n=1426; worst 0.23 on instance 1 at t=99.937 s, 1 window(s); instances present [0, 1]; arming before t=101.759 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000048.BIN",
+     "sha256": "d667e923c144d86ff0d435c76016aff1da423f01532fbc052c6c8eea410a2aae",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.547 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.531408,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 356 sample(s): 356 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [30.631, 107.631] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 356,
+       "measured": 6.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.531408,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.531 s); n=356; worst 6.002 on instance 0 at t=64.432 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=360; every row in scope qualifies; arming before t=102.547 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 719,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=719; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.412 s; arming before t=102.547 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1440,
+       "measured": 0.18,
+       "limit_in_log": null,
+       "note": "n=1440; worst 0.18 on instance 0 at t=100.911 s, 1 window(s); instances present [0, 1]; arming before t=102.547 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000049.BIN",
+     "sha256": "3592337d199cd23d29cea7f38351eeeb9c56ba540ab7812ef2912c38e5664d11",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=105.313 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 376,
+       "measured": 3.996000289916992,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.547362,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=30.547 s); n=376; worst 3.996 on instance 0 at t=62.923 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 376,
+       "measured": 3.996000289916992,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.547362,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=30.547 s); n=376; worst 3.996 on instance 0 at t=62.923 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 373,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=373; every row in scope qualifies; arming before t=105.313 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 747,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=747; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.403 s; arming before t=105.313 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1496,
+       "measured": 0.37,
+       "limit_in_log": null,
+       "note": "n=1496; worst 0.37 on instance 1 at t=103.603 s, 1 window(s); instances present [0, 1]; arming before t=105.313 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000050.BIN",
+     "sha256": "47280bd313b76b299d35e5d3a09b93d6898f9746d433c8e217770734c913e04d",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.233 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 5.00600004196167,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.467097,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.467 s); n=360; worst 5.006 on instance 0 at t=65.257 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 5.00600004196167,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.467097,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.467 s); n=360; worst 5.006 on instance 0 at t=65.257 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=103.233 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 716,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=716; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.338 s; arming before t=103.233 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1434,
+       "measured": 0.11,
+       "limit_in_log": null,
+       "note": "n=1434; worst 0.11 on instance 0 at t=101.537 s, 1 window(s); instances present [0, 1]; arming before t=103.233 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000051.BIN",
+     "sha256": "b615148806432058c57e18adf5078c8d208bfb6652781e6daf8b21ecd6f33469",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.308 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.537078,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 360 sample(s): 360 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [31.672, 109.273] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 6.000000476837158,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.537078,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=31.537 s); n=360; worst 6 on instance 0 at t=65.272 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=103.308 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 717,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=717; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.353 s; arming before t=103.308 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1436,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1436; worst 0.08 on instance 0 at t=101.552 s, 1 window(s); instances present [0, 1]; arming before t=103.308 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000052.BIN",
+     "sha256": "beb542ca54f2b1b53cb4de92abdd783e14a14dc52fd75cce8aca806832a8845c",
+     "badge": "gates: could not tell \u00b7 4/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=104.707 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 376,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.824188,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=376; limit WP_SPD not usable on 1 sample(s): 1 before the first PARM row, t in [29.824, 29.824] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 376,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.824188,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=376; limit WP_SPD not usable on 1 sample(s): 1 before the first PARM row, t in [29.824, 29.824] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 375,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=375; every row in scope qualifies; arming before t=104.707 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 748,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=748; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=41.684 s; arming before t=104.707 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1498,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1498; worst 0.08 on instance 0 at t=102.884 s, 1 window(s); instances present [0, 1]; arming before t=104.707 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000053.BIN",
+     "sha256": "23eb7756bd57ef587754f3d89af971898f30f08ea1c083d528dd026ea19d5648",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.880 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 357,
+       "measured": 5.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.187174,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.187 s); n=357; worst 5.002 on instance 0 at t=65.805 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 357,
+       "measured": 5.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.187174,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.187 s); n=357; worst 5.002 on instance 0 at t=65.805 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=102.880 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 716,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=716; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.988 s; arming before t=102.880 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1434,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1434; worst 0.08 on instance 0 at t=101.087 s, 1 window(s); instances present [0, 1]; arming before t=102.880 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000054.BIN",
+     "sha256": "ca9b72ffb096d9f4c480f5535bb8775793cf66638380794a516179c4d96e6ab2",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.737 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.966259,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 358 sample(s): 358 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [31.027, 108.227] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 358,
+       "measured": 6.00100040435791,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.966259,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.966 s); n=358; worst 6.001 on instance 0 at t=64.627 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=102.737 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 717,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=717; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.807 s; arming before t=102.737 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1436,
+       "measured": 0.09,
+       "limit_in_log": null,
+       "note": "n=1436; worst 0.09 on instance 0 at t=100.906 s, 1 window(s); instances present [0, 1]; arming before t=102.737 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000055.BIN",
+     "sha256": "1dd0bd94b742f47c3b68ad96feaf1d0a3bf0ee8261a6157825c9e9ff54217f3f",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=106.931 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          32.156791,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=32.157 s); n=374; worst 3.993 on instance 0 at t=70.817 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          32.156791,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=32.157 s); n=374; worst 3.993 on instance 0 at t=70.817 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=374; every row in scope qualifies; arming before t=106.931 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 747,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=747; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.997 s; arming before t=106.931 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1496,
+       "measured": 0.17,
+       "limit_in_log": null,
+       "note": "n=1496; worst 0.17 on instance 1 at t=105.296 s, 1 window(s); instances present [0, 1]; arming before t=106.931 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000056.BIN",
+     "sha256": "0a88fcf8914fe9aa73d33029c5a528c6509a742a3f1273d3289263aa40303482",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.588 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 364,
+       "measured": 5.005000114440918,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.93529,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.935 s); n=364; worst 5.005 on instance 0 at t=64.483 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 364,
+       "measured": 5.005000114440918,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.93529,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.935 s); n=364; worst 5.005 on instance 0 at t=64.483 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 358,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=358; every row in scope qualifies; arming before t=102.588 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 716,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=716; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.763 s; arming before t=102.588 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1434,
+       "measured": 0.18,
+       "limit_in_log": null,
+       "note": "n=1434; worst 0.18 on instance 1 at t=100.962 s, 1 window(s); instances present [0, 1]; arming before t=102.588 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000057.BIN",
+     "sha256": "0c472b9a481d23c99ee869751e2f6b5a6f9f126837fb375f5b5ee25c650e464e",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.936 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.549356,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 355 sample(s): 355 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [30.706, 106.906] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 355,
+       "measured": 6.003000259399414,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.549356,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.549 s); n=355; worst 6.003 on instance 0 at t=63.507 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 357,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=357; every row in scope qualifies; arming before t=101.936 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 713,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=713; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.387 s; arming before t=101.936 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1428,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1428; worst 0.08 on instance 0 at t=100.187 s, 1 window(s); instances present [0, 1]; arming before t=101.936 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000058.BIN",
+     "sha256": "fd0c657f25f7a5091d3744f949b9e868fedf0069d516105404e53fdf2dd1ae04",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=106.518 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 4.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.876948,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=31.877 s); n=377; worst 4.008 on instance 0 at t=64.638 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 4.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.876948,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=31.877 s); n=377; worst 4.008 on instance 0 at t=64.638 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 373,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=373; every row in scope qualifies; arming before t=106.518 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 745,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=745; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.718 s; arming before t=106.518 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1492,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1492; worst 0.08 on instance 0 at t=104.717 s, 1 window(s); instances present [0, 1]; arming before t=106.518 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000059.BIN",
+     "sha256": "70c3ae2bb25964f1b3012e56d86d220b9a41bdb181c05f54f104d8d8b65c66e5",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.534 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 369,
+       "measured": 5.004000186920166,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.894654,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=29.895 s); n=369; worst 5.004 on instance 0 at t=64.500 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 369,
+       "measured": 5.004000186920166,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.894654,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=29.895 s); n=369; worst 5.004 on instance 0 at t=64.500 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=101.534 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 715,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=715; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=41.680 s; arming before t=101.534 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1432,
+       "measured": 0.17,
+       "limit_in_log": null,
+       "note": "n=1432; worst 0.17 on instance 1 at t=99.780 s, 1 window(s); instances present [0, 1]; arming before t=101.534 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000060.BIN",
+     "sha256": "54c4c6903eee92fcc1c00306d1663fc0067d51802e351aae8a8f38e99bc54d15",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.242 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.701033,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 354 sample(s): 354 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [30.812, 107.011] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 354,
+       "measured": 6.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.701033,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.701 s); n=354; worst 6.002 on instance 0 at t=63.812 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 358,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=358; every row in scope qualifies; arming before t=102.242 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 714,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=714; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.572 s; arming before t=102.242 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1430,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1430; worst 0.08 on instance 0 at t=100.471 s, 1 window(s); instances present [0, 1]; arming before t=102.242 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000061.BIN",
+     "sha256": "102e29380491d779a5e0cebc235f3da1b45a960f6b1dce3651997688c7a1c257",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=99.434 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.540985,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=24.541 s); n=377; worst 3.995 on instance 0 at t=62.964 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.540985,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=24.541 s); n=377; worst 3.995 on instance 0 at t=62.964 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 375,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=375; every row in scope qualifies; arming before t=99.434 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 748,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=748; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=36.424 s; arming before t=99.434 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1498,
+       "measured": 0.17,
+       "limit_in_log": null,
+       "note": "n=1498; worst 0.17 on instance 1 at t=97.824 s, 1 window(s); instances present [0, 1]; arming before t=99.434 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000062.BIN",
+     "sha256": "0fa139b627e9406bdfb9eac8a25ab67b9668e474e789eb4a11cc9e84a7305fbf",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=96.178 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.00700044631958,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.983714,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=24.984 s); n=365; worst 5.007 on instance 0 at t=57.248 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.00700044631958,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.983714,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=24.984 s); n=365; worst 5.007 on instance 0 at t=57.248 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 356,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=356; every row in scope qualifies; arming before t=96.178 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 711,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=711; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=36.808 s; arming before t=96.178 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1424,
+       "measured": 0.09,
+       "limit_in_log": null,
+       "note": "n=1424; worst 0.09 on instance 0 at t=94.308 s, 1 window(s); instances present [0, 1]; arming before t=96.178 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000063.BIN",
+     "sha256": "936d04459c63b84361dee6a70420f78de62043d72e51a8b5f78015a58c707a21",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.152 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.872703,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 366 sample(s): 366 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [28.923, 107.922] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 366,
+       "measured": 5.996000289916992,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.872703,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=28.873 s); n=366; worst 5.996 on instance 0 at t=64.322 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 362,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=362; every row in scope qualifies; arming before t=101.152 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 722,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=722; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=40.683 s; arming before t=101.152 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1446,
+       "measured": 0.14,
+       "limit_in_log": null,
+       "note": "n=1446; worst 0.14 on instance 0 at t=99.383 s, 1 window(s); instances present [0, 1]; arming before t=101.152 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000064.BIN",
+     "sha256": "b8ac24b4aec61aa00694bdafd9b92ad6d24448e58a1a17a06494be8a67d69fa2",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 1 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.945 s is a disarm: armed before it"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 382,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.087636,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.088 s); n=382; worst 3.993 on instance 0 at t=67.742 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 382,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.087636,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.088 s); n=382; worst 3.993 on instance 0 at t=67.742 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 375,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=375; every row in scope qualifies; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 748,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=748; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=40.903 s; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1498,
+       "measured": 0.19,
+       "limit_in_log": null,
+       "note": "n=1498; worst 0.19 on instance 1 at t=102.203 s, 1 window(s); instances present [0, 1]; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    }
+   ]
+  },
+  "bars_param_key.yaml": {
+   "bars_sha256": "e6fa82d568be3f67b3c06120b8cadbe1fa1436d5652a0f2433e0950726e2367d",
+   "flights": [
+    {
+     "log": "00000045.BIN",
+     "sha256": "bf715b31cc99f62ea33f33c91dacffbc34b9f1d718df88ab3f139bf03dec83f0",
+     "badge": "gates: could not tell \u00b7 3/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": false,
+       "detail": "no ARM rows: not applied, arming stays ABSENT"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=29.482 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 108,
+       "measured": 3.932000160217285,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.481751,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.482 s); n=108; worst 3.932 on instance 0 at t=49.580 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 108,
+       "measured": 3.932000160217285,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.481751,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.482 s); n=108; worst 3.932 on instance 0 at t=49.580 s, 1 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 1,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=1; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; the scope needs arming, which is ABSENT: no ARM rows"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000046.BIN",
+     "sha256": "ba4597b7947170e33221826c493ea8d7f860f79f5a9f72b3849a6e439d3a81f2",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.378 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=28.670 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 383,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.670027,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=28.670 s); n=383; worst 3.995 on instance 0 at t=67.171 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 383,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.670027,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=28.670 s); n=383; worst 3.995 on instance 0 at t=67.171 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=374; every row in scope qualifies; arming before t=103.378 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 746,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=746; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=40.551 s; arming before t=103.378 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1494,
+       "measured": 0.09,
+       "limit_in_log": null,
+       "note": "n=1494; worst 0.09 on instance 1 at t=101.650 s, 1 window(s); instances present [0, 1]; arming before t=103.378 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000047.BIN",
+     "sha256": "e5f77ee7d01e82a2fcd5314e02e56dfee5578974214189378720dc9b3edb673e",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.759 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=30.537 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.537189,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.537 s); n=365; worst 5.008 on instance 0 at t=62.875 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.537189,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.537 s); n=365; worst 5.008 on instance 0 at t=62.875 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 356,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=356; every row in scope qualifies; arming before t=101.759 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 712,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=712; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.337 s; arming before t=101.759 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1426,
+       "measured": 0.23,
+       "limit_in_log": null,
+       "note": "n=1426; worst 0.23 on instance 1 at t=99.937 s, 1 window(s); instances present [0, 1]; arming before t=101.759 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000048.BIN",
+     "sha256": "d667e923c144d86ff0d435c76016aff1da423f01532fbc052c6c8eea410a2aae",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.547 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=30.531 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.531408,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 356 sample(s): 356 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [30.631, 107.631] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 356,
+       "measured": 6.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.531408,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.531 s); n=356; worst 6.002 on instance 0 at t=64.432 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=360; every row in scope qualifies; arming before t=102.547 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 719,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=719; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.412 s; arming before t=102.547 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1440,
+       "measured": 0.18,
+       "limit_in_log": null,
+       "note": "n=1440; worst 0.18 on instance 0 at t=100.911 s, 1 window(s); instances present [0, 1]; arming before t=102.547 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000049.BIN",
+     "sha256": "3592337d199cd23d29cea7f38351eeeb9c56ba540ab7812ef2912c38e5664d11",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=105.313 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=30.547 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 376,
+       "measured": 3.996000289916992,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.547362,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=30.547 s); n=376; worst 3.996 on instance 0 at t=62.923 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 376,
+       "measured": 3.996000289916992,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.547362,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=30.547 s); n=376; worst 3.996 on instance 0 at t=62.923 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 373,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=373; every row in scope qualifies; arming before t=105.313 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 747,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=747; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.403 s; arming before t=105.313 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1496,
+       "measured": 0.37,
+       "limit_in_log": null,
+       "note": "n=1496; worst 0.37 on instance 1 at t=103.603 s, 1 window(s); instances present [0, 1]; arming before t=105.313 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000050.BIN",
+     "sha256": "47280bd313b76b299d35e5d3a09b93d6898f9746d433c8e217770734c913e04d",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.233 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=31.467 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 5.00600004196167,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.467097,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.467 s); n=360; worst 5.006 on instance 0 at t=65.257 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 5.00600004196167,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.467097,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.467 s); n=360; worst 5.006 on instance 0 at t=65.257 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=103.233 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 716,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=716; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.338 s; arming before t=103.233 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1434,
+       "measured": 0.11,
+       "limit_in_log": null,
+       "note": "n=1434; worst 0.11 on instance 0 at t=101.537 s, 1 window(s); instances present [0, 1]; arming before t=103.233 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000051.BIN",
+     "sha256": "b615148806432058c57e18adf5078c8d208bfb6652781e6daf8b21ecd6f33469",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.308 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=31.537 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.537078,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 360 sample(s): 360 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [31.672, 109.273] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 360,
+       "measured": 6.000000476837158,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.537078,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=31.537 s); n=360; worst 6 on instance 0 at t=65.272 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=103.308 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 717,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=717; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.353 s; arming before t=103.308 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1436,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1436; worst 0.08 on instance 0 at t=101.552 s, 1 window(s); instances present [0, 1]; arming before t=103.308 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000052.BIN",
+     "sha256": "beb542ca54f2b1b53cb4de92abdd783e14a14dc52fd75cce8aca806832a8845c",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=104.707 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=29.824 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 3.994000196456909,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.824188,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.824 s); n=377; worst 3.994 on instance 0 at t=68.625 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 3.994000196456909,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.824188,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.824 s); n=377; worst 3.994 on instance 0 at t=68.625 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 375,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=375; every row in scope qualifies; arming before t=104.707 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 748,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=748; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=41.684 s; arming before t=104.707 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1498,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1498; worst 0.08 on instance 0 at t=102.884 s, 1 window(s); instances present [0, 1]; arming before t=104.707 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000053.BIN",
+     "sha256": "23eb7756bd57ef587754f3d89af971898f30f08ea1c083d528dd026ea19d5648",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.880 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=31.187 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 357,
+       "measured": 5.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.187174,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.187 s); n=357; worst 5.002 on instance 0 at t=65.805 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 357,
+       "measured": 5.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.187174,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=31.187 s); n=357; worst 5.002 on instance 0 at t=65.805 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=102.880 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 716,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=716; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.988 s; arming before t=102.880 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1434,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1434; worst 0.08 on instance 0 at t=101.087 s, 1 window(s); instances present [0, 1]; arming before t=102.880 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000054.BIN",
+     "sha256": "ca9b72ffb096d9f4c480f5535bb8775793cf66638380794a516179c4d96e6ab2",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.737 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=30.966 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.966259,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 358 sample(s): 358 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [31.027, 108.227] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 358,
+       "measured": 6.00100040435791,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.966259,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.966 s); n=358; worst 6.001 on instance 0 at t=64.627 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=102.737 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 717,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=717; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.807 s; arming before t=102.737 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1436,
+       "measured": 0.09,
+       "limit_in_log": null,
+       "note": "n=1436; worst 0.09 on instance 0 at t=100.906 s, 1 window(s); instances present [0, 1]; arming before t=102.737 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000055.BIN",
+     "sha256": "1dd0bd94b742f47c3b68ad96feaf1d0a3bf0ee8261a6157825c9e9ff54217f3f",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=106.931 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=32.157 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          32.156791,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=32.157 s); n=374; worst 3.993 on instance 0 at t=70.817 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          32.156791,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=32.157 s); n=374; worst 3.993 on instance 0 at t=70.817 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 374,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=374; every row in scope qualifies; arming before t=106.931 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 747,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=747; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.997 s; arming before t=106.931 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1496,
+       "measured": 0.17,
+       "limit_in_log": null,
+       "note": "n=1496; worst 0.17 on instance 1 at t=105.296 s, 1 window(s); instances present [0, 1]; arming before t=106.931 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000056.BIN",
+     "sha256": "0a88fcf8914fe9aa73d33029c5a528c6509a742a3f1273d3289263aa40303482",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.588 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=30.935 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 364,
+       "measured": 5.005000114440918,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.93529,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.935 s); n=364; worst 5.005 on instance 0 at t=64.483 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 364,
+       "measured": 5.005000114440918,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.93529,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=30.935 s); n=364; worst 5.005 on instance 0 at t=64.483 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 358,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=358; every row in scope qualifies; arming before t=102.588 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 716,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=716; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.763 s; arming before t=102.588 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1434,
+       "measured": 0.18,
+       "limit_in_log": null,
+       "note": "n=1434; worst 0.18 on instance 1 at t=100.962 s, 1 window(s); instances present [0, 1]; arming before t=102.588 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000057.BIN",
+     "sha256": "0c472b9a481d23c99ee869751e2f6b5a6f9f126837fb375f5b5ee25c650e464e",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.936 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=30.549 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.549356,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 355 sample(s): 355 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [30.706, 106.906] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 355,
+       "measured": 6.003000259399414,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.549356,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.549 s); n=355; worst 6.003 on instance 0 at t=63.507 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 357,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=357; every row in scope qualifies; arming before t=101.936 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 713,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=713; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.387 s; arming before t=101.936 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1428,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1428; worst 0.08 on instance 0 at t=100.187 s, 1 window(s); instances present [0, 1]; arming before t=101.936 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000058.BIN",
+     "sha256": "fd0c657f25f7a5091d3744f949b9e868fedf0069d516105404e53fdf2dd1ae04",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=106.518 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=31.877 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 4.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.876948,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=31.877 s); n=377; worst 4.008 on instance 0 at t=64.638 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 4.008000373840332,
+       "limit_in_log": {
+        "rows": [
+         [
+          31.876948,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=31.877 s); n=377; worst 4.008 on instance 0 at t=64.638 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 373,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=373; every row in scope qualifies; arming before t=106.518 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 745,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=745; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=43.718 s; arming before t=106.518 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1492,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1492; worst 0.08 on instance 0 at t=104.717 s, 1 window(s); instances present [0, 1]; arming before t=106.518 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000059.BIN",
+     "sha256": "70c3ae2bb25964f1b3012e56d86d220b9a41bdb181c05f54f104d8d8b65c66e5",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.534 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=29.895 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 369,
+       "measured": 5.004000186920166,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.894654,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=29.895 s); n=369; worst 5.004 on instance 0 at t=64.500 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 369,
+       "measured": 5.004000186920166,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.894654,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=29.895 s); n=369; worst 5.004 on instance 0 at t=64.500 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 359,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=359; every row in scope qualifies; arming before t=101.534 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 715,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=715; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=41.680 s; arming before t=101.534 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1432,
+       "measured": 0.17,
+       "limit_in_log": null,
+       "note": "n=1432; worst 0.17 on instance 1 at t=99.780 s, 1 window(s); instances present [0, 1]; arming before t=101.534 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000060.BIN",
+     "sha256": "54c4c6903eee92fcc1c00306d1663fc0067d51802e351aae8a8f38e99bc54d15",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=102.242 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=30.701 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.701033,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 354 sample(s): 354 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [30.812, 107.011] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 354,
+       "measured": 6.002000331878662,
+       "limit_in_log": {
+        "rows": [
+         [
+          30.701033,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=30.701 s); n=354; worst 6.002 on instance 0 at t=63.812 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 358,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=358; every row in scope qualifies; arming before t=102.242 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 714,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=714; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=42.572 s; arming before t=102.242 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1430,
+       "measured": 0.08,
+       "limit_in_log": null,
+       "note": "n=1430; worst 0.08 on instance 0 at t=100.471 s, 1 window(s); instances present [0, 1]; arming before t=102.242 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000061.BIN",
+     "sha256": "102e29380491d779a5e0cebc235f3da1b45a960f6b1dce3651997688c7a1c257",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=99.434 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=24.541 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.540985,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=24.541 s); n=377; worst 3.995 on instance 0 at t=62.964 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 377,
+       "measured": 3.995000123977661,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.540985,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=24.541 s); n=377; worst 3.995 on instance 0 at t=62.964 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 375,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=375; every row in scope qualifies; arming before t=99.434 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 748,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=748; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=36.424 s; arming before t=99.434 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1498,
+       "measured": 0.17,
+       "limit_in_log": null,
+       "note": "n=1498; worst 0.17 on instance 1 at t=97.824 s, 1 window(s); instances present [0, 1]; arming before t=99.434 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000062.BIN",
+     "sha256": "0fa139b627e9406bdfb9eac8a25ab67b9668e474e789eb4a11cc9e84a7305fbf",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=96.178 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=24.984 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.00700044631958,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.983714,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=24.984 s); n=365; worst 5.007 on instance 0 at t=57.248 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 365,
+       "measured": 5.00700044631958,
+       "limit_in_log": {
+        "rows": [
+         [
+          24.983714,
+          5.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 5.5
+       },
+       "note": "limit 5.5 = 1.1 x WP_SPD 5 (PARM row at t=24.984 s); n=365; worst 5.007 on instance 0 at t=57.248 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 356,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=356; every row in scope qualifies; arming before t=96.178 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 711,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=711; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=36.808 s; arming before t=96.178 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1424,
+       "measured": 0.09,
+       "limit_in_log": null,
+       "note": "n=1424; worst 0.09 on instance 0 at t=94.308 s, 1 window(s); instances present [0, 1]; arming before t=96.178 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000063.BIN",
+     "sha256": "936d04459c63b84361dee6a70420f78de62043d72e51a8b5f78015a58c707a21",
+     "badge": "gates: could not tell \u00b7 5/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 1,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=101.152 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=28.873 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.872703,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": null
+       },
+       "note": "n=0; n 0 < min_n 100; limit WP_SPD not usable on 366 sample(s): 366 where the parameter is outside accept (0 of them break 1.1 x every logged value they may have had), t in [28.923, 107.922] s; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 366,
+       "measured": 5.996000289916992,
+       "limit_in_log": {
+        "rows": [
+         [
+          28.872703,
+          6.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 6.6000000000000005
+       },
+       "note": "limit 6.6 = 1.1 x WP_SPD 6 (PARM row at t=28.873 s); n=366; worst 5.996 on instance 0 at t=64.322 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 362,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=362; every row in scope qualifies; arming before t=101.152 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 722,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=722; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=40.683 s; arming before t=101.152 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1446,
+       "measured": 0.14,
+       "limit_in_log": null,
+       "note": "n=1446; worst 0.14 on instance 0 at t=99.383 s, 1 window(s); instances present [0, 1]; arming before t=101.152 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    },
+    {
+     "log": "00000064.BIN",
+     "sha256": "b8ac24b4aec61aa00694bdafd9b92ad6d24448e58a1a17a06494be8a67d69fa2",
+     "badge": "gates: pass \u00b7 6/7 measured \u00b7 2 assumed (post-hoc)",
+     "exit_code": 0,
+     "assumptions": [
+      {
+       "name": "arming_before_first_arm_row",
+       "applied": true,
+       "detail": "first ARM row at t=103.945 s is a disarm: armed before it"
+      },
+      {
+       "name": "limit_before_first_parm_row",
+       "applied": true,
+       "detail": "WP_SPD: first PARM row at t=29.088 s; no drop interval removed"
+      }
+     ],
+     "results": {
+      "speed_ceiling_auto": {
+       "verdict": "PASS",
+       "n": 382,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.087636,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.088 s); n=382; worst 3.993 on instance 0 at t=67.742 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "speed_commanded_auto": {
+       "verdict": "PASS",
+       "n": 382,
+       "measured": 3.9930002689361572,
+       "limit_in_log": {
+        "rows": [
+         [
+          29.087636,
+          4.0
+         ]
+        ],
+        "n_rows": 1,
+        "at_worst": 4.4
+       },
+       "note": "limit 4.4 = 1.1 x WP_SPD 4 (PARM row at t=29.088 s); n=382; worst 3.993 on instance 0 at t=67.742 s, 2 window(s); instances present [0]; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "gnss_quality_armed": {
+       "verdict": "PASS",
+       "n": 375,
+       "measured": 0.0,
+       "limit_in_log": null,
+       "note": "n=375; every row in scope qualifies; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "designed_modes_only": {
+       "verdict": "PASS",
+       "n": 3,
+       "measured": 0,
+       "limit_in_log": null,
+       "note": "n=3; every judged transition is allowed; the startup row <start> -> AUTO is judged, never counted in n; mode unknown for 0.000 s before the first MODE row (<= 1.0 s: left out of the scope)"
+      },
+      "field_geofence": {
+       "verdict": "PASS",
+       "n": 748,
+       "measured": 4.960000038146973,
+       "limit_in_log": null,
+       "note": "n=748; minimum signed margin of the samples and judged segments 4.960 m (altitude above home) at t=40.903 s; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "ekf_vel_ceiling_armed": {
+       "verdict": "PASS",
+       "n": 1498,
+       "measured": 0.19,
+       "limit_in_log": null,
+       "note": "n=1498; worst 0.19 on instance 1 at t=102.203 s, 1 window(s); instances present [0, 1]; arming before t=103.945 s assumed armed (assume: arming_before_first_arm_row)"
+      },
+      "no_errors": {
+       "verdict": "EVIDENCE_INSUFFICIENT",
+       "n": 0,
+       "measured": null,
+       "limit_in_log": null,
+       "note": "n=0; events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V4.5.<n> firmware string (this log: ArduCopter V4.8.0-dev) and LOG_BACKEND_TYPE logged, constant and == 1, File only (this log: [1.0])"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

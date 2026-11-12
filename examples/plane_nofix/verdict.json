@@ -2,7 +2,7 @@
  "schema": "swathkeeper-verdict/1.0",
  "contract": "swathkeeper-flightlog/1.0",
  "tool": {
-  "version": "0.1.0",
+  "version": "0.3.0",
   "python": "3.12.12",
   "deps": {
    "PyYAML": "6.0.3",
@@ -163,7 +163,7 @@
      "n": 3,
      "t_first": 29.696061,
      "t_last": 63.455792,
-     "median_period_s": 16.879865,
+     "median_period_s": 16.879866,
      "max_gap_s": 28.379957
     }
    },
@@ -245,7 +245,7 @@
  "allowlist": {
   "path": null,
   "sha256": null,
-  "run_date_utc": "2026-11-06",
+  "run_date_utc": "2026-11-11",
   "declared": [],
   "red": [
    [
@@ -274,6 +274,7 @@
  "exit_code": 1,
  "badge": "gates: fail \u00b7 1/5 measured (post-hoc)",
  "refusal": null,
+ "assumptions": [],
  "results": [
   {
    "id": "alt_floor",
@@ -344,7 +345,7 @@
    "kind": "gnss_quality",
    "severity": "must",
    "verdict": "FAIL",
-   "measured": 52.71977199999999,
+   "measured": 52.719772,
    "bar": {
     "fix_min": 3,
     "sats_min": 6,

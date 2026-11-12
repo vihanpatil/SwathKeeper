@@ -6,6 +6,89 @@ Full session records live in `docs/archive/` and the runbooks in `docs/runbooks/
 
 ---
 
+## 2026-11-11 — tool 0.3.0: a limit that follows the log's own parameter, and a rounding bug that was holding ties by luck
+
+The owner said build it: yesterday's dogfood had failed 12 of 20 sim flights on one literal 4.4 m/s ceiling while the
+flights were commanded at 4, 5 and 6 m/s. A `series_bound` limit can now be `{param, scale?, accept}`: the log's own
+PARM rows supply the value (ADR-023 am. 4, commit 0ba712d).
+
+The order of work was the lesson of 2026-11-10 applied. **Measure first:** before any rule was written, a scan of the
+40-log corpus and the 20 sim logs showed that in all 8 corpus logs with a loss a drop interval that begins at the
+log's start overlaps the startup parameter dump, that a watched parameter's first row comes after the log's first
+timestamp in 13 of the 33 judged corpus logs and in all 20 sim logs, and that `BATT_LOW_VOLT` is 0 on 2.
+**Rule second:** the orchestrator's draft bridged the stretch before the first row silently; the lead overruled it as
+the same undeclared inference refused for arming, corrected two of its inequalities, and made `accept` required.
+**Attack before code:** QA attacked the ruled design while the builder worked and found a sentence in the fixed
+assumption text that was false and a rule (a non-finite row voids the whole bar) that turned a certain violation into
+exit 0 on a `should` bar; the lead reversed its own cut. **Acceptance fixed before the tool existed:** two bars files
+for the 20 sim flights and a corpus probe were committed and pushed (c57bcf8) while 0.2.0 still refused them.
+
+What the build found that nobody asked for: 0.2.0 rounded loss bounds to 1 µs and compared them with raw
+`TimeUS * 1e-6` row times, which differ on about 30 % of ticks. The same-tick rules ruled closed on 2026-11-10 held by
+luck. All times now enter on the 1 µs grid; corpus log 03 was a live case (its first drop interval starts on the first
+MODE row's tick). No verdict, n, exit code or badge moved on 86 existing verdict files.
+
+Measured on the final build: the 20 sim flights read 13 pass, 0 fail, 7 could not tell with the new key declared (12 /
+0 / 8 without: one flight has ONE sample on the tick of the parameter's first row). The six 6.0 m/s flights do not
+turn green: their `WP_SPD` is outside the booked range the `must` bar accepts. On the corpus, 23 of 132
+parameter-following probe verdicts were measurable without the key and 36 with it; most of what stays could not tell
+is an ABSENT stream (37) or a parameter the log does not carry (32). QA's build attack: no false green, one crash and
+six untested behaviours, all closed; 58 builder mutants and 19 of QA's 22 killed, 3 equivalent.
+
+QA's last pass, on the fixes and on this record, found two things. One of the fixes had a regression (G375): the gap
+threshold was rounded to the 1 µs grid, sometimes up, so a gap half a microsecond over it was missed. QA's suggested
+repair, no rounding at all, was measured before it was built and fires a false gap on 14 % of exact ties; the
+threshold now sits on a 0.1 µs grid, exact against the integer rule on 800,000 random cases (e79f6ef), and no verdict
+moved on the corpus, the 20 sim flights or the three examples. And seven sentences of the orchestrator's write-up were
+wrong or unsupported, among them the suite split, quoted as measured before the run had finished. They are corrected;
+the split was then measured on a clean clone (a bare export has no `.git`, and seven tests that ask git what is
+committed error there).
+
+Still true: none of the three public examples reads `pass`; `no_events` cannot pass off a 4.5.x release (the lead made
+NOT closing that in v1 the cut that pays for this build); nobody outside the repo has run the tool. One question went
+to the owner: whether the same loss rule should apply to the fence a `containment` bar reads from the log's parameters.
+
+## 2026-11-10 — tool 0.2.0: the first measurement of what the tool can tell, and two rules built against it
+
+The day began with the owner's ruling on G257 ("flip": a dropped write must not be a footnote on a green) and a direct question:
+is this product being built the right way? The honest answer was that the engineering was careful and the product was unmeasured:
+310 QA findings and a 4,741-line decision log guarded 1,319 lines that had judged three public logs the authors chose, one of them a real flight, the repo had
+never compared itself to ArduPilot's LogAnalyzer or DroneKit-LA, and every rule had been tuned on three logs the authors chose. So
+the tool was run on a corpus before anything else was decided: 40 public DataFlash logs (14 SITL logs from ArduPilot's autotest and 26 from 13 public GitHub repositories:
+by content 15 real hardware, 2 SITL, 2 synthetic fixtures, 7 unclassified), 15 loose-limit probe bars each, so a PASS or FAIL means only that the bar was measurable.
+**Released 0.1.0: 8 of 40 refused (7 pre-2015 logs, 1 adapter crash), and 130 of 480 probe verdicts measurable.** The causes, ranked:
+a log that starts at boot has no GPS fix, EKF solution or home at first, so every whole-log bar is voided by the gap at its start
+(the speed bar on 8 of 14 SITL logs); `armed: true`, which would exclude the boot period, was measurable on 1 of 160 verdicts
+because arming before the first ARM row is ABSENT; `no_events` read PASS on 0 of 32. G257 was not the main problem.
+Two rules were then built red-first as **tool 0.2.0**, each attacked by QA on its own (G311–G342), in two commits. **(1) Lost
+writes (ADR-023 am. 2).** A DSF.Dp drop interval or a log hole may hide a MODE row: a mode-scoped bar is judged on a sure and a wide
+scope, and a transition across a loss is judged on every `from` it could have had. QA's first round returned DO-NOT-SHIP on two
+false greens, **both from the orchestrator's spec**: a spanning transition was skipped even when no mode could be allowed into it
+(a 0.1.0 FAIL with exit 1 on public corpus log 01 became exit 0), and an armed+mode bar never examined the stretch before the first
+ARM row. QA also showed that the five verdict flips first reported to the owner were on an allow-everything bar no hidden row
+could fail; re-measured on a bar allowing only the modes each log used, the rule costs GitHub-sourced logs 10/18 → 5/19 (three hardware, two
+SITL) and the autotest logs nothing (6 of 10 real-hardware logs that count drops carry a drop interval, as do both SITL logs found on
+GitHub and none of the 14 autotest logs; 7 of the 8 only at startup). QA's last pass also caught the orchestrator labelling every
+GitHub-sourced log "hardware", counting 14 repositories for 13 and 17 ERR-bearing logs for 18; all corrected before publication. The Tarot demo now reads
+`could not tell · 7/8`, so none of the three examples reads `pass`. **(2) A declared arming assumption (am. 3).** The owner asked
+for a working armed scope as an assumption printed in every verdict. The lead's source read at Copter-4.5.5 cut half of the
+orchestrator's draft (inferring arming from LOG_DISARMED would judge a ground log as a flight) and corrected the other half (a row
+lost before the first ARM row makes the stretch BEFORE the loss unsure). Pre-registered acceptance: exactly 0 measurable armed
+verdicts on logs with no ARM row. **Measured: 0 of 90; 51 of 75 on the 15 logs with ARM rows; 180 of 495 probe verdicts with the
+key against 130 without.** The corpus crash (a MODE record with no ModeNum column) is fixed: 33 of 40 logs are judged. CI gained a
+real-log success path: the tool README's one-bar walkthrough, pinned by sha256, must pass on the Tarot log and print the README's
+own lines. Process notes worth keeping: specify rules as sets and bounds, not prose (three of the day's false greens were
+boundary or direction errors in a sentence); measure on a corpus before tightening a rule; and a second Claude session flew the
+sim from the same checkout all afternoon, so every commit here names its own files. **Late the same day the tool judged SwathKeeper's own flights for the first time** (`eval/results/gates_dogfood_20261110/`): twenty SITL
+encounter runs another session had flown that afternoon, copied read-only out of the container, with six bars written from the committed
+design and the primary log's parameters before any flight data was read. The rule-chosen primary reads `pass · 5/6 measured · 1 assumed`:
+the first multi-bar pass the tool has printed. Across all twenty: 7 pass, 12 fail, 1 could not tell — and the 12 fails are correct measurements against
+a bar that encodes one commanded speed: the session swept `WP_SPD` (4, 5, 6 m/s) in unbooked experiments and the bar's ceiling came from
+the primary's parameter; no flight exceeded its own commanded speed by more than 0.2 %, though the six 6.0 m/s runs do sit outside the
+committed 5.0 m/s booking, by design. A bar cannot take its limit from the log's own parameter, which is the next usability gap. A verdict there says
+nothing about bird clearance: a DataFlash log carries no bird. Still true and unfixed: `no_events` cannot pass on any firmware but a
+4.5.x release (could not tell on 20 of 20 of our own flights), and nobody outside this repo has run the tool.
+
 ## 2026-11-09 — the tool gets a front door, and a stranger's run says it is usable
 
 Before step 6 (the ten posts) could send anyone to the tool, the orchestrator ran it the way a stranger would: a fresh venv, no

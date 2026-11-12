@@ -16,19 +16,24 @@ of one measured invariant with nothing that failed when they disagreed; since 20
 
 ```bash
 python3 -m unittest discover -s tests/fieldguard_planning   # Ran 1450, OK (skipped=9) — the original CI invocation
-python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 429 host-side tests, FAILED (failures=1) — see below
-python3 -m pytest tests -q                                  # both at once: 1869 passed, 1 FAILED, 9 skipped, 0 xfail
+python3 -m unittest discover -s tests -p 'test_*.py'        # Ran 473 host-side tests, FAILED (failures=1) — see below
+python3 -m pytest tests -q                                  # both at once: 1913 passed, 1 FAILED, 9 skipped, 0 xfail
 ```
 
-**The consistency check that matters:** 1450 + 429 = 1879 = 1869 + 1 + 9. If those two sides
+**The consistency check that matters:** 1450 + 473 = 1923 = 1913 + 1 + 9. If those two sides
 disagree, a file is invisible to one of the runners — which has happened before and is exactly what
 the second, separate CI job exists to prevent.
+
+*(Re-quoted 2026-11-11 for tool 0.3.0's 31 new host-side tests: 1450 + 473 = 1923. Counts AND the pass / fail / skip split were
+measured that day by running all three commands on a clean clone of the commit with the pinned venv and no flight running (a clone, not
+a bare export: seven tests ask git what is committed and error where there is no `.git`). The
+2026-11-10 quote, 1450 + 442 = 1892, had its counts by collection only and its split from CI.)*
 
 **The 9 skips are a FRESH-checkout figure** (measured in a clean worktree with the pinned venv): 8 of them are
 gated on gitignored local artifacts — the 2026-09-11 wiring-flight log (4), `eval/results/spike_scores.json`
 (1), the adopted clip's `.npy` frames (2) and the seed-42 spike clip (1) — so a developer host that still
 holds those files reads `skipped=1` (the one unconditional skip, `test_safety_scenarios_pending.py:216`) and
-`1877 passed`. Same tree, same sum; only the split moves. CI is a fresh checkout, so this is CI's split.
+`1890 passed`. Same tree, same sum; only the split moves. CI is a fresh checkout, so this is CI's split.
 
 **The 1 failure is deliberate and load-bearing:** `test_ci_evidence_gate…test_step_passes_on_the_
 committed_evidence` is red because the committed 2026-08-25 take breached its GT-CPA bar and the

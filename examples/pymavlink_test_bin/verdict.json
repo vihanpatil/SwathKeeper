@@ -2,7 +2,7 @@
  "schema": "swathkeeper-verdict/1.0",
  "contract": "swathkeeper-flightlog/1.0",
  "tool": {
-  "version": "0.1.0",
+  "version": "0.3.0",
   "python": "3.12.12",
   "deps": {
    "PyYAML": "6.0.3",
@@ -256,7 +256,7 @@
  "allowlist": {
   "path": null,
   "sha256": null,
-  "run_date_utc": "2026-11-06",
+  "run_date_utc": "2026-11-11",
   "declared": [],
   "red": [
    [
@@ -277,6 +277,7 @@
  "exit_code": 1,
  "badge": "gates: could not tell \u00b7 3/6 measured (post-hoc)",
  "refusal": null,
+ "assumptions": [],
  "results": [
   {
    "id": "alt_floor_armed",
@@ -428,7 +429,7 @@
    "instances_used": [],
    "worst_instance": null,
    "gaps": [],
-   "note": "n=0; n 0 < min_n 1; mode unknown for 0.225 s before the first MODE row (<= 1.0 s: left out of the scope)",
+   "note": "n=0; n 0 < min_n 1; mode unknown for 0.225 s before the first MODE row (<= 1.0 s: left out of the scope); DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)",
    "provenance": {
     "text": "B7 with Plane names: the vehicle resolves from the MSG banner (there is no VER row). Allowed: entering a mode of the log's own FLTMODE1-6 = 10, 11, 10, 8, 5, 0 = {AUTO, RTL, AUTOTUNE, FBWA, MANUAL}. min_n 1 real transition; the log's one MODE row is the startup write, judged as <start> -> MANUAL but not counted."
    },

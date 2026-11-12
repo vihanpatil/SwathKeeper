@@ -53,7 +53,7 @@ outputs:
     description: "The tool's exit code, verbatim: 0 pass, 1 fail or could not tell, 2 refused."
     value: ${{ steps.run.outputs.exit-code }}
   badge:
-    description: "The verdict's badge string, e.g. `gates: pass · 8/8 measured (post-hoc)`; `gates: refused` on exit 2."
+    description: "The verdict's badge string, e.g. `gates: could not tell · 7/8 measured (post-hoc)`; `gates: refused` on exit 2."
     value: ${{ steps.run.outputs.badge }}
   verdict:
     description: Path of the JSON verdict that was written (the `out` input).

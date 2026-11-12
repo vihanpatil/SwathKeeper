@@ -22,7 +22,7 @@ its amendment 1 in `docs/DECISIONS.md`.
 | Output | Meaning |
 |---|---|
 | `exit-code` | the tool's exit code, verbatim: `0` pass, `1` fail or could not tell, `2` refused |
-| `badge` | the verdict's badge string, e.g. `gates: pass · 8/8 measured (post-hoc)`; `gates: refused` on exit 2 |
+| `badge` | the verdict's badge string, e.g. `gates: could not tell · 7/8 measured (post-hoc)`; `gates: refused` on exit 2 |
 | `verdict` | the path of the JSON verdict (the `out` input) |
 
 **Two runner facts to know.** The Action runs `actions/setup-python` for `python-version` (default 3.12), so a job that already

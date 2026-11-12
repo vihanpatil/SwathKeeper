@@ -18,8 +18,8 @@ is committed, and a unit test never downloads). For each example directory, in t
      sha256(bars.yaml), and the verdict's `prereg.sidecar_sha256` must be sha256(the committed sidecar) -- so an
      edited bars file with a re-registered sidecar (QA G267) fails HERE, by name, before any run;
   4. `swathkeeper-gates run` (the console script on PATH, as a stranger would run it) judges the fetched log
-     against the committed bars.yaml, its exit code captured as a VALUE (1 is the correct verdict on two of the
-     three logs); a refusal is a FAIL, and the fresh verdict must read prereg HASH_MATCH, post_hoc, `(post-hoc)`;
+     against the committed bars.yaml, its exit code captured as a VALUE (1 is the correct verdict on all three
+     logs since v0.2.0); a refusal is a FAIL, and the fresh verdict must read prereg HASH_MATCH, post_hoc, `(post-hoc)`;
   5. the committed verdict.json must be BYTE-IDENTICAL to the canonical serialisation (`json.dumps(indent=1)`
      + newline, the tool's own) of the fresh run -- every result's verdict, n and measured value, every bar
      limit, the integrity block, the streams map, the badge, the exit code (QA G266: the pre-registered

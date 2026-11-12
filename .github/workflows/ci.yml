@@ -222,10 +222,13 @@ jobs:
   # interpreters `requires-python` promises (3.10 and 3.12: the floor is exactly as low as this matrix tests,
   # design §1 -- widen one, widen both). Three gates, each its own step:
   #   1. the tool's unit tests (tests/test_gates_*.py: synthetic DataFlash written by the tests, no real log);
-  #   2. the composite Action in .github/actions/swathkeeper-gates, run on a public log we did not fly: the Tarot
-  #      X4 demo must PASS with the committed badge string verbatim, and the ArduPlane no-fix log must FAIL THE
-  #      STEP (exit 1). `continue-on-error` on that one step, then an assertion that its outcome WAS failure, is
-  #      how "the Action never softens an exit code" is tested rather than remembered;
+  #   2. the composite Action in .github/actions/swathkeeper-gates, run on two public logs we did not fly, each of
+  #      which must FAIL THE STEP (exit 1) with its committed badge string verbatim: the Tarot X4 demo (could not
+  #      tell since v0.2.0, G257: a MODE row may be among its 15 dropped startup writes) and the ArduPlane no-fix
+  #      log (fail). `continue-on-error` on exactly those two steps, each followed by an assertion that its outcome
+  #      WAS failure, is how "the Action never softens an exit code" is tested rather than remembered. The green
+  #      path runs once on the Tarot log with the tool README's one-bar walkthrough, written inline and sha256-pinned
+  #      to the README's yaml block and registered post-hoc as the README's step 3 does (never a file under examples/, QA G325/G332);
   #   3. the reproduction gate: every examples/*/SOURCE.json's log is fetched with `curl -fL` into a fresh temp
   #      dir, its sha256 and size checked against the pin (mismatch = hard FAIL, both hashes printed, the tool
   #      NOT run on those bytes), judged with the committed bars.yaml under its pinned sidecar (HASH_MATCH,
@@ -279,9 +282,10 @@ jobs:
             echo "$name=$RUNNER_TEMP/$name.bin" >> "$GITHUB_OUTPUT"
           done
 
-      - name: The Action on a public log we did not fly -- Tarot X4 must PASS (exit 0)
+      - name: The Action on a public log we did not fly -- Tarot X4 must exit 1 (could not tell) and FAIL this step
         if: always()
         id: action-tarot
+        continue-on-error: true   # one of the TWO such lines in this job: the next step asserts this step's outcome WAS failure
         uses: ./.github/actions/swathkeeper-gates
         with:
           log: ${{ steps.demo-logs.outputs.tarot_x4 }}
@@ -289,7 +293,7 @@ jobs:
           out: ${{ runner.temp }}/tarot_x4.action.verdict.json
           python-version: ${{ matrix.python-version }}
 
-      - name: The Action's outputs equal the committed demo verdict, verbatim
+      - name: ...and the Tarot step did fail, with exit-code 1 -- its outputs equal the committed demo verdict, verbatim
         if: always()
         env:
           BADGE: ${{ steps.action-tarot.outputs.badge }}
@@ -299,12 +303,12 @@ jobs:
           set -euo pipefail
           committed="$(python3 -c 'import json; print(json.load(open("examples/tarot_x4/verdict.json"))["badge"])')"
           echo "[ci] action: outcome=$OUTCOME exit-code=$CODE badge='$BADGE' | committed badge='$committed'"
-          [ "$OUTCOME" = "success" ] && [ "$CODE" = "0" ] && [ "$BADGE" = "$committed" ]
+          [ "$OUTCOME" = "failure" ] && [ "$CODE" = "1" ] && [ "$BADGE" = "$committed" ]
 
       - name: The Action never softens exit 1 -- the ArduPlane no-fix log must FAIL this step
         if: always()
         id: action-plane
-        continue-on-error: true   # the ONE such line in this job: the next step asserts this step's outcome WAS failure
+        continue-on-error: true   # one of the TWO such lines in this job: the next step asserts this step's outcome WAS failure
         uses: ./.github/actions/swathkeeper-gates
         with:
           log: ${{ steps.demo-logs.outputs.plane_nofix }}
@@ -323,6 +327,58 @@ jobs:
           committed="$(python3 -c 'import json; print(json.load(open("examples/plane_nofix/verdict.json"))["badge"])')"
           echo "[ci] action: outcome=$OUTCOME exit-code=$CODE badge='$BADGE' | committed badge='$committed'"
           [ "$OUTCOME" = "failure" ] && [ "$CODE" = "1" ] && [ "$BADGE" = "$committed" ]
+
+      - name: Write the tool README's one-bar walkthrough bars (its "2. Write the bars" yaml block), sha256-pinned, and prereg them
+        if: always()
+        env:
+          TAROT: ${{ steps.demo-logs.outputs.tarot_x4 }}
+        run: |
+          set -euo pipefail
+          # QA G325: both real-log probes above exit 1, so this is the one real-log run of the Action's success path.
+          # The hash is of the README's yaml block (QA G332): if the walkthrough is edited, this step fails until both move.
+          cat > "$RUNNER_TEMP/walkthrough_bars.yaml" <<'YAML'
+          schema: swathkeeper-bars/1.0
+          contract: swathkeeper-flightlog/1.0
+          bars:
+            - id: batt_floor
+              kind: series_bound
+              severity: must
+              provenance: {text: "log PARM BATT_LOW_VOLT; instantaneous, stricter than the 10 s timer", param: BATT_LOW_VOLT}
+              scope: {armed: null, modes: null}
+              min_n: 30
+              params: {channel: battery.voltage_v, bound: floor, limit: 18.6}
+          YAML
+          echo "185074c12430389f65ec6f071ab988fc1f4e4d67e3ba0ee2f28183cfea563884  $RUNNER_TEMP/walkthrough_bars.yaml" | sha256sum -c -
+          swathkeeper-gates prereg --bars "$RUNNER_TEMP/walkthrough_bars.yaml" --log "$TAROT"   # the README's step 3: post-hoc
+
+      - name: The Action's success path -- the README walkthrough bars on the Tarot X4 log must PASS (exit 0, post-hoc)
+        if: always()
+        id: action-walkthrough
+        uses: ./.github/actions/swathkeeper-gates
+        with:
+          log: ${{ steps.demo-logs.outputs.tarot_x4 }}
+          bars: ${{ runner.temp }}/walkthrough_bars.yaml
+          out: ${{ runner.temp }}/walkthrough.action.verdict.json
+          python-version: ${{ matrix.python-version }}
+
+      - name: ...and the walkthrough step passed, with exit-code 0, and printed the bar line and badge the README documents
+        if: always()
+        env:
+          BADGE: ${{ steps.action-walkthrough.outputs.badge }}
+          CODE: ${{ steps.action-walkthrough.outputs.exit-code }}
+          OUTCOME: ${{ steps.action-walkthrough.outcome }}
+          VERDICT: ${{ steps.action-walkthrough.outputs.verdict }}
+        run: |
+          set -euo pipefail
+          echo "[ci] action: outcome=$OUTCOME exit-code=$CODE badge='$BADGE'"
+          [ "$OUTCOME" = "success" ] && [ "$CODE" = "0" ] && [ "$BADGE" = "gates: pass · 1/1 measured (post-hoc)" ] || exit 1   # not last: set -e skips an && list
+          python3 - "$VERDICT" "$BADGE" <<'PY'
+          import json, sys
+          r = json.load(open(sys.argv[1], encoding="utf-8"))["results"][0]   # the line `run` prints (cli.py), rebuilt
+          row = f"  {r['verdict']:<22} {r['severity']:<6} {r['id']:<20} n={r['n']:<9} measured={r['measured']}"
+          lines = open("src/swathkeeper_gates/README.md", encoding="utf-8").read().splitlines()
+          sys.exit(0 if row in lines and sys.argv[2] in lines else f"README walkthrough output drifted: {row!r} / {sys.argv[2]!r}")
+          PY
 
       - name: Re-fetch the three pinned public logs by sha256 and diff the committed verdicts (every byte, badge, exit, badge.svg)
         if: always()

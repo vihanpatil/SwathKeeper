@@ -1,6 +1,6 @@
 ---
 name: gates-tool-build-review-2026-11-05
-description: QA round on the BUILT swathkeeper_gates (option C step 2, uncommitted on feat/gates-tool-build) — G228-G254; 5 blockers (window adjacency, sub-floor skips, no-measurement channels, B7 over holes, antimeridian), measured on real + mutated logs
+description: QA rounds on the BUILT swathkeeper_gates — G228-G325 (step 2, step 5, README, v0.2.0 G257 rule round 7); 5 blockers (window adjacency, sub-floor skips, no-measurement channels, B7 over holes, antimeridian), measured on real + mutated logs
 metadata:
   type: project
 ---
@@ -128,3 +128,127 @@ README's own code blocks against a literal re-run (sed the yaml block out, sha i
   (test.BIN has NO ARM rows, not "only the disarm"). NEW: G308 MAJOR `python3 -m venv` on stock macOS = Xcode 3.9.6 <
   requires-python 3.10; G309 MINOR "pre-registered to fail" (it said MAY fail); G310 MINOR Plane mode-bar numbers are a
   QA probe not a committed verdict, "base range" undefined. Walkthrough re-run: all 5 outputs byte-identical, yaml 185074…
+
+## Round 7 — v0.2.0 G257 "flip" (uncommitted, feat/gates-tool-dp-rule), 2026-11-10 — G311-G325, DO NOT SHIP until G311+G312
+Rule: per DSF.Dp interval [a,b] the mode is unsure over U=[a, first MODE row > b); R1 B7 skips spanning transitions + blind;
+R2 sure/wide double pass (FAIL iff sure FAIL, PASS iff both); R3 armed EI if a drop ends after first ARM row.
+- G311 BLOCKER false green: U is clipped to the OBSERVED armed base (wide pass + `_judge` gate), but arming before the
+  first ARM row is ABSENT (rule 4). Drop before first ARM, mode in U unknown -> PASS / NA where truth can FAIL (P1:
+  lone-DISARM-first then ARM = LOG_DISARMED=0 re-arm; P1c ARM+DISARM both dropped). Builder's `early` subtests PIN it.
+  Fix proven (qa311/fixG311b): wide U clipped to [t0,t1), gate on armed U [t0,first) -> only those 2 subtests red,
+  0 verdict changes on 8 corpus drop logs x ~25 bars. Deviation (b)'s rationale is backwards.
+- G312 BLOCKER false green, REGRESSION, real public log 01: R1 throws away a CERTAIN violation (entering a mode no
+  allowed pair enters, observed MODE row) when `from` spans a drop -> should-bar FAIL -> EI -> run exit 1 -> 0 "pass".
+  Fix: judge a spanning transition on `to` alone (no (f,to) allowed => FAIL). The v0.1 byte-hole test (Q7, line ~220)
+  pins the same information loss across holes.
+- MAJOR: G313 same-tick (MODE/ARM row stamped AT a or b) R1 half-open vs unsure()'s t>b; R3 b==first PASS; file order
+  resolves it. G314 byte holes hide MODE rows too, never fed to unsure() (pre-existing, PASS). G315 multi-interval
+  untested (M16/M17 survive; 03/08/09 carry 2-3). G316 zero-length [t0,t0] untested (M18/M19 survive; 08/09).
+  G317 M1 (R3 straddle), M7 (B7 blind over windows), M12 (gate on drop not U) survive, each EI->PASS. G318 PASS prints
+  the SURE (optimistic) worst. G319 package README still v0.1 (Version 0.1.0, judged-across rule, Tarot pass 8/8 exit 0).
+  G320 R1 blindness fires on `[["*","*"]]` -> all 5 orchestrator-measured flips are on a tautology (truth PASS).
+  G321 R5: DSF-absent logs PASS silently (2/6 corpus) with no "loss not measured" note.
+- MINOR: G322 B7 FAIL note "startup judged" when skipped; G323 negative Dp interval "-5 writes"; G324 notes lost
+  (M9/M10/M20); G325 CI no longer exercises the Action's success path on a real log.
+Re-derived with raw pymavlink (qa311/tools/rederive.py): Tarot 591/709/2.421, 01 817/1047/9.581, 08 216/272/1.042,
+09 194/693/1.124, 14 965/1136 -- all equal the tool. Examples: 3/3 byte-reproduce on fetched_0110 (checker rc 0).
+Drop-free regression: 0 changes over ~140 extended bars on 8 drop-free corpus logs + builder panel.
+**Method:** qa311/{shadow,v010 (git archive HEAD src + current tests),mutA,fixG311b,fixG312}; probes p1-p4 + ext.py.
+**Lesson:** a sure/wide soundness proof is only as good as the BASE it clips to -- check every clip against the
+contract's own ABSENT rules; and "skip what is unsure" can discard what is CERTAIN (the `to` of an observed row).
+
+## Round 8 — re-check of the G311-G325 fixes (2026-11-10) — G326-G333; SHIP-AFTER-FIXES (G326 + G319)
+CLOSED: G311-G318, G320-G325 (all round-1 repros re-run; log 01 B7 FAIL exit 1 again; 26/28 mutants killed incl.
+re-anchored M1/M2/M7/M9/M10/M12/M13/M16-M20). G255 mutant still dies on the rescoped (unscoped) pin. OPEN: G319 README.
+- G326 BLOCKER false green: B7 case (iii) (some lost `from` allowed, some not) is skipped, but blindness only fires for
+  losses in BASE -- an armed B7 + mode scope whose cutting loss is outside the armed base (hole in a disarmed stretch,
+  or a drop before the first ARM row) reads PASS. Fix proven (qa326/fixG326): (iii) appends the cut to j["blind"];
+  suite green, 0 changes over 312 corpus bars.
+- G327 MAJOR (pre-existing, the R3 ruling): armed_windows trusts the ARM sequence; DISARM, [hole], DISARM (LOG_DISARMED=0
+  re-arm refused) leaves the 2nd flight "disarmed" -> PASS. Corpus: 0/15 same-state pairs, 1/15 hole after first ARM.
+- MINOR: G329 PASS note lead quotes the sure worst while measured is the wide one; G330 UNKNOWN(n) never a candidate
+  `from`; G331 Ni (B7 [*,*] across a hole) + Nm (Dp reset to 0) unpinned; G332 CI walkthrough pins input not output.
+
+## Round 9 — sign-off on the G257 drop rule commit (2026-11-10) — G334-G338; SHIP (KNOWN-OPEN G327, G333)
+G326/G329/G330/G331/G332 CLOSED (N1/N2 EI, control PASS; unscoped (iii)/(ii) neighbours EI; log 01 FAIL exit 1;
+walkthrough re-run on 0.2.0 byte-identical to README incl. inspect 5,635 B; 3/3 examples byte-reproduce). G319 CLOSED
+(README rewritten) with minors. "<start>" deletion from G320's check is EQUIVALENT: not ok(<start>,b) => not
+ok(UNKNOWN(?),b) since the sentinel matches only "*" (its mutant survives, as an equivalent must).
+- G334 MINOR test gap: sentinel removed from the three-way candidates only survives; non-equivalent (armed B7[LOITER],
+  enumerated allowed set, hole outside base: PASS vs EI).
+- G335 MINOR: DSF-ABSENT note "judged as if no MODE or ARM row was lost" sits beside "a log hole may hide a MODE row"
+  on the same result; README "the verdict is unchanged" is false when the log has a hole.
+- G336 MINOR README: blind list (c) omits the G326 cause; rule 5 "a log hole in scope -> EI" false for a [*,*] B7.
+- G337 MINOR README: "has run on exactly the three public logs" / "never exercised on a mid-flight Dp rise" are false
+  after the 40-log corpus probe (log 03 has Dp rises at 129 s and 208 s); install line still names 0.1.0 (dated).
+- G338 commit hygiene: stage root README.md (badge) with it; the other session's fieldguard_planning, check_live_
+  flight_log.py, fly_pipeline.sh, dashboard/data/field.json and tests/fieldguard_planning must stay out.
+
+## Round 10 — the DECLARED arming assumption (uncommitted on 9e42cfa), 2026-11-10 — G339-G342; SHIP-AFTER-FIXES (G339)
+Rule: `assume: [arming_before_first_arm_row]` -> prefix = opposite of first ARM row; U_arm = same-state pairs + [a, next
+row > b) for losses with b >= t_1 + (key only) [t0, b_max] for losses with a < t_1; sure/wide combine; B7 blind if differ.
+- G339 MAJOR same-tick: `pre` uses a < t_1. A loss starting AT the first ARM row's tick: first ARM -> red in the assumed-
+  disarmed prefix reads PASS (false green); first DISARM -> FAIL (false red). Fix a <= first (mutant X1 survives, suite
+  green, both cases -> EI). Pin qa339/tools/a2.py.
+- NOTES: G340 X8 (base = sure arming) survives, argued equivalent; G341 deviation (c) sound but B7 is monotone, so the
+  general combine is equally sound and tighter (defer); G342 what the README must say (applied = arming PRESENT, holes
+  < max(1 s, 5p) are not losses, DSF-absent logs report no pre-first drops, green badge carries "· k assumed").
+Measured: no false green in (3) both directions, straddle, b == t_1, two pre losses, ARM-ARM, no-row (word for word,
+applied false), ArmState 2, overlapping mode/arming U, gnss/no_events cut at U. 0 changes over 156 unarmed corpus bars vs
+9e42cfa; streams/integrity/source identical with/without the key; refusal assumptions []. Raw-pymavlink re-derivation
+of sure/wide n and worst on 01 (first disarm), 06, 33, 29 (first arm), 14 (pre drop + 458 s hole) all equal the tool.
+14/16 QA mutants killed; G334 pin still kills the sentinel mutant with the hole moved before the first ARM row.
+
+## Round 11 — final check before committing the assumption + publishing the corpus docs (2026-11-10) — G343-G351
+Code: SHIP (G339 closed for both first-row states; corpus/22 inspect exit 0, mode ABSENT, all 26 mode-dependent bars EI
+by rule 1, with and without the key; README assume example re-run char-for-char; A2 text verbatim; 3/3 examples).
+Docs: SHIP-AFTER-FIXES. Every probe number reproduced from probe_*.json EXCEPT:
+- G343 MAJOR: "hardware" = population github, but 01/02 are SITL (SIM/SIM2 records, "RC Protocol: SITL") and 21/22 are
+  synthetic fixtures (banner "synthetic teaching fixture"). 2 of the 8 drop logs are SITL; "hardware 28/40" = 10 SITL +
+  3 synthetic + 15/20 board-string hardware. Classify by SIM records / banner, never by where a log was found.
+- G344 "14 GitHub repositories" -> 13; G345 "17 logs carry ERR rows" -> 18 (17 FAIL; 10 FAILs are ECode-0-only SITL rows);
+  G346 the 2 hardware speed-bar voids are mid-log logger holes (07, 14), not a start gap; G347 am.2 /18 vs record /19;
+  G348 "78/78 mutants" is not QA's tally and am.2 omits G326; G349 README rule-5 exception false for armed B7, note
+  scope, DSF-ABSENT "verdict unchanged" (G335 residual); G350 "pre-registered before the build" unsupported; G351
+  BUILD_LOG "one real flight and no outside log" self-contradicts.
+**Lesson:** a population label is a claim; check it in the bytes (SIM records, MSG banner) before counting by it.
+
+## Round 12 — the dogfood record eval/results/gates_dogfood_20261110 (20 SITL logs 00000045-64), 2026-11-10 — G352-G356
+Every count reproduced from the 20 verdict JSONs (7 pass / 12 fail / 1 could not tell; batch.json 0/20 rows disagree;
+log sha256s match the copies; WP_SPD 8/6/6; ranges 3.932-4.008, 5.002-5.008, 5.996-6.003; GUIDED 4.86-6.09 s; margin
+4.960 x19; EKF 0.08-0.37; 0 drops/holes). Raw pymavlink on 64, 47, 63: speed 3.993/5.008/5.996, margin 4.960, SV
+0.19/0.23/0.14, n 382/748/1498 all equal. Polygon = config rectangle +15 m to 7 dp. Only red in the 12 = the speed bar.
+- G352 MAJOR claims: the batch is an UNBOOKED speed sweep (encounter_batch.sh --speeds -> fly_pipeline ENC_SPEED "explicit
+  WP_SPD for an UNBOOKED experiment"); the committed booking is 5.0 (ADR-020 am. 3). bars.yaml + README call WP_SPD "the
+  booking"; the 6.0 flights exceed booked x1.10 = 5.5, so "not about the vehicle" overstates. Fix the README only
+  (editing registered bars text breaks the pin).
+- G353 "within 0.2 % in every flight" false for 45 (3.932, -1.7 %); G354 "76 MB" = 75.0 MB; G355 no RTL/LAND row ever
+  flown (end-mode entries unexercised); G356 blind defensible, disclose primary-choice basis + a-priori sample rates.
+
+## Round 13 — paper attack on the RULED param-limit spec (SPEC_v2, tool 0.3.0), 2026-11-11 — G357-G368; BUILD WITH CHANGES
+Method: no import of the working tree; 0.2.0 scratch venv + scratchpad/qa357/measure.py over corpus + dogfood; AP @4.5.5 source.
+- G357 MAJOR: fixed text "losses after the first row still read could not tell" is false: ShouldLog refuses NON-main-thread
+  writes UNCOUNTED while the startup writer runs (Backend.cpp:449) -> scripted set_and_save's IO-thread PARM row vanishes, no
+  Dp, no hole -> PASS on the stale dump value. Evidence limit: declare, cannot detect.
+- G358 MAJOR (G312 class): "any non-finite row -> whole bar EI" hides an earlier certain FAIL on a should bar; scripting
+  set_by_name has no NaN guard (GCS PARAM_SET and set_float do). Sound only because the adapter drops the row's time.
+- G359 MAJOR builder risk: Lambda_N must stay private to the limit; filtering the shared `lost` leaks into mode/arming unsure.
+- G360 out-of-accept relabels a certain violation EI (declared via property 4's carve-out) -> exit 0 on should.
+- G361 key reach past t_1 = 0.331..1.089 s on all 8 corpus drop logs (unbounded in principle, holes included).
+- G362 PARM rows precede log.t0 (07/14 WPNAV_SPEED -0.062/-0.019 s; 08/09 dump -3.6 s); _losses anchors interval 1 at t0, so
+  `a <= t_1` fails and the key is a silent no-op (fail-safe EI, applied:true).
+- Recount: SPEC_v1 sec 0 "all DSF.Dp drop intervals" false (6 log holes in 03/07/14); scan.py bad_parm reads
+  integrity["params"], which never exists (meta.absent holds it): non-finite PARM rows 0/33. GCS PARAM_SET logs TWO rows
+  (main + IO thread; corpus 33 at 2.062/2.063 s).
+
+## Round 14 — the BUILT 0.3.0 (param limits + 1 us grid), 2026-11-11 — G369-G374; SHIP WITH FIXES
+Tools (scratchpad/qa369/): oracle.py = independent re-impl of SPEC v2+v2.1 for unscoped param ceilings, 3000 random
+fixtures, 0 diffs; hunt.py/extra.py/kill2.py fixtures; mut.py 22 QA mutants. Killed 19 (Q4, Q20 only by the builder's
+suite); equivalent Q13/Q16/Q18. SIX non-equivalent mutants survive the builder's suite: r6 in the 5 s bound, `a<=t1` in
+the keyed pre-row unsure (n only), other-name NaN rows, strict `x == S*v` clean, raw time at the PARM site and at the
+NaN-row site (K4: same-tick NaN dropped -> EI becomes PASS = false green on regression).
+- G369: scale 1e+308 -> S*v = inf -> verdict.py allow_nan=False -> "internal error, no verdict (exit 2)".
+- Recount: 3(a)-(c), (e) reproduce (raw pymavlink 52/58/48: n 377/377/356, worst 3.994/4.008/6.002; 33: 1911 BAT, min
+  9.595 @189.039 s, rows 10.5@t0, 11.5@4.506530/4.507363). (d) wrong reason: 03 speed = no GPS rows, 14 batt = no BAT rows.
+- Rounding at ingestion sound: noise only flips exact-boundary ties (fail-safe for gaps; a false FAIL for a gnss run of
+  exactly max_outage_s: 10.3-10.1 = 0.20000000000000107).

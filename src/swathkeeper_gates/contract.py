@@ -68,12 +68,14 @@ def series(name, source, rows, cols, absent_cols=None):
 
 
 def median_period(ts):
-    return statistics.median(b - a for a, b in zip(ts, ts[1:])) if len(ts) > 1 else 0.0
+    return statistics.median(r6(b - a) for a, b in zip(ts, ts[1:])) if len(ts) > 1 else 0.0   # G374: spans on the grid
 
 
 def gap_threshold(ts):
-    """Rule 5: a gap is longer than max(1 s, 5p), p = this instance's own median sample period."""
-    return max(1.0, 5.0 * median_period(ts))
+    """Rule 5: a gap is longer than max(1 s, 5p), p = this instance's own median sample period. p is a whole or half
+    microsecond (a median of grid spans), so 5p is a multiple of 0.5 us: rounded to 0.1 us (G375), never to the 1 us
+    grid (which rounds a half up and misses a real gap) and never left raw (5.0 * 0.200003 sits one ulp below 1.000015)."""
+    return round(max(1.0, 5.0 * median_period(ts)), 7)
 
 
 def in_windows(ts, windows):
@@ -88,7 +90,7 @@ def fired_gaps(ts, windows):
     thr, out = gap_threshold(ts), []
     for a, b in windows:
         seq = [a, *ts[bisect.bisect_left(ts, a):bisect.bisect_left(ts, b)], b]
-        out += [(x, y) for x, y in zip(seq, seq[1:]) if y - x > thr]
+        out += [(x, y) for x, y in zip(seq, seq[1:]) if r6(y - x) > thr]
     return out
 
 
@@ -106,7 +108,7 @@ def log_holes(log):
         s = log.streams[name]
         for d in s.data.values() if s.state == PRESENT else ():
             ts, thr = d["t_s"], gap_threshold(d["t_s"])
-            gaps = [(x, y) for x, y in zip(ts, ts[1:]) if y - x > thr]
+            gaps = [(x, y) for x, y in zip(ts, ts[1:]) if r6(y - x) > thr]
             common = gaps if common is None else intersect(common, gaps)
     return merge(out + (common or []))
 
@@ -152,6 +154,13 @@ def mode_windows(log):
         return []
     ts = d["t_s"]
     return list(zip(ts, ts[1:] + [log.t1], d["name"]))
+
+
+def unsure(log, lost):
+    """G257/G314: a MODE row may be missing in each (a, b, ...) of `lost` (drop intervals and log holes), so the mode is
+    unsure over [a, t_next), t_next the first MODE row after b, else the log's end. Outside these the rows are the mode."""
+    ts = (log.streams["mode"].data.get(0) or {"t_s": []})["t_s"]
+    return [(a, (ts[bisect.bisect_right(ts, b):] or [log.t1])[0]) for a, b, *_ in lost]
 
 
 def armed_windows(log):

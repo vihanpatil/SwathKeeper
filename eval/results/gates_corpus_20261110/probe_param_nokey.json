@@ -1,0 +1,2240 @@
+[
+ {
+  "id": "00",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 2/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": null,
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "FAIL",
+    "n": 753,
+    "measured": 5.602231502532959,
+    "limit_in_log": {
+     "rows": [
+      [
+       224.612686,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 5.5
+    },
+    "note": "limit 5.5 = 0.011 x WPNAV_SPEED 500 (PARM row at t=224.613 s); n=753; worst 5.60223 on instance 0 at t=370.132 s, 1 window(s); instances present [0]; DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 3004,
+    "measured": 0.79,
+    "limit_in_log": {
+     "rows": [
+      [
+       224.597623,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=224.598 s); n=3004; worst 0.79 on instance 0 at t=373.779 s, 1 window(s); instances present [0, 1]; DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"
+   }
+  }
+ },
+ {
+  "id": "01",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.3.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       152.294058,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit WPNAV_SPEED not usable on 1678 sample(s): 1678 where a loss meets [previous PARM row, sample] and may hide a row, t in [152.397, 487.797] s"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       152.294058,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 3356 sample(s): 3356 where a loss meets [previous PARM row, sample] and may hide a row, t in [152.297, 487.797] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       152.294058,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit FS_EKF_THRESH not usable on 6712 sample(s): 6712 where a loss meets [previous PARM row, sample] and may hide a row, t in [152.297, 487.797] s"
+   }
+  }
+ },
+ {
+  "id": "02",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.3.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       164.013535,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit WPNAV_SPEED not usable on 1315 sample(s): 1315 where a loss meets [previous PARM row, sample] and may hide a row, t in [164.031, 426.791] s"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       164.013535,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 2629 sample(s): 2629 where a loss meets [previous PARM row, sample] and may hide a row, t in [164.091, 426.891] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       164.013535,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit FS_EKF_THRESH not usable on 5258 sample(s): 5258 where a loss meets [previous PARM row, sample] and may hide a row, t in [164.091, 426.891] s"
+   }
+  }
+ },
+ {
+  "id": "03",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V3.6.8",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       101.843552,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       101.866741,
+       13.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 2 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 1030 sample(s): 1030 where a loss meets [previous PARM row, sample] and may hide a row, t in [102.008, 227.111] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       101.756824,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: XKF4 has no C column: instance unidentifiable"
+   }
+  }
+ },
+ {
+  "id": "04",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V3.6.8",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       1471.802992,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       1471.82904,
+       13.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 2 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 2728 sample(s): 2728 where a loss meets [previous PARM row, sample] and may hide a row, t in [1471.988, 1744.698] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       1471.761369,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: XKF4 has no C column: instance unidentifiable"
+   }
+  }
+ },
+ {
+  "id": "05",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 2/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.6.2",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 112,
+    "measured": 0.23800000548362732,
+    "limit_in_log": {
+     "rows": [
+      [
+       69.508581,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=69.509 s); n=112; worst 0.238 on instance 0 at t=86.003 s, 1 window(s); instances present [0]"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 446,
+    "measured": 0.1,
+    "limit_in_log": {
+     "rows": [
+      [
+       69.503351,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=69.503 s); n=446; worst 0.1 on instance 1 at t=72.822 s, 1 window(s); instances present [0, 1]"
+   }
+  }
+ },
+ {
+  "id": "06",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 3/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.6.2",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 791,
+    "measured": 8.322999954223633,
+    "limit_in_log": {
+     "rows": [
+      [
+       236.946602,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=236.947 s); n=791; worst 8.323 on instance 0 at t=342.609 s, 1 window(s); instances present [0]"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1581,
+    "measured": 13.607139587402344,
+    "limit_in_log": {
+     "rows": [
+      [
+       236.953512,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=236.954 s); n=1581; worst 13.6071 on instance 0 at t=303.768 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 3162,
+    "measured": 0.3,
+    "limit_in_log": {
+     "rows": [
+      [
+       236.941344,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=236.941 s); n=3162; worst 0.3 on instance 1 at t=308.268 s, 1 window(s); instances present [0, 1]"
+   }
+  }
+ },
+ {
+  "id": "07",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.5.7",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       26.664384,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 8 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit WPNAV_SPEED not usable on 106 sample(s): 106 where a loss meets [previous PARM row, sample] and may hide a row, t in [26.746, 55.746] s"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       26.671608,
+       14.399999618530273
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 8 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 212 sample(s): 212 where a loss meets [previous PARM row, sample] and may hide a row, t in [26.727, 55.827] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       26.659623,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 12 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit FS_EKF_THRESH not usable on 424 sample(s): 424 where a loss meets [previous PARM row, sample] and may hide a row, t in [26.726, 55.826] s"
+   }
+  }
+ },
+ {
+  "id": "08",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.0.2",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.13891,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit WPNAV_SPEED not usable on 686 sample(s): 686 where a loss meets [previous PARM row, sample] and may hide a row, t in [5.317, 151.100] s; velocity: 43 of 729 GPS rows excluded: no 3D fix (Status < 3); 730 GPS2 rows not read"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.158362,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 1460 sample(s): 1460 where a loss meets [previous PARM row, sample] and may hide a row, t in [5.337, 151.240] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.129871,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "09",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.0.2",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.584895,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit WPNAV_SPEED not usable on 983 sample(s): 983 where a loss meets [previous PARM row, sample] and may hide a row, t in [5.763, 202.138] s; velocity: 983 GPS2 rows not read"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.604456,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 1966 sample(s): 1966 where a loss meets [previous PARM row, sample] and may hide a row, t in [5.783, 202.237] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       5.576159,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "10",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": null,
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       17.141091,
+       500.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 9328,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       17.128503,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=9328; 1 gap(s) or hole(s) in scope (rule 5); DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count)"
+   }
+  }
+ },
+ {
+  "id": "11",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "12",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "13",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "14",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.5.7",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       547.64893,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 3 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit WPNAV_SPEED not usable on 1136 sample(s): 1136 where a loss meets [previous PARM row, sample] and may hide a row, t in [547.769, 1234.412] s"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       547.62655,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 2 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit FS_EKF_THRESH not usable on 2271 sample(s): 2271 where a loss meets [previous PARM row, sample] and may hide a row, t in [547.668, 1234.473] s; ekf: 1 of 2272 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "15",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "16",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "17",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V4.6.2",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "FAIL",
+    "n": 2174,
+    "measured": 43.564903259277344,
+    "limit_in_log": {
+     "rows": [
+      [
+       835.726097,
+       45.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 45.0
+    },
+    "note": "limit 45 = 1 x BATT_LOW_VOLT 45 (PARM row at t=835.726 s); n=2174; worst 43.5649 on instance 0 at t=970.686 s, 1 window(s); instances present [0]; limit BATT_LOW_VOLT not usable on 2 sample(s): 2 before the first PARM row, t in [835.586, 835.686] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 10858,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       836.006399,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=10858; limit FS_EKF_THRESH not usable on 26 sample(s): 26 before the first PARM row, t in [835.505, 835.985] s"
+   }
+  }
+ },
+ {
+  "id": "18",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": null,
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter BATT_LOW_VOLT has no PARM row in this log"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "19",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "20",
+  "exit": 2,
+  "badge": "gates: refused",
+  "refusal": "DataFlash decode found no timestamped contract record",
+  "firmware": null,
+  "assumptions": [],
+  "results": {}
+ },
+ {
+  "id": "21",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V4.5.7",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "22",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V4.5.7",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "FAIL",
+    "n": 4798,
+    "measured": 12.5,
+    "limit_in_log": {
+     "rows": [
+      [
+       1.0,
+       22.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 22.0
+    },
+    "note": "limit 22 = 1 x BATT_LOW_VOLT 22 (PARM row at t=1.000 s); n=4798; worst 12.5 on instance 1 at t=1.100 s, 1 window(s); instances present [0, 1]; DSF ABSENT: dropped writes are not counted; judged as if the firmware dropped none (log holes still count); limit BATT_LOW_VOLT not usable on 2 sample(s): 2 before the first PARM row, t in [1.000, 1.000] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: 0 of 4800 XKF4 rows measured anything: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "23",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.6.3",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "PASS",
+    "n": 202,
+    "measured": 2.19100022315979,
+    "limit_in_log": {
+     "rows": [
+      [
+       102.370644,
+       1000.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 11.0
+    },
+    "note": "limit 11 = 0.011 x WPNAV_SPEED 1000 (PARM row at t=102.371 s); n=202; worst 2.191 on instance 0 at t=123.503 s, 1 window(s); instances present [0]"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 404,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       102.376524,
+       21.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=404; limit BATT_LOW_VOLT not usable on 1 sample(s): 1 before the first PARM row, t in [102.363, 102.363] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 808,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       102.364399,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=808; limit FS_EKF_THRESH not usable on 2 sample(s): 2 before the first PARM row, t in [102.363, 102.363] s"
+   }
+  }
+ },
+ {
+  "id": "24",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V3.9.0-beta1",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "25",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduPlane V3.9.0-beta1",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: no NKF4 / NKF9 rows"
+   }
+  }
+ },
+ {
+  "id": "26",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 2/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 646,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=646; 2 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 647 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1483,
+    "measured": 12.188541412353516,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.447 s); n=1483; worst 12.1885 on instance 0 at t=47.439 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "FAIL",
+    "n": 2936,
+    "measured": 3.29,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=2.447 s); n=2936; worst 3.29 on instance 0 at t=103.839 s, 1 window(s); instances present [0, 1]; ekf: 20 of 2956 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "27",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 20,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=20; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 20 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 8,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=8; 2 gap(s) or hole(s) in scope (rule 5); n 8 < min_n 10; ekf: 20 of 28 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "28",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 20,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=20; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 20 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 10,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=10; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 30 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "29",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 565,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.449853,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=565; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 566 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 1012,
+    "measured": 12.187081336975098,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.449853,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.450 s); n=1012; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1994,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.449853,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=1994; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 2014 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "30",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 117,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=117; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 118 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 159,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.447 s); n=159; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 159 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 288,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=288; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 308 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "31",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 73,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=73; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 74 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; battery ABSENT: no BAT rows"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 354,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=354; 2 gap(s) or hole(s) in scope (rule 5); ekf: 16 of 370 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "32",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 13,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=13; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 13 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: 0 of 16 XKF4 rows measured anything: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "33",
+  "exit": 1,
+  "badge": "gates: fail \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1015,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=1015; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 1016 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "FAIL",
+    "n": 1911,
+    "measured": 9.595019340515137,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ],
+      [
+       4.50653,
+       11.5
+      ],
+      [
+       4.507363,
+       11.5
+      ]
+     ],
+     "n_rows": 3,
+     "at_worst": 11.5
+    },
+    "note": "limit 11.5 = 1 x BATT_LOW_VOLT 11.5 (PARM row at t=4.507 s); n=1911; worst 9.59502 on instance 0 at t=189.039 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 3792,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=3792; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 3812 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "34",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 29,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=29; worst 12.6 on instance 0 at t=2.540 s, 1 window(s); instances present [0]; all 29 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 28,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=28; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 48 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "35",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 3,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=3; 1 gap(s) or hole(s) in scope (rule 5); n 3 < min_n 10; velocity: 237 of 240 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 496,
+    "measured": 12.177748680114746,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.447 s); n=496; worst 12.1777 on instance 0 at t=18.139 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 962,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.447354,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=962; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 982 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "36",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.549813,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; velocity ABSENT: no GPS rows"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 13,
+    "measured": 12.600000381469727,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.549813,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.550 s); n=13; worst 12.6 on instance 0 at t=2.640 s, 1 window(s); instances present [0]; all 13 judged samples equal 12.6"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.549813,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; ekf ABSENT: 0 of 14 XKF4 rows measured anything: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "37",
+  "exit": 0,
+  "badge": "gates: pass \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduCopter V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 1092,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=1092; 1 gap(s) or hole(s) in scope (rule 5); velocity: 1 of 1093 GPS rows excluded: no 3D fix (Status < 3)"
+   },
+   "batt_low": {
+    "verdict": "PASS",
+    "n": 2065,
+    "measured": 12.187081336975098,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       10.5
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 10.5
+    },
+    "note": "limit 10.5 = 1 x BATT_LOW_VOLT 10.5 (PARM row at t=2.445 s); n=2065; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 4100,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.444855,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=4100; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 4120 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ },
+ {
+  "id": "38",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 1/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduRover V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       51.421923,
+       0.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 9 sample(s): 9 where the parameter is outside accept (0 of them break 1 x every logged value they may have had), t in [52.242, 60.642] s"
+   },
+   "ekf_thresh": {
+    "verdict": "PASS",
+    "n": 18,
+    "measured": 0.0,
+    "limit_in_log": {
+     "rows": [
+      [
+       51.421923,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": 0.800000011920929
+    },
+    "note": "limit 0.8 = 1 x FS_EKF_THRESH 0.8 (PARM row at t=51.422 s); n=18; worst 0 on instance 0 at t=51.842 s, 1 window(s); instances present [0, 1]; all 18 judged samples equal 0"
+   }
+  }
+ },
+ {
+  "id": "39",
+  "exit": 1,
+  "badge": "gates: could not tell \u00b7 0/4 measured (unregistered)",
+  "refusal": null,
+  "firmware": "ArduRover V4.8.0-dev",
+  "assumptions": [],
+  "results": {
+   "speed_wpnav": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WPNAV_SPEED has no PARM row in this log"
+   },
+   "speed_wp": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [],
+     "n_rows": 0,
+     "at_worst": null
+    },
+    "note": "n=0; limit parameter WP_SPD has no PARM row in this log"
+   },
+   "batt_low": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 0,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.361555,
+       0.0
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=0; 1 gap(s) or hole(s) in scope (rule 5); n 0 < min_n 10; limit BATT_LOW_VOLT not usable on 220 sample(s): 220 where the parameter is outside accept (0 of them break 1 x every logged value they may have had), t in [2.442, 48.642] s"
+   },
+   "ekf_thresh": {
+    "verdict": "EVIDENCE_INSUFFICIENT",
+    "n": 428,
+    "measured": null,
+    "limit_in_log": {
+     "rows": [
+      [
+       2.361555,
+       0.800000011920929
+      ]
+     ],
+     "n_rows": 1,
+     "at_worst": null
+    },
+    "note": "n=428; 2 gap(s) or hole(s) in scope (rule 5); ekf: 20 of 448 XKF4 rows excluded: EKF reported no solution (SS 0)"
+   }
+  }
+ }
+]

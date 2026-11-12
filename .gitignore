@@ -115,3 +115,8 @@ docs-site/
 
 # Private outreach working files for the ADR-022 market test (drafts, targets, tracker) — never committed
 docs/outreach/
+# ...and the 2026-11-10 gates-tool corpus probe (ADR-023 am. 2/3): manifest of public log URLs + sha256, the probe
+# verdict summaries and the scripts that made them. No log bytes.
+!eval/results/gates_corpus_20261110/
+# ...and the tool's first run on this project's own SITL flights, same day: the bars, the primary verdict, a batch summary.
+!eval/results/gates_dogfood_20261110/

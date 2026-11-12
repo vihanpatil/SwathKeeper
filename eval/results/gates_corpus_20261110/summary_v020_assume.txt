@@ -1,0 +1,155 @@
+logs 40  judged 33  refused 7
+  REFUSED 11 erlerobot/logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 12 erlerobot/logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 13 erlerobot/logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 15 joeydouglas/dataflash_logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 16 joeydouglas/dataflash_logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 19 peterbarker/dataflash-logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+  REFUSED 20 peterbarker/dataflash-logs: swathkeeper-gates: refused: DataFlash decode found no timestamped contract record
+
+firmware: {'ArduCopter V4.8': 12, 'unresolved': 3, 'ArduCopter V4.6': 3, 'ArduCopter V4.3': 2, 'ArduCopter V3.6': 2, 'ArduCopter V4.5': 2, 'ArduCopter V4.0': 2, 'ArduPlane V4.5': 2, 'ArduPlane V3.9': 2, 'ArduRover V4.8': 2, 'ArduPlane V4.6': 1}
+badge word: {'github': {'could not tell': 14, 'fail': 5}, 'sitl-autotest': {'fail': 13, 'could not tell': 1}}
+
+bar                                     github                 sitl-autotest    (measured = PASS+FAIL / judged logs; then P/F/EI/NA)
+alt_any            6/19   31.6%  P6 F0 EI13 NA0   1/14    7.1%  P1 F0 EI13 NA0
+speed_any         13/19   68.4%  P13 F0 EI6 NA0   0/14    0.0%  P0 F0 EI14 NA0
+batt_any           9/19   47.4%  P9 F0 EI10 NA0  11/14   78.6%  P11 F0 EI3 NA0
+ekf_any            7/19   36.8%  P7 F0 EI12 NA0   1/14    7.1%  P1 F0 EI13 NA0
+gnss              14/19   73.7%  P12 F2 EI5 NA0   1/14    7.1%  P0 F1 EI13 NA0
+fence              2/19   10.5%  P2 F0 EI17 NA0   0/14    0.0%  P0 F0 EI14 NA0
+modes_any         12/19   63.2%  P12 F0 EI7 NA0   9/14   64.3%  P9 F0 EI5 NA0
+modes_seen         5/19   26.3%  P5 F0 EI14 NA0   9/14   64.3%  P9 F0 EI5 NA0
+no_errors          4/19   21.1%  P0 F4 EI15 NA0  13/14   92.9%  P0 F13 EI1 NA0
+speed_in_mode     10/19   52.6%  P10 F0 EI9 NA0   2/14   14.3%  P2 F0 EI12 NA0
+batt_armed         5/19   26.3%  P5 F0 EI14 NA0   5/14   35.7%  P5 F0 EI9 NA0
+speed_armed        6/19   31.6%  P6 F0 EI13 NA0   3/14   21.4%  P3 F0 EI11 NA0
+alt_armed          5/19   26.3%  P5 F0 EI14 NA0   4/14   28.6%  P4 F0 EI10 NA0
+ekf_armed          5/19   26.3%  P5 F0 EI14 NA0   7/14   50.0%  P7 F0 EI7 NA0
+gnss_armed         7/19   36.8%  P6 F1 EI12 NA0   4/14   28.6%  P3 F1 EI10 NA0
+
+all bars, all logs: measured 180/495 = 36.4%   {'EVIDENCE_INSUFFICIENT': 315, 'PASS': 158, 'FAIL': 22}
+
+could-not-tell causes (EI/NA), by bar:
+  alt_any         10  EV: position ABSENT: no POS rows
+  alt_any          5  EV: # gap(s) or hole(s) in scope (rule #); position: # RelHomeAlt samples before home was set (first ORGN Type # at t=# s): 
+  alt_any          2  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (desig
+  alt_any          2  EV: position.alt_rel_home_m ABSENT: no ORGN Type # row: RelHomeAlt has no home; # firmware-dropped writes in [#, #] s (DSF.D
+  speed_any        7  EV: velocity ABSENT: no GPS rows
+  speed_any        7  EV: # gap(s) or hole(s) in scope (rule #); velocity: # of # GPS rows excluded: no #D fix (Status < #)
+  speed_any        2  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (desig
+  speed_any        1  EV: velocity ABSENT: no GPS rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#); # 
+  batt_any         7  EV: battery ABSENT: no BAT rows
+  batt_any         3  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (desig
+  batt_any         1  EV: battery ABSENT: no BAT rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#)
+  batt_any         1  EV: n # < min_n #
+  ekf_any         10  EV: # gap(s) or hole(s) in scope (rule #); ekf: # of # XKF# rows excluded: EKF reported no solution (SS #)
+  ekf_any          4  EV: ekf ABSENT: no NKF# / NKF# rows
+  ekf_any          3  EV: ekf ABSENT: # of # XKF# rows measured anything: EKF reported no solution (SS #)
+  ekf_any          2  EV: ekf ABSENT: XKF# has no C column: instance unidentifiable; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; 
+  gnss             7  EV: gnss ABSENT: no GPS rows
+  gnss             7  EV: # gap(s) or hole(s) in scope (rule #)
+  gnss             1  EV: gnss ABSENT: no GPS rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#); # firm
+  gnss             1  EV: gnss ABSENT: no GPS rows; # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged across (design §#)
+  fence           16  EV: fence ABSENT: fence disabled (FENCE_ENABLE #)
+  fence            8  EV: fence ABSENT: fence disabled (FENCE_ENABLE #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; judged acros
+  fence            6  EV: fence ABSENT: FENCE_ENABLE / FENCE_TYPE not logged
+  fence            1  EV: fence ABSENT: FENCE_TYPE #: no circle/alt-max bit, or its parameter is unlogged
+  modes_any        6  EV: n # < min_n #; mode unknown for # s before the first MODE row (<= # s: left out of the scope)
+  modes_any        3  EV: vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved
+  modes_any        1  EV: mode ABSENT: no MODE rows
+  modes_any        1  EV: mode ABSENT: MODE has no ModeNum column
+  modes_seen       5  EV: n # < min_n #; mode unknown for # s before the first MODE row (<= # s: left out of the scope)
+  modes_seen       3  EV: vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved
+  modes_seen       3  EV: # firmware-dropped writes in [#, #] s (DSF.Dp), not located: a MODE row may be among them; mode unknown for # s before t
+  modes_seen       3  EV: # firmware-dropped writes in [#, #] s (DSF.Dp), not located: a MODE row may be among them; # firmware-dropped writes in 
+  no_errors       14  EV: events ABSENT: zero ERR rows outside the citation: the citation's premise is a release V#.<n> firmware string (this log:
+  no_errors        1  EV: # gap(s) or hole(s) in scope (rule #); # firmware-dropped writes in [#, #] s (DSF.Dp), not located; excluded from n (des
+  no_errors        1  EV: dsf_dropped_max ABSENT: no DSF rows
+  speed_in_mode    7  EV: velocity ABSENT: no GPS rows; mode unknown for # s before the first MODE row (<= # s: left out of the scope)
+  speed_in_mode    4  EV: # gap(s) or hole(s) in scope (rule #); mode unknown for # s before the first MODE row (<= # s: left out of the scope); v
+  speed_in_mode    3  EV: vehicle ABSENT (no ArduCopter/ArduPlane/ArduRover/ArduSub firmware string in VER or MSG): mode names cannot be resolved
+  speed_in_mode    1  EV: no window of the scope, and the absence is not measured: hole [#, #] s; hole [#, #] s; hole [#, #] s; hole [#, #] s; mod
+  batt_armed      18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  batt_armed       3  EV: battery ABSENT: no BAT rows; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+  batt_armed       1  EV: battery ABSENT: no BAT rows; arming before t=# s assumed armed (assume: arming_before_first_arm_row)
+  batt_armed       1  EV: n # < min_n #; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+  speed_armed     18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  speed_armed      1  EV: the sure scope reads PASS; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row); arming not known 
+  speed_armed      1  EV: velocity ABSENT: no GPS rows; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+  speed_armed      1  EV: # gap(s) or hole(s) in scope (rule #); arming before t=# s assumed disarmed (assume: arming_before_first_arm_row); veloc
+  alt_armed       18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  alt_armed        3  EV: position.alt_rel_home_m ABSENT: no ORGN Type # row: RelHomeAlt has no home; arming before t=# s assumed disarmed (assume
+  alt_armed        1  EV: position ABSENT: no POS rows; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+  alt_armed        1  EV: # gap(s) or hole(s) in scope (rule #); arming before t=# s assumed disarmed (assume: arming_before_first_arm_row); posit
+  ekf_armed       18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  ekf_armed        1  EV: the sure scope reads PASS; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row); ekf: # of # XKF# 
+  ekf_armed        1  EV: ekf ABSENT: no NKF# / NKF# rows; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+  ekf_armed        1  EV: ekf ABSENT: # of # XKF# rows measured anything: EKF reported no solution (SS #); arming before t=# s assumed disarmed (a
+  gnss_armed      18  EV: the scope needs arming, which is ABSENT: no ARM rows
+  gnss_armed       2  EV: n # < min_n #; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+  gnss_armed       1  EV: gnss ABSENT: no GPS rows; arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+  gnss_armed       1  EV: # gap(s) or hole(s) in scope (rule #); arming before t=# s assumed disarmed (assume: arming_before_first_arm_row)
+
+dropped writes (DSF.Dp):
+  github         judged 19 | DSF present 12 | any drop interval  8 | startup-only  7 | mid-log drops  1 | no DSF  7
+  sitl-autotest  judged 14 | DSF present 14 | any drop interval  0 | startup-only  0 | mid-log drops  0 | no DSF  0
+  drop counts in logs that have them: [1, 2, 2, 8, 9, 128, 243, 358]
+
+arming: logs with >=1 ARM row 15 of 33 | LOG_DISARMED values: {'[0.0]': 14, '[1.0]': 16, 'None': 3}
+LOG_BACKEND_TYPE values: {'[1.0]': 28, 'None': 3, '[4.0]': 2}
+byte holes: logs with interior holes 0 of 33
+runtime: median run_s 0.3 max 1.73
+
+verdict changes vs final_nokey:
+  01 github         batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=3202; wide scope (quoted): worst 12.588 on instance 0 at t=152.297 s, 1 window(s); instances present [0]; all 3206 judged samples equal 12.588; sure
+  01 github         speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=1601; wide scope (quoted): worst 10.036 on instance 0 at t=381.597 s, 1 window(s); instances present [0]; sure scope: worst 10.036 on instance 0 at 
+  01 github         alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=3202; wide scope (quoted): worst 0.00246021 on instance 0 at t=155.497 s, 1 window(s); instances present [0]; sure scope: worst 0.00246021 on instan
+  01 github         ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=6404; wide scope (quoted): worst 0.06 on instance 1 at t=471.097 s, 1 window(s); instances present [0, 1]; sure scope: worst 0.06 on instance 1 at t
+  01 github         gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=1601; wide scope (quoted): every row in scope qualifies; sure scope: every row in scope qualifies; arming before t=472.882 s assumed armed (assume: 
+  02 github         batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=2473; wide scope (quoted): worst 12.588 on instance 0 at t=164.091 s, 1 window(s); instances present [0]; all 2479 judged samples equal 12.588; sure
+  02 github         speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=1236; wide scope (quoted): worst 9.918 on instance 0 at t=320.791 s, 1 window(s); instances present [0]; sure scope: worst 9.918 on instance 0 at t=
+  02 github         alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=2473; wide scope (quoted): worst 0.00230829 on instance 0 at t=166.792 s, 1 window(s); instances present [0]; sure scope: worst 0.00230829 on instan
+  02 github         ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=4946; wide scope (quoted): worst 0.04 on instance 0 at t=170.491 s, 1 window(s); instances present [0, 1]; sure scope: worst 0.04 on instance 0 at t
+  02 github         gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=1236; wide scope (quoted): every row in scope qualifies; sure scope: every row in scope qualifies; arming before t=411.911 s assumed armed (assume: 
+  05 github         speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=37; worst 0.139 on instance 0 at t=72.223 s, 1 window(s); instances present [0]; arming before t=76.823 s assumed armed (assume: arming_before_first
+  05 github         alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=72; worst -0.128322 on instance 0 at t=73.223 s, 1 window(s); instances present [0]; arming before t=76.823 s assumed armed (assume: arming_before_f
+  05 github         ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=148; worst 0.1 on instance 1 at t=72.822 s, 1 window(s); instances present [0, 1]; arming before t=76.823 s assumed armed (assume: arming_before_fir
+  05 github         gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=37; every row in scope qualifies; arming before t=76.823 s assumed armed (assume: arming_before_first_arm_row)
+  06 github         batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=1432; worst 13.6071 on instance 0 at t=303.768 s, 1 window(s); instances present [0]; arming before t=380.068 s assumed armed (assume: arming_before
+  06 github         speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=716; worst 8.323 on instance 0 at t=342.609 s, 1 window(s); instances present [0]; arming before t=380.068 s assumed armed (assume: arming_before_fi
+  06 github         alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=1430; worst -0.107244 on instance 0 at t=240.169 s, 1 window(s); instances present [0]; arming before t=380.068 s assumed armed (assume: arming_befo
+  06 github         ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=2864; worst 0.3 on instance 1 at t=308.268 s, 1 window(s); instances present [0, 1]; arming before t=380.068 s assumed armed (assume: arming_before_
+  06 github         gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=716; every row in scope qualifies; arming before t=380.068 s assumed armed (assume: arming_before_first_arm_row)
+  14 github         gnss_armed     EVIDENCE_INSUFFICIENT -> FAIL: n=564; 17 non-qualifying run(s); longest 22.800 s on instance 0 from t=1190.811 s; arming before t=583.072 s assumed disarmed (assume: arming_before_f
+  17 github         batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=2027; worst 43.5649 on instance 0 at t=970.686 s, 1 window(s); instances present [0]; arming before t=1038.186 s assumed armed (assume: arming_befor
+  17 github         speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=1014; worst 53.7146 on instance 0 at t=893.686 s, 1 window(s); instances present [0]; arming before t=1038.186 s assumed armed (assume: arming_befor
+  17 github         alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=5050; worst -3.35301 on instance 0 at t=1036.266 s, 1 window(s); instances present [0]; arming before t=1038.186 s assumed armed (assume: arming_bef
+  17 github         ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=10136; worst 0.35 on instance 0 at t=924.705 s, 1 window(s); instances present [0, 1]; arming before t=1038.186 s assumed armed (assume: arming_befo
+  17 github         gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=1014; every row in scope qualifies; arming before t=1038.186 s assumed armed (assume: arming_before_first_arm_row)
+  22 github         batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=4400; worst 12.5 on instance 1 at t=10.000 s, 1 window(s); instances present [0, 1]; arming before t=10.000 s assumed disarmed (assume: arming_befor
+  22 github         speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=4400; worst 21 on instance 0 at t=98.200 s, 1 window(s); instances present [0, 1]; arming before t=10.000 s assumed disarmed (assume: arming_before_
+  22 github         gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=4400; every row in scope qualifies; arming before t=10.000 s assumed disarmed (assume: arming_before_first_arm_row); DSF ABSENT: dropped writes are 
+  26 sitl-autotest  batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=1239; worst 12.1885 on instance 0 at t=47.439 s, 1 window(s); instances present [0]; arming before t=43.454 s assumed disarmed (assume: arming_befor
+  26 sitl-autotest  ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=2478; worst 3.29 on instance 0 at t=103.839 s, 1 window(s); instances present [0, 1]; arming before t=43.454 s assumed disarmed (assume: arming_befo
+  29 sitl-autotest  batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=785; worst 12.1871 on instance 0 at t=47.439 s, 2 window(s); instances present [0]; arming before t=43.477 s assumed disarmed (assume: arming_before
+  29 sitl-autotest  speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=392; worst 0.03 on instance 0 at t=74.599 s, 2 window(s); instances present [0]; arming before t=43.477 s assumed disarmed (assume: arming_before_fi
+  29 sitl-autotest  alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=785; worst -20.0315 on instance 0 at t=121.540 s, 2 window(s); instances present [0]; arming before t=43.477 s assumed disarmed (assume: arming_befo
+  29 sitl-autotest  ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=1570; worst 0.05 on instance 0 at t=66.239 s, 2 window(s); instances present [0, 1]; arming before t=43.477 s assumed disarmed (assume: arming_befor
+  29 sitl-autotest  gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=392; every row in scope qualifies; arming before t=43.477 s assumed disarmed (assume: arming_before_first_arm_row)
+  31 sitl-autotest  alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=10; worst 0 on instance 0 at t=4.339 s, 1 window(s); instances present [0]; all 10 judged samples equal 0; arming before t=4.282 s assumed disarmed 
+  31 sitl-autotest  ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=16; worst 0 on instance 0 at t=4.540 s, 1 window(s); instances present [0, 1]; all 16 judged samples equal 0; arming before t=4.282 s assumed disarm
+  33 sitl-autotest  batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=1688; worst 9.59502 on instance 0 at t=189.039 s, 1 window(s); instances present [0]; arming before t=43.472 s assumed disarmed (assume: arming_befo
+  33 sitl-autotest  speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=844; worst 6.704 on instance 0 at t=107.200 s, 1 window(s); instances present [0]; arming before t=43.472 s assumed disarmed (assume: arming_before_
+  33 sitl-autotest  alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=1688; worst -0.573444 on instance 0 at t=210.139 s, 1 window(s); instances present [0]; arming before t=43.472 s assumed disarmed (assume: arming_be
+  33 sitl-autotest  ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=3376; worst 0.06 on instance 0 at t=210.239 s, 1 window(s); instances present [0, 1]; arming before t=43.472 s assumed disarmed (assume: arming_befo
+  33 sitl-autotest  gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=844; every row in scope qualifies; arming before t=43.472 s assumed disarmed (assume: arming_before_first_arm_row)
+  35 sitl-autotest  batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=415; worst 12.1777 on instance 0 at t=18.139 s, 1 window(s); instances present [0]; arming before t=14.279 s assumed disarmed (assume: arming_before
+  35 sitl-autotest  ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=830; worst 0 on instance 0 at t=14.339 s, 1 window(s); instances present [0, 1]; all 830 judged samples equal 0; arming before t=14.279 s assumed di
+  35 sitl-autotest  gnss_armed     EVIDENCE_INSUFFICIENT -> FAIL: n=207; 1 non-qualifying run(s); longest 41.393 s on instance 0 from t=14.399 s; arming before t=14.279 s assumed disarmed (assume: arming_before_first
+  37 sitl-autotest  batt_armed     EVIDENCE_INSUFFICIENT -> PASS: n=1853; worst 12.1871 on instance 0 at t=47.439 s, 1 window(s); instances present [0]; arming before t=43.477 s assumed disarmed (assume: arming_befor
+  37 sitl-autotest  speed_armed    EVIDENCE_INSUFFICIENT -> PASS: n=926; worst 0.05 on instance 0 at t=170.999 s, 1 window(s); instances present [0]; arming before t=43.477 s assumed disarmed (assume: arming_before_f
+  37 sitl-autotest  alt_armed      EVIDENCE_INSUFFICIENT -> PASS: n=1853; worst -0.02 on instance 0 at t=226.839 s, 1 window(s); instances present [0]; arming before t=43.477 s assumed disarmed (assume: arming_before
+  37 sitl-autotest  ekf_armed      EVIDENCE_INSUFFICIENT -> PASS: n=3706; worst 0.08 on instance 0 at t=73.840 s, 1 window(s); instances present [0, 1]; arming before t=43.477 s assumed disarmed (assume: arming_befor
+  37 sitl-autotest  gnss_armed     EVIDENCE_INSUFFICIENT -> PASS: n=926; every row in scope qualifies; arming before t=43.477 s assumed disarmed (assume: arming_before_first_arm_row)
+  totals: {('batt_armed', 'EVID', 'PASS'): 10, ('speed_armed', 'EVID', 'PASS'): 9, ('alt_armed', 'EVID', 'PASS'): 9, ('ekf_armed', 'EVID', 'PASS'): 11, ('gnss_armed', 'EVID', 'PASS'): 9, ('gnss_armed', 'EVID', 'FAIL'): 2}
+  badge word changes: {}
