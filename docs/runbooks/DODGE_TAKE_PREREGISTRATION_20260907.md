@@ -573,3 +573,45 @@ booked speed (`python3 scripts/predict_bird_visibility.py --fps 5.0 --speed 5.0 
 --birds config/birds/headon_lane15.json`): **FAIL, exit 1** — bird_0 median **2** frames in the nadir frame (min 0, max 3) over 38
 driver-start phases, limited by TIMING (a 0.4 s window on lane x = 15 at the best phase), against a forward-camera acquisition at
 44.926 m. Output: `docs/encounters/booked_20261111/take3_visibility_0b_headon_5p0_20261112.txt` + `.json`. P3 item 2 stays open.
+
+## BOOKED BATCH — PRE-REGISTRATION (2026-11-12, written before the first run)
+
+**Order.** The owner: **"Fly the batch"** (2026-11-12), after both authorisation items the 2026-11-11 take left open had closed
+(ADR-021 am. 2, ADR-020 am. 9). This is ADR-022 clause 3's bar — *"≥ 20 seeded headless encounters clearing 3.00 m"* — flown
+BOOKED under the full flight-log gate: the 2026-11-10 unbooked batch's shape (speeds cycling 4 → 5 → 6 m/s, one bird track), with
+every run a booked take.
+
+1. **Runs.** 20 attempts: `scripts/encounter_batch.sh 20 --bookings "eval/results/booking_gate_20261112T203448Z.json eval/results/booking_gate_20260907T064136Z.json
+   eval/results/booking_gate_20261112T203449Z.json" --mission headon_lane15 --birds config/birds/headon_lane15.json --detection-source depth`, run from
+   the main checkout the container mounts. The seed is the BOOKED speed, cycling 4.0 → 5.0 → 6.0 m/s (7 / 7 / 6 runs); the bird
+   track is the committed head-on scenario on every run (`config/birds/headon_lane15.json`, unchanged).
+2. **Bookings**, all PASS and BOOKABLE on the live intrinsics (fx = fy = 520.0058, cx 320, cy 240, 640×480) at `--acq-range-m 46.0`
+   (the ADR-020 am. 2 rule; the am. 5 re-score of 2026-11-12 stands behind every one of them): 4.0 m/s `booking_gate_20261112T203448Z.json`
+   (sha256 `b873440880301666c929ebc44c6fb495b3fe16a7bcf3755164c739115c62c377`, margin 1.942×, written today); 5.0 m/s `booking_gate_20260907T064136Z.json` (sha256 `1a6fcc1f7372a5b489660570bb3ce741d5d8792891740ff6f14b777d5262abde`, margin 1.780×,
+   the 2026-09-07 artifact the three 2026-11-11 takes flew); 6.0 m/s `booking_gate_20261112T203449Z.json` (sha256 `c664b7d7a621a133b663937755708d8b3d2dacd401d6cde8f903a82ed0364330`, margin 1.643×,
+   written today). Bar 1.30×.
+3. **Gate, frozen.** `scripts/check_live_flight_log.py` as committed at d906cb2 (sha256 `bca009def2d892c1…`), reached through the
+   launcher's own `--booking` pass-through; executor `8910eda870fb4b08…`, policy `314e8f5aae1187e6…`,
+   node `6c0bfc9b2a02e86a…`. Nothing in the gate or the control law changes during the batch; a run scored by any other checker is a
+   protocol break and is reported as one. The summariser (`scripts/summarize_encounters.py`) only READS the checker's own lines.
+4. **What counts.** Every attempt is reported. A run is a **CLEARANCE** only if the checker's verdict is **VALID** and
+   `gt_cpa_gated_m ≥ 3.00 m`. A run whose closest approach to ANY bird — driven, or declared static — reads **below 3.00 m** (raw or
+   gated) is a **BREACH** and fails the batch regardless of the other runs; its log gets the 2026-08 treatment (marker + reviewed
+   pin, or it stays INVALID). INVALID for a non-breach reason (ambiguous truth, runtime max, speed gate, frustum, static map, range
+   error, acquisition below 33.591 m) is reported with the checker's first failing line and is not a clearance; **no run is re-flown
+   or dropped**. An attempt that produces no scorable log (bringup, tmux, container) is reported as NOT SCORED and counts neither
+   way; the batch is 20 attempts, not 20 scored runs — a 21st attempt is not flown in this session.
+5. **Reading, fixed now.** **≥ 20 VALID clearances → ADR-022 clause 3's bar is MET in sim, booked** (sim-demonstrated,
+   evidence-gated; one scenario, one world, head-on only — no astern or U-turn geometry, by the scenario's own design). 1–19 →
+   the bar is **NOT met**: report the count, no partial credit, no second batch in this session. Any breach → the kill criterion
+   FIRES for this scenario; record it, acknowledge it per the rule, and the ADR-022 option-B call goes to the owner with it. In every
+   case the option-B call (drone-as-product, hardware after) is the OWNER's, made on this record, not here.
+6. **Predictions** (from the 2026-11-10 batch and the three 2026-11-11 takes): raw gt_cpa_m 8.8–9.8 m across speeds with one late
+   acquisition (≈32 m, ≈5.4 m) possible; gated 7.3–8.8 m at 5.0 m/s; acquisition 39–45 m; window speed 0.56–0.68× booked; range error
+   p95 0.17–0.21 m over the unambiguous frames; frustum all inside on the logged yaw; detect p95 ≈ 10–11 ms, max < 25 ms; static birds
+   ≥ 10 m. Named risks: a sim stall growing the freeze debit; a late acquisition below the 33.591 m breakeven (INVALID, not a breach);
+   a truth ambiguity refusing a take; a 6.0 m/s window exceeding 1.10× booked.
+7. **Record.** `eval/results/encounters/BATCH_<UTC>.md/.json` (the summariser over exactly this batch's run folders, main checkout,
+   ignored), copied to `docs/encounters/BOOKED_BATCH_<UTC>.md` with each run's checker output beside it in
+   `docs/encounters/booked_batch_<UTC>/`; no flight log from this batch is committed (the run folders stay on this Mac; every log's
+   sha256 is in the record). Recorded as an ADR-022 amendment quoting the record. Wall time ≈ 65–80 min.

@@ -3,11 +3,15 @@
 # encounters, each scored on its own bird track). Runs on the macOS HOST like fly_pipeline.sh.
 #
 #   scripts/encounter_batch.sh [N=20] [--birds config/birds/headon_lane15.json] [--mission headon_lane15]
-#                              [--speeds "4.0 5.0 6.0"] [--detection-source depth]
+#                              [--speeds "4.0 5.0 6.0" | --bookings "eval/results/booking_gate_A.json ..."]
+#                              [--detection-source depth]
 #
 # Each run is `scripts/fly_pipeline.sh encounter ...` with the speed cycling through --speeds (the seed of
 # the batch: the bird track is identical, the drone's speed and therefore the meeting point and lead time
-# vary). A run that fails to score is counted, not skipped; the batch never stops on one bad run (the
+# vary). --bookings replaces --speeds with a cycle of BOOKING ARTIFACTS: every run is then a booked take
+# (`--booking <artifact>` types the booked WP_SPD and the checker gates the flown speed against it; no
+# --speed is passed), so each run's checker verdict is the full flight-log gate, not an experiment's.
+# A run that fails to score is counted, not skipped; the batch never stops on one bad run (the
 # container is left clean by the encounter's own teardown). At the end scripts/summarize_encounters.py
 # writes eval/results/encounters/BATCH_<UTC>.md + .json over exactly this batch's run folders.
 set -uo pipefail
@@ -15,12 +19,13 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -x "$REPO_ROOT/.venv/bin/python3" ] && ! python3 -c "import numpy" >/dev/null 2>&1; then
   export PATH="$REPO_ROOT/.venv/bin:$PATH"
 fi
-N=20; BIRDS="config/birds/headon_lane15.json"; MISSION="headon_lane15"; SPEEDS="4.0 5.0 6.0"; SRC="depth"
+N=20; BIRDS="config/birds/headon_lane15.json"; MISSION="headon_lane15"; SPEEDS="4.0 5.0 6.0"; SRC="depth"; BOOKINGS=""
 while (( $# )); do
   case $1 in
     --birds) BIRDS=$2; shift ;;
     --mission) MISSION=$2; shift ;;
     --speeds) SPEEDS=$2; shift ;;
+    --bookings) BOOKINGS=$2; shift ;;
     --detection-source) SRC=$2; shift ;;
     -h|--help) sed -n 2,12p "$0"; exit 0 ;;
     *) N=$1 ;;
@@ -29,13 +34,25 @@ while (( $# )); do
 done
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 read -r -a SPEED_LIST <<<"$SPEEDS"
-echo "[batch] $N encounters, birds $BIRDS, mission $MISSION, speeds ${SPEED_LIST[*]}, detector $SRC — started $STAMP"
+read -r -a BOOKING_LIST <<<"$BOOKINGS"
+if [ -n "$BOOKINGS" ]; then
+  for b in "${BOOKING_LIST[@]}"; do [ -f "$REPO_ROOT/$b" ] || { echo "[batch] no booking artifact at $b"; exit 2; }; done
+  echo "[batch] $N BOOKED encounters, birds $BIRDS, mission $MISSION, bookings ${BOOKING_LIST[*]}, detector $SRC — started $STAMP"
+else
+  echo "[batch] $N encounters, birds $BIRDS, mission $MISSION, speeds ${SPEED_LIST[*]}, detector $SRC — started $STAMP"
+fi
 ok=0; bad=0
 for (( i = 0; i < N; i++ )); do
-  speed=${SPEED_LIST[$(( i % ${#SPEED_LIST[@]} ))]}
-  echo "[batch] run $(( i + 1 ))/$N at $speed m/s — $(date -u +%H:%M:%SZ)"
-  if bash "$REPO_ROOT/scripts/fly_pipeline.sh" encounter --detection-source "$SRC" --speed "$speed" \
-       --mission "$MISSION" --birds "$BIRDS" >"${TMPDIR:-/tmp}/encounter_batch_${STAMP}_$(( i + 1 )).log" 2>&1; then
+  if [ -n "$BOOKINGS" ]; then
+    booking=${BOOKING_LIST[$(( i % ${#BOOKING_LIST[@]} ))]}
+    echo "[batch] run $(( i + 1 ))/$N booked on $booking — $(date -u +%H:%M:%SZ)"
+    set -- encounter --detection-source "$SRC" --booking "$booking" --mission "$MISSION" --birds "$BIRDS"
+  else
+    speed=${SPEED_LIST[$(( i % ${#SPEED_LIST[@]} ))]}
+    echo "[batch] run $(( i + 1 ))/$N at $speed m/s — $(date -u +%H:%M:%SZ)"
+    set -- encounter --detection-source "$SRC" --speed "$speed" --mission "$MISSION" --birds "$BIRDS"
+  fi
+  if bash "$REPO_ROOT/scripts/fly_pipeline.sh" "$@" >"${TMPDIR:-/tmp}/encounter_batch_${STAMP}_$(( i + 1 )).log" 2>&1; then
     ok=$(( ok + 1 )); echo "[batch]   scored, checker exit 0"
   else
     rc=$?; bad=$(( bad + 1 )); echo "[batch]   exit $rc (1 = checker INVALID/FAIL, the usual; see the log)"
