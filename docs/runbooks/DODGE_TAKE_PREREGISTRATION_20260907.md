@@ -484,3 +484,54 @@ the result is not a pre-registration; it is a narrative.
   ADR-020 am. 8 quotes this take's wall p95 as "10.5 ms". The checker prints 10.701; 10.512 is take 2's figure.
 * **What it buys, and no more:** n = 1 VALID head-on clearance at 5.0 m/s, sim-demonstrated and evidence-gated, with one driven bird that passed 3.82 m below cruise.
   It is not a §1 PASS. The 2026-08-25 breach, its declared CI red and the three-breach safety asterisk all stand. No gate changes after this take are recorded here.
+
+## P5 RE-SCORE (ADR-020 am. 5) — PRE-REGISTRATION, 2026-11-12, written before any frame is rendered
+
+**Order.** The owner chose **"Run the re-score"** on 2026-11-12, over waiving am. 5 by a dated amendment, after the 2026-11-11 booked
+take (ADR-020 am. 8) disclosed that the am. 5 tall-obstacle re-score had not been run before that booking. Everything below is fixed
+now so that nothing in it can be fitted to the numbers afterwards.
+
+1. **Stations.** The SAME 85-station file the 2026-09-07 artifact belongs to — `eval/results/depth_dataset_20260907/stations_rendered.json`
+   (sha256 `4daa613f8c0e7773d1dd0d01c52674254ada6ae541a53e87630e4081a88b1d17`) — fed to the SAME harness `eval/capture_depth_dataset.sh`, with
+   `VARIANT=config/world_variants/tall_structure_am5.json`. Same nine camera groups, same teleports, same readback tolerances.
+2. **The world variant** (`config/world_variants/tall_structure_am5.json`, sha256 `8588bdc08ad03326ceb1d3ad0fcc60b0bd3ff161008c4330717426a9ca5896c5`): ONE static box,
+   `tall_structure_am5`, x −15..95, y 58..62, z 0..18 m — **18 m tall**, front face **58.0 m** north of the two y = 0 cruise-altitude
+   camera poses (x = 15 and x = 60) and 53.0 m north of the y = 5 pose — added to the harness's per-group COPIES of the world; the flown
+   world `sim/worlds/farmguard_field.sdf` is untouched and the harness refuses to run if it ever carries the model. **Instantiation
+   rule, one line:** a box is NOT instantiated for a camera group whose commanded camera position lies inside it (closed interval,
+   all three axes). Exactly one of the nine groups is inside it — the south-facing pose at (15, 60, 15), stations S045, S046, S047 and
+   the negative S064 — and is scored in the committed world exactly as on 2026-09-07. The harness declares the variant (name, file,
+   sha256, boxes) and the per-group flag in `groups.jsonl`; the scorer recomputes both from the same file and STOPS on a disagreement.
+3. **Constants.** The SHIPPED `depth_segment.DEFAULT_PARAMS` — K 15, margin 1.5 m, min_area 10 px, open_iter 0, max_boxes 64,
+   link_break off — scored with `--score-shipped`. The pre-registered sweep still runs and is REPORTED, never adopted. **No constant
+   moves in this round whatever the sweep says**; a change would be its own pre-registered round on its own render.
+4. **Bars — the seven of DESIGN §4.3 / ADR-021, as the scorer applies them:** FNR **0 misses** over the FNR_zero stations
+   (conditioned on stand-off > margin, unoccluded); merge mislabels **0**; unmapped FP **≤ 0.05 /frame** over the negative frames;
+   range error **p95 ≤ 0.5 m**; runtime **p95 ≤ 25 ms, max ≤ 100 ms** (host bench, 5 reps per station); determinism **0 mismatches**;
+   mutation **both independent mask terms and the pair red**. The structure is NOT in the tree geofence map, so a detection on it in a
+   negative frame is an **UNMAPPED** false positive and counts against the bar — stated here so it cannot be reclassified as mapped
+   clutter after the fact.
+5. **Predictions**, from the scorer's own ray-cast at the commanded poses (scratch run, 2026-11-12): **36 bird stations change
+   background class to `structure`** — 30 of them FNR_zero: the two +N ladders at 14–46 m (S001–S007, S009–S015, S017–S020), the
+   B_merge rows whose ground hit lies beyond the face (S021–S025, S028–S030, S035), and S042–S044; plus the diagnostics S008/S016
+   (50 m) and the pitched S081–S084. **Nine FNR_zero stations are structure-backed at or beyond the 33.591 m breakeven: S044 (34 m),
+   S005/S013 (38), S019 (40), S006/S014 (44), S007/S015/S020 (46 m).** The farthest structure-backed FNR_zero rung is 46.0 m. The
+   smallest bird-to-structure stand-off is 8.0 m (S008/S016 at 50 m), so no station becomes sub-margin by placement and the FNR
+   denominator should stay at 49 detectable stations. S072/S073 (23 m off-axis at 46 m) stay sky-backed: the face lies past the 60 m
+   Euclidean cull in their direction. The expected ray-cast-vs-render background residual stays at the centimetre level: box faces
+   are exact.
+6. **Disposition, fixed now.** ALL seven bars PASS **and** the structure-backed FNR_zero reach is ≥ 33.591 m → the am. 5 precondition
+   is **CLOSED** by an ADR-021 amendment quoting the artifact, and the 2026-11-11 booking's open precondition (ADR-020 am. 8) closes
+   with it. ANY bar FAILS, or the reach falls short → the precondition **FAILS**: the 2026-11-11 take stays recorded as VALID under the
+   flight-log gate but booked under a precondition that then measured red, README and the record page say so, the shipped constants
+   do not move, and the next step is a pre-registered fix round — not a re-run of this one. A harness or scorer STOP (labeller
+   residual > 5 px, variant mismatch, a bird inside the structure) is a harness bug: fix it, re-render, and record BOTH renders here.
+7. **Artifacts and commands.** Render, in the container: `docker cp eval/results/depth_dataset_20260907/stations_rendered.json
+   fieldguard-sim:/tmp/stations.json`, then `VARIANT=/workspace/fieldguard/config/world_variants/tall_structure_am5.json
+   OUT=/tmp/depthset_tall bash /workspace/fieldguard/eval/capture_depth_dataset.sh /tmp/stations.json` (expected rc 3, as on
+   2026-09-07: the three occlusion frames repeat their negative control). Score, host: `python3 eval/score_depth_segmenter.py
+   --dataset eval/results/depth_dataset_20261112_tall --out-dir eval/results/depth_dataset_20261112_tall --world-variant
+   config/world_variants/tall_structure_am5.json --score-shipped`. Committed: `depth_segmenter_score_<UTC>.json` INSIDE the dataset
+   dir (so `eval/results/` keeps exactly one adopted artifact), `REPORT.md`, `CAPTURE_LOG.txt`, `groups.jsonl`, `stations_rendered.json`,
+   six fixtures. Not measured by this round, as before: static vehicle, noiseless sensor, level attitude (one pitched arm), one target
+   per frame, one target radius; the structure is a smooth box face with no self-depth structure of its own.

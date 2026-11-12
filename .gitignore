@@ -74,6 +74,19 @@ eval/results/depth_dataset_20260907/*
 # (the labels are DERIVED from these, the same lesson as the applied-pose logs above).
 !eval/results/depth_dataset_20260907/stations_rendered.json
 !eval/results/depth_dataset_20260907/CAPTURE_LOG.txt
+# The ADR-020 am. 5 tall-obstacle RE-SCORE of the shipped segmenter (2026-11-12): the same 85-station
+# protocol on a DECLARED world variant (config/world_variants/tall_structure_am5.json). Its score artifact
+# lives INSIDE the dataset dir so eval/results/ still holds exactly one adopted score artifact; the
+# 85 raw frames, labels.jsonl and camera_info stay out, as above. groups.jsonl (9 lines, every readback
+# plus the variant declaration) is kept here because it is the proof the render carried the variant.
+!eval/results/depth_dataset_20261112_tall/
+eval/results/depth_dataset_20261112_tall/*
+!eval/results/depth_dataset_20261112_tall/REPORT.md
+!eval/results/depth_dataset_20261112_tall/fixtures/
+!eval/results/depth_dataset_20261112_tall/stations_rendered.json
+!eval/results/depth_dataset_20261112_tall/CAPTURE_LOG.txt
+!eval/results/depth_dataset_20261112_tall/groups.jsonl
+!eval/results/depth_dataset_20261112_tall/depth_segmenter_score_*.json
 !eval/results/bird_drive_*.json
 # ...and the applied-pose log beside it (ADR-003 am. 6): a committed clip's bird labels are DERIVED
 # from this file, so without it those labels can never be re-verified — the same lesson as the

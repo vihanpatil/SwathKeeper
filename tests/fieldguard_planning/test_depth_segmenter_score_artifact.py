@@ -426,5 +426,157 @@ class TestFixturesReproduceTheArtifactsRows(unittest.TestCase):
         self.assertAlmostEqual(min(near), row["matched_depth_m"], places=3)
 
 
+
+class TestTheDeclaredWorldVariant(unittest.TestCase):
+    """ADR-020 am. 5 (owner-confirmed 2026-09-11) orders the segmenter re-scored on a tall-obstacle world
+    variant -- finite structure >= ~12 m behind the +/-6 m band at 34-46 m -- before any depth-camera
+    dodge booking stands. The variant is ONE DECLARED FILE both the render harness and the scorer read.
+    These pin the parts a wrong render could hide: (1) the ray-cast knows a declared box and reports it
+    as `structure` at its front face, (2) over its top and beyond the far cull it still reads sky,
+    (3) without a variant the committed world is unchanged, (4) the committed variant file satisfies the
+    amendment's geometry on the pre-registered stations and swallows no bird, and (5) a render and a
+    scorer that disagree on the variant refuse to score each other -- in both directions."""
+    VARIANT = REPO_ROOT / "config" / "world_variants" / "tall_structure_am5.json"
+    STATIONS = REPO_ROOT / "docs" / "design" / "depth_segmenter_stations.json"
+    PREREGISTERED_STRUCTURE_BACKED = ["S005", "S006", "S007", "S013", "S014", "S015", "S019", "S020",
+                                      "S044"]
+
+    def tearDown(self):
+        sds.set_world_variant(None)
+
+    @staticmethod
+    def _ray(cam, target):
+        """The scorer's rays are scaled so the parameter IS the pinhole Z-depth; every pose used here
+        faces +N (yaw 90), so the forward component is +y."""
+        cam = np.asarray(cam, dtype=float)
+        d = np.asarray(target, dtype=float) - cam
+        return cam, (d / d[1])[None, :]
+
+    def _box(self):
+        v = sds.load_world_variant(self.VARIANT)
+        sds.set_world_variant(v)
+        b = v["boxes"][0]
+        cx, cy, cz = b["centre_m"]
+        sx, sy, sz = b["size_m"]
+        return b, (cx - sx / 2, cx + sx / 2), (cy - sy / 2, cy + sy / 2), (cz - sz / 2, cz + sz / 2)
+
+    def test_a_declared_box_is_ray_cast_as_structure_at_its_front_face(self):
+        _, _, (front, _), _ = self._box()
+        cam, dirs = self._ray((15.0, 0.0, 15.0), (15.0, 46.15, 15.0))      # S015's bird, on the axis
+        t, cls = sds.raycast_world(cam, dirs)
+        self.assertEqual(cls, [sds.STRUCTURE_CLASS])
+        self.assertAlmostEqual(float(t[0]), front, places=6)
+
+    def test_over_the_top_of_the_box_and_beyond_the_far_cull_it_still_reads_sky(self):
+        _, _, (front, _), (_, top) = self._box()
+        cam, dirs = self._ray((15.0, 0.0, 15.0), (15.0, front, top + 0.5))
+        t, cls = sds.raycast_world(cam, dirs)
+        self.assertEqual(cls, ["sky"], "a ray clearing the top edge must not report structure")
+        self.assertTrue(math.isinf(float(t[0])))
+        cam, dirs = self._ray((15.0, 0.0, 15.0), (15.0 + 40.0, front, 15.0))   # slant ~70 m > 60 m cull
+        t, cls = sds.raycast_world(cam, dirs)
+        self.assertEqual(cls, ["sky"], "a face point past the Euclidean cull is culled like gz culls it")
+        self.assertTrue(math.isinf(float(t[0])))
+
+    def test_without_a_variant_the_committed_world_is_unchanged(self):
+        sds.set_world_variant(None)
+        self.assertEqual(sds.WORLD_BOXES, ())
+        cam, dirs = self._ray((15.0, 0.0, 15.0), (15.0, 46.15, 15.0))
+        t, cls = sds.raycast_world(cam, dirs)
+        self.assertEqual(cls, ["sky"])
+        self.assertTrue(math.isinf(float(t[0])))
+
+    def test_the_variant_file_satisfies_amendment_5_on_the_pre_registered_stations(self):
+        v = sds.load_world_variant(self.VARIANT)
+        self.assertEqual(len(v["boxes"]), 1, "one declared structure, so one explanation of every flip")
+        b, (x0, x1), (front, back), (z0, z1) = self._box()
+        self.assertGreaterEqual(z1, 12.0, "am. 5: structure >= ~12 m")
+        self.assertAlmostEqual(z0, 0.0, msg="the structure stands on the ground plane")
+        self.assertLess(front, sds.FAR_CLIP_M, "the front face must sit inside the far cull on the axis")
+        for ty in sds.TREE_Y_M:
+            self.assertLess(ty + sds.CANOPY_R_M, front, "the y=55 tree row stays in FRONT of the face")
+        st = json.loads(self.STATIONS.read_text())["stations"]
+        for s in st:
+            bx, by, bz = s["bird_enu"]
+            inside = (x0 <= bx <= x1) and (front <= by <= back) and (z0 <= bz <= z1)
+            self.assertFalse(inside, f"{s['id']}'s bird sits inside the structure")
+        far_y = max(s["bird_enu"][1] for s in st
+                    if s["cam_enu"][1] == 0.0 and s["pass_bar"] != "FP_zero_unmapped")
+        self.assertGreaterEqual(front - far_y - sds.BIRD_RADIUS_M, 2 * 1.5,
+                                "stand-off behind the farthest +N bird is at least twice the margin, "
+                                "so no station can become sub-margin by the fixture's own placement")
+        backed = []
+        for s in st:
+            if s["pass_bar"] != "FNR_zero" or (s["range_m"] or 0.0) < 34.0:
+                continue
+            if s["cam_yaw_deg"] != 90.0 or s["bird_enu"][0] != s["cam_enu"][0]:
+                continue        # -N-facing poses have the wall behind the camera; off-axis birds sit
+                                # past the cull's reach at the wall (geometry, declared in the file)
+            cam, dirs = self._ray(s["cam_enu"], s["bird_enu"])
+            _, cls = sds.raycast_world(cam, dirs)
+            self.assertEqual(cls, [sds.STRUCTURE_CLASS], f"{s['id']} must be structure-backed")
+            backed.append(s["id"])
+        self.assertEqual(sorted(backed), self.PREREGISTERED_STRUCTURE_BACKED)
+        # and the amendment's point: clutter at or beyond the breakeven, by the pre-registration
+        self.assertGreaterEqual(max(s["range_m"] for s in st if s["id"] in backed), sds.BREAKEVEN_5MPS_M)
+        # the ONE camera pose inside the box is the one the file declares, and only that one
+        poses = sorted({tuple(s["cam_enu"]) for s in st})
+        inside = [p for p in poses if sds.box_contains(b, p)]
+        self.assertEqual(inside, [(15.0, 60.0, 15.0)])
+        self.assertEqual([tuple(e["cam_enu"]) for e in v["camera_poses_not_instantiated"]], inside)
+        declared_ids = sorted(v["camera_poses_not_instantiated"][0]["stations"])
+        self.assertEqual(declared_ids, sorted(s["id"] for s in st if tuple(s["cam_enu"]) == inside[0]))
+
+    def test_a_camera_inside_a_box_sees_the_committed_world_not_the_boxs_inside(self):
+        self._box()
+        self.assertEqual(sds.boxes_for_camera((15.0, 60.0, 15.0)), ())
+        self.assertEqual(len(sds.boxes_for_camera((15.0, 0.0, 15.0))), 1)
+        cam = np.asarray((15.0, 60.0, 15.0))
+        d = np.asarray((15.0, 25.85, 9.0)) - cam                 # S047's bird, 34 m SOUTH of the camera
+        t, cls = sds.raycast_world(cam, (d / -d[1])[None, :])    # forward is -y for this pose
+        self.assertNotEqual(cls, [sds.STRUCTURE_CLASS], "a 2 m 'wall' across the frame is not a tall obstacle")
+        sds.set_world_variant(None)
+        t0, cls0 = sds.raycast_world(cam, (d / -d[1])[None, :])
+        self.assertEqual(cls, cls0, "with the box skipped the pose reads exactly as in the committed world")
+
+    def test_a_render_and_a_scorer_that_disagree_on_the_variant_refuse_to_score(self):
+        real = sds.load_world_variant(self.VARIANT)
+        sds.set_world_variant(real)
+        v = {"name": real["name"], "sha256": real["_sha256"]}
+        g_out = {"world_variant": dict(v, instantiated=True), "cam_enu_cmd": [15.0, 0.0, 15.0]}
+        g_in = {"world_variant": dict(v, instantiated=False), "cam_enu_cmd": [15.0, 60.0, 15.0]}
+        groups = {1: dict(g_out), 2: dict(g_in)}
+        with self.assertRaises(RuntimeError):
+            sds.check_variant_agreement(groups, None)             # variant render, plain scorer
+        with self.assertRaises(RuntimeError):
+            sds.check_variant_agreement({1: {}, 2: {}}, v)        # plain render, variant scorer
+        with self.assertRaises(RuntimeError):
+            sds.check_variant_agreement(groups, {"name": v["name"], "sha256": "b" * 64})   # other bytes
+        with self.assertRaises(RuntimeError):
+            sds.check_variant_agreement({1: dict(g_out), 2: {}}, v)                       # groups disagree
+        with self.assertRaises(RuntimeError):                     # the render instantiated a box AROUND its camera
+            sds.check_variant_agreement({1: dict(g_out), 2: {"world_variant": dict(v, instantiated=True),
+                                                              "cam_enu_cmd": [15.0, 60.0, 15.0]}}, v)
+        with self.assertRaises(RuntimeError):                     # the render left a box out it should have carried
+            sds.check_variant_agreement({1: {"world_variant": dict(v, instantiated=False),
+                                             "cam_enu_cmd": [15.0, 0.0, 15.0]}}, v)
+        with self.assertRaises(RuntimeError):                     # a variant render without the per-group flag
+            sds.check_variant_agreement({1: {"world_variant": dict(v), "cam_enu_cmd": [15.0, 0.0, 15.0]}}, v)
+        sds.check_variant_agreement(groups, v)                                        # agreement
+        sds.check_variant_agreement({1: {}, 2: {"world_variant": None}}, None)        # the 2026-09-07 shape
+
+    def test_the_variant_loader_refuses_a_file_without_a_usable_box(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            bad = Path(td) / "v.json"
+            bad.write_text(json.dumps({"name": "v", "boxes": []}))
+            with self.assertRaises(ValueError):
+                sds.load_world_variant(bad)
+            bad.write_text(json.dumps({"name": "v", "boxes": [{"name": "b", "centre_m": [0, 0, 0],
+                                                                "size_m": [1, 0, 1]}]}))
+            with self.assertRaises(ValueError):
+                sds.load_world_variant(bad)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

@@ -108,6 +108,115 @@ TREE_Y_M = (5.0, 15.0, 25.0, 35.0, 45.0, 55.0)
 CANOPY_CENTRE_Z_M, CANOPY_R_M = 2.5, 1.3
 TRUNK_R_M, TRUNK_TOP_Z_M = 0.15, 1.5
 
+# --- a DECLARED world variant (ADR-020 am. 5) ---------------------------------------------------------
+# The re-score amendment 5 orders adds finite structure behind the +/-6 m band at 34-46 m. The render
+# harness ADDS the variant's static axis-aligned boxes to its per-group world copies and declares the
+# variant (name + sha256) in groups.jsonl; the scorer must ray-cast the SAME boxes or every background
+# class behind them is mislabelled while every depth value stays right -- exactly the failure the
+# ray-cast column exists to catch. `None` means the committed world as it is.
+WORLD_VARIANT: Optional[dict] = None
+WORLD_BOXES: Tuple[dict, ...] = ()
+STRUCTURE_CLASS = "structure"
+
+
+def load_world_variant(path: Path) -> dict:
+    v = json.loads(path.read_text())
+    boxes = v.get("boxes")
+    if not isinstance(boxes, list) or not boxes:
+        raise ValueError(f"{path}: a world variant declares at least one box")
+    for b in boxes:
+        for key in ("name", "centre_m", "size_m"):
+            if key not in b:
+                raise ValueError(f"{path}: box without '{key}': {b}")
+        if len(b["centre_m"]) != 3 or len(b["size_m"]) != 3 or min(b["size_m"]) <= 0.0:
+            raise ValueError(f"{path}: box {b['name']} needs a 3-vector centre and a positive 3-vector size")
+    try:
+        v["_path"] = str(path.resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        v["_path"] = str(path)
+    v["_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return v
+
+
+def set_world_variant(v: Optional[dict]) -> None:
+    global WORLD_VARIANT, WORLD_BOXES
+    WORLD_VARIANT = v
+    WORLD_BOXES = tuple(dict(b) for b in v["boxes"]) if v else ()
+
+
+def box_contains(box: dict, point: Sequence[float]) -> bool:
+    """Closed interval on all three axes -- the ONE rule that decides whether a declared box is
+    instantiated for a camera pose. The harness applies it to the commanded vehicle pose and declares
+    the answer per group; the scorer recomputes it and refuses a disagreement."""
+    c = np.asarray(box["centre_m"], dtype=float)
+    h = 0.5 * np.asarray(box["size_m"], dtype=float)
+    q = np.asarray(point, dtype=float)
+    return bool(np.all(np.abs(q - c) <= h))
+
+
+def boxes_for_camera(cam_p: Sequence[float]) -> Tuple[dict, ...]:
+    """The declared boxes that are instantiated for a camera at `cam_p`: every box that does not
+    contain the camera. A box that contained it would render as its own inside (a 2 m wall across the
+    whole frame), which is not a tall obstacle behind anything."""
+    return tuple(b for b in WORLD_BOXES if not box_contains(b, cam_p))
+
+
+def world_variant_record() -> Optional[dict]:
+    if WORLD_VARIANT is None:
+        return None
+    return {"name": WORLD_VARIANT.get("name"), "file": WORLD_VARIANT["_path"],
+            "sha256": WORLD_VARIANT["_sha256"],
+            "boxes": [{"name": b["name"], "centre_m": list(b["centre_m"]), "size_m": list(b["size_m"])}
+                      for b in WORLD_BOXES],
+            "instantiation_rule": ("a box is NOT instantiated for a camera group whose commanded "
+                                   "camera position lies inside it (closed interval, all three axes); "
+                                   "declared per group by the harness, recomputed by the scorer")}
+
+
+def check_variant_agreement(groups: Dict[int, dict], declared: Optional[dict]) -> None:
+    """The render and the scorer must agree on the world variant. Fail-closed in BOTH directions: a
+    variant render scored without the variant, and a plain render scored with one, both stop here --
+    the depth values would all be right and the background classes behind every box wrong. Per group,
+    the harness's `instantiated` flag must equal the scorer's own `box_contains` answer at the group's
+    commanded camera pose, so a box the render left out (or put in) is never ray-cast the other way."""
+    def ident(v):
+        return (v.get("sha256"), v.get("name")) if isinstance(v, dict) else None
+    carried = {ident(g.get("world_variant")) for g in groups.values()}
+    if len(carried) != 1:
+        raise RuntimeError(f"groups.jsonl disagrees with itself on the world variant: {sorted(map(str, carried))}")
+    rendered = carried.pop()
+    d_sha = declared.get("sha256") if isinstance(declared, dict) else None
+    r_sha = rendered[0] if rendered else None
+    if r_sha != d_sha:
+        r_name = rendered[1] if rendered else None
+        d_name = declared.get("name") if isinstance(declared, dict) else declared
+        raise RuntimeError(
+            f"WORLD VARIANT MISMATCH -- the render carries {r_name!r} (sha256 {r_sha}) and the scorer "
+            f"was given {d_name!r} (sha256 {d_sha}); every background class behind a declared box would "
+            f"be mislabelled, so the run stops")
+    if declared is None:
+        return
+    for gid, g in sorted(groups.items()):
+        wv = g["world_variant"]
+        cam = g.get("cam_enu_cmd")
+        if cam is None or "instantiated" not in wv:
+            raise RuntimeError(f"group {gid}: a variant render must declare cam_enu_cmd and "
+                               f"world_variant.instantiated; got {wv}")
+        expect = not any(box_contains(b, cam) for b in WORLD_BOXES)
+        if bool(wv["instantiated"]) != expect:
+            raise RuntimeError(
+                f"group {gid}: the render says the variant was {'' if wv['instantiated'] else 'NOT '}"
+                f"instantiated at camera {cam}, the box rule says it {'should' if expect else 'should NOT'} "
+                f"have been -- the ray-cast would disagree with the pixels, so the run stops")
+
+
+def fixture_why(sid: str, s: "Station") -> str:
+    why = FIXTURE_WHY[sid]
+    if WORLD_VARIANT is None:
+        return why
+    return (f"{why} [rendered under world variant '{WORLD_VARIANT.get('name')}': measured background "
+            f"{s.background}]")
+
 FIXTURE_STATIONS = ("S015", "S026", "S036", "S040", "S061", "S080")
 FIXTURE_WHY = {
     "S015": "sky, 46 m, down the worst-clutter lane -- the far end of the FNR bar",
@@ -117,6 +226,12 @@ FIXTURE_WHY = {
     "S061": "NEGATIVE CONTROL, P1 worst-clutter lane -- no bird in the world at all",
     "S080": "PITCHED arm: -12.5 deg nose-down, the level-camera transfer gap made a measurement",
 }
+
+
+def _params_dict(p: DepthSegmenterParams) -> dict:
+    return {"bg_window_px": p.bg_window_px, "margin_m": p.margin_m, "min_area_px": p.min_area_px,
+            "open_iter": p.open_iter, "max_boxes": p.max_boxes, "near_m": p.near_m,
+            "far_m": p.far_m, "link_break": p.link_break}
 
 
 # ==================================================================================================
@@ -188,7 +303,8 @@ def pixel_ray_world(u: np.ndarray, v: np.ndarray, cam_R: np.ndarray,
 
 
 def raycast_world(cam_p: np.ndarray, dirs: np.ndarray) -> Tuple[np.ndarray, List[str]]:
-    """Ray-cast the COMMITTED world: ground plane + 18 canopy spheres + 18 trunk cylinders.
+    """Ray-cast the COMMITTED world: ground plane + 18 canopy spheres + 18 trunk cylinders -- plus
+    the axis-aligned boxes of a DECLARED world variant (`set_world_variant`), class "structure".
 
     Returns (pinhole Z-depth per ray, class per ray) with `+inf`/`sky` for a ray that hits nothing
     or whose hit is beyond the EUCLIDEAN far cull -- gz culls on `|point|` while it stores `point.x`,
@@ -235,6 +351,20 @@ def raycast_world(cam_p: np.ndarray, dirs: np.ndarray) -> Tuple[np.ndarray, List
             zh = cam_p[2] + t2 * dirs[:, 2]
             take(np.where(disc2 >= 0.0, t2, np.inf),
                  (disc2 >= 0.0) & (zh >= 0.0) & (zh <= TRUNK_TOP_Z_M), "trunk")
+
+    for box in boxes_for_camera(cam_p):
+        c = np.asarray(box["centre_m"], dtype=float)
+        h = 0.5 * np.asarray(box["size_m"], dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            t1 = (c - h - cam_p)[None, :] / dirs
+            t2 = (c + h - cam_p)[None, :] / dirs
+        # slab method; a zero direction component gives +-inf, which the min/max handle: inside the
+        # slab -> (-inf, +inf), outside -> a one-signed pair that can never bracket a hit
+        near = np.max(np.minimum(t1, t2), axis=1)
+        far = np.min(np.maximum(t1, t2), axis=1)
+        hit_box = np.isfinite(near) & np.isfinite(far) & (far >= near) & (far > 0.0)
+        t_box = np.where(near > 0.0, near, far)      # an origin inside the box sees its exit face
+        take(np.where(hit_box, t_box, np.inf), hit_box, STRUCTURE_CLASS)
 
     slant = best * np.linalg.norm(dirs, axis=1)
     culled = slant > FAR_CLIP_M
@@ -300,6 +430,7 @@ def load_dataset(ddir: Path) -> Tuple[List[Station], dict]:
     rows = [json.loads(l) for l in (ddir / "labels.jsonl").read_text().splitlines() if l.strip()]
     groups = {g["group"]: g for g in
               (json.loads(l) for l in (ddir / "groups.jsonl").read_text().splitlines() if l.strip())}
+    check_variant_agreement(groups, world_variant_record())
     intrs = {}
     for gid, g in groups.items():
         ci = json.loads((ddir / g["camera_info"]).read_text())
@@ -338,6 +469,11 @@ def load_dataset(ddir: Path) -> Tuple[List[Station], dict]:
         "stations_file_sha256": sha256_of(STATION_FILE),
         "n_distinct_frame_sha1": len({r["frame"]["sha1"] for r in rows}),
         "negative_control_per_group": {str(k): v for k, v in sorted(negs.items())},
+        "world_variant": world_variant_record(),
+        "world_variant_not_instantiated_for_groups": [
+            {"group": gid, "cam_enu_cmd": g.get("cam_enu_cmd"), "stations": g.get("stations")}
+            for gid, g in sorted(groups.items())
+            if isinstance(g.get("world_variant"), dict) and g["world_variant"].get("instantiated") is False],
     }
     return stations, meta
 
@@ -916,7 +1052,22 @@ def acquisition_block(rows: Sequence[dict], stations: Sequence[Station],
         verdict = (f"measured {measured:.2f} m QUALIFIES the booked 46.0 m and does not raise it; "
                    f"the best-case-scene clause loses 'no clutter' and 'blind isfinite mask' and "
                    f"KEEPS static vehicle, noiseless sensor and level attitude")
-    if max_clutter is not None:
+    structure_backed = sorted(({"id": r["id"], "range_m": r["range_m"], "background": r["background"]}
+                               for r in clutter if str(r["background"]).startswith(STRUCTURE_CLASS)),
+                              key=lambda d: (d["range_m"], d["id"]))
+    at_or_beyond = bool(max_clutter is not None and max_clutter >= BREAKEVEN_5MPS_M)
+    if max_clutter is not None and structure_backed:
+        verdict += (f". CLUTTER-BACKED TO {max_clutter:.0f} M under the declared world variant "
+                    f"'{(WORLD_VARIANT or {}).get('name')}': {len(structure_backed)} FNR_zero "
+                    f"station(s) stand in front of finite structure, the farthest at "
+                    f"{max_clutter:.1f} m; clutter-backed FNR_zero stations exist to "
+                    + ", ".join(f"{v:.0f} m ({k})" for k, v in sorted(by_class.items(),
+                                                                      key=lambda kv: -kv[1]))
+                    + f". ADR-020 am. 5's requirement -- clutter tested at or beyond the "
+                      f"{BREAKEVEN_5MPS_M} m breakeven -- is "
+                    + ("MET by this ladder" if at_or_beyond else "NOT MET by this ladder")
+                    + ". The booked number does not change")
+    elif max_clutter is not None:
         verdict += (f". READ THE CLUTTER CLAIM TO {max_clutter:.0f} M, NOT TO "
                     f"{(measured or 0.0):.0f}: clutter-backed FNR_zero stations exist to "
                     + ", ".join(f"{v:.0f} m ({k})" for k, v in sorted(by_class.items(),
@@ -933,7 +1084,14 @@ def acquisition_block(rows: Sequence[dict], stations: Sequence[Station],
         "clutter_backed_max_range_by_background": {k: round(v, 1)
                                                    for k, v in sorted(by_class.items())},
         "sky_backed_only_from_range_m": sky_only_from,
+        "structure_backed_fnr_zero_stations": structure_backed,
+        "clutter_backed_at_or_beyond_breakeven_m": at_or_beyond,
         "clutter_qualifier_note": (
+            (f"the declared world variant puts finite structure behind the in-band ladder: "
+             f"{len(structure_backed)} FNR_zero station(s) are structure-backed and the clutter-backed "
+             f"reach is {max_clutter} m, so the sentence about THIS world's geometry (nothing can stand "
+             f"behind an in-band bird beyond 30 m) does not apply to this render")
+            if structure_backed else
             "the acquisition ladder's upper rungs are 100% sky-backed. The FNR cell table shows it "
             "(canopy and ground_band cells stop in the 20-30 m bin) but no sentence said it, and "
             "'cluttered acquisition 46.0 m' reads as a clutter measurement at 46 m. It is not one"),
@@ -1541,7 +1699,8 @@ def write_fixtures(stations: Sequence[Station], ddir: Path,
     for sid in FIXTURE_STATIONS:
         s = by_id[sid]
         meta = {
-            "station_id": sid, "group": s.group, "why": FIXTURE_WHY[sid],
+            "station_id": sid, "group": s.group, "why": fixture_why(sid, s),
+            "world_variant": world_variant_record(),
             "background": s.background, "pass_bar": s.pass_bar,
             "expected_px": s.expected_px, "expected_depth_m": s.expected_depth_m,
             "expected_r_px": s.expected_r_px, "bird_centre_depth_m": s.bird_centre_depth_m,
@@ -1557,7 +1716,7 @@ def write_fixtures(stations: Sequence[Station], ddir: Path,
         np.savez_compressed(p, depth=s.frame, meta=np.array(json.dumps(meta)))
         kb = p.stat().st_size / 1024.0
         recs.append({"station_id": sid, "path": str(p.relative_to(REPO_ROOT)),
-                     "size_kb": round(kb, 1), "under_500kb": kb < 500.0, "why": FIXTURE_WHY[sid]})
+                     "size_kb": round(kb, 1), "under_500kb": kb < 500.0, "why": fixture_why(sid, s)})
     return recs
 
 
@@ -1593,6 +1752,34 @@ def write_report(path: Path, art: dict) -> None:
              "out of every frustum, zero gravity so nothing drifts.")
     L.append("- Each frame was re-hashed on load; a mismatch stops the run.")
     L.append("")
+    wv = d.get("world_variant")
+    if wv:
+        L.append("### World variant (ADR-020 am. 5) — DECLARED by the render, ray-cast by the scorer")
+        L.append("")
+        L.append(f"- `{wv['file']}` sha256 `{wv['sha256'][:16]}…`, name `{wv['name']}`. The harness "
+                 f"added these static boxes to every per-group world copy and wrote the same "
+                 f"declaration into `groups.jsonl`; the scorer refuses a render whose declaration "
+                 f"does not match the file it was given.")
+        for b in wv["boxes"]:
+            cx, cy, cz = b["centre_m"]
+            sx, sy, sz = b["size_m"]
+            L.append(f"- `{b['name']}`: x {cx - sx / 2:g}..{cx + sx / 2:g}, y {cy - sy / 2:g}.."
+                     f"{cy + sy / 2:g}, z {cz - sz / 2:g}..{cz + sz / 2:g} m (world ENU) — "
+                     f"{sz:g} m tall.")
+        L.append("- The flown world `sim/worlds/farmguard_field.sdf` is unchanged; this is a render "
+                 "fixture for the re-score, and the structure is NOT in the tree geofence map, so a "
+                 "detection on it in a negative frame is an UNMAPPED false positive.")
+        skipped = d.get("world_variant_not_instantiated_for_groups") or []
+        if skipped:
+            L.append(f"- **Not instantiated for {len(skipped)} camera group(s)** whose commanded camera "
+                     f"position lies inside a box (the render would be the box's own inside): "
+                     + "; ".join(f"group {g['group']} at {g['cam_enu_cmd']} → stations "
+                                 f"{', '.join(g['stations'] or [])}" for g in skipped)
+                     + ". Those stations are scored in the committed world, exactly as on 2026-09-07, "
+                       "and the harness declared it per group.")
+        else:
+            L.append("- Instantiated for every camera group.")
+        L.append("")
     lb = a["labeller"]
     L.append("### The labeller, and the three things it cannot fake")
     L.append("")
@@ -1611,9 +1798,23 @@ def write_report(path: Path, art: dict) -> None:
              f"**{lb['max_stationfile_vs_recomputed_px']} px** ({lb['stationfile_worst']}) — the "
              f"predictions hold, but every label used here is the recompute.")
     L.append("")
-    L.append("## Adopted constants")
-    L.append("")
-    L.append("| constant | adopted | rule (pre-registered, DESIGN §3.2) |")
+    shipped = a.get("scored_constants_source") == "shipped"
+    if shipped:
+        L.append("## Scored constants — the SHIPPED module defaults (a re-score moves no constant)")
+        L.append("")
+        swa = a.get("sweep_would_adopt") or {}
+        L.append(f"The pre-registered sweep still ran on this render and is reported, not adopted: it "
+                 f"would choose K={swa.get('bg_window_px')} margin={swa.get('margin_m')} m "
+                 f"min_area={swa.get('min_area_px')} open_iter={swa.get('open_iter')} "
+                 f"max_boxes={swa.get('max_boxes')} link_break={swa.get('link_break')} — "
+                 f"**{'identical to' if a.get('sweep_agrees_with_shipped') else 'DIFFERENT from'} "
+                 f"the shipped constants** scored below.")
+        L.append("")
+    else:
+        L.append("## Adopted constants")
+        L.append("")
+    L.append(f"| constant | {'scored (shipped)' if shipped else 'adopted'} | rule (pre-registered, "
+             f"DESIGN §3.2) |")
     L.append("|---|---|---|")
     r = a["constants_sweep"]
     L.append(f"| `bg_window_px` (K) | **{c['bg_window_px']}** | smallest K in "
@@ -1853,16 +2054,25 @@ def write_report(path: Path, art: dict) -> None:
     L.append(f"- **cluttered acquisition: {aq['cluttered_acquisition_m']} m** — longest contiguous "
              f"prefix of the range ladder, worst background class per range, every FNR_zero "
              f"station matched. First failing range: {aq['first_failing_range_m']}.")
-    L.append(f"- **clutter-backed only to {aq['clutter_backed_max_range_m']} m** — "
+    sb = aq.get("structure_backed_fnr_zero_stations") or []
+    sb_list = ", ".join(f"{r['id']} {r['range_m']} m" for r in sb)
+    L.append(f"- **clutter-backed {'to' if sb else 'only to'} {aq['clutter_backed_max_range_m']} m** — "
              + ", ".join(f"{v} m ({k})"
                          for k, v in sorted(aq["clutter_backed_max_range_by_background"].items(),
                                             key=lambda kv: -kv[1]))
              + (f"; every rung from {aq['sky_backed_only_from_range_m']} m up is sky-backed. "
                 if aq["sky_backed_only_from_range_m"] is not None else ". ")
-             + "Geometrically forced in this world, not a sampling gap: an in-band bird at 46 m "
-               "and 6 m below the optical axis has its ground background at ~86 m, past the 60 m "
-               "Euclidean cull, so there is nothing behind it to BE clutter. The booked number "
-               "does not change; the claim's reach does.")
+             + ((f"Under the declared world variant {len(sb)} FNR_zero station(s) stand in front of "
+                 f"finite structure ({sb_list}); "
+                 f"ADR-020 am. 5's requirement — clutter tested at or beyond the "
+                 f"{aq['breakeven_5mps_m']} m breakeven — is "
+                 f"**{'MET' if aq.get('clutter_backed_at_or_beyond_breakeven_m') else 'NOT MET'}** "
+                 f"by this ladder. The booked number does not change.")
+                if sb else
+                "Geometrically forced in this world, not a sampling gap: an in-band bird at 46 m "
+                "and 6 m below the optical axis has its ground background at ~86 m, past the 60 m "
+                "Euclidean cull, so there is nothing behind it to BE clutter. The booked number "
+                "does not change; the claim's reach does."))
     L.append(f"- optical prefix (sky-backed arm, never booked): **{aq['optical_prefix_m']} m**.")
     L.append(f"- clamp = far_clip / `corner_ray_ratio` = 60.0 / {aq['corner_ray_ratio']} = "
              f"**{aq['clamp_bound_m']} m** on the group's live intrinsics.")
@@ -2024,8 +2234,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                           "DEFAULT_PARAMS_PROVENANCE in src/ names the artifact that chose the "
                           "constants, and without a fixed stamp that reference and the file can "
                           "never be made to agree in one pass."))
+    ap.add_argument("--world-variant", default=None,
+                    help=("a config/world_variants/<name>.json the RENDER carried (ADR-020 am. 5): the "
+                          "ray-cast adds its boxes so the background classes behind them are right, "
+                          "and the run STOPS if the dataset's groups.jsonl was rendered with a "
+                          "different variant, or with none"))
+    ap.add_argument("--score-shipped", action="store_true",
+                    help=("score the SHIPPED constants (depth_segment.DEFAULT_PARAMS) and only REPORT "
+                          "what the sweep would adopt -- the re-score mode: a re-score moves no "
+                          "constant, and the verdict word becomes SHIPPED CONSTANTS PASS / FAIL"))
     a = ap.parse_args(argv)
     ddir = Path(a.dataset)
+    set_world_variant(load_world_variant(Path(a.world_variant)) if a.world_variant else None)
+    if WORLD_VARIANT is not None:
+        print(f"      world variant: {WORLD_VARIANT.get('name')} ({len(WORLD_BOXES)} box(es), "
+              f"sha256 {WORLD_VARIANT['_sha256'][:16]}...)")
 
     print(f"[1/8] loading + labelling {ddir} ...")
     stations, dmeta = load_dataset(ddir)
@@ -2041,8 +2264,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     print(f"[2/8] constant sweep over {len(level)} level stations ...")
     sw = sweep(level, gmap, intr)
-    params = sw["adopted"]
-    print(f"      adopted: {params}")
+    sweep_adopted = sw["adopted"]
+    params = DEFAULT_PARAMS if a.score_shipped else sweep_adopted
+    print(f"      sweep would adopt: {sweep_adopted}")
+    if a.score_shipped:
+        print(f"      scoring the SHIPPED constants instead (re-score mode): {params}")
 
     print("[3/8] scoring at the adopted constants ...")
     rows, seg = run(level, params, gmap)
@@ -2103,7 +2329,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "range_error_p95": acc["pass"], "runtime": run_t["pass"],
             "determinism": det["pass"], "mutation_all_red": mut["all_three_red"]}
     all_pass = all(bars.values())
-    verdict = (f"{'ADOPT' if all_pass else 'DO NOT ADOPT'}: "
+    label = (("SHIPPED CONSTANTS PASS" if all_pass else "SHIPPED CONSTANTS FAIL") if a.score_shipped
+             else ("ADOPT" if all_pass else "DO NOT ADOPT"))
+    verdict = (f"{label}: "
                f"K={params.bg_window_px} margin={params.margin_m} m min_area={params.min_area_px} "
                f"open_iter={params.open_iter} max_boxes={params.max_boxes} -- FNR "
                f"{fnr['fnr']} over {fnr['denominator_detectable']} detectable stations, unmapped FP "
@@ -2129,6 +2357,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                       "max_boxes": params.max_boxes, "near_m": params.near_m,
                       "far_m": params.far_m, "link_break": params.link_break},
         "constants_sweep": sw["record"],
+        "scored_constants_source": ("shipped" if a.score_shipped else "sweep"),
+        "sweep_would_adopt": _params_dict(sweep_adopted),
+        "sweep_agrees_with_shipped": _params_dict(sweep_adopted) == _params_dict(DEFAULT_PARAMS),
         "constants_match_module_default": (
             {"bg_window_px": DEFAULT_PARAMS.bg_window_px, "margin_m": DEFAULT_PARAMS.margin_m,
              "min_area_px": DEFAULT_PARAMS.min_area_px, "open_iter": DEFAULT_PARAMS.open_iter,
@@ -2200,7 +2431,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "HOST TIMING. The runtime numbers are macOS; the container measured ~1.2x on comparable "
             "work and the number that settles it is the first flight's own counter.",
             "ONE WORLD. Eight camera poses in one orchard; foliage here is a smooth sphere, and "
-            "real foliage has self-depth structure with pits narrower than K.",
+            "real foliage has self-depth structure with pits narrower than K."
+            + ("" if WORLD_VARIANT is None else
+               " THIS RENDER ADDS ONE DECLARED STRUCTURE (ADR-020 am. 5): smooth box faces -- "
+               "finite clutter behind the in-band ladder with no self-depth structure of its own."),
         ],
         "verdict": verdict,
     }
