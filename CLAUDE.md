@@ -88,7 +88,7 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   clearance 1.340 m, 8 candidate rejections); **R3 shipped and has never fired live** (missed by
   15 mm). Birds have no `<collision>` geometry and are teleported, so the offline gate is the
   entire safety system. **Since 2026-11-11 there is also ONE booked clearance VALID under the flight-log gate — 9.6138 m
-  (7.99 m gated), head-on, forward depth camera, every depth bar measured, booking preconditions open (ADR-020 am. 8). Say
+  (7.99 m gated), head-on, forward depth camera, every depth bar measured; its am. 5 booking precondition measured and closed 2026-11-12 (ADR-021 am. 2), §0b unratified. Say
   both: three breaches on the nadir-era flights, one gate-VALID clearance on the forward camera; not a batch, not a product.**
 - **Forward depth camera (ADR-020/021): built, commissioned, scored 7/7 — and FLOWN AGAINST A BIRD since 2026-11-10** (the
   2026-09-11 wiring flight was no-target, INVALID on its 141.16 ms runtime max): over the 24 head-on encounters since (the pilot,
@@ -96,8 +96,9 @@ image, `/workspace/fieldguard`. Do NOT rename them; `/fg/*` is live-verified (AD
   2026-11-11 take 3: 18 depth frames (29 consumption events), frame-joined range error p95 0.1687 m over the 7 frames the truth
   places unambiguously, detect rate 99.64 %, runtime p95 10.701 / max 20.702 ms. D5/D6 at a 5.0 m/s CRUISE remain UNMEASURED
   (encounter windows run at ~2.9 m/s because the dodge brakes). Booked to 46.0 m at 5.0 m/s on parked renders — clutter robustness
-  demonstrated to 28 m (ADR-020 am. 5's mandatory qualifier), in-flight acquisition sits below 46.0, and **the am. 5 tall-obstacle
-  re-score that gates any depth-camera booking is still owed**.
+  demonstrated to 46 m against a smooth 18 m box face since the 2026-11-12 am. 5 re-score (ADR-021 am. 2; foliage with self-depth
+  structure untested), in-flight acquisition sits below 46.0, and **the am. 5 re-score that gates any depth-camera booking PASSED on
+  the shipped constants — all seven bars, nine FNR_zero stations structure-backed at 34–46 m**.
 - Real-detector contract = **ADR-009**: detections carry `stamp_s` (policy staleness gate); bird
   position from apparent-size ray, **never** ground-plane projection (fail-dangerous at altitude).
 - Coverage-ledger honesty = commanded setpoints are **never** recorded as flown (regression-pinned

@@ -189,7 +189,7 @@ If reopened, its first three steps:
 **B's terminal event is the pre-registered dodge take** (also the R4 re-fly, and the flight that
 finally measures delivery + pitch at the booked 5.0 m/s): `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`
 §1a for the depth-source shell, `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` for the bars.
-It **FLEW 2026-11-11** (three booked takes, ADR-020 am. 8) — **with the ADR-020 am. 5 tall-obstacle re-score (clutter at ≥ 33.6 m) still OWED**, so the booking's precondition is open and the owner must waive it or order the re-score; P2 (step-0 FLOWN 2026-09-11 and FAILED its own runtime-max bar; the ~~no-truth checker mode~~ is **DONE 2026-09-11, ADR-020 am. 7** (`--no-birds`, both halves: checker + `fly_pipeline.sh up`); still owed: the 141 ms stall investigation, the two executor log fields, then a step-0 re-fly), P3 (two
+It **FLEW 2026-11-11** (three booked takes, ADR-020 am. 8) — **the ADR-020 am. 5 tall-obstacle re-score was run on 2026-11-12 and PASSED (ADR-021 am. 2, clutter tested to 46 m), closing the booking's precondition after the fact**; P2 (step-0 FLOWN 2026-09-11 and FAILED its own runtime-max bar; the ~~no-truth checker mode~~ is **DONE 2026-09-11, ADR-020 am. 7** (`--no-birds`, both halves: checker + `fly_pipeline.sh up`); still owed: the 141 ms stall investigation, the two executor log fields, then a step-0 re-fly), P3 (two
 product-lead ratifications) and P4 (container state) are open. **If it breaches:** write the
 `<log-stem>.SAFETY_FINDING.md` marker and **do NOT add the pin** — acknowledgement takes both halves,
 the marker *and* the stem in `ACKNOWLEDGED_BREACH_STEMS`, a reviewed diff on the safety gate (§6a),
@@ -203,8 +203,8 @@ pinned list is meant to stay two long.
 - Scaling from 2-3 birds to a flock / higher obstacle density.
 - Second sensor as a supported operating mode: **the forward depth camera is BUILT (ADR-020/021)
   flew once with no target (2026-09-11) and against a bird 24 times since 2026-11-10; one booked take is committed VALID
-  under the flight-log gate (ADR-020 am. 8), with the booking's am. 5 precondition open** — promoting it out of stretch needs
-  the owner's two rulings and a booked batch, not more offline evidence.
+  under the flight-log gate (ADR-020 am. 8), its am. 5 precondition closed 2026-11-12 (ADR-021 am. 2)** — promoting it out of
+  stretch needs the owner's §0b ruling and a booked batch, not more offline evidence.
 - Live in-node NDVI stitching (offline is the v1 decision, ADR-010).
 
 ## Cut / deferred log
@@ -326,7 +326,7 @@ the way: the GUIDED command path works (3 m lateral in ≈2.2–2.5 s sim from h
 `eval/results/encounters/<UTC>/`, gitignored. The owner then chose the **head-on scenario** for the batch (a forward camera cannot see an astern overtake or a
 bird arriving mid U-turn; ADR-013 am. 21): one bird down the lane once, one northbound pass. Pilot at 5 m/s: acquired
 at 44.9 m, dodge 8.36 m, **gt_cpa_m 9.568 m** — the first scored encounter above the 3.00 m bar. **The 20-run batch: 20 of 20 cleared 3.00 m** (gt_cpa_m min 5.416, median 9.523, max 9.823 m; acquisition 39.8–45.2 m on nineteen, 32.2 m on the one that read 5.4 m; one takeover, one resume, 8.2–8.7 m of sidestep per run; `docs/encounters/BATCH_20261110T194048Z.md`). B's kill criterion did not fire. Unbooked experiments; the checker reads INVALID on every run for its range-error association bars and the missing booking.
-**2026-11-11 — booked, and VALID under the flight-log gate; the booking's own preconditions are open.** Three booked head-on
+**2026-11-11 — booked, and VALID under the flight-log gate; the booking's own preconditions were open (the am. 5 one closed 2026-11-12, below).** Three booked head-on
 takes on the 2026-09-07 artifact (5.0 m/s), one command each (`scripts/fly_pipeline.sh encounter --booking
 eval/results/booking_gate_20260907T064136Z.json --mission headon_lane15 --birds config/birds/headon_lane15.json
 --detection-source depth`), flight-time verdicts INVALID, INVALID, VALID (ADR-020 am. 8). Between them: the range-error bar
@@ -337,9 +337,18 @@ driver's sidecar declares them — a gate-rule change, not an artifact one. **Ta
 gt_cpa_m 9.6138 m (7.9898 m gated), acquired at 44.926 m, range error p95 0.1687 m over the 7 of 18 frames the truth places
 unambiguously, frustum 29/29, window speed 0.587× booked** — committed as `eval/results/live_flight_log_20261111T202709Z.json`
 (pinned truth + hashed booking), the fourth flight in the dashboard. A same-day QA round (27 findings) hardened the three changes
-and corrected this record's numbers. **OPEN for the owner:** ADR-020 am. 5's tall-obstacle re-score was not run before booking,
-and §0b's status as a precondition (P3 item 1) is unratified — so "evidence-gated" holds for the flight-log gate only. One
-take, third attempt, rules changed between attempts. Full record: `docs/encounters/BOOKED_20261111.md`.
-**Next:** the owner's two rulings (waive or run the am. 5 re-score; §0b precondition or report) and the sensor-coverage question
+and corrected this record's numbers. **OPEN for the owner at the time:** ADR-020 am. 5's tall-obstacle re-score was not run before booking (**run and PASSED
+2026-11-12, ADR-021 am. 2 — next paragraph**), and §0b's status as a precondition (P3 item 1) is unratified — so "evidence-gated"
+holds for the flight-log gate and, since 2026-11-12, for the segmenter's clutter claim. One take, third attempt, rules changed
+between attempts. Full record: `docs/encounters/BOOKED_20261111.md`.
+**2026-11-12 — the am. 5 re-score: ordered, pre-registered, SHIPPED CONSTANTS PASS (ADR-021 am. 2).** The owner chose to run it
+rather than waive it. One declared world variant (`config/world_variants/tall_structure_am5.json`: an 18 m box whose face stands
+58.0 m north of the two cruise-altitude camera poses) is added to the render harness's per-group world copies and ray-cast by the
+scorer; one rule, computed on both sides and compared, leaves it out for the single camera pose that lies inside it. Same 85
+stations, same seven bars, the SHIPPED constants: **all PASS — FNR 0/49, unmapped FP 0.0/frame over 8, range error p95 0.1076 m
+over 63, runtime p95 5.767 / max 9.532 ms; 29 FNR_zero stations structure-backed, nine of them at 34–46 m** (predicted 30; S021
+reads ground_band_edge). The segmenter stays frozen; the 46.0 m qualifier now reads "clutter-backed to 46 m against a smooth box
+face — foliage with self-depth structure untested". `eval/results/depth_dataset_20261112_tall/`.
+**Next:** the owner's §0b ruling (precondition or report) and the sensor-coverage question
 (a second aperture, or an encounter definition that excludes astern geometry); then a booked BATCH (≥ 20) under the same gate,
 and the ADR-022 option-B call on that evidence.

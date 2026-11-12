@@ -4795,3 +4795,16 @@ reported not gated), 0.0780 m at CPA−3.9 s; frustum 29/29; window 0.587× book
 Committed + pinned (`TRUTH_BINDINGS`, hashed `BOOKING_BINDINGS`); QA's 27 findings closed or recorded. OPEN for the owner: am. 5's
 tall-obstacle re-score was NOT run; §0b/P3 item 1 is unratified; bar 4 shares the un-projection's pose source; a wrong same-scenario
 track passes the declaration. One take, in sim, third attempt with rules changed between attempts. `docs/encounters/BOOKED_20261111.md`.
+
+### ADR-021 amendment 2 (2026-11-12, THE am. 5 TALL-OBSTACLE RE-SCORE — ordered by the owner, pre-registered, SHIPPED CONSTANTS PASS): clutter is now tested to 46 m, and the 2026-11-11 booking's open precondition closes
+
+The owner chose "Run the re-score" over a waiver. Pre-registered first (prereg runbook, P5 RE-SCORE section): the SAME 85 stations and
+harness, ONE declared world variant (`config/world_variants/tall_structure_am5.json`, an 18 m box whose face stands 58.0 m north of the
+y=0 camera poses; not instantiated for the one pose inside it, (15,60,15), by a rule both harness and scorer compute and compare), the
+SHIPPED constants, the same seven bars. Result (`eval/results/depth_dataset_20261112_tall/depth_segmenter_score_20261112T190828Z.json`):
+ALL SEVEN PASS — FNR 0/49, merge 0, unmapped FP 0.0/frame over 8 (mapped 14.375/frame, 115 tree-geofence, identical to 2026-09-07: the
+structure added no detection), range error p95 0.1076 / max 0.1362 m over 63 (identical: the bird's own pixels did not change), runtime
+p95 5.767 / max 9.532 ms (n 425), determinism 0/79, mutation red; the sweep would adopt the identical constants. 29 FNR_zero stations are
+structure-backed (predicted 30; S021 reads ground_band_edge at 52.5 m), nine at or beyond 33.591 m, farthest 46.0 m at a 57.85 m face.
+CONSEQUENCES: am. 5's precondition is CLOSED and the 2026-11-11 booking's open item (am. 8) closes with it; the 46.0 m qualifier now
+reads "clutter-backed to 46 m against a smooth box face — foliage with self-depth structure untested"; §0b/P3 item 1 stays unratified.

@@ -116,7 +116,8 @@ otherwise, this section wins (ADR-022).
   no live achieved-displacement gate.
 - **The depth sensor has flown against a bird since 2026-11-10** (see Architecture §2): 24 head-on encounters, one booked
   take committed VALID under the flight-log gate (ADR-020 am. 8; in-flight range error p95 0.17 m on unambiguous frames). Every
-  SCORED segmenter number still comes from parked, noiseless renders, and the booking's am. 5 re-score is still owed.
+  SCORED segmenter number still comes from parked, noiseless renders; the booking's am. 5 re-score was run on 2026-11-12 and PASSED
+  (ADR-021 am. 2: clutter tested to 46 m against a declared 18 m structure, shipped constants, all seven bars).
 - **Three live avoidance flights, three breaches** (see Priorities): two ACKNOWLEDGED exit 0, one
   **INVALID exit 1**, and the INVALID one stands.
 

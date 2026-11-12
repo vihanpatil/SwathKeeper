@@ -535,3 +535,25 @@ now so that nothing in it can be fitted to the numbers afterwards.
    dir (so `eval/results/` keeps exactly one adopted artifact), `REPORT.md`, `CAPTURE_LOG.txt`, `groups.jsonl`, `stations_rendered.json`,
    six fixtures. Not measured by this round, as before: static vehicle, noiseless sensor, level attitude (one pitched arm), one target
    per frame, one target radius; the structure is a smooth box face with no self-depth structure of its own.
+
+## OUTCOME (P5 RE-SCORE, 2026-11-12 19:08Z — ADR-021 amendment 2)
+
+* **Render:** 85/85 frames, 82 distinct sha1, harness rc 3 (S059/S060/S061 repeat their negative control, as pre-registered), group 4
+  at (15, 60, 15) NOT instantiated and declared so; every readback within tolerance. `eval/results/depth_dataset_20261112_tall/`
+  (`CAPTURE_LOG.txt`, `groups.jsonl`, `stations_rendered.json`, six fixtures and the artifact are committed; the 85 frames are not).
+* **Score (shipped constants):** `depth_segmenter_score_20261112T190828Z.json` — **SHIPPED CONSTANTS PASS, all seven bars**: FNR 0 of 49
+  detectable (condition vacuous, 0 excluded); merge mislabels 0; unmapped FP 0.0/frame over 8 (mapped 14.375/frame, all 115 inside a tree
+  geofence — identical to 2026-09-07, so the structure produced no detection, mapped or unmapped); range error p95 0.1076 m, max 0.1362 m
+  over 63 matches (identical to 2026-09-07 — the bird's own pixels are unchanged; the background changed, the foreground did not); runtime
+  p95 5.767 / max 9.532 ms over n = 425; determinism 0 of 79; mutation red on both terms and the pair. The sweep would adopt the identical
+  constants. Labeller: 0.4415 px (S052), ray-cast vs render 0.0344 m (S039, a canopy — the box faces are exact), round-trip 0.0 m.
+* **Against the predictions:** 29 FNR_zero stations structure-backed, not 30 — S021 (14 m, bird 6 m below the axis from the y = 5 pose)
+  reads `ground_band_edge` at 52.5 m: its footprint straddles the ground just in front of the face. The nine at or beyond 33.591 m are
+  exactly the nine predicted (S044 34 m; S005/S013 38; S019 40; S006/S014 44; S007/S015/S020 46 m), background depth 57.85 m (the face at
+  58.0 m less the 0.15 m camera-link offset), stand-off 11.85 m at 46 m and 7.85 m at the 50 m diagnostics. Clutter-backed reach by
+  class: structure 46 m, structure_edge 30, canopy 28, ground_band 20 (22 on 2026-09-07: S035 flipped to structure), ground_band_edge
+  14; no rung is sky-only. FNR denominator 49, as predicted. Pitched arm 5/5. Group 4's three stations matched in the committed world.
+* **Disposition, as pre-registered:** ALL PASS and reach ≥ 33.591 m → the am. 5 precondition is **CLOSED** (ADR-021 am. 2) and the
+  2026-11-11 booking's open precondition closes with it. No constant moved. Still open: §0b / P3 item 1 (unratified), bar 4's shared pose
+  source, the same-scenario track gap. Not measured here: static vehicle, noiseless sensor, level attitude (one pitched arm), one target per
+  frame, one radius; the structure is a smooth box face with no self-depth structure of its own.

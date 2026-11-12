@@ -578,5 +578,171 @@ class TestTheDeclaredWorldVariant(unittest.TestCase):
                 sds.load_world_variant(bad)
 
 
+RESCORE_DATASET = RESULTS_DIR / "depth_dataset_20261112_tall"
+RESCORE_VARIANT = REPO_ROOT / "config" / "world_variants" / "tall_structure_am5.json"
+# ADR-021 am. 2: the nine FNR_zero stations the pre-registration said would stand in front of the structure
+# at or beyond the 33.591 m breakeven, with their ranges. The artifact must carry every one of them.
+PREREGISTERED_FAR_STRUCTURE_BACKED = {"S044": 34.0, "S005": 38.0, "S013": 38.0, "S019": 40.0, "S006": 44.0,
+                                      "S014": 44.0, "S007": 46.0, "S015": 46.0, "S020": 46.0}
+
+
+def rescore_artifact() -> dict:
+    found = sorted(RESCORE_DATASET.glob("depth_segmenter_score_*.json"))
+    if len(found) != 1:
+        raise AssertionError(f"expected exactly ONE re-score artifact inside {RESCORE_DATASET}, found "
+                             f"{[f.name for f in found]} -- the am. 5 re-score (ADR-021 am. 2) is evidence")
+    return json.loads(found[0].read_text())
+
+
+class TestTheAmendment5ReScoreArtifact(unittest.TestCase):
+    """The ADR-020 am. 5 tall-obstacle re-score (2026-11-12, ADR-021 am. 2): the SHIPPED segmenter scored on
+    the same 85 stations rendered under the declared world variant. It is the evidence that the 2026-11-11
+    booking's precondition is closed, so it is read here the way the adopted artifact is read above: the
+    variant the render carried is the committed file byte for byte, the one excluded camera pose is the one
+    declared, every bar passes on the shipped constants with the same denominators, the nine pre-registered
+    far stations are structure-backed and matched, the booked number did not move, the six fixtures
+    reproduce their rows today, and the decision log quotes this artifact and not another."""
+
+    def setUp(self):
+        self.a = rescore_artifact()
+        self.rows = {r["id"]: r for r in self.a["stations"]}
+
+    @staticmethod
+    def _fixture(sid):
+        z = np.load(RESCORE_DATASET / "fixtures" / f"{sid}.npz", allow_pickle=False)
+        return z["depth"], json.loads(str(z["meta"]))
+
+    def test_it_scores_the_shipped_constants_and_lives_inside_its_dataset_dir(self):
+        self.assertEqual(self.a["scored_constants_source"], "shipped")
+        self.assertEqual(self.a["constants"], ADOPTED_CONSTANTS, "a re-score moves no constant")
+        self.assertIs(self.a["constants_match_module_default"], True)
+        self.assertIs(self.a["sweep_agrees_with_shipped"], True)
+        self.assertEqual(self.a["sweep_would_adopt"], ADOPTED_CONSTANTS)
+        self.assertTrue(self.a["verdict"].startswith("SHIPPED CONSTANTS PASS"), self.a["verdict"][:80])
+        # eval/results/ still holds exactly one ADOPTED artifact -- this one sits inside its dataset dir
+        self.assertEqual(sorted(p.name for p in RESULTS_DIR.glob(GLOB)), [ADOPTED])
+        d = self.a["dataset"]
+        self.assertTrue(d["dataset_dir"].endswith("depth_dataset_20261112_tall"), d["dataset_dir"])
+        self.assertEqual(d["n_frames"], 85)
+        self.assertEqual(d["n_distinct_frame_sha1"], 82, "the three occlusion repeats, as on 2026-09-07")
+        self.assertEqual(d["stations_file_sha256"], self.a["dataset"]["stations_file_sha256"])
+
+    def test_the_variant_the_render_carried_is_the_committed_file_byte_for_byte(self):
+        import hashlib
+        wv = self.a["dataset"]["world_variant"]
+        self.assertEqual(wv["file"], "config/world_variants/tall_structure_am5.json")
+        self.assertEqual(wv["sha256"], hashlib.sha256(RESCORE_VARIANT.read_bytes()).hexdigest(),
+                         "the render was declared under different bytes than the committed variant file")
+        committed = json.loads(RESCORE_VARIANT.read_text())
+        self.assertEqual(len(wv["boxes"]), 1)
+        self.assertEqual(wv["boxes"][0]["centre_m"], committed["boxes"][0]["centre_m"])
+        self.assertEqual(wv["boxes"][0]["size_m"], committed["boxes"][0]["size_m"])
+        self.assertGreaterEqual(wv["boxes"][0]["size_m"][2], 12.0, "am. 5: structure >= ~12 m")
+        skipped = self.a["dataset"]["world_variant_not_instantiated_for_groups"]
+        self.assertEqual(len(skipped), 1, skipped)
+        self.assertEqual(skipped[0]["cam_enu_cmd"], [15.0, 60.0, 15.0])
+        self.assertEqual(sorted(skipped[0]["stations"]), ["S045", "S046", "S047", "S064"])
+        self.assertEqual([tuple(e["cam_enu"]) for e in committed["camera_poses_not_instantiated"]],
+                         [(15.0, 60.0, 15.0)])
+        # the committed groups.jsonl is the per-group declaration itself
+        groups = [json.loads(l) for l in (RESCORE_DATASET / "groups.jsonl").read_text().splitlines() if l.strip()]
+        self.assertEqual(len(groups), 9)
+        self.assertEqual({g["world_variant"]["sha256"] for g in groups}, {wv["sha256"]})
+        self.assertEqual([g["group"] for g in groups if g["world_variant"]["instantiated"] is False], [4])
+        self.assertEqual(groups[3]["cam_enu_cmd"], [15.0, 60.0, 15.0])
+
+    def test_every_bar_passes_on_the_shipped_constants_with_the_same_denominators(self):
+        self.assertTrue(self.a["all_bars_pass"], [k for k, v in self.a["bars"].items() if not v])
+        self.assertEqual(sorted(self.a["bars"]), ["determinism", "fnr_zero", "merge_zero", "mutation_all_red",
+                                                  "range_error_p95", "runtime", "unmapped_fp"])
+        m = self.a["metrics"]
+        fnr = m["fnr"]
+        self.assertEqual((fnr["denominator_all_FNR_zero_stations"], fnr["denominator_detectable"]), (49, 49))
+        self.assertEqual(fnr["misses"], [])
+        self.assertEqual(fnr["excluded_by_condition"], [], "no station became sub-margin by the placement")
+        self.assertEqual(sum(c["n"] for c in fnr["per_background_x_range"].values()), 49)
+        structure_cells = {k: v for k, v in fnr["per_background_x_range"].items() if k.startswith("structure")}
+        self.assertTrue(any(k.endswith("30-40m") for k in structure_cells) and
+                        any(k.endswith("40-50m") for k in structure_cells), sorted(structure_cells))
+        fp = m["false_positives"]
+        self.assertEqual((fp["denominator_frames"], fp["unmapped_fp_total"]), (8, 0))
+        self.assertEqual(fp["mapped_fp_total"], fp["mapped_by_tree_geofence"],
+                         "a detection ON the structure would be unmapped -- there were none, mapped or not")
+        self.assertEqual(fp["mapped_by_ground_or_below_geofence_top"], 0)
+        self.assertEqual(m["merge"]["count"], 0)
+        self.assertLessEqual(m["accuracy"]["range_error_p95_m"], 0.5)
+        self.assertGreaterEqual(m["accuracy"]["denominator_matches"], 60)
+        self.assertLessEqual(m["runtime"]["seg_wall_ms_p95"], 25.0)
+        self.assertLessEqual(m["runtime"]["seg_wall_ms_max"], 100.0)
+        self.assertGreaterEqual(m["runtime"]["n"], 5 * 85)
+        self.assertEqual(m["determinism"]["mismatched"], [])
+        self.assertEqual(m["determinism"]["denominator_stations"], 79)
+        self.assertIs(self.a["mutation"]["all_three_red"], True)
+        self.assertEqual(self.a["pitched"]["misses"], [])
+
+    def test_clutter_is_measured_at_or_beyond_the_breakeven_and_the_booked_number_does_not_move(self):
+        aq = self.a["acquisition"]
+        self.assertEqual(aq["clutter_backed_max_range_m"], 46.0)
+        self.assertEqual(aq["clutter_backed_max_range_by_background"]["structure"], 46.0)
+        self.assertIs(aq["clutter_backed_at_or_beyond_breakeven_m"], True)
+        self.assertGreaterEqual(aq["clutter_backed_max_range_m"], aq["breakeven_5mps_m"])
+        self.assertIsNone(aq["sky_backed_only_from_range_m"], "no rung of the ladder is sky-only any more")
+        self.assertEqual(aq["booked_m"], 46.0, "a re-score can only LOWER the booked number; it did not")
+        self.assertIs(aq["bookable_at_5mps"], True)
+        self.assertIn("MET by this ladder", aq["verdict"])
+        backed = {r["id"]: r["range_m"] for r in aq["structure_backed_fnr_zero_stations"]}
+        self.assertGreaterEqual(len(backed), 25, "the two +N ladders and the B rows")
+        for sid, rng in PREREGISTERED_FAR_STRUCTURE_BACKED.items():
+            self.assertEqual(backed.get(sid), rng, f"{sid} was pre-registered structure-backed at {rng} m")
+            row = self.rows[sid]
+            self.assertTrue(str(row["background"]).startswith("structure"), (sid, row["background"]))
+            self.assertIs(row["matched"], True, sid)
+            self.assertAlmostEqual(row["background_depth_m"], 57.85, delta=0.3,
+                                   msg=f"{sid}: the face at 58.0 m less the 0.15 m camera-link offset")
+        for row in aq["ladder"]:
+            if row["range_m"] >= 34.0:
+                self.assertTrue(row["all_matched"], row)
+                self.assertTrue(any(b.startswith("structure") for b in row["backgrounds"]), row)
+
+    def test_the_six_fixtures_reproduce_their_rows_under_the_variant(self):
+        import hashlib
+        recorded = {f["station_id"]: f for f in self.a["fixtures"]}
+        self.assertEqual(sorted(recorded), sorted(sds.FIXTURE_STATIONS))
+        for sid in sds.FIXTURE_STATIONS:
+            frame, meta = self._fixture(sid)
+            self.assertEqual(hashlib.sha1(frame.tobytes()).hexdigest(), meta["frame_sha1"], sid)
+            self.assertEqual(meta["world_variant"]["sha256"], self.a["dataset"]["world_variant"]["sha256"], sid)
+            self.assertLess(recorded[sid]["size_kb"], 500.0, sid)
+            row = self.rows[sid]
+            got = DepthSegmenter(DEFAULT_PARAMS)(frame)
+            self.assertEqual(len(got), row["n_boxes"], f"{sid} box count")
+            if row["expected_px"] is None:
+                self.assertIsNone(row["matched_depth_m"], sid)
+                continue
+            eu, ev = row["expected_px"]
+            hit = [(b, d) for b, d in got
+                   if math.hypot(0.5 * (b[0] + b[2]) - eu, 0.5 * (b[1] + b[3]) - ev) <= sds.TAU_PX
+                   and abs(d - row["expected_depth_m"]) <= sds.EPS_M]
+            self.assertEqual(bool(hit), row["matched"], f"{sid} match")
+            if row["matched"]:
+                self.assertAlmostEqual(min(d for _, d in hit), row["matched_depth_m"], places=3, msg=sid)
+        # the far end of the FNR bar is now structure-backed, and the fixture says so on its face
+        self.assertEqual(self._fixture("S015")[1]["background"], "structure")
+        self.assertIn("tall_structure_am5", recorded["S015"]["why"])
+
+    def test_the_decision_log_and_the_pre_registration_quote_this_artifact(self):
+        name = self.a["artifact"]
+        decisions = (REPO_ROOT / "docs" / "DECISIONS.md").read_text()
+        self.assertIn("### ADR-021 amendment 2", decisions)
+        am2 = decisions[decisions.index("### ADR-021 amendment 2"):]
+        for quoted in (name, "0.1076", "5.767", "9.532", "SHIPPED CONSTANTS PASS", "33.591"):
+            self.assertIn(quoted, am2, quoted)
+        prereg = (REPO_ROOT / "docs" / "runbooks" / "DODGE_TAKE_PREREGISTRATION_20260907.md").read_text()
+        self.assertIn("## P5 RE-SCORE (ADR-020 am. 5)", prereg, "pre-registered before the render")
+        self.assertIn("## OUTCOME (P5 RE-SCORE", prereg)
+        self.assertIn(name, prereg[prereg.index("## OUTCOME (P5 RE-SCORE"):])
+        self.assertLess(prereg.index("## P5 RE-SCORE (ADR-020 am. 5)"), prereg.index("## OUTCOME (P5 RE-SCORE"))
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
