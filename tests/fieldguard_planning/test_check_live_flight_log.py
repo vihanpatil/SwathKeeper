@@ -528,8 +528,11 @@ class TestAcknowledgementMarkersOnRealEvidence(unittest.TestCase):
         A committed schema-2 real-detector log whose CPA cannot be measured is evidence of nothing
         -- bind it in TRUTH_BINDINGS or do not commit it."""
         for p, log, _status, messages in self._committed():
-            if (log.get("run") or {}).get("detector", {}).get("source") != checker.DET_NDVI_BLOB:
-                continue                       # demo/none/legacy logs have no ground-truth join
+            # Both REAL detectors: the nadir NDVI blob and, since the first committed depth take
+            # (2026-11-11), the forward depth blob. Demo/none/legacy logs have no ground-truth join.
+            if ((log.get("run") or {}).get("detector", {}).get("source")
+                    not in (checker.DET_NDVI_BLOB, checker.DET_DEPTH_BLOB)):
+                continue
             with self.subTest(log=p.name):
                 blob = " ".join(messages)
                 for cannot_tell in ("AMBIGUOUS TAKE", "ambiguous truth track", "no truth track"):

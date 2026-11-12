@@ -20,6 +20,7 @@ Run (stdlib + fieldguard_planning only, no numpy/ROS 2):
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -42,7 +43,6 @@ CELL_M = 2.5
 LANES_X = [15.0, 30.0, 45.0, 60.0]   # boustrophedon lanes over the field (covers each scenario bird)
 Y_LO, Y_HI = 2.0, 58.0
 STEP_M = 2.0
-HEADING_N = 1.5708     # facing +N (radians), ENU
 
 # Bird threat positions = the in-altitude-band (z=15) waypoint from each scenario yaml (kept in sync
 # with eval/scenarios/<name>.yaml). Static-at-threat is a fair reduction: the property under test is
@@ -67,6 +67,20 @@ def nominal_path():
     return pts
 
 
+def leg_courses(path):
+    """The heading handed to the executor at each scripted vertex: the COURSE of the leg it starts
+    (ENU atan2(dn, de): 0 = +E, CCW positive); the last vertex keeps the previous leg's course.
+
+    Why course and not a yaw: these fixtures are open-loop geometry with no vehicle and so no
+    attitude at all (README section "These fixtures are OPEN-LOOP"). The executor records this value
+    per vertex as `flown_heading_rad`, which the flight-log gate reads, so it must be the honest
+    open-loop value. The constant +N heading it replaced (until 2026-11-11) recorded a yaw 180 deg
+    off the path on every southbound leg."""
+    courses = [math.atan2(n1 - n0, e1 - e0)
+               for (e0, n0, _), (e1, n1, _) in zip(path, path[1:])]
+    return courses + courses[-1:]
+
+
 def run(name: str, cfg: dict) -> dict:
     geo = GeofenceMap.from_file()
     poly = load_field_polygon()
@@ -76,9 +90,10 @@ def run(name: str, cfg: dict) -> dict:
     ex = AvoidanceExecutor(geo, cells, sink, swath_half_width_m=SWATH_HALF_M, alt_bounds=(2.0, 30.0))
     birds = cfg["birds"]
 
-    for fid, (x, y, wp) in enumerate(nominal_path()):
+    path = nominal_path()
+    for fid, ((x, y, wp), course) in enumerate(zip(path, leg_courses(path))):
         sink.current_wp_index = wp                 # the mission tracker (AUTO) owns this
-        drone = DroneState((x, y, CRUISE_M), heading_rad=HEADING_N, current_wp_index=wp)
+        drone = DroneState((x, y, CRUISE_M), heading_rad=course, current_wp_index=wp)
         dets = [Detection(pos, frame_id=fid, track_id=bid) for bid, pos in birds]
         ex.step(drone, policy.decide_multi(dets, drone, geo))
 

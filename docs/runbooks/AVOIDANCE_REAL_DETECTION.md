@@ -79,6 +79,12 @@ both are ~1 s and neither needs Docker (`config/birds/farm_world_birds.json` nam
 must be re-run after ANY edit to that file, `config/missions/boustrophedon.waypoints`,
 `config/field_polygon.json` or `config/ndvi_camera.json`):
 
+> **Ruled 2026-11-12 (owner, ADR-020 am. 9): for a DEPTH-SOURCE take this gate is REPORTED, not an abort** — run it at the booked
+> speed on the take's own mission and bird config and record the number with the take; the forward booking gate (§0f) is the
+> authorising one. For an NDVI-source take the abort rule below stands unchanged. The committed 2026-11-11 take reports: FAIL,
+> exit 1 — bird_0 median 2 frames in view (min 0, max 3) over 38 driver-start phases at 5.0 m/s on `headon_lane15`, while the
+> forward camera acquired the same bird at 44.9 m.
+
 **Run it at the speed you BOOK in §0g, never at a literal.** The speed is an input to this gate's
 answer, the answer is not monotone in it, and a number left over from a previous take is a verdict
 about a flight nobody is flying. Take it out of the booking artifact:
@@ -231,6 +237,11 @@ permission to fly past it. *(Withdrawn 2026-09-10, audit finding R10: this parag
 "now governs the NDVI map rather than the dodge" — one file softening an abort rule that nothing
 enforces mechanically.)*
 
+**RULED 2026-11-12 (owner; ADR-020 am. 9, closing am. 1 open item 4 / P3 item 1): for a depth-source take §0b is REPORTED, not a
+precondition, and §0f is the authorising gate.** The abort rule above still governs NDVI-source takes word for word; this is a ruling
+written in the decision log, not a runbook softening — the R10 finding stands. Reported for the committed 2026-11-11 take, after the
+fact: FAIL, exit 1 (bird_0 median 2 frames in view over 38 phases at 5.0 m/s on its own mission).
+
 ---
 
 ### 0g. Book the speed **into the flight** — MANDATORY for a dodge take
@@ -248,6 +259,20 @@ scripts/fly_pipeline.sh --booking eval/results/booking_gate_20260907T064136Z.jso
 
 *(`--booking` is the **launcher's** flag; the six-intrinsic flags in §0f belong to
 `predict_forward_lead.py`. Env `SWATHKEEPER_BOOKING` does the same; the flag wins.)*
+
+**A SCRIPTED take books end to end with the same flag on the encounter runner** (2026-11-11, ADR-020 am. 8):
+
+```bash
+scripts/fly_pipeline.sh encounter --booking eval/results/booking_gate_20260907T064136Z.json \
+        --mission headon_lane15 --birds config/birds/headon_lane15.json --detection-source depth
+```
+
+Bringup, the avoidance node armed after takeoff, the flight, evidence-first teardown, and the score — with `--booking` passed
+through to `check_live_flight_log.py` and the run's log, bird track and sidecars moved into `eval/results/encounters/<UTC>/`.
+The three 2026-11-11 takes were flown exactly so; the third is the committed take, VALID under the flight-log gate. The
+am. 5 tall-obstacle re-score this page's §0f/§0b chain requires was run AFTER it, on 2026-11-12, and PASSED (ADR-021 am. 2);
+§0b was ruled REPORTED for depth-source takes the same day (ADR-020 am. 9) and reports FAIL, exit 1 for that take's mission at
+5.0 m/s — bird_0 median 2 frames in the nadir frame, against a forward-camera acquisition at 44.9 m.
 
 That artifact books **5.0 m/s → `param set WP_SPD 5.0`**. The parameter is `WP_SPD`, **in m/s**,
 not `WPNAV_SPEED` in cm/s: at ADR-004's pinned ArduPilot SHA, ArduCopter registers AC_WPNav under

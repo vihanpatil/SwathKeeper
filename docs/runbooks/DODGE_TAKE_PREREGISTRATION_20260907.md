@@ -227,6 +227,8 @@ avoidance take (:1823), so the booking half works and the safety half does not.
    REPORTED** (it governs the NDVI map, not the dodge) and the **forward booking gate becomes
    AUTHORISING**. Until ratified, §0b's ABORT RULE stands as written — see §4, which is why this
    take **cannot be flown under the runbook today**.
+   **RULED 2026-11-12 by the owner (ADR-020 am. 9): REPORTED — §0b governs the NDVI map; §0f authorises a depth-source dodge take.
+   Reported for the committed take: FAIL, exit 1, bird_0 median 2 frames (`docs/encounters/booked_20261111/take3_visibility_0b_headon_5p0_20261112.txt`).**
 2. **ADR-020 am. 3 open item (a).** An avoidance take with no booking is still VALID with a loud
    warning. Safety direction: a detector-source log written **after 2026-09-07** with no booking
    should be **INVALID-for-authorisation**. Meanwhile this pre-registration names the booking
@@ -349,6 +351,10 @@ paragraph; get the ratification, or fly and accept that the take is unauthorised
 procedure. §0b remains a real gate for the NDVI map half regardless — and on a depth take the NDVI
 detector is DISARMED, so there is no map-detection half to salvage.
 
+> **RULED 2026-11-12 (ADR-020 am. 9): P3 item 1 → REPORTED.** The conflict above is closed in favour of the recommendation; the
+> 2026-11-11 take, flown before the ruling, is authorised by its own procedure after the fact, and this paragraph stays as the record
+> that it was not at flight time.
+
 **Two source conflicts a reader should know before booking.** (i) §0f's second clause reproduces
 *"and the depth segmenter does not exist yet"* — true when written on 2026-09-07 06:41Z, **false
 now**: the segmenter is built and scored. The other five conjuncts of "best-case scene" (no clutter,
@@ -423,3 +429,189 @@ denominator (this counter, not the host bench, settles the container question).
 **new, dated `## OUTCOME (<UTC>)` section appended at the end**, naming the log, the truth track,
 the booking, and the class from §3 the result fell into. A pre-registration that is edited after
 the result is not a pre-registration; it is a narrative.
+
+## OUTCOME (2026-11-11T20:00:57Z → 20:03:35Z) — booked take 1 of 3
+
+*Appended 2026-11-11T21:24Z by qa-safety-reviewer, after all three takes flew. It is late: no section was written at flight time (QA finding). Numbers come from `docs/encounters/booked_20261111/take1_live_flight_log_20261111T200326Z.checker.txt`, the checker as deployed AT FLIGHT TIME.*
+* **Log:** `eval/results/encounters/20261111T200057Z/live_flight_log_20261111T200326Z.json` (main checkout; gitignored, NOT committed; sha256 `c0e91e1a5eda82c19df493478f31c3204ad86b2189f0fecc0366f22aafa17550`).
+  **Truth:** `eval/results/encounters/20261111T200057Z/bird_drive_20261111T200152Z_applied.jsonl` (gitignored; sha256 `b98c314dafe385655b9bee33bd5cb93a29c8e209a2825ebac5ae77c283017464`).
+  **Booking:** `eval/results/booking_gate_20260907T064136Z.json`, 5.0 m/s, `param set WP_SPD 5.0` in the sent recipe. Mission `headon_lane15`, birds `config/birds/headon_lane15.json`, `--detection-source depth`.
+* **§3 class: INVALID.** §6 step 1 (THE gate) printed `INVALID`, exit 1, and gave TWO refusals:
+  (a) bar 4, `DETECTION BEHIND THE CAMERA` on 14 detections (ticks 19–32), with 12 of 26 checked. The forward axis was COURSE over ground because the log carried no orientation.
+  (b) bird_1/bird_2 were refused because they had no landed `set_pose` call (bird_0=191, bird_1=0, bird_2=0).
+  Neither reason appears word for word in §3's INVALID list. Bar 4 is a P1 bar written after §3, and (b) is closest to AMBIGUOUS "partial truth coverage". Both classes re-fly, and the gate's word was INVALID.
+* **Gated numbers:** gt_cpa_m **9.5285 m** to bird_0 (tick 63; vertical sep 3.8400 m, 3D 10.2731 m). gt_cpa_gated_m **8.3447 m** after a 1.1837 m freeze debit.
+  First detection **42.633 m** at tick 3 (bar 33.591). Range error p95 **0.2051 m** over 26/26 frame-joined, **0.0771 m** at CPA (bar 0.5).
+  Frustum: **12 of 26** inside, plus the 14 refusals above. Encounter-window median **3.374 m/s = 0.675×** booked. Whole flight median 0.557, max 6.217 = 1.243× (not gated).
+  Detect rate 96.86 % of 287. Wall p95 10.326 / max 14.528 ms, n = 287. Frame-shape drops 0 of 287; `no_pose_pair` drops 9.
+  Reported, NOT gated: the bird was inside the threat cylinder on 40 ticks and the loop engaged on 0 of them.
+* **What decided it:** the two refusals. Every value bar the checker printed cleared, and the INVALID still stands.
+* **Booking:** booked on the 2026-09-07 artifact. The am. 5 tall-obstacle re-score is still owed, so the booking's precondition is open. §4's §0b conflict (P3 item 1) is still unratified in `docs/DECISIONS.md`, so by §4 this take is unauthorised by its own procedure. 46.0 m is not quoted.
+* **Gate changes:** one was already in force before this take (ADR-020 am. 8 (1), after the 2026-11-10 batch): the executor writes `stamp_s` and bar 3b joins truth at the frame instant (26/26 here).
+  Made before take 2 (am. 8 (2)): the executor writes `flown_heading_rad`, and bars 4/5 read the logged yaw instead of course. That is an artifact field plus a gate-rule change.
+
+## OUTCOME (2026-11-11T20:12:57Z → 20:15:38Z) — booked take 2 of 3
+
+*Appended 2026-11-11T21:24Z, late, as above. Source: `docs/encounters/booked_20261111/take2_live_flight_log_20261111T201530Z.checker.txt` (flight-time checker).*
+* **Log:** `eval/results/encounters/20261111T201257Z/live_flight_log_20261111T201530Z.json` (gitignored, NOT committed; sha256 `876e56a53fb83f158d7475add18a9f3fd2a926632f0a93b28943750d4a2c6303`).
+  **Truth:** `eval/results/encounters/20261111T201257Z/bird_drive_20261111T201354Z_applied.jsonl` (gitignored; sha256 `1e835d6034854723559f77475f63e17249eebbd44f1a2695cfa866f077f6dc77`).
+  **Booking:** `eval/results/booking_gate_20260907T064136Z.json`, 5.0 m/s, `WP_SPD 5.0` injected. Same mission, birds and source as take 1.
+* **§3 class: INVALID** (THE gate: `INVALID`, exit 1). One refusal decided it: bird_1/bird_2 had no landed `set_pose` call (bird_0=193, bird_1=0, bird_2=0), and the checker printed "NOT scored at their spawn pose".
+  The closest §3 wording is AMBIGUOUS "partial truth coverage", but the gate said INVALID. Bar 4 cleared on the logged yaw.
+* **Gated numbers:** gt_cpa_m **9.6208 m** (tick 94; vertical sep 3.8200 m, 3D 10.3514 m). gt_cpa_gated_m **8.5001 m** after a 1.1207 m debit.
+  First detection **43.229 m** at tick 24. Range error p95 **0.1550 m** over 30/30, **0.0626 m** at CPA.
+  Frustum **30 of 30**. Encounter-window median **2.820 m/s = 0.564×**.
+  Detect rate 99.65 % of 292. Wall p95 10.512 / max 13.007 ms, n = 292. Frame-shape drops 0 of 292.
+  Reported, NOT gated: the bird was in the threat cylinder on 31 ticks and the loop engaged on 0.
+* **The artifact already carried what the next gate reads.** The driver's sidecar `bird_drive_20261111T201354Z.json` declares `bird_ids: ['bird_0']` for config `headon_lane15.json`, the same declaration take 3's sidecar makes. The gate refused anyway.
+* **Booking:** booked on the 2026-09-07 artifact. The am. 5 tall-obstacle re-score is still owed, so the booking's precondition is open. §0b / P3 item 1 is still unratified (§4: unauthorised by its own procedure).
+* **Gate change before take 3** (am. 8 (3)): world birds that the driver's sidecar declares undriven are now SCORED at their spawn poses as static obstacles, where before they were refused.
+  This is a **gate-rule change, not an artifact change**: nothing new was written into the take-3 artifact to satisfy it.
+  am. 8 says take 2 re-scores VALID under that rule. That re-score was not re-run for this section.
+
+## OUTCOME (2026-11-11T20:24:37Z → 20:27:18Z) — booked take 3 of 3
+
+*Appended 2026-11-11T21:24Z, late, as above. Source: `docs/encounters/booked_20261111/take3_live_flight_log_20261111T202709Z.checker.txt` (flight-time checker).*
+* **Log:** `eval/results/live_flight_log_20261111T202709Z.json` (committed; sha256 `2dfff0d68b3a41892511758583170bde8179fbdba9ffdd8a6d1180445ee23c32`, byte-identical to the run-folder copy).
+  **Truth:** `eval/results/bird_drive_20261111T202537Z_applied.jsonl` (committed; sha256 `35185acd58961405c05a5d5332b283273a6a25c87b7f83133fcd56419eccd150`).
+  **Booking:** `eval/results/booking_gate_20260907T064136Z.json` (sha256 `1a6fcc1f…abde`), 5.0 m/s, `WP_SPD 5.0` injected.
+* **Verdict:** `VALID`, exit 0. Every §3 PASS bullet that the checker prints is met: CPA ≥ 3.00 m, both speed medians ≤ 5.5 m/s, acquisition ≥ 33.591 m, wall 25/100 ms, detect rate ≥ 0.90, frame-shape 0, all 29 static_map_hints null, gz_clock_stream with 0 violations.
+* **§3 class: closest to PASS, but NOT a clean §3 PASS.** Four reasons:
+  (i) The booking's am. 5 precondition is open: the take was booked on the 2026-09-07 artifact, and the am. 5 tall-obstacle re-score is still owed.
+  (ii) §0b / P3 item 1 is still unratified, so by §4 the take is unauthorised by its own procedure. **→ RULED 2026-11-12: REPORTED (ADR-020 am. 9); authorised by its procedure after the fact — RULING section below.**
+  (iii) The checker text prints no R2 lateral-tree-margin line, so §3's R2 bullet cannot be read from it. R3 shows only `relatch_refused_degenerate=0` and `gate_rejects=0`.
+  (iv) Forking paths: this accepted take is the THIRD attempt, and the gate rules changed between attempts. Gap 3 was a gate-rule change, not an artifact change.
+* **Gated numbers:** gt_cpa_m **9.6138 m** to bird_0 (tick 92; vertical sep 3.8200 m, 3D 10.3450 m). gt_cpa_gated_m **8.8013 m** after a 0.8125 m debit.
+  bird_1 / bird_2 scored as static obstacles at 15.155 / 10.230 m.
+  First detection **44.926 m** at tick 23. Range error p95 **0.1687 m** over 29/29 frame-joined, **0.0780 m** at CPA.
+  Frustum **29 of 29** on the logged yaw. Encounter-window median **2.936 m/s = 0.587×** booked. Whole flight median 0.741, max 6.817 = 1.363× (not gated).
+  Detect rate 99.64 % of 278. Wall p95 **10.701** / max 20.702 ms, n = 278. Frame-shape drops 0 of 278.
+  Reported, NOT gated: the bird was in the threat cylinder on 22 ticks and the loop engaged on 0.
+  ADR-020 am. 8 quotes this take's wall p95 as "10.5 ms". The checker prints 10.701; 10.512 is take 2's figure.
+* **What it buys, and no more:** n = 1 VALID head-on clearance at 5.0 m/s, sim-demonstrated and evidence-gated, with one driven bird that passed 3.82 m below cruise.
+  It is not a §1 PASS. The 2026-08-25 breach, its declared CI red and the three-breach safety asterisk all stand. No gate changes after this take are recorded here.
+
+## P5 RE-SCORE (ADR-020 am. 5) — PRE-REGISTRATION, 2026-11-12, written before any frame is rendered
+
+**Order.** The owner chose **"Run the re-score"** on 2026-11-12, over waiving am. 5 by a dated amendment, after the 2026-11-11 booked
+take (ADR-020 am. 8) disclosed that the am. 5 tall-obstacle re-score had not been run before that booking. Everything below is fixed
+now so that nothing in it can be fitted to the numbers afterwards.
+
+1. **Stations.** The SAME 85-station file the 2026-09-07 artifact belongs to — `eval/results/depth_dataset_20260907/stations_rendered.json`
+   (sha256 `4daa613f8c0e7773d1dd0d01c52674254ada6ae541a53e87630e4081a88b1d17`) — fed to the SAME harness `eval/capture_depth_dataset.sh`, with
+   `VARIANT=config/world_variants/tall_structure_am5.json`. Same nine camera groups, same teleports, same readback tolerances.
+2. **The world variant** (`config/world_variants/tall_structure_am5.json`, sha256 `8588bdc08ad03326ceb1d3ad0fcc60b0bd3ff161008c4330717426a9ca5896c5`): ONE static box,
+   `tall_structure_am5`, x −15..95, y 58..62, z 0..18 m — **18 m tall**, front face **58.0 m** north of the two y = 0 cruise-altitude
+   camera poses (x = 15 and x = 60) and 53.0 m north of the y = 5 pose — added to the harness's per-group COPIES of the world; the flown
+   world `sim/worlds/farmguard_field.sdf` is untouched and the harness refuses to run if it ever carries the model. **Instantiation
+   rule, one line:** a box is NOT instantiated for a camera group whose commanded camera position lies inside it (closed interval,
+   all three axes). Exactly one of the nine groups is inside it — the south-facing pose at (15, 60, 15), stations S045, S046, S047 and
+   the negative S064 — and is scored in the committed world exactly as on 2026-09-07. The harness declares the variant (name, file,
+   sha256, boxes) and the per-group flag in `groups.jsonl`; the scorer recomputes both from the same file and STOPS on a disagreement.
+3. **Constants.** The SHIPPED `depth_segment.DEFAULT_PARAMS` — K 15, margin 1.5 m, min_area 10 px, open_iter 0, max_boxes 64,
+   link_break off — scored with `--score-shipped`. The pre-registered sweep still runs and is REPORTED, never adopted. **No constant
+   moves in this round whatever the sweep says**; a change would be its own pre-registered round on its own render.
+4. **Bars — the seven of DESIGN §4.3 / ADR-021, as the scorer applies them:** FNR **0 misses** over the FNR_zero stations
+   (conditioned on stand-off > margin, unoccluded); merge mislabels **0**; unmapped FP **≤ 0.05 /frame** over the negative frames;
+   range error **p95 ≤ 0.5 m**; runtime **p95 ≤ 25 ms, max ≤ 100 ms** (host bench, 5 reps per station); determinism **0 mismatches**;
+   mutation **both independent mask terms and the pair red**. The structure is NOT in the tree geofence map, so a detection on it in a
+   negative frame is an **UNMAPPED** false positive and counts against the bar — stated here so it cannot be reclassified as mapped
+   clutter after the fact.
+5. **Predictions**, from the scorer's own ray-cast at the commanded poses (scratch run, 2026-11-12): **36 bird stations change
+   background class to `structure`** — 30 of them FNR_zero: the two +N ladders at 14–46 m (S001–S007, S009–S015, S017–S020), the
+   B_merge rows whose ground hit lies beyond the face (S021–S025, S028–S030, S035), and S042–S044; plus the diagnostics S008/S016
+   (50 m) and the pitched S081–S084. **Nine FNR_zero stations are structure-backed at or beyond the 33.591 m breakeven: S044 (34 m),
+   S005/S013 (38), S019 (40), S006/S014 (44), S007/S015/S020 (46 m).** The farthest structure-backed FNR_zero rung is 46.0 m. The
+   smallest bird-to-structure stand-off is 8.0 m (S008/S016 at 50 m), so no station becomes sub-margin by placement and the FNR
+   denominator should stay at 49 detectable stations. S072/S073 (23 m off-axis at 46 m) stay sky-backed: the face lies past the 60 m
+   Euclidean cull in their direction. The expected ray-cast-vs-render background residual stays at the centimetre level: box faces
+   are exact.
+6. **Disposition, fixed now.** ALL seven bars PASS **and** the structure-backed FNR_zero reach is ≥ 33.591 m → the am. 5 precondition
+   is **CLOSED** by an ADR-021 amendment quoting the artifact, and the 2026-11-11 booking's open precondition (ADR-020 am. 8) closes
+   with it. ANY bar FAILS, or the reach falls short → the precondition **FAILS**: the 2026-11-11 take stays recorded as VALID under the
+   flight-log gate but booked under a precondition that then measured red, README and the record page say so, the shipped constants
+   do not move, and the next step is a pre-registered fix round — not a re-run of this one. A harness or scorer STOP (labeller
+   residual > 5 px, variant mismatch, a bird inside the structure) is a harness bug: fix it, re-render, and record BOTH renders here.
+7. **Artifacts and commands.** Render, in the container: `docker cp eval/results/depth_dataset_20260907/stations_rendered.json
+   fieldguard-sim:/tmp/stations.json`, then `VARIANT=/workspace/fieldguard/config/world_variants/tall_structure_am5.json
+   OUT=/tmp/depthset_tall bash /workspace/fieldguard/eval/capture_depth_dataset.sh /tmp/stations.json` (expected rc 3, as on
+   2026-09-07: the three occlusion frames repeat their negative control). Score, host: `python3 eval/score_depth_segmenter.py
+   --dataset eval/results/depth_dataset_20261112_tall --out-dir eval/results/depth_dataset_20261112_tall --world-variant
+   config/world_variants/tall_structure_am5.json --score-shipped`. Committed: `depth_segmenter_score_<UTC>.json` INSIDE the dataset
+   dir (so `eval/results/` keeps exactly one adopted artifact), `REPORT.md`, `CAPTURE_LOG.txt`, `groups.jsonl`, `stations_rendered.json`,
+   six fixtures. Not measured by this round, as before: static vehicle, noiseless sensor, level attitude (one pitched arm), one target
+   per frame, one target radius; the structure is a smooth box face with no self-depth structure of its own.
+
+## OUTCOME (P5 RE-SCORE, 2026-11-12 19:08Z — ADR-021 amendment 2)
+
+* **Render:** 85/85 frames, 82 distinct sha1, harness rc 3 (S059/S060/S061 repeat their negative control, as pre-registered), group 4
+  at (15, 60, 15) NOT instantiated and declared so; every readback within tolerance. `eval/results/depth_dataset_20261112_tall/`
+  (`CAPTURE_LOG.txt`, `groups.jsonl`, `stations_rendered.json`, six fixtures and the artifact are committed; the 85 frames are not).
+* **Score (shipped constants):** `depth_segmenter_score_20261112T190828Z.json` — **SHIPPED CONSTANTS PASS, all seven bars**: FNR 0 of 49
+  detectable (condition vacuous, 0 excluded); merge mislabels 0; unmapped FP 0.0/frame over 8 (mapped 14.375/frame, all 115 inside a tree
+  geofence — identical to 2026-09-07, so the structure produced no detection, mapped or unmapped); range error p95 0.1076 m, max 0.1362 m
+  over 63 matches (identical to 2026-09-07 — the bird's own pixels are unchanged; the background changed, the foreground did not); runtime
+  p95 5.767 / max 9.532 ms over n = 425; determinism 0 of 79; mutation red on both terms and the pair. The sweep would adopt the identical
+  constants. Labeller: 0.4415 px (S052), ray-cast vs render 0.0344 m (S039, a canopy — the box faces are exact), round-trip 0.0 m.
+* **Against the predictions:** 29 FNR_zero stations structure-backed, not 30 — S021 (14 m, bird 6 m below the axis from the y = 5 pose)
+  reads `ground_band_edge` at 52.5 m: its footprint straddles the ground just in front of the face. The nine at or beyond 33.591 m are
+  exactly the nine predicted (S044 34 m; S005/S013 38; S019 40; S006/S014 44; S007/S015/S020 46 m), background depth 57.85 m (the face at
+  58.0 m less the 0.15 m camera-link offset), stand-off 11.85 m at 46 m and 7.85 m at the 50 m diagnostics. Clutter-backed reach by
+  class: structure 46 m, structure_edge 30, canopy 28, ground_band 20 (22 on 2026-09-07: S035 flipped to structure), ground_band_edge
+  14; no rung is sky-only. FNR denominator 49, as predicted. Pitched arm 5/5. Group 4's three stations matched in the committed world.
+* **Disposition, as pre-registered:** ALL PASS and reach ≥ 33.591 m → the am. 5 precondition is **CLOSED** (ADR-021 am. 2) and the
+  2026-11-11 booking's open precondition closes with it. No constant moved. Still open: §0b / P3 item 1 (unratified), bar 4's shared pose
+  source, the same-scenario track gap. Not measured here: static vehicle, noiseless sensor, level attitude (one pitched arm), one target per
+  frame, one radius; the structure is a smooth box face with no self-depth structure of its own.
+
+## RULING (§0b / P3 item 1, 2026-11-12 — ADR-020 amendment 9)
+
+The owner chose **"Report only"**: for a depth-source take §0b is **REPORTED**, not a precondition, and §0f authorises. The §4 conflict
+above is closed as recommended; the 2026-11-11 take, flown before the ruling, is authorised by its own procedure after the fact — the
+OUTCOME sections above keep saying it was not at flight time. Reported for that take, run 2026-11-12 on its own mission, birds and
+booked speed (`python3 scripts/predict_bird_visibility.py --fps 5.0 --speed 5.0 --mission config/missions/headon_lane15.waypoints
+--birds config/birds/headon_lane15.json`): **FAIL, exit 1** — bird_0 median **2** frames in the nadir frame (min 0, max 3) over 38
+driver-start phases, limited by TIMING (a 0.4 s window on lane x = 15 at the best phase), against a forward-camera acquisition at
+44.926 m. Output: `docs/encounters/booked_20261111/take3_visibility_0b_headon_5p0_20261112.txt` + `.json`. P3 item 2 stays open.
+
+## BOOKED BATCH — PRE-REGISTRATION (2026-11-12, written before the first run)
+
+**Order.** The owner: **"Fly the batch"** (2026-11-12), after both authorisation items the 2026-11-11 take left open had closed
+(ADR-021 am. 2, ADR-020 am. 9). This is ADR-022 clause 3's bar — *"≥ 20 seeded headless encounters clearing 3.00 m"* — flown
+BOOKED under the full flight-log gate: the 2026-11-10 unbooked batch's shape (speeds cycling 4 → 5 → 6 m/s, one bird track), with
+every run a booked take.
+
+1. **Runs.** 20 attempts: `scripts/encounter_batch.sh 20 --bookings "eval/results/booking_gate_20261112T203448Z.json eval/results/booking_gate_20260907T064136Z.json
+   eval/results/booking_gate_20261112T203449Z.json" --mission headon_lane15 --birds config/birds/headon_lane15.json --detection-source depth`, run from
+   the main checkout the container mounts. The seed is the BOOKED speed, cycling 4.0 → 5.0 → 6.0 m/s (7 / 7 / 6 runs); the bird
+   track is the committed head-on scenario on every run (`config/birds/headon_lane15.json`, unchanged).
+2. **Bookings**, all PASS and BOOKABLE on the live intrinsics (fx = fy = 520.0058, cx 320, cy 240, 640×480) at `--acq-range-m 46.0`
+   (the ADR-020 am. 2 rule; the am. 5 re-score of 2026-11-12 stands behind every one of them): 4.0 m/s `booking_gate_20261112T203448Z.json`
+   (sha256 `b873440880301666c929ebc44c6fb495b3fe16a7bcf3755164c739115c62c377`, margin 1.942×, written today); 5.0 m/s `booking_gate_20260907T064136Z.json` (sha256 `1a6fcc1f7372a5b489660570bb3ce741d5d8792891740ff6f14b777d5262abde`, margin 1.780×,
+   the 2026-09-07 artifact the three 2026-11-11 takes flew); 6.0 m/s `booking_gate_20261112T203449Z.json` (sha256 `c664b7d7a621a133b663937755708d8b3d2dacd401d6cde8f903a82ed0364330`, margin 1.643×,
+   written today). Bar 1.30×.
+3. **Gate, frozen.** `scripts/check_live_flight_log.py` as committed at d906cb2 (sha256 `bca009def2d892c1…`), reached through the
+   launcher's own `--booking` pass-through; executor `8910eda870fb4b08…`, policy `314e8f5aae1187e6…`,
+   node `6c0bfc9b2a02e86a…`. Nothing in the gate or the control law changes during the batch; a run scored by any other checker is a
+   protocol break and is reported as one. The summariser (`scripts/summarize_encounters.py`) only READS the checker's own lines.
+4. **What counts.** Every attempt is reported. A run is a **CLEARANCE** only if the checker's verdict is **VALID** and
+   `gt_cpa_gated_m ≥ 3.00 m`. A run whose closest approach to ANY bird — driven, or declared static — reads **below 3.00 m** (raw or
+   gated) is a **BREACH** and fails the batch regardless of the other runs; its log gets the 2026-08 treatment (marker + reviewed
+   pin, or it stays INVALID). INVALID for a non-breach reason (ambiguous truth, runtime max, speed gate, frustum, static map, range
+   error, acquisition below 33.591 m) is reported with the checker's first failing line and is not a clearance; **no run is re-flown
+   or dropped**. An attempt that produces no scorable log (bringup, tmux, container) is reported as NOT SCORED and counts neither
+   way; the batch is 20 attempts, not 20 scored runs — a 21st attempt is not flown in this session.
+5. **Reading, fixed now.** **≥ 20 VALID clearances → ADR-022 clause 3's bar is MET in sim, booked** (sim-demonstrated,
+   evidence-gated; one scenario, one world, head-on only — no astern or U-turn geometry, by the scenario's own design). 1–19 →
+   the bar is **NOT met**: report the count, no partial credit, no second batch in this session. Any breach → the kill criterion
+   FIRES for this scenario; record it, acknowledge it per the rule, and the ADR-022 option-B call goes to the owner with it. In every
+   case the option-B call (drone-as-product, hardware after) is the OWNER's, made on this record, not here.
+6. **Predictions** (from the 2026-11-10 batch and the three 2026-11-11 takes): raw gt_cpa_m 8.8–9.8 m across speeds with one late
+   acquisition (≈32 m, ≈5.4 m) possible; gated 7.3–8.8 m at 5.0 m/s; acquisition 39–45 m; window speed 0.56–0.68× booked; range error
+   p95 0.17–0.21 m over the unambiguous frames; frustum all inside on the logged yaw; detect p95 ≈ 10–11 ms, max < 25 ms; static birds
+   ≥ 10 m. Named risks: a sim stall growing the freeze debit; a late acquisition below the 33.591 m breakeven (INVALID, not a breach);
+   a truth ambiguity refusing a take; a 6.0 m/s window exceeding 1.10× booked.
+7. **Record.** `eval/results/encounters/BATCH_<UTC>.md/.json` (the summariser over exactly this batch's run folders, main checkout,
+   ignored), copied to `docs/encounters/BOOKED_BATCH_<UTC>.md` with each run's checker output beside it in
+   `docs/encounters/booked_batch_<UTC>/`; no flight log from this batch is committed (the run folders stay on this Mac; every log's
+   sha256 is in the record). Recorded as an ADR-022 amendment quoting the record. Wall time ≈ 65–80 min.

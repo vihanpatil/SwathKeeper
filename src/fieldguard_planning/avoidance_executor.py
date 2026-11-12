@@ -186,6 +186,33 @@ RESUME_CLEAR_TICKS = 3
 # if it ever fires, the flight log says so and something upstream (a duty-cycled detector, an
 # all-stale detection stream) needs fixing.
 GUIDED_CEILING_TICKS = 5 * 62
+# A dodge is COMPLETE when the vehicle is within this XY distance of the latched setpoint; until then
+# the executor keeps GUIDED and keeps re-commanding the latch, however many clear ticks the policy
+# counts (2026-11-10). The rule it replaces -- resume on resume_clear_ticks of ABSENCE alone -- ended
+# every dodge the moment the forward camera lost the bird: in GUIDED the airframe yaws toward the
+# setpoint (WP_YAW_BEHAVIOR 2), so a sidestep turns the camera 90 deg off the bird within a second;
+# on 2026-11-10 encounter 1 both GUIDED windows closed `threat_cleared` after 0.55 / 0.74 s with
+# < 0.1 m of cross-course motion while the bird was 9-12 m out and closing. "Not seen for three
+# ticks" is not "passed". 2.0 m = WP_RADIUS_M, ArduCopter's own waypoint-reached radius, so the
+# criterion is the one the vehicle itself uses to call a target reached; the GUIDED ceiling still
+# bounds a dodge that never arrives, and it is logged as the ceiling, never as a cleared threat.
+DODGE_ARRIVAL_RADIUS_M = 2.0
+# ONE COMMITMENT PER ENCOUNTER (2026-11-10, run 3): while a latched dodge is in progress the executor
+# refuses every re-latch, however far the policy's per-tick point has moved. A perpendicular setpoint
+# is computed from the vehicle's CURRENT position, so it recedes as the vehicle sidesteps toward it
+# (a re-latch every 3 m, a dodge that never arrives), and a dead-ahead bird's side choice flipped the
+# point 20 m from tick to tick (RL / RLLL / LRL latch sequences; 5-6 s of GUIDED, < 0.5 m moved).
+# The latched point is still re-vetted against the geofence and the bird bar on every tick and is
+# DROPPED if it fails, so a bird that moves onto it still gets a fresh dodge. R3 (degenerate-range
+# refusal) stays in front of this rule: its label is the one the flight-log gate counts.
+RELATCH_AFTER_ARRIVAL_ONLY = True
+
+
+def _dist_xy(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> float:
+    """Horizontal distance between two world-ENU points (the dodge-completion test is XY: the
+    setpoint sits at cruise altitude and so does the vehicle). `** 0.5` keeps this module math-free."""
+    dx, dy = a[0] - b[0], a[1] - b[1]
+    return (dx * dx + dy * dy) ** 0.5
 
 
 def _dist_3d(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> float:
@@ -345,6 +372,8 @@ class AvoidanceExecutor:
         vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M,
         resume_clear_ticks: int = RESUME_CLEAR_TICKS,
         guided_ceiling_ticks: int = GUIDED_CEILING_TICKS,
+        dodge_arrival_radius_m: float = DODGE_ARRIVAL_RADIUS_M,
+        relatch_after_arrival_only: bool = RELATCH_AFTER_ARRIVAL_ONLY,
     ):
         self.geofence = geofence
         self.cells: List[CoverageCell] = list(cells)
@@ -354,6 +383,11 @@ class AvoidanceExecutor:
         self.vertical_margin_m = vertical_margin_m
         self.resume_clear_ticks = int(resume_clear_ticks)
         self.guided_ceiling_ticks = int(guided_ceiling_ticks)
+        self.dodge_arrival_radius_m = float(dodge_arrival_radius_m)
+        self.relatch_after_arrival_only = bool(relatch_after_arrival_only)
+        if not self.dodge_arrival_radius_m > 0.0:
+            raise ValueError(f"dodge_arrival_radius_m must be > 0 (got {dodge_arrival_radius_m}); "
+                             f"0 can never be reached and would hold every dodge to the ceiling")
         # Rejected loudly at construction, not silently absorbed: `resume_clear_ticks` 0 or negative
         # restores the pre-2026-08-25 instantaneous resume while the log still advertises hysteresis,
         # and a ceiling below the hysteresis makes every encounter end on the backstop.
@@ -368,6 +402,7 @@ class AvoidanceExecutor:
 
         self.mode: str = MODE_AUTO
         self.flown_path: List[Tuple[float, float, float]] = []
+        self.flown_heading: List[Optional[float]] = []  # yaw per vertex (2026-11-11); see _record_position
         self.event_log: List[dict] = []
         self.coverage_ledger: List[dict] = []          # populated by finalize()
         self.requeue_events: List[dict] = []            # populated by finalize()
@@ -400,14 +435,35 @@ class AvoidanceExecutor:
             "detection",
             track_id=det.track_id,
             frame_id=det.frame_id,
+            # The FRAME's own sim stamp (ADR-009's `stamp_s`), written beside the consuming tick
+            # since 2026-11-11. A detection measures ONE render; the executor consumes it one to
+            # three ticks later (frame period 0.2 s + tick latency), and a closing bird keeps flying
+            # in between -- so a truth join at the tick instant puts closing speed x detection age
+            # into the range-error bar (p95 2.6 m on the 2026-11-10 head-on batch at ~10 m/s
+            # closing, min 0.03 m). The checker joins a stamped event at its frame instant; None
+            # (the --demo bird, unstamped sources) is joined at the tick, and the artifact says so.
+            stamp_s=det.stamp_s,
             confidence=det.confidence,
             position_enu=det.position_enu,
             source=det.source,
+            # The seam's known-static annotation travels into the artifact (pre-registration P2(c),
+            # 2026-11-10): the flight-log gate's bar 6 reads it, and the policy never triggers on a
+            # hinted detection, so on a healthy log this is always None here.
+            static_map_hint=det.static_map_hint,
             decision=maneuver.decision.value,
         )
 
-    def _record_position(self, point_enu: Tuple[float, float, float]) -> None:
+    def _record_position(self, point_enu: Tuple[float, float, float],
+                         heading_rad: Optional[float] = None) -> None:
+        """One vertex per step, on every branch -- and, since 2026-11-11, the yaw that went with it:
+        `flown_heading_rad[i]` belongs to `flown_path_enu[i]`. The flight-log gate's frustum bar
+        needs the body-forward axis at the paired pose; until this list existed it substituted COURSE
+        over ground, which swings through south and east while a GUIDED sidestep brakes and
+        translates -- the 2026-11-11 booked head-on take read 14 of 26 detections "behind the camera"
+        on that proxy while the frame-joined range error to the same bird was 0.05-0.21 m. None =
+        the caller had no heading; the gate then falls back to the course and says so."""
         self.flown_path.append(point_enu)
+        self.flown_heading.append(None if heading_rad is None else float(heading_rad))
 
     def _at_risk_cells(self, point_enu: Tuple[float, float, float]) -> List[str]:
         """Cells within one swath width of `point_enu` -- the audit-only "what was this patch of
@@ -525,9 +581,31 @@ class AvoidanceExecutor:
                     f"takes over again on the next DIVERT tick with a freshly vetted point."))
 
     # -- decision handlers -----------------------------------------------------------------------
+    def _dodge_in_progress(self, drone_state: DroneState) -> Optional[float]:
+        """XY distance from the vehicle to the latched setpoint when a latched dodge has NOT yet
+        arrived (> dodge_arrival_radius_m); None when there is no latch or it has arrived."""
+        if self._latched_setpoint is None:
+            return None
+        dist = _dist_xy(drone_state.position_enu, self._latched_setpoint)
+        return dist if dist > self.dodge_arrival_radius_m else None
+
     def _handle_proceed(self, drone_state: DroneState, maneuver: AvoidanceManeuver) -> None:
         pending: Optional[dict] = None
-        if self.mode == MODE_GUIDED and self._clear_ticks < self.resume_clear_ticks:
+        in_progress = self._dodge_in_progress(drone_state) if self.mode == MODE_GUIDED else None
+        if in_progress is not None:
+            # DODGE COMPLETION (2026-11-10, see DODGE_ARRIVAL_RADIUS_M): the threat is out of sight
+            # but the vetted dodge has not been flown yet. Keep GUIDED, keep commanding the latch --
+            # the vehicle keeps flying to the point it was already vetted for -- and say so. The
+            # clear-tick count keeps running underneath, so the hand-back is immediate on arrival.
+            self.sink.send_setpoint_enu(self._latched_setpoint)
+            pending = {"reason": "dodge_in_progress",
+                       "dist_to_latched_m": round(in_progress, 3),
+                       "arrival_radius_m": self.dodge_arrival_radius_m,
+                       "latched_setpoint_enu": self._latched_setpoint,
+                       "clear_ticks": self._clear_ticks, "required": self.resume_clear_ticks,
+                       "ticks_in_guided": self._ticks_in_guided(),
+                       "ceiling_ticks": self.guided_ceiling_ticks}
+        elif self.mode == MODE_GUIDED and self._clear_ticks < self.resume_clear_ticks:
             # Not yet: absence has not persisted long enough to be a cleared threat (design note 4).
             # We stay in GUIDED and command nothing, so the vehicle keeps flying the already-vetted
             # dodge it was last given. `_enforce_guided_ceiling` bounds how long this can last.
@@ -535,8 +613,12 @@ class AvoidanceExecutor:
                        "ticks_in_guided": self._ticks_in_guided(),
                        "ceiling_ticks": self.guided_ceiling_ticks}
         elif self.mode == MODE_GUIDED:
-            self._resume("threat_cleared")
-        self._record_position(drone_state.position_enu)
+            latched = self._latched_setpoint
+            self._resume("threat_cleared",
+                         dodge_dist_to_latched_m=(None if latched is None else
+                                                  round(_dist_xy(drone_state.position_enu, latched), 3)),
+                         dodge_arrival_radius_m=self.dodge_arrival_radius_m)
+        self._record_position(drone_state.position_enu, drone_state.heading_rad)
         self._log("proceed", position_enu=drone_state.position_enu,
                   wp_index=drone_state.current_wp_index,
                   **({"resume_pending": pending} if pending else {}),
@@ -560,7 +642,7 @@ class AvoidanceExecutor:
         # double-count it against the ledger's swath computation beyond what a stationary hover
         # legitimately images.
         self.sink.send_setpoint_enu(drone_state.position_enu)
-        self._record_position(drone_state.position_enu)
+        self._record_position(drone_state.position_enu, drone_state.heading_rad)
         # How close the hold itself is to the nearest threat this decision names. NOT a gate -- a
         # HOLD honours no bar -- but the artifact must show the number rather than leave the
         # question to an argument (QA round 3, 2026-08-24, finding 2). None when the maneuver names
@@ -585,6 +667,7 @@ class AvoidanceExecutor:
         latched = self._latched_setpoint
         offset_m: Optional[float] = None
         relatch_refused = False
+        refused_in_progress = False
         if latched is None:
             setpoint, latch_action = policy_setpoint, "latch"
         else:
@@ -599,12 +682,18 @@ class AvoidanceExecutor:
                 # would mean not dodging at all.)
                 setpoint, latch_action = latched, None
                 relatch_refused = True
+            elif self.relatch_after_arrival_only and self._dodge_in_progress(drone_state) is not None:
+                # ONE COMMITMENT PER ENCOUNTER (RELATCH_AFTER_ARRIVAL_ONLY): the vetted dodge is still
+                # being flown; keep flying it. Re-vetted below like every re-command.
+                setpoint, latch_action = latched, None
+                refused_in_progress = True
             else:
                 setpoint, latch_action = policy_setpoint, "relatch"
         # What the event log calls this tick's latch handling. A refusal leaves `latch_action` None
         # -- no latch/relatch event, no state change -- so this label is the ONLY place R3 shows up,
         # and it must therefore always be written, on the reject path too.
         latch_label = ("relatch_refused_degenerate" if relatch_refused
+                       else "relatch_refused_in_progress" if refused_in_progress
                        else latch_action or "recommand_latched")
 
         # SAFETY BACKSTOP (ADR-006): re-vet whatever point we are about to command -- fresh, re-latch
@@ -683,7 +772,7 @@ class AvoidanceExecutor:
                       track_id=self._track_id(maneuver))
             self._latched_setpoint = setpoint
 
-        self._record_position(drone_state.position_enu)  # where the drone ACTUALLY is this tick
+        self._record_position(drone_state.position_enu, drone_state.heading_rad)  # where the drone ACTUALLY is this tick
         self.sink.send_setpoint_enu(setpoint)            # (re)command the vetted dodge target
         # The commanded setpoint is deliberately NOT recorded into flown_path: a command is not a
         # position. Recording it let a never-visited cell finalize as COVERED (found 2026-08-18) --
@@ -775,6 +864,8 @@ class AvoidanceExecutor:
         return {
             "resume_clear_ticks": self.resume_clear_ticks,
             "guided_ceiling_ticks": self.guided_ceiling_ticks,
+            "dodge_arrival_radius_m": self.dodge_arrival_radius_m,
+            "relatch_after_arrival_only": self.relatch_after_arrival_only,
             "relatch_threshold_m": RELATCH_THRESHOLD_M,
             "vertical_margin_m": self.vertical_margin_m,
         }
@@ -793,6 +884,7 @@ class AvoidanceExecutor:
             "swath_half_width_m": self.swath_half_width_m,
             "executor_params": self.executor_params(),
             "flown_path_enu": [list(p) for p in self.flown_path],
+            "flown_heading_rad": list(self.flown_heading),
             "coverage_ledger": self.coverage_ledger,
             "requeue_events": self.requeue_events,
             "events": self.event_log,

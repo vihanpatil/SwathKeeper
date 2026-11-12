@@ -1,0 +1,442 @@
+[
+ {
+  "run": "20261110T194048Z",
+  "record": "encounter_20261110T194450Z.json",
+  "speed_mps": 4.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.4585,
+  "gt_cpa_tick": 123,
+  "first_detection_m": [
+   44.595
+  ],
+  "guided_windows_s": [
+   4.862
+  ],
+  "cross_course_m": [
+   8.2246
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 21,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T194455Z",
+  "record": "encounter_20261110T194815Z.json",
+  "speed_mps": 5.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.5374,
+  "gt_cpa_tick": 144,
+  "first_detection_m": [
+   45.156
+  ],
+  "guided_windows_s": [
+   5.324
+  ],
+  "cross_course_m": [
+   8.3608
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 32,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T194820Z",
+  "record": "encounter_20261110T195110Z.json",
+  "speed_mps": 6.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.5224,
+  "gt_cpa_tick": 56,
+  "first_detection_m": [
+   44.901
+  ],
+  "guided_windows_s": [
+   5.892
+  ],
+  "cross_course_m": [
+   8.6331
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 21,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T195115Z",
+  "record": "encounter_20261110T195405Z.json",
+  "speed_mps": 4.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.4326,
+  "gt_cpa_tick": 74,
+  "first_detection_m": [
+   43.756
+  ],
+  "guided_windows_s": [
+   5.016
+  ],
+  "cross_course_m": [
+   8.3367
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 17,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T195410Z",
+  "record": "encounter_20261110T195653Z.json",
+  "speed_mps": 5.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.5837,
+  "gt_cpa_tick": 83,
+  "first_detection_m": [
+   44.579
+  ],
+  "guided_windows_s": [
+   5.792
+  ],
+  "cross_course_m": [
+   8.6661
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 25,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T195658Z",
+  "record": "encounter_20261110T195944Z.json",
+  "speed_mps": 6.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 8.8675,
+  "gt_cpa_tick": 49,
+  "first_detection_m": [
+   43.193
+  ],
+  "guided_windows_s": [
+   5.79
+  ],
+  "cross_course_m": [
+   8.4516
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 21,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T195950Z",
+  "record": "encounter_20261110T200236Z.json",
+  "speed_mps": 4.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.4766,
+  "gt_cpa_tick": 75,
+  "first_detection_m": [
+   44.501
+  ],
+  "guided_windows_s": [
+   5.009
+  ],
+  "cross_course_m": [
+   8.1974
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 17,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T200242Z",
+  "record": "encounter_20261110T200528Z.json",
+  "speed_mps": 5.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.6155,
+  "gt_cpa_tick": 85,
+  "first_detection_m": [
+   44.487
+  ],
+  "guided_windows_s": [
+   5.666
+  ],
+  "cross_course_m": [
+   8.4677
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 25,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T200533Z",
+  "record": "encounter_20261110T200817Z.json",
+  "speed_mps": 6.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.6412,
+  "gt_cpa_tick": 49,
+  "first_detection_m": [
+   44.03
+  ],
+  "guided_windows_s": [
+   5.778
+  ],
+  "cross_course_m": [
+   8.497
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 22,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T200822Z",
+  "record": "encounter_20261110T201111Z.json",
+  "speed_mps": 4.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 5.4159,
+  "gt_cpa_tick": 38,
+  "first_detection_m": [
+   32.186
+  ],
+  "guided_windows_s": [
+   4.894
+  ],
+  "cross_course_m": [
+   8.1608
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": null,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T201117Z",
+  "record": "encounter_20261110T201406Z.json",
+  "speed_mps": 5.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.4338,
+  "gt_cpa_tick": 71,
+  "first_detection_m": [
+   44.795
+  ],
+  "guided_windows_s": [
+   5.685
+  ],
+  "cross_course_m": [
+   8.4789
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 26,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T201411Z",
+  "record": "encounter_20261110T201707Z.json",
+  "speed_mps": 6.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.8235,
+  "gt_cpa_tick": 80,
+  "first_detection_m": [
+   44.018
+  ],
+  "guided_windows_s": [
+   5.533
+  ],
+  "cross_course_m": [
+   8.4153
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 23,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T201712Z",
+  "record": "encounter_20261110T201956Z.json",
+  "speed_mps": 4.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.5046,
+  "gt_cpa_tick": 78,
+  "first_detection_m": [
+   44.3
+  ],
+  "guided_windows_s": [
+   4.94
+  ],
+  "cross_course_m": [
+   8.3748
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 11,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T202001Z",
+  "record": "encounter_20261110T202249Z.json",
+  "speed_mps": 5.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.6693,
+  "gt_cpa_tick": 88,
+  "first_detection_m": [
+   44.433
+  ],
+  "guided_windows_s": [
+   5.619
+  ],
+  "cross_course_m": [
+   8.2935
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 25,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T202254Z",
+  "record": "encounter_20261110T202551Z.json",
+  "speed_mps": 6.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.779,
+  "gt_cpa_tick": 76,
+  "first_detection_m": [
+   44.353
+  ],
+  "guided_windows_s": [
+   5.607
+  ],
+  "cross_course_m": [
+   8.4426
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 21,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T202556Z",
+  "record": "encounter_20261110T202907Z.json",
+  "speed_mps": 4.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.5331,
+  "gt_cpa_tick": 100,
+  "first_detection_m": [
+   42.942
+  ],
+  "guided_windows_s": [
+   5.012
+  ],
+  "cross_course_m": [
+   8.2472
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 23,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T202912Z",
+  "record": "encounter_20261110T203159Z.json",
+  "speed_mps": 5.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.0766,
+  "gt_cpa_tick": 52,
+  "first_detection_m": [
+   39.826
+  ],
+  "guided_windows_s": [
+   5.337
+  ],
+  "cross_course_m": [
+   8.3225
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 15,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T203205Z",
+  "record": "encounter_20261110T203445Z.json",
+  "speed_mps": 6.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 8.8021,
+  "gt_cpa_tick": 61,
+  "first_detection_m": [
+   43.034
+  ],
+  "guided_windows_s": [
+   6.089
+  ],
+  "cross_course_m": [
+   8.5405
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 24,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T203450Z",
+  "record": "encounter_20261110T203733Z.json",
+  "speed_mps": 4.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.5227,
+  "gt_cpa_tick": 79,
+  "first_detection_m": [
+   43.585
+  ],
+  "guided_windows_s": [
+   4.944
+  ],
+  "cross_course_m": [
+   8.2136
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 14,
+  "status": "PASS"
+ },
+ {
+  "run": "20261110T203738Z",
+  "record": "encounter_20261110T204019Z.json",
+  "speed_mps": 5.0,
+  "birds": "config/birds/headon_lane15.json",
+  "checker_exit": 1,
+  "gt_cpa_m": 9.6472,
+  "gt_cpa_tick": 94,
+  "first_detection_m": [
+   44.634
+  ],
+  "guided_windows_s": [
+   5.622
+  ],
+  "cross_course_m": [
+   8.3719
+  ],
+  "takeovers": 1,
+  "resumes": 1,
+  "relatch_refused_in_progress": 26,
+  "status": "PASS"
+ }
+]

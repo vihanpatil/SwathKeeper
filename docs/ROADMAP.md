@@ -29,7 +29,7 @@ One table, one date, one state per row. Where a row and any other document disag
 | Week 6 — real detector on the seam | ✅ **flown 2026-08-25**; seam, R2 and the GT-CPA gate all behaved. The take is INVALID and the diagnosis is **geometry, not the detector** | 1302 frames received / 1301 reached the detector / **2 frames with a detection, 2 boxes**; GUIDED window **0.434 s**, lateral **0.018 m** against a 10 m command |
 | Week 7 — dashboard, video, GTM | 🟡 **dashboard BUILT 2026-08-26** (ADR-018): static, client-side, verdicts derived by importing the gate. **Pages + demo video are PENDING THE OWNER**, not engineering | `--check` FRESH 17/17; the 2,887-word script in `docs/drafts/DEMO_VIDEO_SCRIPT.md` is finished and unrecorded |
 | ADR-020 forward depth sensor | ✅ **COMMISSIONED live 2026-09-06/07** — all six D-gates measured, exit 0, and the booked speed is now enforced at both ends (am. 3) | **46.0 m bookable at 5.0 m/s**, margin 1.780×. **Asterisk: D5 and D6 were measured at a 3.50 m/s median ground speed**, so delivery and pitch at the booked 5.0 remain UNMEASURED |
-| ADR-021 depth segmenter | ✅ **SCORED 2026-09-07**; **FLOWN ONCE 2026-09-11** as a no-target wiring flight (ADR-021 am. 1: 5345/5345 frames, 0 drops, 33,029 boxes 98.7 % mapped, 0 takeovers; runtime p95 12.98 ms PASS, **max 141.16 ms FAILED** the 100 ms bar → log INVALID); **FROZEN** until a flight WITH a target exists | 7/7 pre-registered bars on **85 parked, noiseless stations**: FNR 0/49, merge 0/71, unmapped FP 0/8, range p95 0.1076 m. Cluttered acquisition **46.0 m** — clutter-backed evidence reads to **28 m** |
+| ADR-021 depth segmenter | ✅ **SCORED 2026-09-07**; **FLOWN ONCE 2026-09-11** as a no-target wiring flight (ADR-021 am. 1: 5345/5345 frames, 0 drops, 33,029 boxes 98.7 % mapped, 0 takeovers; runtime p95 12.98 ms PASS, **max 141.16 ms FAILED** the 100 ms bar → log INVALID); **flown against a bird since 2026-11-10** — 24 head-on encounters, one booked take committed VALID under the flight-log gate (ADR-020 am. 8); the parked-render scores remain the SCORED numbers | 7/7 pre-registered bars on **85 parked, noiseless stations**: FNR 0/49, merge 0/71, unmapped FP 0/8, range p95 0.1076 m. Cluttered acquisition **46.0 m** — clutter-backed evidence reads to **28 m** |
 | Scoring a depth flight log | ✅ **SCOREABLE since 2026-09-07** (P1), exercised on the 2026-09-11 wiring flight — which exposed a **checker gap: a bird-less flight has no truth track and the checker could not be told so (read "ambiguous truth track" → INVALID). CLOSED the same day (ADR-020 am. 7): `--no-birds` DECLARES it — truth resolution skipped, CPA/truth family prints `N/A (no birds driven)`, every other gate live, and the declaration REFUSED on six falsifiers: any avoidance event / in-cylinder detection (cylinder floored at today's `PolicyParams()`) / named bird track / `TRUTH_BINDINGS` pin / a bird track written within ±30 min on the WALL clock / a launcher bringup record that armed the pane. Its blind spot is printed: a bird the DETECTOR never saw leaves no trace in a log.** That log under the flag is still INVALID, on its 141.160 ms runtime max alone — `depth_blob` is in `DETECTOR_SOURCES` with seven pre-registered bars. *(The "a depth log is UNSCOREABLE" blocker is CLOSED; any doc still saying it is stale.)* | bar 5 will read **CENSORED** and bar 6 **UNMEASURED** until the executor logs the seam's longest-range detection and `static_map_hint` (P2) |
 | Evidence gates + CI | ✅ `main` is red **by design** on the pre-registered half-acknowledgement and on **nothing else** (re-verified 2026-11-05 on `main` and both open PRs). The two undeclared Linux-only reds in `tests/test_build_dashboard_data.py` were fixed 2026-09-11 (`4485e0a`); every step runs `if: always()` and the KNOWN_RED allowlist test asserts the failing set is exactly the declared one. **Since step 5 a fourth job, `gates-tool` (py3.10 + py3.12), must be GREEN** — it re-fetches the three public logs by sha256 and diffs the committed verdicts | two declared red steps (host-side suite's committed-evidence test; the committed-evidence checker, exit 1); allowlist step green |
 | Evidence-gate tool (option C, **ADR-023**) | ✅ **BUILT + SCORED 2026-11-05** — `src/swathkeeper_gates/` (pip package `swathkeeper-gates`, ArduPilot DataFlash adapter only; PX4 CUT from v0.1), after two QA rounds (G228–G265, all closed) and three fix rounds; **PR #39 OPEN** (its first CI run: exactly the declared red, the install line green); **step 5 BUILT 2026-11-05 (ADR-023 am. 1)** on `feat/gates-tool-action`, stacked on #39: composite Action `.github/actions/swathkeeper-gates/`, README badge `examples/tarot_x4/badge.svg`, CI job `gates-tool` (py3.10 + py3.12) re-fetching the three logs by sha256 and diffing every verdict; `requires-python>=3.10`, test-pinned to the matrix. **PR #40 CI on `53228e1`: `gates-tool` GREEN on both legs, planning red on exactly the declared steps** | three public logs, none ours: Tarot X4 `gates: pass · 8/8 measured (post-hoc)` exit 0; ArduPlane `fail · 1/5` exit 1 (B5 no-fix, 263/263 rows); pymavlink test.BIN `could not tell · 3/6` exit 1. src **1,319** lines (budget 950), tests **869** / 55, 0 skips, **121/121** mutants killed |
@@ -189,7 +189,7 @@ If reopened, its first three steps:
 **B's terminal event is the pre-registered dodge take** (also the R4 re-fly, and the flight that
 finally measures delivery + pitch at the booked 5.0 m/s): `docs/runbooks/AVOIDANCE_REAL_DETECTION.md`
 §1a for the depth-source shell, `docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md` for the bars.
-It is **NOT YET FLYABLE** — the ADR-020 am. 5 tall-obstacle re-score (clutter at ≥ 33.6 m) gates its booking; P2 (step-0 FLOWN 2026-09-11 and FAILED its own runtime-max bar; the ~~no-truth checker mode~~ is **DONE 2026-09-11, ADR-020 am. 7** (`--no-birds`, both halves: checker + `fly_pipeline.sh up`); still owed: the 141 ms stall investigation, the two executor log fields, then a step-0 re-fly), P3 (two
+It **FLEW 2026-11-11** (three booked takes, ADR-020 am. 8) — **the ADR-020 am. 5 tall-obstacle re-score was run on 2026-11-12 and PASSED (ADR-021 am. 2, clutter tested to 46 m), closing the booking's precondition after the fact**; P2 (step-0 FLOWN 2026-09-11 and FAILED its own runtime-max bar; the ~~no-truth checker mode~~ is **DONE 2026-09-11, ADR-020 am. 7** (`--no-birds`, both halves: checker + `fly_pipeline.sh up`); still owed: the 141 ms stall investigation, the two executor log fields, then a step-0 re-fly), P3 (two
 product-lead ratifications) and P4 (container state) are open. **If it breaches:** write the
 `<log-stem>.SAFETY_FINDING.md` marker and **do NOT add the pin** — acknowledgement takes both halves,
 the marker *and* the stem in `ACKNOWLEDGED_BREACH_STEMS`, a reviewed diff on the safety gate (§6a),
@@ -202,8 +202,9 @@ pinned list is meant to stay two long.
   harder, not just deferred — source-verified, see ADR-006).
 - Scaling from 2-3 birds to a flock / higher obstacle density.
 - Second sensor as a supported operating mode: **the forward depth camera is BUILT (ADR-020/021)
-  and has flown once with no target (2026-09-11)** — promoting it out of stretch needs a flight against a
-  bird that clears its bars, not more offline evidence.
+  flew once with no target (2026-09-11) and against a bird 24 times since 2026-11-10; one booked take is committed VALID
+  under the flight-log gate (ADR-020 am. 8), its am. 5 precondition closed 2026-11-12 (ADR-021 am. 2)** — promoting it out of
+  stretch needs a booked batch, not more offline evidence (§0b was ruled reported-only 2026-11-12, ADR-020 am. 9).
 - Live in-node NDVI stitching (offline is the v1 decision, ADR-010).
 
 ## Cut / deferred log
@@ -311,3 +312,45 @@ _(product-lead records cuts here with date + reason — interview material.)_
   the asset; inflating it converts the honesty in every ADR into an interview red flag.
 - **2026-08-05 — colcon/ament packaging of the planning package.** Zero demo value; PYTHONPATH
   works in-container. Restated 2026-08-18 (audit re-confirmed the cut).
+
+## 2026-11-10 — the control loop reopened (ADR-022 am. 5, ADR-013 am. 20)
+
+The owner asked for the avoidance software to be USABLE, and the day was spent on exactly that, in sim on this Mac:
+`scripts/fly_pipeline.sh encounter --detection-source depth --speed 5.0` is now one command that brings the stack up,
+arms the avoidance node after takeoff, flies two passes down bird_0's lane, tears down evidence-first and scores the log
+against its own bird track (≈5 min wall). Four runs were flown, each after one change: baseline **gt_cpa not computed**
+(the checker refused an ambiguous truth; closed by `--results-dir`) → **0.0212 m** (45 m trigger + sidestep, dodges
+abandoned on absence) → **0.839 m** (dodge-completion rule; four dodges flown 8.3 m) → **0.0393 m** (track-axis side rule + one commitment per encounter: the dodges themselves are now clean -- the encounter seen at 43.6 m was flown 8.45 m and passed at 9.6 m -- and every remaining strike had ZERO detections: the bird arrived at the north lane end during the drone's 180° turn, or overtook it from astern at 1 m/s closing, both outside a single forward camera's view). Measured along
+the way: the GUIDED command path works (3 m lateral in ≈2.2–2.5 s sim from hover); the depth camera acquires bird_0 at
+35.6–44.6 m in flight. Every run is an unbooked EXPERIMENT (claims ceiling unchanged); the artifacts live in
+`eval/results/encounters/<UTC>/`, gitignored. The owner then chose the **head-on scenario** for the batch (a forward camera cannot see an astern overtake or a
+bird arriving mid U-turn; ADR-013 am. 21): one bird down the lane once, one northbound pass. Pilot at 5 m/s: acquired
+at 44.9 m, dodge 8.36 m, **gt_cpa_m 9.568 m** — the first scored encounter above the 3.00 m bar. **The 20-run batch: 20 of 20 cleared 3.00 m** (gt_cpa_m min 5.416, median 9.523, max 9.823 m; acquisition 39.8–45.2 m on nineteen, 32.2 m on the one that read 5.4 m; one takeover, one resume, 8.2–8.7 m of sidestep per run; `docs/encounters/BATCH_20261110T194048Z.md`). B's kill criterion did not fire. Unbooked experiments; the checker reads INVALID on every run for its range-error association bars and the missing booking.
+**2026-11-11 — booked, and VALID under the flight-log gate; the booking's own preconditions were open (the am. 5 one closed 2026-11-12, below).** Three booked head-on
+takes on the 2026-09-07 artifact (5.0 m/s), one command each (`scripts/fly_pipeline.sh encounter --booking
+eval/results/booking_gate_20260907T064136Z.json --mission headon_lane15 --birds config/birds/headon_lane15.json
+--detection-source depth`), flight-time verdicts INVALID, INVALID, VALID (ADR-020 am. 8). Between them: the range-error bar
+joins truth at the frame instant (`stamp_s` logged; take 1 reads 0.21 m frame-joined vs 2.08 m tick-joined on the same log; the
+batch's 2.6 m was the clock), the frustum bar reads the logged yaw (`flown_heading_rad`; course had read 14 of 26 detections
+"behind the camera" mid-sidestep), and the two world birds the head-on config does not drive are scored static at spawn when the
+driver's sidecar declares them — a gate-rule change, not an artifact one. **Take 3 by the committed checker: VALID, exit 0 —
+gt_cpa_m 9.6138 m (7.9898 m gated), acquired at 44.926 m, range error p95 0.1687 m over the 7 of 18 frames the truth places
+unambiguously, frustum 29/29, window speed 0.587× booked** — committed as `eval/results/live_flight_log_20261111T202709Z.json`
+(pinned truth + hashed booking), the fourth flight in the dashboard. A same-day QA round (27 findings) hardened the three changes
+and corrected this record's numbers. **OPEN for the owner at the time:** ADR-020 am. 5's tall-obstacle re-score was not run before booking (**run and PASSED
+2026-11-12, ADR-021 am. 2 — next paragraph**), and §0b's status as a precondition (P3 item 1) was unratified (**ruled REPORTED 2026-11-12, ADR-020 am. 9**) — so
+"evidence-gated" holds for the flight-log gate and, since 2026-11-12, for the segmenter's clutter claim. One take, third attempt, rules changed
+between attempts. Full record: `docs/encounters/BOOKED_20261111.md`.
+**2026-11-12 — the am. 5 re-score: ordered, pre-registered, SHIPPED CONSTANTS PASS (ADR-021 am. 2).** The owner chose to run it
+rather than waive it. One declared world variant (`config/world_variants/tall_structure_am5.json`: an 18 m box whose face stands
+58.0 m north of the two cruise-altitude camera poses) is added to the render harness's per-group world copies and ray-cast by the
+scorer; one rule, computed on both sides and compared, leaves it out for the single camera pose that lies inside it. Same 85
+stations, same seven bars, the SHIPPED constants: **all PASS — FNR 0/49, unmapped FP 0.0/frame over 8, range error p95 0.1076 m
+over 63, runtime p95 5.767 / max 9.532 ms; 29 FNR_zero stations structure-backed, nine of them at 34–46 m** (predicted 30; S021
+reads ground_band_edge). The segmenter stays frozen; the 46.0 m qualifier now reads "clutter-backed to 46 m against a smooth box
+face — foliage with self-depth structure untested". `eval/results/depth_dataset_20261112_tall/`. **The owner then ruled P3 item 1 (ADR-020 am. 9): for a depth-source take
+§0b is REPORTED, not a precondition** — reported for the committed take, bird_0 median 2 nadir frames at 5.0 m/s against a forward
+acquisition at 44.9 m; both authorisation items the 2026-11-11 take left open are now closed.
+**Next:** the sensor-coverage question
+(a second aperture, or an encounter definition that excludes astern geometry); then a booked BATCH (≥ 20) under the same gate,
+and the ADR-022 option-B call on that evidence.

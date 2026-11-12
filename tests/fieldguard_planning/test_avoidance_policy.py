@@ -82,17 +82,25 @@ class TestAvoidancePolicy(unittest.TestCase):
         """Drone just west of tree row 2 (x=65), bird to the west so the naive 'straight away' (east)
         dodge would sweep through the tree at (65,25). The policy must reject that candidate and pick a
         genuinely clear one (or HOLD) -- never a setpoint whose swept path clips a tree."""
-        drone = _drone(57, 25)
-        bird = _bird(54, 25)                      # west of the drone -> away-vector points east, at the tree
-        m = self.pol.decide(bird, drone, self.geo)
+        # Inside the canopy band (4.0 m): the swept-path rule is live and the tree column is a wall.
+        drone = _drone(57, 25, z=4.0)
+        bird = _bird(54, 25, z=4.0)               # west of the drone -> away-vector points east, at the tree
+        m = self.pol.decide(bird, drone, self.geo, cruise_alt_m=4.0)
         if m.decision is Decision.DIVERT:
             self.assertTrue(self.geo.is_safe_3d(m.setpoint_enu))
+            self.assertTrue(m.debug["swept_margin_applied"])
             sp_xy = (m.setpoint_enu[0], m.setpoint_enu[1])
             clr = self.geo.segment_clearance((57.0, 25.0), sp_xy).clearance_m
             self.assertGreaterEqual(clr, 0.0,
                                     f"dodge swept path clips a tree (clearance {clr:.2f} m): {m.setpoint_enu}")
         else:
             self.assertIs(m.decision, Decision.HOLD)
+        # At cruise (15 m over a 3.8 m tree) the same geometry may sweep over the column: the point
+        # is still 3D-safe and the maneuver records that the margin was not applied (2026-11-10).
+        m15 = self.pol.decide(_bird(54, 25), _drone(57, 25), self.geo)
+        self.assertIs(m15.decision, Decision.DIVERT)
+        self.assertTrue(self.geo.is_safe_3d(m15.setpoint_enu))
+        self.assertFalse(m15.debug["swept_margin_applied"])
 
     # -- boxed in -> HOLD, never an unsafe DIVERT ----------------------------
     def test_boxed_in_holds(self):

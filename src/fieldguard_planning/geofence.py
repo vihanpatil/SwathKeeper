@@ -185,6 +185,13 @@ class GeofenceMap:
                 return obs
         return None
 
+    def canopy_band_top_m(self, vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M) -> float:
+        """The highest altitude at which ANY known tree can be met: max over trees of
+        `z_m + height_m`, plus the vertical margin. A swept path whose lowest point is above this is
+        clear of every column in 3D whatever its XY says. -inf when there are no obstacles."""
+        top = max((obs.z_m + obs.height_m for obs in self._obstacles), default=-math.inf)
+        return top + vertical_margin_m
+
     def is_safe_3d(
         self,
         point_enu: Tuple[float, float, float],

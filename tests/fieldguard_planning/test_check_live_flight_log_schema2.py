@@ -2171,6 +2171,12 @@ class TestNodeContract(Harness):
         loop = AvoidanceLoop(policy, geofence, executor, source)
         drone = DroneState(position_enu=drone_enu, heading_rad=0.0, current_wp_index=3)
         for i in range(n_ticks + RESUME_CLEAR_TICKS):     # + the clear ticks that end the encounter
+            if i >= n_ticks and executor._latched_setpoint is not None:
+                # The dodge must be FLOWN before the mission is handed back (DODGE_ARRIVAL_RADIUS_M,
+                # 2026-11-10): for the clear ticks the vehicle sits on the point it was commanded to,
+                # which is what a real flight's pose stream shows once the dodge has arrived.
+                drone = DroneState(position_enu=executor._latched_setpoint, heading_rad=0.0,
+                                   current_wp_index=3)
             loop.tick(drone, now_s=t0 + i * 0.2, source_t=t0 + i * 0.2)
         executor.finalize()
         log = executor.flight_log("integration", 0, 2.5)
@@ -2220,11 +2226,20 @@ class TestNodeContract(Harness):
         self.assertTrue(maneuvers)
         for ev in maneuvers:
             self.assertIn("swept_tree_clearance_m", ev["debug"])
+            self.assertIn("swept_margin_applied", ev["debug"])     # 2026-11-10: the gate branches on it
             self.assertIn("trigger_range_m", ev["debug"])
             self.assertIn("range_degenerate", ev["debug"])
-        # Corrupt exactly the field the gate claims to read; the gate must notice.
+        # Corrupt exactly the fields the gate claims to read; the gate must notice. A sub-margin
+        # sweep is a breach only where the margin APPLIED (inside the canopy band), so both fields
+        # are set: a flight at cruise writes applied=False and the same 0.1 m is then context.
         maneuvers[0]["debug"]["swept_tree_clearance_m"] = 0.1
+        maneuvers[0]["debug"]["swept_margin_applied"] = True
         self.assertInvalid(self.check(log), "R2 BREACH")
+        maneuvers[0]["debug"]["swept_margin_applied"] = False
+        status, messages = self.check(log)
+        self.assertNotIn("R2 BREACH", "\n".join(messages))
+        maneuvers[0]["debug"]["swept_margin_applied"] = "yes"       # drift in the flag itself
+        self.assertInvalid(self.check(log), "swept_margin_applied")
 
     def test_the_threat_positions_the_policy_writes_are_the_ones_R3_7_reads(self):
         """The R3.7 join is `event.setpoint_enu` against `debug.threat_positions_enu`, and both

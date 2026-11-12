@@ -114,8 +114,10 @@ otherwise, this section wins (ADR-022).
 - **Replan and requeue do not exist** (see *The core guarantee*) — scoped out by ADR-002, not built.
 - **The control loop is open** (see Architecture §5): fire-and-forget commands, belief-based events,
   no live achieved-displacement gate.
-- **The depth sensor has flown once, with no target** (see Architecture §2): every SCORED depth number
-  comes from parked, noiseless renders; the one flight measured delivery and runtime only.
+- **The depth sensor has flown against a bird since 2026-11-10** (see Architecture §2): 24 head-on encounters, one booked
+  take committed VALID under the flight-log gate (ADR-020 am. 8; in-flight range error p95 0.17 m on unambiguous frames). Every
+  SCORED segmenter number still comes from parked, noiseless renders; the booking's am. 5 re-score was run on 2026-11-12 and PASSED
+  (ADR-021 am. 2: clutter tested to 46 m against a declared 18 m structure, shipped constants, all seven bars).
 - **Three live avoidance flights, three breaches** (see Priorities): two ACKNOWLEDGED exit 0, one
   **INVALID exit 1**, and the INVALID one stands.
 

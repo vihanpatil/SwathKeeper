@@ -166,12 +166,14 @@ class TestAvoidanceGate(unittest.TestCase):
             _drone_state(sample), self.geo)
         self.assertIs(m.decision, Decision.DIVERT, m.reason)
         self.assertIsNotNone(m.setpoint_enu)
-        # And it is not a free dodge: the threat bird patrols the lane that runs down orchard row 0,
-        # so the straight away-from-bird candidate sweeps a tree column and is REJECTED -- the
-        # nominal world now reaches the "avoidance must not create a new collision" branch that only
-        # the hand-built geo_avoid_into_tree scenario used to. (ADR-015)
-        self.assertTrue(m.debug["candidates_rejected"], "expected the 0-deg candidate to be refused")
-        self.assertGreaterEqual(m.debug["swept_tree_clearance_m"], 0.0)
+        # The threat bird patrols the lane that runs down orchard row 0, so the dodge's swept path
+        # crosses tree COLUMNS in XY -- and until 2026-11-10 that rejected the straight-away
+        # candidate (ADR-015's "not a free dodge"). At 15 m over 3.8 m trees the sweep cannot meet a
+        # tree, so the policy now says so instead of refusing: the margin was not applied, the
+        # clearance is still recorded (it may read inside a column), and the endpoint is 3D-safe.
+        self.assertFalse(m.debug["swept_margin_applied"])
+        self.assertIn("swept_tree_clearance_m", m.debug)
+        self.assertTrue(self.geo.is_safe_3d(m.setpoint_enu))
 
     def test_the_other_birds_are_below_the_cylinder_and_the_policy_proceeds(self):
         """Deliberate, not accidental: bird_1 (8 m) and bird_2 (6 m) sit 7 and 9 m under cruise, so

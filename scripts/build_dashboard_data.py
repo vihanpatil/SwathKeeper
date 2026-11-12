@@ -78,6 +78,9 @@ FLIGHT_STEMS = (
     "live_flight_log_20260818T144711Z",
     "live_flight_log_20260823T004031Z",
     "live_flight_log_20260825T210402Z",
+    # 2026-11-11: the first VALID avoidance take -- booked head-on encounter, forward depth camera,
+    # gt_cpa_m 9.6138 m (ADR-020 am. 8). Truth and booking are pinned in the gate.
+    "live_flight_log_20261111T202709Z",
 )
 
 # The stitched clips the NDVI view offers. Both are committed, both PASS check_tree_positions, and
@@ -396,6 +399,13 @@ def build_flights(b: Build) -> None:
             entry["marker"] = marker_path.name
 
         status, messages = GATE.check_file(log_path)
+        # Everything the verdict reads is a SOURCE (QA 2026-11-11): the pinned booking artifact, when
+        # the gate holds this take to one, is hashed into the manifest beside the log.
+        pin = GATE.BOOKING_BINDINGS.get(stem)
+        if pin:
+            booking_name = pin if isinstance(pin, str) else pin[0]
+            b.note_source(RESULTS / booking_name,
+                          "booking artifact (pinned in BOOKING_BINDINGS; the gate holds the take to it)")
         entry["verdict"] = status
         entry["gate_messages"] = list(messages)
         entry["gate"] = "scripts/check_live_flight_log.py"
@@ -443,6 +453,16 @@ def build_truth(b: Build, stem: str, log_path: Path, log: dict) -> None:
         b.derive({"unavailable": problems}, f"truth/{stem}.json")
         return
     b.note_source(truth.path, "bird ground truth (applied set_pose poses)")
+    # The driver's sidecar declares the scenario it drove (and so which world birds the gate scores
+    # as static), and the declared config is read from the repo: both decide the verdict (QA
+    # 2026-11-11), so both are sources.
+    sidecar = truth.path.with_name(truth.path.name[: -len("_applied.jsonl")] + ".json") \
+        if truth.path.name.endswith("_applied.jsonl") else None
+    if sidecar is not None and sidecar.exists():
+        b.note_source(sidecar, "bird driver run sidecar (declares the scenario config and bird set)")
+    if getattr(truth, "declared_config_path", None):
+        b.note_source(truth.declared_config_path,
+                      "declared bird scenario config (its undriven world birds are scored at spawn)")
     b.derive({
         "track": truth.path.name,
         "bound_by": "TRUTH_BINDINGS in scripts/check_live_flight_log.py (a reviewed pin)",

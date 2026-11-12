@@ -6,12 +6,18 @@
 #         groups.jsonl (one line per camera pose: vehicle/link readbacks, parked birds), camera_info_<world>.json
 # One gz launch per distinct camera pose (pose baked into the SDF copy); bird_0 teleported per station, every
 # actuation verified by /world/<w>/pose/info readback (fail-closed, exit 4). COMMITTED 125x110 plane, never extended.
+# VARIANT=<config/world_variants/<name>.json> (ADR-020 am. 5): the variant's static boxes are ADDED to every world
+# copy (never to the committed world) and DECLARED -- name, file, sha256, boxes, instantiated -- in every groups.jsonl
+# line, so the scorer can ray-cast the same geometry and refuse a render whose declaration it was not given. ONE rule
+# decides instantiation per camera group: a box is NOT added for a group whose commanded camera position lies inside it
+# (closed interval, all three axes) -- the render would be the box's own inside. The scorer recomputes the same rule.
 source /root/ardu_ws/install/setup.bash   # before set -u: colcon's setup reads COLCON_TRACE unguarded
 set -u
 export GZ_SIM_RESOURCE_PATH="${GZ_SIM_RESOURCE_PATH:-}:/root/ardu_ws/install/ardupilot_gazebo/share"
 REPO=/workspace/fieldguard; OUT=${OUT:-/tmp/depthset}; STATIONS=${1:-/tmp/stations.json}
 POSE_TOL_M=0.05; YAW_TOL_DEG=0.5
 PARK1="-200 -190 50"; PARK2="-200 -180 50"     # bird_1 / bird_2 parks — distinct from the F-group park (-200,-200,50)
+VARIANT=${VARIANT:-}                           # ADR-020 am. 5 world variant file, or empty for the committed world as is
 mkdir -p "$OUT"; : > "$OUT/labels.jsonl"; : > "$OUT/groups.jsonl"
 GZP=""
 fail() { echo "[capture] FAIL: $*"; [ -n "$GZP" ] && kill "$GZP" 2>/dev/null; exit 4; }
@@ -28,6 +34,42 @@ ps -eo args= | grep -qE '[d]rive_birds|[b]ird_drive' && fail "a bird driver is r
 grep -q '<size>125.00 110.00</size>' "$REPO/sim/worlds/farmguard_field.sdf" || fail "committed world lacks the 125x110 field_ground"
 grep -q 'gz-sim-physics-system' "$REPO/sim/worlds/farmguard_field.sdf" || fail "committed world lacks the physics system (set_pose needs it)"
 [ -f "$STATIONS" ] || fail "no station file at $STATIONS"
+
+# ---- world variant (ADR-020 am. 5): render its boxes as SDF once, declare it once ----
+VARIANT_JSON=null; VARIANT_MODELS=""; NBOX=0
+if [ -n "$VARIANT" ]; then
+  [ -f "$VARIANT" ] || fail "no world variant file at $VARIANT"
+  VARIANT_MODELS=/tmp/depthset_variant_models.sdf
+  VARIANT_JSON=$(python3 - "$VARIANT" "$VARIANT_MODELS" <<'PY'
+import json, sys, hashlib
+path, out = sys.argv[1], sys.argv[2]
+raw = open(path, "rb").read(); v = json.loads(raw)
+boxes = v.get("boxes") or []
+if not boxes: print("NO_BOXES"); sys.exit(4)
+sdf = []
+for b in boxes:
+    cx, cy, cz = (float(x) for x in b["centre_m"]); sx, sy, sz = (float(x) for x in b["size_m"])
+    if min(sx, sy, sz) <= 0: print("BAD_SIZE"); sys.exit(4)
+    sdf.append(f"""    <model name="{b['name']}">
+      <static>true</static>
+      <pose>{cx} {cy} {cz} 0 0 0</pose>
+      <link name="body">
+        <collision name="body_collision"><geometry><box><size>{sx} {sy} {sz}</size></box></geometry></collision>
+        <visual name="body_visual">
+          <geometry><box><size>{sx} {sy} {sz}</size></box></geometry>
+          <material><ambient>0.45 0.45 0.45 1</ambient><diffuse>0.45 0.45 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+""")
+open(out, "w").write("".join(sdf))
+print(json.dumps({"name": v.get("name"), "file": path, "sha256": hashlib.sha256(raw).hexdigest(),
+                  "boxes": [{"name": b["name"], "centre_m": b["centre_m"], "size_m": b["size_m"]} for b in boxes]}))
+PY
+) || fail "world variant $VARIANT could not be read: $VARIANT_JSON"
+  NBOX=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])['boxes']))" "$VARIANT_JSON")
+  echo "[capture] WORLD VARIANT ($NBOX box(es)): $VARIANT_JSON"
+fi
 
 # prints "x y z yaw_deg qx qy qz qw" or NOT_FOUND. proto text omits fields that are exactly 0 -> dict defaults.
 pose_of() { # world entity
@@ -81,7 +123,7 @@ for key, ids in groups.items():
     print(" ".join(str(v) for v in key), ",".join(ids))
 PY
 NST=$(python3 -c "import json;d=json.load(open('$STATIONS'));print(len(d['stations'] if isinstance(d,dict) else d))")
-echo "[capture] $(wc -l < /tmp/depthset_groups.txt) camera groups, $NST stations, plane=COMMITTED 125x110, out=$OUT"
+echo "[capture] $(wc -l < /tmp/depthset_groups.txt) camera groups, $NST stations, plane=COMMITTED 125x110, variant=${VARIANT:-none}, out=$OUT"
 
 G=0
 while read -r E N U R P YAW IDS; do
@@ -95,6 +137,30 @@ while read -r E N U R P YAW IDS; do
   [ "$(grep -c "<pose degrees=\"true\">$E $N $U $R $P $YAW</pose>" /tmp/$W.sdf)" = 1 ] || fail "group $G: vehicle pose edit did not apply exactly once"
   grep -q '<size>125.00 110.00</size>' /tmp/$W.sdf || fail "group $G: the copy's field_ground is not the committed 125x110 plane"
   grep -q '<size>425.00' /tmp/$W.sdf && fail "group $G: the copy carries the 425 m check-world extension"
+  INST=true
+  if [ -n "$VARIANT" ]; then   # ---- the instantiation rule, from the COMMANDED camera position ----
+    INST=$(python3 -c "
+import json, sys
+boxes = json.loads(sys.argv[1])['boxes']; cam = [float(v) for v in sys.argv[2:5]]
+inside = any(all(abs(cam[i] - b['centre_m'][i]) <= b['size_m'][i] / 2 for i in range(3)) for b in boxes)
+print('false' if inside else 'true')" "$VARIANT_JSON" "$E" "$N" "$U") || fail "group $G: instantiation rule failed"
+  fi
+  if [ -n "$VARIANT" ] && [ "$INST" = true ]; then   # ---- inject the declared boxes into THIS COPY, before </world>, exactly once each ----
+    python3 - /tmp/$W.sdf "$VARIANT_MODELS" <<'PY' || fail "group $G: variant injection failed"
+import sys
+p, models = sys.argv[1], sys.argv[2]
+s = open(p).read()
+if s.count("</world>") != 1: print("WORLD_CLOSE_COUNT", s.count("</world>")); sys.exit(4)
+s = s.replace("</world>", open(models).read() + "  </world>")
+open(p, "w").write(s)
+PY
+    for NAME in $(python3 -c "import json,sys; print(' '.join(b['name'] for b in json.loads(sys.argv[1])['boxes']))" "$VARIANT_JSON"); do
+      [ "$(grep -c "<model name=\"$NAME\">" /tmp/$W.sdf)" = 1 ] || fail "group $G: variant model $NAME not injected exactly once"
+    done
+    grep -q "<model name=\"$(python3 -c "import json,sys; print(json.loads(sys.argv[1])['boxes'][0]['name'])" "$VARIANT_JSON")\">" "$REPO/sim/worlds/farmguard_field.sdf" && fail "group $G: the COMMITTED world carries the variant model -- it must stay a copy-only fixture"
+  elif [ -n "$VARIANT" ]; then
+    echo "[capture] group $G: variant NOT instantiated -- the commanded camera ($E,$N,$U) lies inside a declared box"
+  fi
   [ -n "$(gz_server_pids)" ] && fail "group $G: a gz server appeared before launch"
   gz sim -v1 -s -r --headless-rendering /tmp/$W.sdf > /tmp/$W.log 2>&1 &
   GZP=$!
@@ -111,12 +177,15 @@ while read -r E N U R P YAW IDS; do
   B1=$(teleport "$W" bird_1 $PARK1); B2=$(teleport "$W" bird_2 $PARK2)
   timeout 15 gz topic -e -t "/$W/depth/camera_info" -n 1 --json-output > "$OUT/camera_info_$W.json" 2>/dev/null \
     || fail "group $G: no camera_info"
-  echo "[capture] group $G ($W) up in $(( $(date +%s)-T0 ))s: cam ($E,$N,$U) rpy ($R,$P,$YAW) | vehicle rb [$VEH] | link rb [$LINK] | stations: $IDS"
+  echo "[capture] group $G ($W) up in $(( $(date +%s)-T0 ))s: cam ($E,$N,$U) rpy ($R,$P,$YAW) | vehicle rb [$VEH] | link rb [$LINK] | variant: ${VARIANT:-none}$([ -n "$VARIANT" ] && echo " instantiated=$INST") | stations: $IDS"
   python3 - <<PY >> "$OUT/groups.jsonl"
 import json
 print(json.dumps({"group": $G, "world": "$W", "cam_enu_cmd": [$E, $N, $U], "cam_rpy_deg_cmd": [$R, $P, $YAW],
   "vehicle_readback": "$VEH", "depth_link_readback_parent_relative": "$LINK", "bird_1_park_readback": "$B1",
   "bird_2_park_readback": "$B2", "camera_info": "camera_info_$W.json", "stations": "$IDS".split(","),
+  "world_variant": (None if json.loads('''$VARIANT_JSON''') is None else
+                    dict(json.loads('''$VARIANT_JSON'''), instantiated=("$INST" == "true"),
+                         instantiation_rule="not instantiated for a camera group whose commanded camera position lies inside the box (closed interval, all three axes)")),
   "readback_format": "x y z yaw_deg qx qy qz qw (world frame for models; parent-relative for the link)"}))
 PY
   IFS=',' read -ra IDARR <<< "$IDS"; PREV_SHA=""

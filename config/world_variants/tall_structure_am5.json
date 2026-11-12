@@ -1,0 +1,48 @@
+{
+ "schema_version": "1.0",
+ "name": "tall_structure_am5",
+ "purpose": "ADR-020 amendment 5 (2026-09-11, owner-confirmed): the depth segmenter is re-scored on a TALL-OBSTACLE world variant -- finite structure >= ~12 m standing behind the +/-6 m threat band at 34-46 m -- so clutter is tested at or beyond the 33.591 m breakeven before any depth-camera dodge booking stands. ONE render fixture for that re-score. It is NOT a change to the flown world (sim/worlds/farmguard_field.sdf is untouched; the harness adds these models to its per-group COPIES and declares them, by this file's sha256, in groups.jsonl).",
+ "base_world": "sim/worlds/farmguard_field.sdf",
+ "applies_to": "eval/capture_depth_dataset.sh (VARIANT=<this file>) and eval/score_depth_segmenter.py --world-variant <this file>",
+ "boxes": [
+  {
+   "name": "tall_structure_am5",
+   "centre_m": [
+    40.0,
+    60.0,
+    9.0
+   ],
+   "size_m": [
+    110.0,
+    4.0,
+    18.0
+   ],
+   "faces": "x -15..95, y 58..62, z 0..18 (world ENU, metres); front face y = 58.0",
+   "why": "From the two +N-facing cruise-altitude camera poses at y = 0 (x = 15 and x = 60) the front face stands 58.0 m down the optical axis: inside the 60 m Euclidean far cull on and near the axis, 7.7 m behind the farthest station bird (50.15 m, S008/S016) so no station is occluded and every stand-off exceeds the 1.5 m margin, and 18 m tall so it stands behind the 15 m cruise-altitude ladder as well as the 12 m and 9 m rows -- the +/-6 m band's lower half included. The y = 55 tree row (canopy top 3.8 m, canopy reach 56.3 m) stays in front of it. The -N-facing poses at y = 40 and y = 60 have it behind the camera."
+  }
+ ],
+ "geometry_notes": [
+  "The far cull limits the structure's apparent reach to about +/-15 m lateral at 58 m, so the two off-axis 46 m stations (S072/S073, 23 m off the axis) stay sky-backed by geometry, not by choice.",
+  "Birds whose ray meets the structure's face before the ground change background class from sky or ground_band to structure; their depth step only grows. Pre-registered list: docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md, the 2026-11-12 P5 RE-SCORE section.",
+  "The structure is NOT in the tree geofence map, so any segmenter detection on it in a negative-control frame is an UNMAPPED false positive and counts against the <= 0.05 /frame bar. Stated before the render so it cannot be reclassified after.",
+  "The pre-registered prediction (the scorer's own ray-cast at the commanded poses, scratch run 2026-11-12, after the instantiation rule): 36 bird stations change background class to 'structure' -- 30 of them FNR_zero (the two +N ladders S001-S007, S009-S015, S017-S020 at 14-46 m; the B_merge rows S021-S025, S028-S030, S035 at 14-22 m whose ground hit lies beyond the face; S042-S044) plus the diagnostics S008, S016 (50 m) and the pitched S081-S084. NINE FNR_zero stations are structure-backed at or beyond 33.591 m: S044 (34), S005/S013 (38), S019 (40), S006/S014 (44), S007/S015/S020 (46 m). The farthest structure-backed FNR_zero rung is 46.0 m; the smallest bird-to-structure stand-off is 8.0 m (S008/S016 at 50 m)."
+ ],
+ "instantiation_rule": "a box is NOT instantiated for a camera group whose COMMANDED camera position lies inside it (closed interval on all three axes); eval/capture_depth_dataset.sh applies the rule per group and declares instantiated=true/false in groups.jsonl, eval/score_depth_segmenter.py recomputes it from the same file and refuses a disagreement. Stated before the render, so the one group it removes cannot be chosen after.",
+ "camera_poses_not_instantiated": [
+  {
+   "cam_enu": [
+    15.0,
+    60.0,
+    15.0
+   ],
+   "yaw_deg": 270.0,
+   "stations": [
+    "S045",
+    "S046",
+    "S047",
+    "S064"
+   ],
+   "why": "the only camera pose of the 85-station file that lies inside the box: it looks SOUTH from y = 60, so the wall is neither behind its birds (26-34 m south of it) nor able to stand behind the y = 0 ladders if moved north of 60 m (the 60 m far cull). Its three FNR_zero stations and one negative are scored in the committed world, as on 2026-09-07."
+  }
+ ]
+}

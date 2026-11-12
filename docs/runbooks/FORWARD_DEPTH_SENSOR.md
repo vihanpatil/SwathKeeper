@@ -757,11 +757,11 @@ names the artifact, because a gaps list nobody dispositions becomes a list nobod
   The rule's cost is on the record: at `min_area_px = 6` the floor would be **1.6 px → 58.50 m**.
   Both are above the booked 46.0 m, so the booking does not move either way. Closes
   `config/depth_camera.json`'s `min_resolving_radius_source` item too.
-* **OPEN — whether the nadir bird-visibility gate is still a precondition for a dodge take** is a
-  question for the ADR, not for this runbook: with detection on the forward sensor,
+* **RULED 2026-11-12 (owner, ADR-020 am. 9): for a depth-source take the nadir bird-visibility gate is REPORTED, not a
+  precondition; §0f authorises.** It was a question for the ADR, not for this runbook: with detection on the forward sensor,
   `predict_bird_visibility.py` gates the NDVI *map*, not the dodge. It is still a real gate for the
-  survey half; do not silently retire it. **Product-lead ratification owed** (ADR-020 am. 1 open
-  item 4): the recommendation is that for a *depth-source* take the forward booking gate is the
+  survey half; do not silently retire it. **Ratified as recommended** (ADR-020 am. 1 open
+  item 4, closed by am. 9): the recommendation is that for a *depth-source* take the forward booking gate is the
   **authorising** one and §0b is **REPORTED** — measured, §0b FAILS 2 of 3 birds at the booked
   5.0 m/s.
 
@@ -812,3 +812,22 @@ stations plus the six pitched S080–S085), `CAPTURE_LOG.txt`, and `eval/capture
 **Not committed** (~100 MB): `labels.jsonl`, the 85 `.npy` frames, the per-group `camera_info_*.json`
 — they regenerate from the harness plus the station file, which is why the station file is the thing
 under version control.
+
+**Re-render under a DECLARED world variant (ADR-020 am. 5, the tall-obstacle re-score, 2026-11-12):**
+
+```bash
+docker cp eval/results/depth_dataset_20260907/stations_rendered.json fieldguard-sim:/tmp/stations.json
+docker exec -it fieldguard-sim env VARIANT=/workspace/fieldguard/config/world_variants/tall_structure_am5.json OUT=/tmp/depthset_tall \
+  bash /workspace/fieldguard/eval/capture_depth_dataset.sh /tmp/stations.json
+docker cp fieldguard-sim:/tmp/depthset_tall eval/results/depth_dataset_20261112_tall
+python3 eval/score_depth_segmenter.py --dataset eval/results/depth_dataset_20261112_tall --out-dir eval/results/depth_dataset_20261112_tall \
+  --world-variant config/world_variants/tall_structure_am5.json --score-shipped
+```
+
+The same stations, the same harness and the same seven bars; the variant file's static boxes are added to every per-group **copy**
+of the world (the committed world is asserted free of them), a group whose commanded camera lies inside a box is rendered without it
+(one rule, declared per group in `groups.jsonl`), and the scorer ray-casts the same boxes so the background classes behind them are
+right — it refuses a render whose declaration does not match the file it was given, in either direction. `--score-shipped` scores
+the SHIPPED constants and only reports what the sweep would adopt: a re-score moves no constant. The score artifact lands **inside**
+the dataset dir so `eval/results/` keeps exactly one adopted artifact. Pre-registration and disposition rules:
+`docs/runbooks/DODGE_TAKE_PREREGISTRATION_20260907.md`, the 2026-11-12 P5 RE-SCORE section.

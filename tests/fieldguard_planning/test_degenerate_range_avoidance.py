@@ -92,6 +92,13 @@ from fieldguard_planning.geofence import GeofenceMap  # noqa: E402
 # --------------------------------------------------------------------------------------------------
 DEMO_BIRD_ENU = (30.0, 30.0, 15.0)          # avoidance_node.DEMO_BIRD_ENU -- static all 19 ticks
 CRUISE_ALT_M = 15.0                          # avoidance_node.CRUISE_ALT_M
+# Since 2026-11-10 the swept-path tree margin (gate 2, R2) applies only where the dodge can meet a
+# tree: the swept segment at or below the canopy band top, 3.8 m + 1.0 m vertical margin = 4.8 m
+# (avoidance_policy._swept_margin_applies). Every R2 PRICING below therefore runs the same XY
+# geometry at this altitude, INSIDE the band -- and reproduces the numbers first measured at 15 m
+# to the third decimal (hold rate 15.66 %, as-flown 5.68 %, sub-metre tail 28.0 %, min 1.000 m),
+# because the XY geometry is unchanged. The flown-encounter REPLAYS stay at the flown 15 m.
+BAND_ALT_M = 4.0
 
 ENCOUNTER = (
     (323, (29.993885040283203, 20.727569580078125, 15.0), 9.272, (-0.001, -1.0), 8.01, "latch"),
@@ -160,15 +167,16 @@ class _SweepMixin:
     SWEEP_TREES = ((15.0, 5.0), (40.0, 25.0), (65.0, 45.0))
 
     @classmethod
-    def build_sweep(cls, margin_m=None):
+    def build_sweep(cls, margin_m=None, alt_m=BAND_ALT_M):
         """`margin_m=None` means 'whatever the policy's own default is' -- deliberately NOT pinned
         to a literal, so this sweep follows `lateral_tree_margin_m` wherever it goes (that is what
         made the R2 pair flip on its own when the default moved 0.0 -> 1.0). Pass a number to price
-        a margin or to replay the AS-FLOWN 0.0."""
+        a margin or to replay the AS-FLOWN 0.0. `alt_m` is BAND_ALT_M: inside the canopy band, where
+        gate 2 is live (at CRUISE_ALT_M it is not, by design, since 2026-11-10)."""
         overrides = {} if margin_m is None else {"lateral_tree_margin_m": margin_m}
         geo = GeofenceMap.from_file()
         poly = load_field_polygon()
-        pol = AvoidancePolicy(field_polygon=poly, cruise_alt_m=CRUISE_ALT_M)
+        pol = AvoidancePolicy(field_polygon=poly, cruise_alt_m=alt_m)
         results = []          # (drone_xy, setpoint, swept_clearance_m, angle_deg)
         n_hold = n_case = 0
         for tx, ty in cls.SWEEP_TREES:
@@ -180,8 +188,8 @@ class _SweepMixin:
                     for k in range(cls.N_BEARINGS):
                         th = 2 * math.pi * k / cls.N_BEARINGS
                         bird = (x - cls.RANGE_M * math.cos(th),
-                                y - cls.RANGE_M * math.sin(th), CRUISE_ALT_M)
-                        m = pol.decide(_bird(bird), _drone((x, y, CRUISE_ALT_M)), geo, **overrides)
+                                y - cls.RANGE_M * math.sin(th), alt_m)
+                        m = pol.decide(_bird(bird), _drone((x, y, alt_m)), geo, **overrides)
                         n_case += 1
                         if m.decision is Decision.HOLD:
                             n_hold += 1
@@ -222,19 +230,27 @@ class TestFlownTick329(unittest.TestCase):
     # The params the 2026-08-23 flight ACTUALLY flew. Only the margin differs from today's
     # defaults; naming it here keeps 'what was flown' in exactly one place, and keeps the encounter
     # replaying bit-identically no matter how many more knobs move afterwards.
-    AS_FLOWN = {"lateral_tree_margin_m": 0.0}
+    # R4 (2026-11-10) did not exist when this encounter flew: its replay disables the sidestep rule.
+    AS_FLOWN = {"lateral_tree_margin_m": 0.0, "on_track_sidestep_min_range_m": math.inf}
 
     @classmethod
     def setUpClass(cls):
         cls.geo = GeofenceMap.from_file()
         cls.pol = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=CRUISE_ALT_M)
 
-    def _decide(self, tick_row, **overrides):
+    def _decide(self, tick_row, alt=None, **overrides):
         """Replays a flown tick under AS_FLOWN params; `overrides` win, so a caller can price a
-        different control law against the same geometry."""
+        different control law against the same geometry. `alt` lowers the SAME XY geometry (drone,
+        bird and setpoint) to that altitude -- BAND_ALT_M puts it inside the canopy band, where the
+        swept-path margin is live."""
         _, pos, _, _, _, _ = tick_row
         params = {**self.AS_FLOWN, **overrides}
-        return self.pol.decide(_bird(DEMO_BIRD_ENU), _drone(pos), self.geo, **params)
+        bird = DEMO_BIRD_ENU
+        if alt is not None:
+            pos = (pos[0], pos[1], alt)
+            bird = (bird[0], bird[1], alt)
+            params["cruise_alt_m"] = alt
+        return self.pol.decide(_bird(bird), _drone(pos), self.geo, **params)
 
     def test_whole_encounter_replays_bit_identically(self):
         """All 19 ticks under AS_FLOWN params: same decision, same away-unit, same swept clearance,
@@ -269,10 +285,19 @@ class TestFlownTick329(unittest.TestCase):
         self.assertEqual(seg.obstacle.id, "tree_row1_3")
         self.assertAlmostEqual(seg.clearance_m + OBSTACLE_R_M, 2.846, places=3,
                                msg="distance from the swept path to the TRUNK")
-        today = self._decide(TICK_329, lateral_tree_margin_m=PolicyParams().lateral_tree_margin_m)
+        margin = PolicyParams().lateral_tree_margin_m
+        # At the FLOWN 15 m the margin no longer applies (2026-11-10): the dodge is 10.2 m above
+        # the tallest tree volume, the candidate is accepted and SAYS the margin was not applied.
+        at_cruise = self._decide(TICK_329, lateral_tree_margin_m=margin)
+        self.assertEqual(at_cruise.debug["candidate_angle_deg"], 0.0)
+        self.assertFalse(at_cruise.debug["swept_margin_applied"])
+        # Lowered into the band, today's margin REJECTS the same candidate by name.
+        today = self._decide(TICK_329, alt=BAND_ALT_M, lateral_tree_margin_m=margin)
+        self.assertTrue(today.debug["swept_margin_applied"])
         self.assertEqual([r["angle_deg"] for r in today.debug["candidates_rejected"]], [0.0])
         self.assertIn("swept path clears tree by only 0.85 m",
                       today.debug["candidates_rejected"][0]["why"])
+        self.assertIn("inside the canopy band", today.debug["candidates_rejected"][0]["why"])
 
     def test_one_tick_of_range_collapse_costs_7_metres_of_tree_clearance(self):
         """tick 328 -> 329: range 1.280 -> 0.052 m, clearance 7.879 -> 0.846 m. The discontinuity,
@@ -299,13 +324,13 @@ class TestFlownTick329(unittest.TestCase):
         ticks still DIVERTs -- the 19/19 vetted encounter is preserved, not traded away."""
         margin = PolicyParams().lateral_tree_margin_m
         self.assertEqual(margin, 1.0, "R2's landed value; if it moved, re-price this encounter")
-        n_divert = 0
-        for row in ENCOUNTER:
-            m = self._decide(row, lateral_tree_margin_m=margin)
-            n_divert += (m.decision is Decision.DIVERT)
-        self.assertEqual(n_divert, 19, "a margin that costs a DIVERT is not free -- re-price it")
+        for alt in (None, BAND_ALT_M):                 # at the flown 15 m AND inside the band
+            n_divert = sum(self._decide(row, alt=alt, lateral_tree_margin_m=margin).decision
+                           is Decision.DIVERT for row in ENCOUNTER)
+            self.assertEqual(n_divert, 19, f"a margin that costs a DIVERT is not free (alt={alt})")
 
-        m = self._decide(TICK_329, lateral_tree_margin_m=margin)
+        # The rotation R2 buys, shown where the margin is live (inside the band; 2026-11-10).
+        m = self._decide(TICK_329, alt=BAND_ALT_M, lateral_tree_margin_m=margin)
         self.assertIs(m.decision, Decision.DIVERT)
         self.assertEqual(m.debug["candidate_angle_deg"], 45.0)
         self.assertEqual(len(m.debug["candidates_rejected"]), 1)
@@ -383,8 +408,10 @@ class TestAwayVectorDegeneracy(unittest.TestCase):
         far = self._bearing_set(9.272, eps=0.5, n=72)
         self.assertGreaterEqual(_angular_span(near), 300.0,
                                 "at r=0.052 m the dodge direction is unconstrained by the geometry")
-        self.assertGreaterEqual(_angular_span(near_tiny), 150.0,
-                                "even a 5 cm estimate error swings the dodge through >150 deg")
+        # 148.06 deg measured 2026-11-10 once gate 2 stopped rotating candidates at 15 m (the
+        # earlier 150 included rotations the margin made, not the geometry); the mechanism is M1.
+        self.assertGreaterEqual(_angular_span(near_tiny), 140.0,
+                                "even a 5 cm estimate error swings the dodge through >140 deg")
         self.assertLessEqual(_angular_span(far), 10.0,
                              "at r=9.27 m the same detector error barely moves it")
 
@@ -453,7 +480,8 @@ class TestLateralTreeMargin(_SweepMixin, unittest.TestCase):
         drone_xy = (9.0, 3.0)
         bird, drone = _bird((8.948, 3.0, CRUISE_ALT_M)), _drone((*drone_xy, CRUISE_ALT_M))
 
-        flown = pol.decide(bird, drone, geo, lateral_tree_margin_m=0.0)
+        # as flown: 15 m, margin 0.0 -- accepted, exactly tangent
+        flown = pol.decide(bird, drone, geo, lateral_tree_margin_m=0.0, cruise_alt_m=CRUISE_ALT_M)
         self.assertIs(flown.decision, Decision.DIVERT)
         self.assertEqual(flown.setpoint_enu, (19.0, 3.0, CRUISE_ALT_M))
         seg = geo.segment_clearance(drone_xy, flown.setpoint_enu[:2])
@@ -461,8 +489,10 @@ class TestLateralTreeMargin(_SweepMixin, unittest.TestCase):
         self.assertEqual(seg.clearance_m, 0.0)
         self.assertEqual(flown.debug["swept_tree_clearance_m"], 0.0)
 
-        today = pol.decide(bird, drone, geo)
-        self.assertNotEqual(today.setpoint_enu, flown.setpoint_enu,
+        # today, inside the band (the sweep's altitude): the same tangent candidate is refused
+        bird_low, drone_low = _bird((8.948, 3.0, BAND_ALT_M)), _drone((*drone_xy, BAND_ALT_M))
+        today = pol.decide(bird_low, drone_low, geo)
+        self.assertNotEqual(today.setpoint_enu[:2], flown.setpoint_enu[:2],
                             "the tangent dodge is still being flown")
         if today.decision is Decision.DIVERT:
             self.assertGreaterEqual(today.debug["swept_tree_clearance_m"],

@@ -73,6 +73,28 @@ ENU = Tuple[float, float, float]
 # 180 (straight toward the bird) is deliberately excluded. Ordered by preference.
 _CANDIDATE_ANGLES_DEG: Tuple[float, ...] = (0.0, 45.0, -45.0, 90.0, -90.0, 135.0, -135.0)
 
+# R4 (landed 2026-11-10). The order above is right for a bird ABEAM: straight away opens the range
+# fastest. It is wrong for a bird ON THE DRONE'S TRACK -- closing head-on, or overtaking from behind
+# -- because "straight away" is then a full reversal along the very line the bird is flying, and
+# ownship momentum makes it the one escape that never clears: the 2026-08-26 point-mass replay of
+# the three flown encounters found the 0 deg reversal resolves at NO lead time x plant limit, while
+# +/-90 deg sidesteps resolve from 1.25 s. Every flown dodge took candidate 0 (18 of 19 ticks on
+# 2026-08-23; the 2026-08-25 take likewise) and every one struck. So when the trigger bird's
+# bearing is within ON_TRACK_HALF_ANGLE_DEG of the drone's own track axis -- ahead or astern -- and
+# the range is well conditioned (>= PolicyParams.on_track_sidestep_min_range_m, i.e. well outside
+# the R3 regime where the away-vector's direction is noise), the perpendicular candidates are tried
+# FIRST, the side that moves away from the bird's cross-track offset before the other. Inside that
+# range, or for a bird off the track axis, the away-first order is unchanged, so the 19-tick
+# 2026-08-23 replay and every R2/R3 fixture reproduce byte for byte.
+_ON_TRACK_CANDIDATE_ANGLES_DEG: Tuple[float, ...] = (90.0, -90.0, 45.0, -45.0, 0.0, 135.0, -135.0)
+ON_TRACK_HALF_ANGLE_DEG = 30.0
+# Which SIDE to sidestep. A bird further than this off the track axis is passed on the other side;
+# a bird inside it is dead ahead, and the sign of a sub-metre offset is noise that flipped the
+# first candidate between +90 and -90 from tick to tick (2026-11-10 run 3: RL / RLLL / LRL latch
+# sequences, 5-6 s of GUIDED with < 0.5 m of motion on the encounters that dithered). Dead ahead,
+# the sidestep goes toward the FIELD INTERIOR -- the side with room, deterministically.
+SIDESTEP_SIDE_DEADBAND_M = 1.0
+
 
 @dataclass(frozen=True)
 class PolicyParams:
@@ -111,6 +133,12 @@ class PolicyParams:
     # mean not dodging a bird we are on top of -- and hold-and-climb was NOT chosen (ADR-009: bird z
     # is the estimate we cannot trust).
     degenerate_range_m: float = 1.0
+    # R4 (2026-11-10): a trigger bird this far out or further, and within ON_TRACK_HALF_ANGLE_DEG of
+    # the drone's track axis, is answered with a perpendicular sidestep first (see
+    # _ON_TRACK_CANDIDATE_ANGLES_DEG). 6.0 m = 2x min_bird_clearance_m: twice the bar is where a
+    # 0.5 m position error moves the bearing by < 5 deg, so the on-track test itself is geometry,
+    # not noise. Below it the away-first order of R2/R3 stands.
+    on_track_sidestep_min_range_m: float = 6.0
     vertical_margin_m: float = DEFAULT_VERTICAL_MARGIN_M   # the canopy band buffer, ONE home
     alt_min_m: float = 2.0              # altitude envelope floor (is_safe_3d alt_bounds)
     alt_max_m: float = 30.0             # altitude envelope ceiling
@@ -247,16 +275,30 @@ class AvoidancePolicy:
         # geometry runs, so an old frame can neither trigger a phantom dodge nor sit in the threat
         # set constraining the dodge away from a live bird.
         fresh, stale = self._split_stale(detections, now_s, p)
+        # KNOWN STATIC OBSTACLES are not dynamic threats (2026-11-10). A detection whose position
+        # lies inside a surveyed tree's volume (`Detection.static_map_hint`, set by the depth seam
+        # with the geofence's own `unsafe_obstacle_3d`) IS the tree. The geofence already keeps every
+        # setpoint and swept path out of that volume; dodging it as a bird is a false engagement --
+        # on the 2026-11-10 head-on pilot the vehicle, descending to land through 9.6 m, dodged
+        # tree_row1_5's canopy (z 3.6 m, |dz| 6.0 m) for 8.5 s. This is the "known static obstacle
+        # vs genuinely unplanned dynamic obstacle" separation the architecture promises, applied
+        # where decisions are made. Counted and named on the maneuver like the stale drops; the
+        # executor still logs the detection with its hint so the flight-log gate can see it.
+        fresh, static = self._split_static(fresh)
 
         threats = self._threats(fresh, drone, p)
         if not threats:
-            if detections and not fresh:
+            if detections and not fresh and not static:
                 # Every detection this frame was dropped as stale -> detection-free frame. Called
                 # out explicitly so the event log shows WHY the policy proceeded.
                 reason = (f"all detection(s) stale (age > {p.max_detection_age_s:g} s) "
                           f"-- treated as absent")
             elif fresh:
                 reason = "detection(s) outside threat cylinder"
+            elif static:
+                reason = (f"{len(static)} detection(s) inside known static obstacle volume(s) "
+                          f"({', '.join(sorted({t.static_map_hint for t in static}))}) -- the tree, "
+                          f"not a bird; the geofence owns it")
             else:
                 reason = "no in-cylinder threat"
             maneuver = AvoidanceManeuver(
@@ -296,6 +338,10 @@ class AvoidancePolicy:
                 "threat_positions_enu",
                 [[round(c, 3) for c in t.position_enu] for t, _ in threats]
             )
+        if static:
+            maneuver.debug.setdefault("n_static_map_dropped", len(static))
+            maneuver.debug.setdefault(
+                "static_map_ids", [f"{t.static_map_hint}@{t.frame_id}" for t in static])
         if stale:
             # Always log what the staleness gate dropped, whatever the decision -- a stale frame
             # silently vanishing is exactly the observability gap this gate exists to close.
@@ -327,6 +373,16 @@ class AvoidancePolicy:
             else:
                 fresh.append(det)
         return fresh, stale
+
+    @staticmethod
+    def _split_static(detections: Sequence[Detection]) -> Tuple[List[Detection], List[Detection]]:
+        """Split detections into (dynamic candidates, known-static). A detection carrying a
+        `static_map_hint` sits inside a surveyed tree's 3D volume and is the tree, not a bird."""
+        dynamic: List[Detection] = []
+        static: List[Detection] = []
+        for det in detections:
+            (static if det.static_map_hint else dynamic).append(det)
+        return dynamic, static
 
     def _threats(
         self, detections: Sequence[Detection], drone: DroneState, p: PolicyParams
@@ -362,28 +418,38 @@ class AvoidancePolicy:
             away = (math.cos(drone.heading_rad + math.pi / 2.0),
                     math.sin(drone.heading_rad + math.pi / 2.0))
 
+        # R4: which order the candidates are tried in. On-track + well-conditioned -> sidestep first.
+        angles, order, bearing_off_track_deg, side_rule = self._candidate_order(
+            away, drone, drone_xy, trig_xy, p)
+
         rejected: List[dict] = []
-        for angle in _CANDIDATE_ANGLES_DEG:
+        for angle in angles:
             direction = _rotate(away, angle)
             sp_xy: XY = (drone_xy[0] + direction[0] * p.divert_distance_m,
                          drone_xy[1] + direction[1] * p.divert_distance_m)
             setpoint: ENU = (sp_xy[0], sp_xy[1], p.cruise_alt_m)
 
-            verdict = self._vet(setpoint, drone_xy, threats, geofence, p)
+            verdict = self._vet(setpoint, drone_xy, threats, geofence, p, drone.position_enu[2])
             if verdict is None:
                 # accepted
                 clearance = geofence.segment_clearance(drone_xy, sp_xy).clearance_m
+                margin_applied = self._swept_margin_applies(drone.position_enu[2], setpoint[2],
+                                                            geofence, p)
                 return AvoidanceManeuver(
                     decision=Decision.DIVERT,
                     setpoint_enu=setpoint,
-                    reason=(f"divert {angle:+.0f} deg from away-vector, {p.divert_distance_m:.0f} m "
-                            f"lateral at {p.cruise_alt_m:.0f} m; swept-path tree clearance "
-                            f"{clearance:.2f} m"),
+                    reason=(f"divert {angle:+.0f} deg from away-vector ({order}), "
+                            f"{p.divert_distance_m:.0f} m lateral at {p.cruise_alt_m:.0f} m; "
+                            f"swept-path tree clearance {clearance:.2f} m"),
                     debug={
                         "candidate_angle_deg": angle,
                         "away_unit": (round(away[0], 3), round(away[1], 3)),
                         "swept_tree_clearance_m": round(clearance, 3),
+                        "swept_margin_applied": margin_applied,
                         "candidates_rejected": rejected,
+                        "candidate_order": order,
+                        "bird_bearing_off_track_deg": bearing_off_track_deg,
+                        "sidestep_side_rule": side_rule,
                         "params": _params_dict(p),
                     },
                 )
@@ -392,14 +458,78 @@ class AvoidancePolicy:
         # Nothing safe -> HOLD (never emit an unvetted setpoint).
         return AvoidanceManeuver(
             decision=Decision.HOLD,
-            reason=(f"no safe divert among {len(_CANDIDATE_ANGLES_DEG)} candidate directions "
+            reason=(f"no safe divert among {len(angles)} candidate directions "
                     f"(boxed in by trees / field edge / other birds) -- holding in GUIDED"),
             debug={
                 "candidates_rejected": rejected,
                 "away_unit": (round(away[0], 3), round(away[1], 3)),
+                "candidate_order": order,
+                "bird_bearing_off_track_deg": bearing_off_track_deg,
+                "sidestep_side_rule": side_rule,
                 "params": _params_dict(p),
             },
         )
+
+    def _candidate_order(self, away: XY, drone: DroneState, drone_xy: XY, trig_xy: XY,
+                         p: PolicyParams) -> Tuple[Tuple[float, ...], str, float, str]:
+        """R4. Returns (angles to try, order name, bird bearing off the track axis, side rule).
+
+        The TRACK AXIS is the mission leg (`DroneState.track_heading_rad`) when the caller knows it,
+        else the yaw -- yaw turns toward the setpoint during a GUIDED dodge and re-ordered the
+        candidates mid-dodge on run 3 (2026-11-10). `bearing_off_track_deg` is the angle between
+        the drone-to-bird line and that axis, folded so 0 = dead ahead OR dead astern (both are
+        on-track closures) and 90 = abeam. On-track within ON_TRACK_HALF_ANGLE_DEG at a range >=
+        on_track_sidestep_min_range_m puts the two perpendicular candidates first. WHICH side first:
+        a bird more than SIDESTEP_SIDE_DEADBAND_M off the axis is passed on the other side
+        ("away_from_offset"); a bird inside the dead-band is dead ahead and the sidestep goes toward
+        the field polygon's centroid ("field_interior"), or +90 when there is no polygon
+        ("default"). Anything not on-track keeps the away-first order."""
+        to_bird = (trig_xy[0] - drone_xy[0], trig_xy[1] - drone_xy[1])
+        rng = math.hypot(*to_bird)
+        axis = drone.track_heading_rad if drone.track_heading_rad is not None else drone.heading_rad
+        hvec = (math.cos(axis), math.sin(axis))
+        lvec = (-hvec[1], hvec[0])                       # LEFT of the track axis
+        if rng <= 0.0:
+            return _CANDIDATE_ANGLES_DEG, "away_first", 0.0, "n/a"
+        along = (to_bird[0] * hvec[0] + to_bird[1] * hvec[1]) / rng
+        cross = (to_bird[0] * lvec[0] + to_bird[1] * lvec[1])   # metres left of the axis (+) / right (-)
+        bearing_off_track_deg = round(math.degrees(math.acos(max(-1.0, min(1.0, abs(along))))), 2)
+        if rng < p.on_track_sidestep_min_range_m or bearing_off_track_deg > ON_TRACK_HALF_ANGLE_DEG:
+            return _CANDIDATE_ANGLES_DEG, "away_first", bearing_off_track_deg, "n/a"
+        d_plus = _rotate(away, 90.0)                     # where the +90 candidate goes
+        if abs(cross) >= SIDESTEP_SIDE_DEADBAND_M:
+            plus_moves_left = d_plus[0] * lvec[0] + d_plus[1] * lvec[1] > 0.0
+            bird_left = cross > 0.0
+            plus_first = plus_moves_left != bird_left       # pass on the side the bird is NOT on
+            side_rule = "away_from_offset"
+        elif self.field_polygon:
+            cx = sum(x for x, _ in self.field_polygon) / len(self.field_polygon)
+            cy = sum(y for _, y in self.field_polygon) / len(self.field_polygon)
+            to_c = (cx - drone_xy[0], cy - drone_xy[1])
+            plus_first = d_plus[0] * to_c[0] + d_plus[1] * to_c[1] >= 0.0
+            side_rule = "field_interior"
+        else:
+            plus_first, side_rule = True, "default"
+        first, second = (90.0, -90.0) if plus_first else (-90.0, 90.0)
+        rest = tuple(a for a in _ON_TRACK_CANDIDATE_ANGLES_DEG if a not in (90.0, -90.0))
+        return (first, second) + rest, "on_track_sidestep", bearing_off_track_deg, side_rule
+
+    @staticmethod
+    def _swept_margin_applies(drone_z: float, setpoint_z: float, geofence: GeofenceMap,
+                              p: PolicyParams) -> bool:
+        """Gate 2 is a rule about meeting a TREE, so it applies only where the swept segment can:
+        when its lowest point is at or below the canopy band top (the tallest tree + the vertical
+        margin, `GeofenceMap.canopy_band_top_m`). Above that, every column is clear in 3D however the
+        XY projection reads -- the same rule `is_safe_3d` has always applied to the endpoint, and the
+        one `scripts/check_mission_geofence.py` applies to the mission's own legs (ADR-022 am. 2).
+
+        Why this matters (2026-11-10, encounter run 1): mission lane x=15 runs straight over tree
+        row 0, so at cruise the vehicle's own XY is inside a 2.0 m exclusion column for 4 m of every
+        10 m. An altitude-blind gate 2 then rejected EVERY candidate (each segment starts inside the
+        column), the policy HOLDed -- zero displacement, in GUIDED, over the column, so the next tick
+        was identical -- and the vehicle hovered in the bird's path. The 2026-08-26 replay had already
+        named the XY-only vet as the third confound that refused 16 physically-resolving escapes."""
+        return min(drone_z, setpoint_z) <= geofence.canopy_band_top_m(p.vertical_margin_m)
 
     def _vet(
         self,
@@ -408,6 +538,7 @@ class AvoidancePolicy:
         threats: Sequence[Detection],
         geofence: GeofenceMap,
         p: PolicyParams,
+        drone_z: float,
     ) -> Optional[str]:
         """Return None if `setpoint` passes every safety gate, else a short reason string (for the
         rejected-candidate log). Gate order matches the module-docstring guarantee."""
@@ -417,11 +548,13 @@ class AvoidancePolicy:
         if not geofence.is_safe_3d(setpoint, p.vertical_margin_m, p.alt_bounds):
             return "is_safe_3d rejected (tree volume or altitude envelope)"
 
-        # 2. Swept-path lateral tree clearance: the whole dodge stays clear of tree XY columns.
+        # 2. Swept-path lateral tree clearance: the whole dodge stays clear of tree XY columns --
+        #    where the dodge is low enough to meet one (see _swept_margin_applies).
         seg = geofence.segment_clearance(drone_xy, sp_xy)
-        if seg.clearance_m < p.lateral_tree_margin_m:
+        if (seg.clearance_m < p.lateral_tree_margin_m
+                and self._swept_margin_applies(drone_z, setpoint[2], geofence, p)):
             return (f"swept path clears tree by only {seg.clearance_m:.2f} m "
-                    f"(< {p.lateral_tree_margin_m:.2f} m required)")
+                    f"(< {p.lateral_tree_margin_m:.2f} m required) inside the canopy band")
 
         # 3. Field-polygon containment with inward margin.
         if self.field_polygon is not None:
@@ -454,6 +587,7 @@ def _params_dict(p: PolicyParams) -> dict:
         "lateral_tree_margin_m": p.lateral_tree_margin_m,
         "min_bird_clearance_m": p.min_bird_clearance_m,
         "degenerate_range_m": p.degenerate_range_m,
+        "on_track_sidestep_min_range_m": p.on_track_sidestep_min_range_m,
         "vertical_margin_m": p.vertical_margin_m,
         "alt_bounds": list(p.alt_bounds),
         "field_margin_m": p.field_margin_m,

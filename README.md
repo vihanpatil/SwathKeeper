@@ -60,14 +60,18 @@ field-readiness or production claim (full statement under
 - **A reactive avoidance loop that keeps its books — with no replan and no requeue.** Detect → take
   over (AUTO→GUIDED) → dodge → resume **the same waypoint** → book coverage debt. v1 scoped out both
   replanning and requeueing (ADR-002); the loop doesn't reroute the mission or re-inject a missed
-  cell, it resumes where it left off and the ledger records honestly what that cost. Latest flight:
+  cell, it resumes where it left off and the ledger records honestly what that cost. The 2026-08-25 survey take:
   **720 of 720 cells covered, 0 debt**, 1858 path points, 4 accepted dodges (8 candidates rejected
   for cutting a tree too close), 0 clock-domain violations.
 - **The flagship flight failed its own safety gate — and that is the headline.** Ground-truth
   closest approach **0.0067 m** against a **3.00 m** bar, on the one flight where the drone dodged a
   bird it detected on its own camera. The failure was **pre-registered in writing before takeoff**;
   the take stands **INVALID, exit 1**. It is the third of three live avoidance flights to breach
-  this bar — see the results table below for the other two.
+  this bar — see the results table below for the other two. A fourth avoidance take, booked, cleared **9.61 m** head-on on
+  2026-11-11 with the forward depth camera and reads **VALID under the flight-log gate** (7.99 m after the freeze debit;
+  ADR-020 am. 8): one take, in sim, the third of three attempts with gate rules changed between them, and its booking's own
+  am. 5 precondition was measured and closed on 2026-11-12, after the flight (ADR-021 am. 2), and §0b ruled reported-only the same day (ADR-020 am. 9) — it
+  is in the table too, and it does not retire the three.
 - **Then the project measured *why*, offline, and changed course on the measurement.** A
   jerk/accel-limited replay of all three flights swept **81 mission speeds** from 2 to 10 m/s, each
   checked against every escape candidate and three different plant/acceleration models, and returned
@@ -133,7 +137,7 @@ not (see [What's next](#whats-next)) a product this repo is currently building t
 |---|---|---|
 | Coverage integrity, live flight | **720 covered / 0 debt**, 1858 path points, 4 accepted dodges / 8 rejected candidates. No replan, no requeue (ADR-002) — the executor resumes the same waypoint and the ledger books debt honestly | [eval/results/live_flight_log_20260825T210402Z.json](eval/results/live_flight_log_20260825T210402Z.json) + its `.SAFETY_FINDING.md` |
 | Pipeline liveness, first in-air measurement | **1301 / 1302 frames reached the detector = 99.92 %** against a 0.90 floor — this is throughput, not sight: the detector *fired* on only **2 of those 1302 frames** (2 boxes), the only 2 frames in the whole flight with the bird inside the image | same log; [docs/DECISIONS.md](docs/DECISIONS.md) ADR-013 am. 18 |
-| Bird clearance — three live avoidance flights, three breaches against the same 3.00 m bar | **0.0393 m** (2026-08-18, scripted `--demo` bird, ACKNOWLEDGED, exit 0) · **0.0391 m** (2026-08-23, scripted `--demo`, ACKNOWLEDGED, exit 0) · **0.0067 m** (2026-08-25, the drone's own real-time detection, **INVALID**, exit 1) | the three `.SAFETY_FINDING.md` markers; gate's current segment-path CPA recompute |
+| Bird clearance — four live avoidance takes against the same 3.00 m bar: three breaches, then one booked clearance | **0.0393 m** (2026-08-18, scripted `--demo` bird, ACKNOWLEDGED, exit 0) · **0.0391 m** (2026-08-23, scripted `--demo`, ACKNOWLEDGED, exit 0) · **0.0067 m** (2026-08-25, the drone's own real-time detection, nadir camera, **INVALID**, exit 1) · **9.6138 m** (2026-11-11, booked 5.0 m/s head-on, the drone's own forward depth-camera detection, **VALID under the flight-log gate**, exit 0; 7.9898 m after the freeze debit; acquired at 44.9 m; range error p95 0.17 m on the 7 frames the truth places unambiguously; the booking's ADR-020 am. 5 precondition was measured and closed on 2026-11-12, ADR-021 am. 2) | the three `.SAFETY_FINDING.md` markers; gate's current segment-path CPA recompute; [eval/results/live_flight_log_20261111T202709Z.json](eval/results/live_flight_log_20261111T202709Z.json) scored by the same gate with its pinned truth track and booking (ADR-020 am. 8; `docs/encounters/BOOKED_20261111.md`) |
 | Commanded vs. achieved displacement, the 2026-08-25 dodge | GUIDED authority window **0.434 s**; the aircraft displaced **0.018 m** laterally against a **10 m** commanded divert. No gate compares commanded to achieved — the loop is open-loop | [docs/DECISIONS.md](docs/DECISIONS.md) ADR-013 am. 12 addendum; same `.SAFETY_FINDING.md` |
 | Detection quality, real render (ADR-003 criterion 3) | per-track FNR **0.000**, 3/3 intruders, 20 obstacle-visible frames; precision 0.708 / recall 0.850 (TP 17 / FP 7 / FN 3) | [eval/results/adr003_20260823/spike_scores.json](eval/results/adr003_20260823/spike_scores.json) |
 | Adopted detector vs the working RGB comparison arm (criterion 2, closed 2026-08-26) | safety numbers **identical**; precision 0.708 → 0.227 (3.1×) on the adopted clip, 1.000 → 0.037 (27×) in the air; **gap +0.000 → ADOPT** | ADR-003 am. 10 |
@@ -142,7 +146,7 @@ not (see [What's next](#whats-next)) a product this repo is currently building t
 | Recording cadence | **5.0 Hz** flat, 100 % delivery on both bands (was 0.41 Hz — a Fast DDS shared-memory segment was the root cause) | that clip's `meta.json` |
 | Live↔offline equivalence | flight-logged obstacle positions reproduced to **1 µm** across SciPy 1.8.0 (air) / 1.13.1 (host), all 1301 in-window frames | ADR-009 am. 2 |
 | Monocular range estimator vs ground truth at closest approach | agrees to **3.3 mm** (0.0035 m vs 0.0067 m) — and is still refused as a gate, on purpose | ADR-013 am. 19 |
-| Automated tests | **1869 passed, 1 failed, 9 skipped, 0 xfail** (`python3 -m pytest tests -q`; 8 skips are gitignored-artifact gates, see tests/README.md). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-11-05 — re-run and re-quote if you change the suite |
+| Automated tests | **1951 passed, 1 failed, 9 skipped, 0 xfail** (`python3 -m pytest tests -q`; 8 skips are gitignored-artifact gates, see tests/README.md). The single failure is deliberate: the CI evidence gate is red on the committed breach | [tests/README.md](tests/README.md), measured 2026-11-12 — re-run and re-quote if you change the suite |
 
 Two caveats this repo refuses to round off. The −0.61 real-render detection threshold is
 **PROVISIONAL** — narrowed on 2026-08-26 across a 2.3× depth span (3.9 / 6.9 / 9.0 m), still open
@@ -249,10 +253,11 @@ fire-and-forget mode/setpoint command with no gate on achieved displacement. Tha
 engineering quarter here, if there is one, is closing that loop, not adding another sensor (see
 [What's next](#whats-next)).
 
-## Forward depth camera — built, scored, flown once as a wiring flight
+## Forward depth camera — built, scored, and flown against a bird
 
-The sensor the geometry finding put into scope now exists in sim and has flown once, on 2026-09-11,
-as a wiring flight with no target in the world. Recording what that flight did and did not prove is
+The sensor the geometry finding put into scope now exists in sim. It first flew on 2026-09-11 as a wiring flight with no
+target in the world, and since 2026-11-10 it has flown 24 head-on encounters against a bird, one of them the booked take
+committed VALID above (ADR-013 am. 21, ADR-020 am. 8). Recording what the wiring flight did and did not prove is
 the point.
 
 **Commissioned (ADR-020).** A `gz-sim` `depth_camera` on its own nose-mounted aperture, separate
@@ -266,9 +271,12 @@ margin`) was scored against **85 stations of a cluttered, hand-labelled render**
 vehicle, noiseless sensor. All seven pre-registered bars passed: 0 missed detections of 49, 0 merge
 mislabels of 71, 0 unmapped false positives across 8 frames, range error p95 **0.108 m**. Its
 cluttered acquisition range measured **46.0 m**, which *qualifies* the booking above and does not
-raise it — read that number's clutter robustness to **28 m only**; every rung from 30 m to 46 m in
-that render happens to be sky-backed, not clutter-tested, which is this world's geometry, not a
-property of the sensor.
+raise it. In that 2026-09-07 render every rung from 30 m to 46 m was sky-backed — this world's geometry, not a
+property of the sensor — so its clutter robustness read to **28 m only**. **Re-scored on 2026-11-12** (ADR-021 am. 2, at the
+owner's order, pre-registered) on the same 85 stations with a declared 18 m structure standing 58 m behind the ladder: the
+shipped segmenter passed **all seven bars again** — 0 misses of 49, 0 unmapped false positives across 8 frames, range error
+p95 **0.108 m** — with **nine stations structure-backed at 34–46 m**, so clutter is now tested to **46 m** against a smooth
+box face (foliage with self-depth structure is still untested).
 
 **Flown once, no target (2026-09-11).** `scripts/fly_pipeline.sh node --detection-source depth` on a
 booked 5.0 m/s boustrophedon with all birds parked off-field. The wiring passed end to end: **5345 of
@@ -278,8 +286,9 @@ windows; ledger 720/0. The flight **failed its own pre-registered bar**: detecto
 12.98 ms passes the 25 ms bar, **max 141.16 ms fails the 100 ms bar**, so the log stands **INVALID**
 (a second cause, an "ambiguous truth track", is a checker gap for bird-less flights, recorded as owed).
 Delivery and pitch **at the booked speed are still unmeasured**: the cruise median was 4.27 m/s under
-the 5.0 m/s cap against a 4.5 m/s bar. The sensor has never seen a bird in the air (ADR-020 am. 6,
-ADR-021 am. 1).
+the 5.0 m/s cap against a 4.5 m/s bar, and the 2026-11-11 encounter windows ran at ~2.9 m/s because the dodge brakes. The
+sensor has seen a bird in the air since 2026-11-10: acquisition 39.8–45.2 m on 23 of 24 head-on encounters, 32.2 m on one
+(ADR-020 am. 6 and ADR-021 am. 1 record the wiring flight; ADR-013 am. 21 and ADR-020 am. 8 the encounters).
 
 ## How this repo proves things
 

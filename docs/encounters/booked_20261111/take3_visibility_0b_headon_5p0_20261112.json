@@ -1,0 +1,90 @@
+{
+ "schema_version": "1.0",
+ "tool": "scripts/predict_bird_visibility.py",
+ "mission": "config/missions/headon_lane15.waypoints",
+ "birds_config": "config/birds/headon_lane15.json",
+ "model": {
+  "speed_mps": 5.0,
+  "cadence_hz": 5.0,
+  "frames": 97,
+  "mission_duration_s": 19.2,
+  "survey_altitude_m": 15.0,
+  "bird_start_gate_alt_m": 10.0,
+  "bird_start_t_s": 2.2,
+  "phase_sweep": {
+   "n": 38,
+   "step_s": 0.5,
+   "span_s": 19.0
+  },
+  "min_depth_m": 0.5,
+  "legs": [
+   {
+    "label": "climb",
+    "t0_s": 0.0
+   },
+   {
+    "label": "cross y=0 E",
+    "t0_s": 3.0
+   },
+   {
+    "label": "lane x=15 N",
+    "t0_s": 6.0
+   },
+   {
+    "label": "cross y=60 E",
+    "t0_s": 18.0
+   }
+  ]
+ },
+ "camera": {
+  "width_px": 640,
+  "height_px": 480,
+  "fx": 520.0058046927555,
+  "fy": 520.0058046927555,
+  "ground_footprint_m": [
+   18.46,
+   13.85
+  ]
+ },
+ "birds": [
+  {
+   "bird_id": "bird_0",
+   "altitude_m": 25.0,
+   "depth_at_survey_alt_m": -10.0,
+   "footprint_at_bird_alt_m": [
+    -12.31,
+    -9.23
+   ],
+   "frames_in_view": {
+    "min": 0,
+    "median": 2,
+    "max": 3
+   },
+   "frames_at_nominal_phase": 2,
+   "phases_with_any_view": 30,
+   "n_phases": 38,
+   "limited_by": "timing",
+   "closest_px_outside_edge": 0.0,
+   "closest_miss_m": 0.0,
+   "closest_slant_range_m": 0.28,
+   "best_phase_s": 1.0,
+   "best_phase_windows": [
+    {
+     "t_start_s": 13.0,
+     "t_end_s": 13.4,
+     "n_frames": 3,
+     "leg": "lane x=15 N",
+     "min_slant_range_m": 3.92
+    }
+   ]
+  }
+ ],
+ "verdict": {
+  "pass": false,
+  "statistic": "median frames in view over the phase sweep",
+  "min_frames": 5,
+  "failing_birds": [
+   "bird_0"
+  ]
+ }
+}

@@ -6,6 +6,8 @@
   "executor_params": {
     "resume_clear_ticks": 3,
     "guided_ceiling_ticks": 310,
+    "dodge_arrival_radius_m": 2.0,
+    "relatch_after_arrival_only": true,
     "relatch_threshold_m": 3.0,
     "vertical_margin_m": 1.0
   },
@@ -590,6 +592,124 @@
       2.0,
       15.0
     ]
+  ],
+  "flown_heading_rad": [
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    0.0,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    0.0,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    1.570796327,
+    0.0,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327,
+    -1.570796327
   ],
   "coverage_ledger": [
     {
@@ -5818,6 +5938,7 @@
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 96,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -5825,6 +5946,7 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
@@ -5842,8 +5964,8 @@
       "tick": 97,
       "kind": "latch",
       "setpoint_enu": [
-        60.99503719,
-        49.950371902,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "previous_setpoint_enu": null,
@@ -5858,19 +5980,23 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        60.99503719,
-        49.950371902,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.1,
           0.995
         ],
         "swept_tree_clearance_m": 2.478,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 5.71,
+        "sidestep_side_rule": "away_from_offset",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5879,6 +6005,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5902,11 +6029,11 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 2.48 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 2.48 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        60.99503719,
-        49.950371902,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "latch_action": "latch"
@@ -5917,6 +6044,7 @@
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 97,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -5924,6 +6052,7 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
@@ -5932,19 +6061,23 @@
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        60.99503719,
-        49.950371902,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.124,
           0.992
         ],
-        "swept_tree_clearance_m": 2.093,
+        "swept_tree_clearance_m": 0.357,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 7.13,
+        "sidestep_side_rule": "away_from_offset",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -5953,6 +6086,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -5976,11 +6110,11 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 2.09 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 0.36 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        61.240347346,
-        47.922778767,
+        69.922778767,
+        36.759652654,
         15.0
       ],
       "latch_action": "recommand_latched"
@@ -5991,6 +6125,7 @@
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 98,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -5998,46 +6133,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
       "seq": 103,
       "tick": 99,
-      "kind": "relatch",
-      "setpoint_enu": [
-        61.643989873,
-        45.863939238,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        60.99503719,
-        49.950371902,
-        15.0
-      ],
-      "offset_m": 4.137640813,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 104,
-      "tick": 99,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        61.643989873,
-        45.863939238,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.164,
           0.986
         ],
-        "swept_tree_clearance_m": 1.452,
+        "swept_tree_clearance_m": -1.836,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 9.46,
+        "sidestep_side_rule": "away_from_offset",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6046,6 +6167,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6069,21 +6191,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.45 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance -1.84 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        61.643989873,
-        45.863939238,
+        69.863939238,
+        34.356010127,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 105,
+      "seq": 104,
       "tick": 100,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 99,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6091,51 +6214,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 106,
-      "tick": 100,
-      "kind": "relatch",
-      "setpoint_enu": [
-        54.855042446,
-        42.574929257,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        61.643989873,
-        45.863939238,
-        15.0
-      ],
-      "offset_m": 7.543698949,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 107,
+      "seq": 105,
       "tick": 100,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        54.855042446,
-        42.574929257,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 45.0,
+        "candidate_angle_deg": 0.0,
         "away_unit": [
           0.243,
           0.97
         ],
-        "swept_tree_clearance_m": 3.099,
-        "candidates_rejected": [
-          {
-            "angle_deg": 0.0,
-            "why": "swept path clears tree by only 0.88 m (< 1.00 m required)"
-          }
-        ],
+        "swept_tree_clearance_m": 0.884,
+        "swept_margin_applied": false,
+        "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 14.04,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6144,6 +6248,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6167,21 +6272,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +45 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.10 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 0.88 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        54.855042446,
-        42.574929257,
+        62.42535625,
+        43.701425001,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 108,
+      "seq": 106,
       "tick": 101,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 100,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6189,35 +6295,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 109,
-      "tick": 101,
-      "kind": "relatch",
-      "setpoint_enu": [
-        64.472135955,
-        40.94427191,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        54.855042446,
-        42.574929257,
-        15.0
-      ],
-      "offset_m": 9.754359587,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 110,
+      "seq": 107,
       "tick": 101,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        64.472135955,
-        40.94427191,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
@@ -6228,7 +6316,11 @@
           0.894
         ],
         "swept_tree_clearance_m": 1.13,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 26.57,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6237,6 +6329,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6260,21 +6353,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.13 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 1.13 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
         64.472135955,
         40.94427191,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 111,
+      "seq": 108,
       "tick": 102,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 101,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6282,35 +6376,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 112,
-      "tick": 102,
-      "kind": "relatch",
-      "setpoint_enu": [
-        70.0,
-        30.0,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        64.472135955,
-        40.94427191,
-        15.0
-      ],
-      "offset_m": 12.261091654,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 113,
+      "seq": 109,
       "tick": 102,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        70.0,
-        30.0,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
@@ -6321,7 +6397,11 @@
           0.0
         ],
         "swept_tree_clearance_m": 3.0,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 90.0,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6330,6 +6410,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6353,21 +6434,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 3.00 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
         70.0,
         30.0,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 114,
+      "seq": 110,
       "tick": 103,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 102,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6375,35 +6457,17 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 115,
-      "tick": 103,
-      "kind": "relatch",
-      "setpoint_enu": [
-        64.472135955,
-        19.05572809,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        70.0,
-        30.0,
-        15.0
-      ],
-      "offset_m": 12.261091654,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 116,
+      "seq": 111,
       "tick": 103,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        64.472135955,
-        19.05572809,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
@@ -6414,7 +6478,11 @@
           -0.894
         ],
         "swept_tree_clearance_m": 1.13,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 26.57,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6423,6 +6491,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6446,21 +6515,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.13 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 1.13 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
         64.472135955,
         19.05572809,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 117,
+      "seq": 112,
       "tick": 104,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 103,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6468,55 +6538,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 118,
-      "tick": 104,
-      "kind": "relatch",
-      "setpoint_enu": [
-        54.855042446,
-        17.425070743,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        64.472135955,
-        19.05572809,
-        15.0
-      ],
-      "offset_m": 9.754359587,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 119,
+      "seq": 113,
       "tick": 104,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        54.855042446,
-        17.425070743,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": -45.0,
+        "candidate_angle_deg": 0.0,
         "away_unit": [
           0.243,
           -0.97
         ],
-        "swept_tree_clearance_m": 3.099,
-        "candidates_rejected": [
-          {
-            "angle_deg": 0.0,
-            "why": "swept path clears tree by only 0.88 m (< 1.00 m required)"
-          },
-          {
-            "angle_deg": 45.0,
-            "why": "swept path clears tree by only -0.29 m (< 1.00 m required)"
-          }
-        ],
+        "swept_tree_clearance_m": 0.884,
+        "swept_margin_applied": false,
+        "candidates_rejected": [],
+        "candidate_order": "away_first",
+        "bird_bearing_off_track_deg": 14.04,
+        "sidestep_side_rule": "n/a",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6525,6 +6572,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6548,21 +6596,22 @@
           ]
         ]
       },
-      "policy_reason": "divert -45 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 3.10 m",
+      "policy_reason": "divert +0 deg from away-vector (away_first), 10 m lateral at 15 m; swept-path tree clearance 0.88 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        54.855042446,
-        17.425070743,
+        62.42535625,
+        16.298574999,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 120,
+      "seq": 114,
       "tick": 105,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 104,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6570,46 +6619,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 121,
-      "tick": 105,
-      "kind": "relatch",
-      "setpoint_enu": [
-        61.643989873,
-        14.136060762,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        54.855042446,
-        17.425070743,
-        15.0
-      ],
-      "offset_m": 7.543698949,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 122,
+      "seq": 115,
       "tick": 105,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        61.643989873,
-        14.136060762,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.164,
           -0.986
         ],
-        "swept_tree_clearance_m": 1.452,
+        "swept_tree_clearance_m": 3.099,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 9.46,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6618,6 +6653,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6641,21 +6677,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 1.45 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 3.10 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        61.643989873,
-        14.136060762,
+        50.136060762,
+        22.356010127,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 123,
+      "seq": 116,
       "tick": 106,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 105,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6663,27 +6700,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 124,
+      "seq": 117,
       "tick": 106,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        61.643989873,
-        14.136060762,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.124,
           -0.992
         ],
-        "swept_tree_clearance_m": 2.093,
+        "swept_tree_clearance_m": 3.831,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 7.13,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6692,6 +6734,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6715,21 +6758,22 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 2.09 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 3.83 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        61.240347346,
-        12.077221233,
+        50.077221233,
+        20.759652654,
         15.0
       ],
-      "latch_action": "recommand_latched"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 125,
+      "seq": 118,
       "tick": 107,
       "kind": "detection",
       "track_id": "pincher_0",
       "frame_id": 106,
+      "stamp_s": null,
       "confidence": 1.0,
       "position_enu": [
         59.0,
@@ -6737,46 +6781,32 @@
         15.0
       ],
       "source": "ndvi_blob",
+      "static_map_hint": null,
       "decision": "divert"
     },
     {
-      "seq": 126,
-      "tick": 107,
-      "kind": "relatch",
-      "setpoint_enu": [
-        60.99503719,
-        10.049628098,
-        15.0
-      ],
-      "previous_setpoint_enu": [
-        61.643989873,
-        14.136060762,
-        15.0
-      ],
-      "offset_m": 4.137640813,
-      "relatch_threshold_m": 3.0,
-      "reason": "policy setpoint moved beyond the re-latch threshold and re-vetted safe",
-      "track_id": "pincher_0"
-    },
-    {
-      "seq": 127,
+      "seq": 119,
       "tick": 107,
       "kind": "maneuver",
       "decision": "divert",
       "setpoint_enu": [
-        60.99503719,
-        10.049628098,
+        69.950371902,
+        39.00496281,
         15.0
       ],
       "verdict": "accepted",
       "debug": {
-        "candidate_angle_deg": 0.0,
+        "candidate_angle_deg": -90.0,
         "away_unit": [
           0.1,
           -0.995
         ],
-        "swept_tree_clearance_m": 2.478,
+        "swept_tree_clearance_m": 5.071,
+        "swept_margin_applied": false,
         "candidates_rejected": [],
+        "candidate_order": "on_track_sidestep",
+        "bird_bearing_off_track_deg": 5.71,
+        "sidestep_side_rule": "field_interior",
         "params": {
           "cruise_alt_m": 15.0,
           "threat_radius_m": 12.0,
@@ -6785,6 +6815,7 @@
           "lateral_tree_margin_m": 1.0,
           "min_bird_clearance_m": 3.0,
           "degenerate_range_m": 1.0,
+          "on_track_sidestep_min_range_m": 6.0,
           "vertical_margin_m": 1.0,
           "alt_bounds": [
             2.0,
@@ -6808,17 +6839,17 @@
           ]
         ]
       },
-      "policy_reason": "divert +0 deg from away-vector, 10 m lateral at 15 m; swept-path tree clearance 2.48 m",
+      "policy_reason": "divert -90 deg from away-vector (on_track_sidestep), 10 m lateral at 15 m; swept-path tree clearance 5.07 m",
       "track_id": "pincher_0",
       "policy_setpoint_enu": [
-        60.99503719,
-        10.049628098,
+        50.049628098,
+        19.00496281,
         15.0
       ],
-      "latch_action": "relatch"
+      "latch_action": "relatch_refused_in_progress"
     },
     {
-      "seq": 128,
+      "seq": 120,
       "tick": 108,
       "kind": "proceed",
       "position_enu": [
@@ -6828,6 +6859,14 @@
       ],
       "wp_index": 3,
       "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 23.243,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
         "clear_ticks": 1,
         "required": 3,
         "ticks_in_guided": 12,
@@ -6835,7 +6874,7 @@
       }
     },
     {
-      "seq": 129,
+      "seq": 121,
       "tick": 109,
       "kind": "proceed",
       "position_enu": [
@@ -6845,6 +6884,14 @@
       ],
       "wp_index": 3,
       "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 25.065,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
         "clear_ticks": 2,
         "required": 3,
         "ticks_in_guided": 13,
@@ -6852,23 +6899,7 @@
       }
     },
     {
-      "seq": 130,
-      "tick": 110,
-      "kind": "resume",
-      "trigger": "threat_cleared",
-      "resumed_wp_index": 3,
-      "wp_index_at_takeover": 3,
-      "resumed_same_waypoint": true,
-      "latched_setpoint_enu": [
-        60.99503719,
-        10.049628098,
-        15.0
-      ],
-      "clear_ticks_required": 3,
-      "ticks_in_guided": 14
-    },
-    {
-      "seq": 131,
+      "seq": 122,
       "tick": 110,
       "kind": "proceed",
       "position_enu": [
@@ -6876,10 +6907,24 @@
         14.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 26.912,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
+        "clear_ticks": 3,
+        "required": 3,
+        "ticks_in_guided": 14,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 132,
+      "seq": 123,
       "tick": 111,
       "kind": "proceed",
       "position_enu": [
@@ -6887,10 +6932,24 @@
         12.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 28.78,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
+        "clear_ticks": 4,
+        "required": 3,
+        "ticks_in_guided": 15,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 133,
+      "seq": 124,
       "tick": 112,
       "kind": "proceed",
       "position_enu": [
@@ -6898,10 +6957,24 @@
         10.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 30.664,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
+        "clear_ticks": 5,
+        "required": 3,
+        "ticks_in_guided": 16,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 134,
+      "seq": 125,
       "tick": 113,
       "kind": "proceed",
       "position_enu": [
@@ -6909,10 +6982,24 @@
         8.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 32.563,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
+        "clear_ticks": 6,
+        "required": 3,
+        "ticks_in_guided": 17,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 135,
+      "seq": 126,
       "tick": 114,
       "kind": "proceed",
       "position_enu": [
@@ -6920,10 +7007,24 @@
         6.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 34.472,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
+        "clear_ticks": 7,
+        "required": 3,
+        "ticks_in_guided": 18,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 136,
+      "seq": 127,
       "tick": 115,
       "kind": "proceed",
       "position_enu": [
@@ -6931,10 +7032,24 @@
         4.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 36.392,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
+        "clear_ticks": 8,
+        "required": 3,
+        "ticks_in_guided": 19,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 137,
+      "seq": 128,
       "tick": 116,
       "kind": "proceed",
       "position_enu": [
@@ -6942,1018 +7057,1032 @@
         2.0,
         15.0
       ],
-      "wp_index": 3
+      "wp_index": 3,
+      "resume_pending": {
+        "reason": "dodge_in_progress",
+        "dist_to_latched_m": 38.319,
+        "arrival_radius_m": 2.0,
+        "latched_setpoint_enu": [
+          69.950371902,
+          39.00496281,
+          15.0
+        ],
+        "clear_ticks": 9,
+        "required": 3,
+        "ticks_in_guided": 20,
+        "ceiling_ticks": 310
+      }
     },
     {
-      "seq": 138,
+      "seq": 129,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 139,
+      "seq": 130,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 140,
+      "seq": 131,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 141,
+      "seq": 132,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 142,
+      "seq": 133,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 143,
+      "seq": 134,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 144,
+      "seq": 135,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 145,
+      "seq": 136,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 146,
+      "seq": 137,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 147,
+      "seq": 138,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 148,
+      "seq": 139,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 149,
+      "seq": 140,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 150,
+      "seq": 141,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 151,
+      "seq": 142,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 152,
+      "seq": 143,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 153,
+      "seq": 144,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 154,
+      "seq": 145,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 155,
+      "seq": 146,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 156,
+      "seq": 147,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 157,
+      "seq": 148,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 158,
+      "seq": 149,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 159,
+      "seq": 150,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 160,
+      "seq": 151,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 161,
+      "seq": 152,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_0_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 162,
+      "seq": 153,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 163,
+      "seq": 154,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 164,
+      "seq": 155,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 165,
+      "seq": 156,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 166,
+      "seq": 157,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 167,
+      "seq": 158,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 168,
+      "seq": 159,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 169,
+      "seq": 160,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 170,
+      "seq": 161,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 171,
+      "seq": 162,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 172,
+      "seq": 163,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 173,
+      "seq": 164,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 174,
+      "seq": 165,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 175,
+      "seq": 166,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 176,
+      "seq": 167,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 177,
+      "seq": 168,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 178,
+      "seq": 169,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 179,
+      "seq": 170,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 180,
+      "seq": 171,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 181,
+      "seq": 172,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 182,
+      "seq": 173,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 183,
+      "seq": 174,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 184,
+      "seq": 175,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 185,
+      "seq": 176,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_1_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 186,
+      "seq": 177,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 187,
+      "seq": 178,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 188,
+      "seq": 179,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 189,
+      "seq": 180,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 190,
+      "seq": 181,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 191,
+      "seq": 182,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 192,
+      "seq": 183,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 193,
+      "seq": 184,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 194,
+      "seq": 185,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 195,
+      "seq": 186,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 196,
+      "seq": 187,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 197,
+      "seq": 188,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 198,
+      "seq": 189,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 199,
+      "seq": 190,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 200,
+      "seq": 191,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 201,
+      "seq": 192,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 202,
+      "seq": 193,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 203,
+      "seq": 194,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 204,
+      "seq": 195,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 205,
+      "seq": 196,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 206,
+      "seq": 197,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 207,
+      "seq": 198,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 208,
+      "seq": 199,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 209,
+      "seq": 200,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_2_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 210,
+      "seq": 201,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 211,
+      "seq": 202,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 212,
+      "seq": 203,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 213,
+      "seq": 204,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 214,
+      "seq": 205,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 215,
+      "seq": 206,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 216,
+      "seq": 207,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 217,
+      "seq": 208,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 218,
+      "seq": 209,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 219,
+      "seq": 210,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 220,
+      "seq": 211,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 221,
+      "seq": 212,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 222,
+      "seq": 213,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 223,
+      "seq": 214,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 224,
+      "seq": 215,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 225,
+      "seq": 216,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 226,
+      "seq": 217,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 227,
+      "seq": 218,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 228,
+      "seq": 219,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 229,
+      "seq": 220,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 230,
+      "seq": 221,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 231,
+      "seq": 222,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 232,
+      "seq": 223,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 233,
+      "seq": 224,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_27_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 234,
+      "seq": 225,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 235,
+      "seq": 226,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 236,
+      "seq": 227,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 237,
+      "seq": 228,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 238,
+      "seq": 229,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 239,
+      "seq": 230,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 240,
+      "seq": 231,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 241,
+      "seq": 232,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 242,
+      "seq": 233,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 243,
+      "seq": 234,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 244,
+      "seq": 235,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 245,
+      "seq": 236,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 246,
+      "seq": 237,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 247,
+      "seq": 238,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 248,
+      "seq": 239,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 249,
+      "seq": 240,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 250,
+      "seq": 241,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 251,
+      "seq": 242,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 252,
+      "seq": 243,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 253,
+      "seq": 244,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 254,
+      "seq": 245,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 255,
+      "seq": 246,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 256,
+      "seq": 247,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 257,
+      "seq": 248,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_28_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 258,
+      "seq": 249,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_0",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 259,
+      "seq": 250,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_1",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 260,
+      "seq": 251,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_2",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 261,
+      "seq": 252,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_3",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 262,
+      "seq": 253,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_4",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 263,
+      "seq": 254,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_5",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 264,
+      "seq": 255,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_6",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 265,
+      "seq": 256,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_7",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 266,
+      "seq": 257,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_8",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 267,
+      "seq": 258,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_9",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 268,
+      "seq": 259,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_10",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 269,
+      "seq": 260,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_11",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 270,
+      "seq": 261,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_12",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 271,
+      "seq": 262,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_13",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 272,
+      "seq": 263,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_14",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 273,
+      "seq": 264,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_15",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 274,
+      "seq": 265,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_16",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 275,
+      "seq": 266,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_17",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 276,
+      "seq": 267,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_18",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 277,
+      "seq": 268,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_19",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 278,
+      "seq": 269,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_20",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 279,
+      "seq": 270,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_21",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 280,
+      "seq": 271,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_22",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 281,
+      "seq": 272,
       "tick": 116,
       "kind": "debt",
       "cell_id": "cell_29_23",
       "reason": "not imaged by final flown path (ADR-002 v1: explicit debt, not dropped)"
     },
     {
-      "seq": 282,
+      "seq": 273,
       "tick": 116,
       "kind": "divert_audit_summary",
       "n_diverts": 11,

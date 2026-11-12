@@ -4739,3 +4739,85 @@ https-only into a fresh temp dir under the url's own basename, sha256 + size vs 
 SOURCE/sidecar/verdict bound by hash to the same log, bars AND sidecar (G267), then the committed `verdict.json` must be **BYTE-IDENTICAL to the
 canonical serialisation of the fresh run** (a leaf diff names the drift first; three leaves that differ by construction — `tool.python`,
 `tool.deps.PyYAML`, `allowlist.run_date_utc` — are excluded, shape-checked to the matrix legs / the pin / today, and printed, G278/G283; a PASS whose number sits on the wrong side of its own bar is red, G284): QA measured that the design's pre-registered `results[*].{verdict,n}` diff left 337 of 363 Tarot leaves unwatched (G266) and that a parsed-JSON diff let duplicate keys, smuggled keys, `1418.0`, `false` and dropped `[]` through (G277), so that pre-registration is widened here, not kept. `examples/tarot_x4/badge.svg` (`scripts/render_gates_badge.py`, stdlib, deterministic; only `pass` is green) is re-rendered from the fresh badge and diffed. **Measured:** every byte reproduces on 3.10.21 and 3.12.12 → `requires-python = ">=3.10"` (design §1's condition; a test pins the floor to the lowest matrix leg). Armed red-first in `tests/test_ci_evidence_gate.py` (no new file): QA rounds 1–3 (G266–G285) found 17/38, then 8/33, then 0 shadow mutants surviving — **signed off on `53228e1`**, the four residual MINORs closed in the final commit. **Not claimed:** it fetches only the three pinned logs; green = the committed verdicts REPRODUCE today, byte for byte, not that any vehicle is safe. **G257 stays OPEN for lead + owner before step 6:** a Dp rise as a hole flips the Tarot badge to `could not tell`.
+
+### ADR-022 amendment 5 (2026-11-10, THE OWNER REOPENED THE CONTROL LOOP): "make the avoidance software usable" — option B's engineering resumes as the active sequence, as one developer loop
+
+The owner's instruction of 2026-11-10 ("directly work towards making this drone autonomous obstacle avoidance software
+usable") reopens the control-loop work amendment 4 deferred; the gates tool and its posts are untouched by this branch
+(they continue on `feat/gates-tool-dp-rule`, the sibling branch off the same tip). What landed, all measured in sim on
+this Mac and NONE of it evidence under the claims ceiling (unbooked experiments): `scripts/fly_pipeline.sh encounter`
+(one command — bringup, node armed after takeoff, scripted flight, teardown, the flight log scored against its own bird
+track in its own folder; `--speed` pins WP_SPD because SITL's eeprom persisted the 2026-09-11 booking and every unbooked
+flight since flew 5.0 m/s while its record said 10.0); `scripts/probe_actuation.py` (GUIDED + /ap/cmd_gps_pose works:
+3.00 m lateral in ≈2.2–2.5 s sim from hover, ModeSwitch accepted in <25 ms, WP_JERK/WP_ACC buy nothing at ANGLE_MAX
+30°); and the control law of ADR-013 am. 20. Paid for: the "human-flown dodge take" rule for this loop; `--booking`
+bypassed by `--speed`, which the checker names on every such log. B's kill criterion (≥20 seeded encounters ≥3.00 m)
+is now RUNNABLE at ≈5 min per flight; hardware stays behind it.
+
+### ADR-013 amendment 20 (2026-11-10, R4 LANDED, THE TREE MARGIN IS 3D, ONE DODGE IS FLOWN TO COMPLETION): the five control-law changes the first measured depth-camera encounters forced
+
+(1) `DEPTH_THREAT_RADIUS_M` 45.0 (avoidance_node): with the forward depth camera the cylinder is 45 m, not 12 — run 1
+detected bird_0 at 12.0 / 9.1 m (1.1 s of lead at 11 m/s closing); runs 2–3 acquired at 35.6 / 44.6 / 43.7 m in flight,
+the first in-flight measurements. (2) R4 (`_candidate_order`): a bird within 30° of the TRACK axis (the mission leg,
+`DroneState.track_heading_rad`, never the yaw) at ≥6 m is answered with a ±90° sidestep first, the side away from an
+offset >1.0 m, else toward the field interior; the 0° reversal — every flown dodge's choice — is taken only inside R3's
+regime. (3) Gate 2's swept-path margin applies only where the dodge can meet a tree (segment ≤ 3.8 + 1.0 m): on lane
+x=15 the altitude-blind vet HOLDed over every tree column at 15 m (run 1: 4 holds at 0 m/s). (4) `DODGE_ARRIVAL_RADIUS_M`
+2.0: a latched dodge is flown to within 2 m before clear ticks may hand back — absence ended every dodge in run 2 after
+3–21 ticks (gt_cpa 0.021 m). (5) `RELATCH_AFTER_ARRIVAL_ONLY`: no re-latch while a dodge is in progress — run 3's side
+flips (RL/RLLL/LRL) spent 5–6 s of GUIDED moving <0.5 m. Checker: R2.1 reads `swept_margin_applied`; `--results-dir`.
+Measured: run 2 (1–3) gt_cpa_m 0.0212 m; run 3 (1–4) 0.839 m, four dodges flown 8.3 m; run 4 (1–5): 0.0393 m, with NO detection behind either strike: the bird reached the drone twice during its 180 deg turn at the north lane end and twice by overtaking from astern at 1 m/s closing -- outside a forward camera's view by construction; the one encounter it saw at 43.6 m was flown 8.45 m and passed at 9.6 m.
+
+### ADR-013 amendment 21 (2026-11-10, THE HEAD-ON SCENARIO AND THE KNOWN-STATIC RULE): the kill-criterion batch flies a bird a forward camera can see, and a surveyed tree is never a dynamic threat
+
+Runs 3–4 on the committed patrol bird left two strike geometries a single forward camera cannot see — an astern overtake
+(bird_0 at 6 m/s behind a 5 m/s drone on the same lane) and a bird arriving at the lane end during the 180° U-turn. The
+owner chose the head-on scenario for the batch: `config/birds/headon_lane15.json` (one bird, parked above the band,
+down the lane at 6 m/s once, out of the band at the south end) with `config/missions/headon_lane15.waypoints` (one
+northbound pass, land 7 m off the lane); `fly_pipeline.sh encounter --birds`, `scripts/encounter_batch.sh N` (speeds
+cycle 4/5/6 m/s — the batch's seed) and `scripts/summarize_encounters.py` (one row per run, the checker's own lines).
+The pilot: acquired at 44.9 m, dodge 8.36 m in 5.9 s, **gt_cpa_m 9.568 m** (8.80 m after the freeze debit) — the first
+scored encounter above 3.00 m. Its one defect became the rule: landing through 9.6 m, the policy dodged tree_row1_5's
+canopy (z 3.6, |dz| 6.0) for 8.5 s. A detection carrying `static_map_hint` (inside a surveyed tree's volume) is the
+tree: `_split_static` drops it before the threat test, counted on the maneuver; `_log_detection` now writes the hint
+(P2(c) closed). **The 20-run head-on batch (`scripts/encounter_batch.sh 20`, speeds cycling 4/5/6 m/s, 19:40–20:41Z): 20 of 20 cleared 3.00 m — gt_cpa_m min 5.416 m (the one run acquired at 32.2 m), median 9.523 m, max 9.823 m; acquisition 39.8–45.2 m on the other nineteen; one takeover and one resume per run; dodges 8.2–8.7 m cross-course in 4.9–6.1 s. B's kill criterion (≥20 encounters that cannot clear 3.00 m → not the product) did NOT fire. Every run is an unbooked experiment and the checker reads INVALID on all twenty for its range-error association bars (nearest truth at the applied-pose instant, p95 2–4 m) and the missing booking — scoring-side, not clearance. Table: `docs/encounters/BATCH_20261110T194048Z.md`.**
+
+### ADR-020 amendment 8 (2026-11-11, THE FIRST VALID AVOIDANCE TAKE — booked, head-on, every depth bar measured; the booking's own preconditions still OPEN)
+
+Three booked head-on takes on the 2026-09-07 artifact (5.0 m/s); flight-time verdicts INVALID, INVALID, VALID. Between them:
+bar 3b joins truth at the FRAME instant (`stamp_s` is logged; a stamp outside [−0.5 s, max_detection_age_s] is refused; take 1:
+0.21 m frame-joined vs 2.08 m tick-joined on one log); bars 4/5 read the logged yaw (`flown_heading_rad`; course read 14/26
+"behind the camera" on take 1; NaN refused; roll/pitch unlogged); world birds a driver sidecar DECLARES undriven are scored
+static at spawn over the whole flight — a gate-RULE change, not an artifact one (every sidecar already declared it; take 1 was
+refused for this too). Take 3 by the committed checker: gt_cpa_m 9.6138 m, gated 7.9898 m (14 m/s debit, the scenario's);
+acquired 44.926 m; range error p95 0.1687 m over the 7 of 18 frames the truth places unambiguously (11 in set_pose brackets,
+reported not gated), 0.0780 m at CPA−3.9 s; frustum 29/29; window 0.587× booked; detect 99.64 %, wall p95 10.701 / max 20.702 ms.
+Committed + pinned (`TRUTH_BINDINGS`, hashed `BOOKING_BINDINGS`); QA's 27 findings closed or recorded. OPEN for the owner: am. 5's
+tall-obstacle re-score was NOT run; §0b/P3 item 1 is unratified; bar 4 shares the un-projection's pose source; a wrong same-scenario
+track passes the declaration. One take, in sim, third attempt with rules changed between attempts. `docs/encounters/BOOKED_20261111.md`.
+
+### ADR-021 amendment 2 (2026-11-12, THE am. 5 TALL-OBSTACLE RE-SCORE — ordered by the owner, pre-registered, SHIPPED CONSTANTS PASS): clutter is now tested to 46 m, and the 2026-11-11 booking's open precondition closes
+
+The owner chose "Run the re-score" over a waiver. Pre-registered first (prereg runbook, P5 RE-SCORE section): the SAME 85 stations and
+harness, ONE declared world variant (`config/world_variants/tall_structure_am5.json`, an 18 m box whose face stands 58.0 m north of the
+y=0 camera poses; not instantiated for the one pose inside it, (15,60,15), by a rule both harness and scorer compute and compare), the
+SHIPPED constants, the same seven bars. Result (`eval/results/depth_dataset_20261112_tall/depth_segmenter_score_20261112T190828Z.json`):
+ALL SEVEN PASS — FNR 0/49, merge 0, unmapped FP 0.0/frame over 8 (mapped 14.375/frame, 115 tree-geofence, identical to 2026-09-07: the
+structure added no detection), range error p95 0.1076 / max 0.1362 m over 63 (identical: the bird's own pixels did not change), runtime
+p95 5.767 / max 9.532 ms (n 425), determinism 0/79, mutation red; the sweep would adopt the identical constants. 29 FNR_zero stations are
+structure-backed (predicted 30; S021 reads ground_band_edge at 52.5 m), nine at or beyond 33.591 m, farthest 46.0 m at a 57.85 m face.
+CONSEQUENCES: am. 5's precondition is CLOSED and the 2026-11-11 booking's open item (am. 8) closes with it; the 46.0 m qualifier now
+reads "clutter-backed to 46 m against a smooth box face — foliage with self-depth structure untested"; §0b/P3 item 1 stays unratified.
+
+### ADR-020 amendment 9 (2026-11-12, THE OWNER RULED P3 ITEM 1 — am. 1 open item 4 CLOSED): for a depth-source take §0b is REPORTED, not a precondition; the forward booking gate authorises
+
+The owner chose "Report only" (over "Keep precondition"). RULING: for a take whose detection source is the forward depth camera, the
+nadir bird-visibility gate (`scripts/predict_bird_visibility.py`, runbook §0b) is REPORTED — run at the booked speed on the take's own
+mission and bird config, number recorded with the take — and the forward booking gate (§0f, ADR-020 am. 2/3) is the AUTHORISING one.
+For an NDVI-source take §0b's abort rule stands unchanged; the gate is not retired, it still governs the NDVI map and ADR-003's in-air
+evidence. Reported for the committed 2026-11-11 take, after the fact: `--speed 5.0 --mission headon_lane15 --birds headon_lane15` →
+FAIL, exit 1 — bird_0 median 2 frames in the nadir frame (min 0, max 3) over 38 driver-start phases, while the forward camera acquired
+the same bird at 44.926 m (`docs/encounters/booked_20261111/take3_visibility_0b_headon_5p0_20261112.{txt,json}`). Consequences: the
+pre-registration's §4 "unauthorised by its own procedure" now reads authorised, after the fact, for that take; both authorisation
+items am. 8 left open are closed (am. 5 by ADR-021 am. 2, this by ruling); P3 item 2 (ADR-020 am. 3 open item (a), a post-2026-09-07
+detector log with no booking) stays open. No code changes: nothing ever enforced §0b mechanically, which is why the runbook kept saying so.

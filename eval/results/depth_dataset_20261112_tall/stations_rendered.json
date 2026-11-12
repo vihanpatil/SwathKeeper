@@ -1,0 +1,2927 @@
+{
+ "schema_version": "1.1",
+ "generated": "2026-09-07",
+ "note": "PREDICTED stations for the depth-segmenter cluttered dataset (docs/design/DEPTH_SEGMENTER_DESIGN.md sec 5). Every pixel/depth here is a PREDICTION from the pinhole model + the committed world; the labeller MUST recompute from the rendered camera LINK pose readback (not the commanded model pose - the base_link z offset is 0.195 m) and from the readback bird pose. | 1.1 (orchestrator, 2026-09-07): +6 pitched-arm stations S080-S085 (group I, design \u00a77 Q3) carrying cam_rpy_deg [roll, pitch, yaw] deg in Gazebo convention; stations without cam_rpy_deg are level.",
+ "intrinsics": {
+  "fx": 520.0058046927554,
+  "fy": 520.0058046927554,
+  "cx": 320.0,
+  "cy": 240.0,
+  "width_px": 640,
+  "height_px": 480,
+  "clip_near_m": 0.1,
+  "clip_far_m": 60.0,
+  "provenance": "live /fg/depth/camera_info 2026-09-06 (ADR-020 am. 1); the renderer's own camera_info is still authoritative at capture"
+ },
+ "world": {
+  "sdf": "sim/worlds/farmguard_field.sdf",
+  "ground_plane_m": {
+   "extent": [
+    125.0,
+    110.0
+   ],
+   "centre": [
+    37.5,
+    30.0
+   ]
+  },
+  "ground_plane_rule": "COMMITTED plane, NOT the 425 m check-world extension",
+  "trees_x_m": [
+   15.0,
+   40.0,
+   65.0
+  ],
+  "trees_y_m": [
+   5.0,
+   15.0,
+   25.0,
+   35.0,
+   45.0,
+   55.0
+  ],
+  "canopy_centre_z_m": 2.5,
+  "canopy_radius_m": 1.3,
+  "bird_radius_m": 0.18,
+  "cam_yaw_convention": "degrees in world ENU, 0 = +E, 90 = +N (SDF <pose> yaw)"
+ },
+ "stations": [
+  {
+   "id": "S001",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    14.15,
+    15.0
+   ],
+   "range_m": 14.0,
+   "slant_m": 14.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 13.82,
+   "expected_r_px": 6.69,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S002",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    20.15,
+    15.0
+   ],
+   "range_m": 20.0,
+   "slant_m": 20.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 19.82,
+   "expected_r_px": 4.68,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S003",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    26.15,
+    15.0
+   ],
+   "range_m": 26.0,
+   "slant_m": 26.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 25.82,
+   "expected_r_px": 3.6,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S004",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    32.15,
+    15.0
+   ],
+   "range_m": 32.0,
+   "slant_m": 32.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 31.82,
+   "expected_r_px": 2.93,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S005",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    38.15,
+    15.0
+   ],
+   "range_m": 38.0,
+   "slant_m": 38.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 37.82,
+   "expected_r_px": 2.46,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S006",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    44.15,
+    15.0
+   ],
+   "range_m": 44.0,
+   "slant_m": 44.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 43.82,
+   "expected_r_px": 2.13,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S007",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    46.15,
+    15.0
+   ],
+   "range_m": 46.0,
+   "slant_m": 46.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 45.82,
+   "expected_r_px": 2.03,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S008",
+   "group": "A_sky_ladder",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    60.0,
+    50.15,
+    15.0
+   ],
+   "range_m": 50.0,
+   "slant_m": 50.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 49.82,
+   "expected_r_px": 1.87,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "moderate-clutter collision-course ladder: bird dead ahead at cruise altitude"
+  },
+  {
+   "id": "S009",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    14.15,
+    15.0
+   ],
+   "range_m": 14.0,
+   "slant_m": 14.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 13.82,
+   "expected_r_px": 6.69,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S010",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    20.15,
+    15.0
+   ],
+   "range_m": 20.0,
+   "slant_m": 20.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 19.82,
+   "expected_r_px": 4.68,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S011",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    26.15,
+    15.0
+   ],
+   "range_m": 26.0,
+   "slant_m": 26.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 25.82,
+   "expected_r_px": 3.6,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S012",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    32.15,
+    15.0
+   ],
+   "range_m": 32.0,
+   "slant_m": 32.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 31.82,
+   "expected_r_px": 2.93,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S013",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    38.15,
+    15.0
+   ],
+   "range_m": 38.0,
+   "slant_m": 38.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 37.82,
+   "expected_r_px": 2.46,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S014",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    44.15,
+    15.0
+   ],
+   "range_m": 44.0,
+   "slant_m": 44.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 43.82,
+   "expected_r_px": 2.13,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S015",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    46.15,
+    15.0
+   ],
+   "range_m": 46.0,
+   "slant_m": 46.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 45.82,
+   "expected_r_px": 2.03,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S016",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    50.15,
+    15.0
+   ],
+   "range_m": 50.0,
+   "slant_m": 50.0,
+   "expected_px": [
+    320.0,
+    240.0
+   ],
+   "expected_depth_m": 49.82,
+   "expected_r_px": 1.87,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "same ladder down the cluttered orchard row - does clutter shorten acquisition?"
+  },
+  {
+   "id": "S017",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    20.15,
+    12.0
+   ],
+   "range_m": 20.0,
+   "slant_m": 20.224,
+   "expected_px": [
+    320.0,
+    318.0
+   ],
+   "expected_depth_m": 19.82,
+   "expected_r_px": 4.68,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "3 m below the axis, still inside the band"
+  },
+  {
+   "id": "S018",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    30.15,
+    12.0
+   ],
+   "range_m": 30.0,
+   "slant_m": 30.15,
+   "expected_px": [
+    320.0,
+    292.0
+   ],
+   "expected_depth_m": 29.82,
+   "expected_r_px": 3.12,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "3 m below the axis, still inside the band"
+  },
+  {
+   "id": "S019",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    40.15,
+    12.0
+   ],
+   "range_m": 40.0,
+   "slant_m": 40.112,
+   "expected_px": [
+    320.0,
+    279.0
+   ],
+   "expected_depth_m": 39.82,
+   "expected_r_px": 2.34,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "3 m below the axis, still inside the band"
+  },
+  {
+   "id": "S020",
+   "group": "A_sky_ladder",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    46.15,
+    12.0
+   ],
+   "range_m": 46.0,
+   "slant_m": 46.098,
+   "expected_px": [
+    320.0,
+    273.91
+   ],
+   "expected_depth_m": 45.82,
+   "expected_r_px": 2.03,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "3 m below the axis, still inside the band"
+  },
+  {
+   "id": "S021",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    19.15,
+    11.0
+   ],
+   "range_m": 14.0,
+   "slant_m": 14.56,
+   "expected_px": [
+    320.0,
+    388.57
+   ],
+   "expected_depth_m": 13.82,
+   "expected_r_px": 6.69,
+   "background": "ground_band",
+   "background_depth_m": 52.5,
+   "depth_step_m": 38.68,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S022",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    21.15,
+    11.0
+   ],
+   "range_m": 16.0,
+   "slant_m": 16.492,
+   "expected_px": [
+    320.0,
+    370.0
+   ],
+   "expected_depth_m": 15.82,
+   "expected_r_px": 5.85,
+   "background": "sky_edge",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S023",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    23.15,
+    11.0
+   ],
+   "range_m": 18.0,
+   "slant_m": 18.439,
+   "expected_px": [
+    320.0,
+    355.56
+   ],
+   "expected_depth_m": 17.82,
+   "expected_r_px": 5.2,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S024",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    25.15,
+    11.0
+   ],
+   "range_m": 20.0,
+   "slant_m": 20.396,
+   "expected_px": [
+    320.0,
+    344.0
+   ],
+   "expected_depth_m": 19.82,
+   "expected_r_px": 4.68,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S025",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    27.15,
+    11.0
+   ],
+   "range_m": 22.0,
+   "slant_m": 22.361,
+   "expected_px": [
+    320.0,
+    334.55
+   ],
+   "expected_depth_m": 21.82,
+   "expected_r_px": 4.25,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S026",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    19.15,
+    10.0
+   ],
+   "range_m": 14.0,
+   "slant_m": 14.866,
+   "expected_px": [
+    320.0,
+    425.72
+   ],
+   "expected_depth_m": 13.82,
+   "expected_r_px": 6.69,
+   "background": "ground_band",
+   "background_depth_m": 42.0,
+   "depth_step_m": 28.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S027",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    21.15,
+    10.0
+   ],
+   "range_m": 16.0,
+   "slant_m": 16.763,
+   "expected_px": [
+    320.0,
+    402.5
+   ],
+   "expected_depth_m": 15.82,
+   "expected_r_px": 5.85,
+   "background": "ground_band",
+   "background_depth_m": 48.0,
+   "depth_step_m": 32.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S028",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    23.15,
+    10.0
+   ],
+   "range_m": 18.0,
+   "slant_m": 18.682,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 17.82,
+   "expected_r_px": 5.2,
+   "background": "ground_band",
+   "background_depth_m": 54.0,
+   "depth_step_m": 36.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S029",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    25.15,
+    10.0
+   ],
+   "range_m": 20.0,
+   "slant_m": 20.616,
+   "expected_px": [
+    320.0,
+    370.0
+   ],
+   "expected_depth_m": 19.82,
+   "expected_r_px": 4.68,
+   "background": "sky_edge",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S030",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    27.15,
+    10.0
+   ],
+   "range_m": 22.0,
+   "slant_m": 22.561,
+   "expected_px": [
+    320.0,
+    358.18
+   ],
+   "expected_depth_m": 21.82,
+   "expected_r_px": 4.25,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S031",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    19.15,
+    9.0
+   ],
+   "range_m": 14.0,
+   "slant_m": 15.232,
+   "expected_px": [
+    320.0,
+    462.86
+   ],
+   "expected_depth_m": 13.82,
+   "expected_r_px": 6.69,
+   "background": "ground_band",
+   "background_depth_m": 35.0,
+   "depth_step_m": 21.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S032",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    21.15,
+    9.0
+   ],
+   "range_m": 16.0,
+   "slant_m": 17.088,
+   "expected_px": [
+    320.0,
+    435.0
+   ],
+   "expected_depth_m": 15.82,
+   "expected_r_px": 5.85,
+   "background": "ground_band",
+   "background_depth_m": 40.0,
+   "depth_step_m": 24.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S033",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    23.15,
+    9.0
+   ],
+   "range_m": 18.0,
+   "slant_m": 18.974,
+   "expected_px": [
+    320.0,
+    413.34
+   ],
+   "expected_depth_m": 17.82,
+   "expected_r_px": 5.2,
+   "background": "ground_band",
+   "background_depth_m": 45.0,
+   "depth_step_m": 27.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S034",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    25.15,
+    9.0
+   ],
+   "range_m": 20.0,
+   "slant_m": 20.881,
+   "expected_px": [
+    320.0,
+    396.0
+   ],
+   "expected_depth_m": 19.82,
+   "expected_r_px": 4.68,
+   "background": "ground_band",
+   "background_depth_m": 50.0,
+   "depth_step_m": 30.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S035",
+   "group": "B_merge",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    45.0,
+    27.15,
+    9.0
+   ],
+   "range_m": 22.0,
+   "slant_m": 22.804,
+   "expected_px": [
+    320.0,
+    381.82
+   ],
+   "expected_depth_m": 21.82,
+   "expected_r_px": 4.25,
+   "background": "ground_band",
+   "background_depth_m": 55.0,
+   "depth_step_m": 33.18,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "THE MERGE CASE: an isfinite mask joins this bird to the ground component"
+  },
+  {
+   "id": "S036",
+   "group": "B_merge",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    14.15,
+    9.0
+   ],
+   "range_m": 14.0,
+   "slant_m": 15.232,
+   "expected_px": [
+    320.0,
+    462.86
+   ],
+   "expected_depth_m": 13.82,
+   "expected_r_px": 6.69,
+   "background": "trunk_edge",
+   "background_depth_m": 34.7,
+   "depth_step_m": 20.88,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "merge case down the tree row - ground band AND canopies in the same neighbourhood"
+  },
+  {
+   "id": "S037",
+   "group": "B_merge",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    18.15,
+    9.0
+   ],
+   "range_m": 18.0,
+   "slant_m": 18.974,
+   "expected_px": [
+    320.0,
+    413.34
+   ],
+   "expected_depth_m": 17.82,
+   "expected_r_px": 5.2,
+   "background": "canopy",
+   "background_depth_m": 34.17,
+   "depth_step_m": 16.35,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "merge case down the tree row - ground band AND canopies in the same neighbourhood"
+  },
+  {
+   "id": "S038",
+   "group": "C_canopy_backed",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    22.15,
+    9.0
+   ],
+   "range_m": 22.0,
+   "slant_m": 22.804,
+   "expected_px": [
+    320.0,
+    381.82
+   ],
+   "expected_depth_m": 21.82,
+   "expected_r_px": 4.25,
+   "background": "canopy",
+   "background_depth_m": 43.69,
+   "depth_step_m": 21.87,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "bottom of the threat band; the canopies at 45/55 m are the background here"
+  },
+  {
+   "id": "S039",
+   "group": "C_canopy_backed",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    24.15,
+    9.0
+   ],
+   "range_m": 24.0,
+   "slant_m": 24.739,
+   "expected_px": [
+    320.0,
+    370.0
+   ],
+   "expected_depth_m": 23.82,
+   "expected_r_px": 3.9,
+   "background": "canopy_edge",
+   "background_depth_m": 44.8,
+   "depth_step_m": 20.98,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "bottom of the threat band; the canopies at 45/55 m are the background here"
+  },
+  {
+   "id": "S040",
+   "group": "C_canopy_backed",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    26.15,
+    9.0
+   ],
+   "range_m": 26.0,
+   "slant_m": 26.683,
+   "expected_px": [
+    320.0,
+    360.0
+   ],
+   "expected_depth_m": 25.82,
+   "expected_r_px": 3.6,
+   "background": "canopy",
+   "background_depth_m": 53.56,
+   "depth_step_m": 27.74,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "bottom of the threat band; the canopies at 45/55 m are the background here"
+  },
+  {
+   "id": "S041",
+   "group": "C_canopy_backed",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    28.15,
+    9.0
+   ],
+   "range_m": 28.0,
+   "slant_m": 28.636,
+   "expected_px": [
+    320.0,
+    351.43
+   ],
+   "expected_depth_m": 27.82,
+   "expected_r_px": 3.34,
+   "background": "canopy",
+   "background_depth_m": 53.95,
+   "depth_step_m": 26.13,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "bottom of the threat band; the canopies at 45/55 m are the background here"
+  },
+  {
+   "id": "S042",
+   "group": "C_canopy_backed",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    30.15,
+    9.0
+   ],
+   "range_m": 30.0,
+   "slant_m": 30.594,
+   "expected_px": [
+    320.0,
+    344.0
+   ],
+   "expected_depth_m": 29.82,
+   "expected_r_px": 3.12,
+   "background": "sky_edge",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "bottom of the threat band; the canopies at 45/55 m are the background here"
+  },
+  {
+   "id": "S043",
+   "group": "C_canopy_backed",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    32.15,
+    9.0
+   ],
+   "range_m": 32.0,
+   "slant_m": 32.558,
+   "expected_px": [
+    320.0,
+    337.5
+   ],
+   "expected_depth_m": 31.82,
+   "expected_r_px": 2.93,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "bottom of the threat band; the canopies at 45/55 m are the background here"
+  },
+  {
+   "id": "S044",
+   "group": "C_canopy_backed",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    34.15,
+    9.0
+   ],
+   "range_m": 34.0,
+   "slant_m": 34.525,
+   "expected_px": [
+    320.0,
+    331.77
+   ],
+   "expected_depth_m": 33.82,
+   "expected_r_px": 2.75,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "bottom of the threat band; the canopies at 45/55 m are the background here"
+  },
+  {
+   "id": "S045",
+   "group": "C_canopy_backed",
+   "cam": "P4",
+   "cam_enu": [
+    15.0,
+    60.0,
+    15.0
+   ],
+   "cam_yaw_deg": 270.0,
+   "bird_enu": [
+    15.0,
+    33.85,
+    9.0
+   ],
+   "range_m": 26.0,
+   "slant_m": 26.683,
+   "expected_px": [
+    320.0,
+    360.0
+   ],
+   "expected_depth_m": 25.82,
+   "expected_r_px": 3.6,
+   "background": "canopy",
+   "background_depth_m": 53.56,
+   "depth_step_m": 27.74,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "mirrored heading"
+  },
+  {
+   "id": "S046",
+   "group": "C_canopy_backed",
+   "cam": "P4",
+   "cam_enu": [
+    15.0,
+    60.0,
+    15.0
+   ],
+   "cam_yaw_deg": 270.0,
+   "bird_enu": [
+    15.0,
+    29.85,
+    9.0
+   ],
+   "range_m": 30.0,
+   "slant_m": 30.594,
+   "expected_px": [
+    320.0,
+    344.0
+   ],
+   "expected_depth_m": 29.82,
+   "expected_r_px": 3.12,
+   "background": "sky_edge",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "mirrored heading"
+  },
+  {
+   "id": "S047",
+   "group": "C_canopy_backed",
+   "cam": "P4",
+   "cam_enu": [
+    15.0,
+    60.0,
+    15.0
+   ],
+   "cam_yaw_deg": 270.0,
+   "bird_enu": [
+    15.0,
+    25.85,
+    9.0
+   ],
+   "range_m": 34.0,
+   "slant_m": 34.525,
+   "expected_px": [
+    320.0,
+    331.77
+   ],
+   "expected_depth_m": 33.82,
+   "expected_r_px": 2.75,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "mirrored heading"
+  },
+  {
+   "id": "S048",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    43.189,
+    3.045
+   ],
+   "range_m": 43.039,
+   "slant_m": 44.668,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 42.859,
+   "expected_r_px": 2.17,
+   "background": "canopy",
+   "background_depth_m": 43.61,
+   "depth_step_m": 0.75,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 0.75 m in front of the canopy surface at 43.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S049",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    42.439,
+    3.253
+   ],
+   "range_m": 42.289,
+   "slant_m": 43.89,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 42.109,
+   "expected_r_px": 2.21,
+   "background": "canopy",
+   "background_depth_m": 43.61,
+   "depth_step_m": 1.5,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 1.5 m in front of the canopy surface at 43.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S050",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    40.939,
+    3.67
+   ],
+   "range_m": 40.789,
+   "slant_m": 42.333,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 40.609,
+   "expected_r_px": 2.29,
+   "background": "canopy",
+   "background_depth_m": 43.61,
+   "depth_step_m": 3.0,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 3 m in front of the canopy surface at 43.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S051",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    37.939,
+    4.503
+   ],
+   "range_m": 37.789,
+   "slant_m": 39.22,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 37.609,
+   "expected_r_px": 2.48,
+   "background": "canopy",
+   "background_depth_m": 43.61,
+   "depth_step_m": 6.0,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 6 m in front of the canopy surface at 43.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S052",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    31.939,
+    6.17
+   ],
+   "range_m": 31.789,
+   "slant_m": 32.992,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 31.609,
+   "expected_r_px": 2.94,
+   "background": "canopy",
+   "background_depth_m": 43.61,
+   "depth_step_m": 12.0,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 12 m in front of the canopy surface at 43.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S053",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    33.224,
+    3.188
+   ],
+   "range_m": 33.074,
+   "slant_m": 35.12,
+   "expected_px": [
+    320.0,
+    425.72
+   ],
+   "expected_depth_m": 32.894,
+   "expected_r_px": 2.83,
+   "background": "canopy",
+   "background_depth_m": 33.64,
+   "depth_step_m": 0.75,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 0.75 m in front of the canopy surface at 33.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S054",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    32.474,
+    3.456
+   ],
+   "range_m": 32.324,
+   "slant_m": 34.323,
+   "expected_px": [
+    320.0,
+    425.72
+   ],
+   "expected_depth_m": 32.144,
+   "expected_r_px": 2.9,
+   "background": "canopy",
+   "background_depth_m": 33.64,
+   "depth_step_m": 1.5,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 1.5 m in front of the canopy surface at 33.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S055",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    30.974,
+    3.992
+   ],
+   "range_m": 30.824,
+   "slant_m": 32.73,
+   "expected_px": [
+    320.0,
+    425.72
+   ],
+   "expected_depth_m": 30.644,
+   "expected_r_px": 3.04,
+   "background": "canopy",
+   "background_depth_m": 33.64,
+   "depth_step_m": 3.0,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 3 m in front of the canopy surface at 33.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S056",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    27.974,
+    5.063
+   ],
+   "range_m": 27.824,
+   "slant_m": 29.545,
+   "expected_px": [
+    320.0,
+    425.72
+   ],
+   "expected_depth_m": 27.644,
+   "expected_r_px": 3.36,
+   "background": "canopy",
+   "background_depth_m": 33.64,
+   "depth_step_m": 6.0,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 6 m in front of the canopy surface at 33.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S057",
+   "group": "D_small_step",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    21.974,
+    7.206
+   ],
+   "range_m": 21.824,
+   "slant_m": 23.174,
+   "expected_px": [
+    320.0,
+    425.72
+   ],
+   "expected_depth_m": 21.644,
+   "expected_r_px": 4.29,
+   "background": "canopy",
+   "background_depth_m": 33.64,
+   "depth_step_m": 12.0,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird 12 m in front of the canopy surface at 33.6 m - measures where the discontinuity margin bites"
+  },
+  {
+   "id": "S058",
+   "group": "E_occluded",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    37.15,
+    1.786
+   ],
+   "range_m": 37.0,
+   "slant_m": 39.289,
+   "expected_px": [
+    320.0,
+    425.72
+   ],
+   "expected_depth_m": 36.82,
+   "expected_r_px": 2.53,
+   "background": "ground_band",
+   "background_depth_m": 42.0,
+   "depth_step_m": 5.18,
+   "occluded_by": "canopy",
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "occlusion_label",
+   "in_frame": true,
+   "note": "bird BEHIND the canopy - a label that must be scored as occluded, not as a miss"
+  },
+  {
+   "id": "S059",
+   "group": "E_occluded",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    47.15,
+    1.944
+   ],
+   "range_m": 47.0,
+   "slant_m": 48.78,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 46.82,
+   "expected_r_px": 1.99,
+   "background": "ground_band_edge",
+   "background_depth_m": 54.0,
+   "depth_step_m": 7.18,
+   "occluded_by": "canopy",
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "occlusion_label",
+   "in_frame": true,
+   "note": "bird BEHIND the canopy - a label that must be scored as occluded, not as a miss"
+  },
+  {
+   "id": "S060",
+   "group": "E_occluded",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    45.15,
+    2.5
+   ],
+   "range_m": 45.0,
+   "slant_m": 46.704,
+   "expected_px": [
+    320.0,
+    384.45
+   ],
+   "expected_depth_m": 44.82,
+   "expected_r_px": 2.08,
+   "background": "canopy",
+   "background_depth_m": 46.11,
+   "depth_step_m": 1.29,
+   "occluded_by": "canopy",
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "no_detection",
+   "pass_bar": "occlusion_label",
+   "in_frame": true,
+   "note": "bird INSIDE the canopy volume - degenerate, kept as a labelled non-detection"
+  },
+  {
+   "id": "S061",
+   "group": "F_negative",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S062",
+   "group": "F_negative",
+   "cam": "P2",
+   "cam_enu": [
+    30.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S063",
+   "group": "F_negative",
+   "cam": "P3",
+   "cam_enu": [
+    45.0,
+    20.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S064",
+   "group": "F_negative",
+   "cam": "P4",
+   "cam_enu": [
+    15.0,
+    60.0,
+    15.0
+   ],
+   "cam_yaw_deg": 270.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S065",
+   "group": "F_negative",
+   "cam": "P5",
+   "cam_enu": [
+    60.0,
+    40.0,
+    15.0
+   ],
+   "cam_yaw_deg": 270.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S066",
+   "group": "F_negative",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S067",
+   "group": "F_negative",
+   "cam": "P7",
+   "cam_enu": [
+    45.0,
+    5.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S068",
+   "group": "F_negative",
+   "cam": "P8",
+   "cam_enu": [
+    30.0,
+    40.0,
+    15.0
+   ],
+   "cam_yaw_deg": 270.0,
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "no_detection",
+   "pass_bar": "FP_zero_unmapped",
+   "in_frame": false,
+   "note": "target parked out of the world: clutter-only frame, FP-per-frame denominator"
+  },
+  {
+   "id": "S069",
+   "group": "G_offaxis",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    30.0,
+    30.15,
+    15.0
+   ],
+   "range_m": 30.0,
+   "slant_m": 33.541,
+   "expected_px": [
+    580.0,
+    240.0
+   ],
+   "expected_depth_m": 29.82,
+   "expected_r_px": 3.12,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "right of frame; cull law bites first here"
+  },
+  {
+   "id": "S070",
+   "group": "G_offaxis",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    0.0,
+    30.15,
+    15.0
+   ],
+   "range_m": 30.0,
+   "slant_m": 33.541,
+   "expected_px": [
+    60.0,
+    240.0
+   ],
+   "expected_depth_m": 29.82,
+   "expected_r_px": 3.12,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "left of frame"
+  },
+  {
+   "id": "S071",
+   "group": "G_offaxis",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    30.15,
+    8.077
+   ],
+   "range_m": 30.0,
+   "slant_m": 30.788,
+   "expected_px": [
+    320.0,
+    360.0
+   ],
+   "expected_depth_m": 29.82,
+   "expected_r_px": 3.12,
+   "background": "canopy",
+   "background_depth_m": 53.56,
+   "depth_step_m": 23.74,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "low in frame, off the ground band"
+  },
+  {
+   "id": "S072",
+   "group": "G_offaxis",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    38.0,
+    46.15,
+    15.0
+   ],
+   "range_m": 46.0,
+   "slant_m": 51.429,
+   "expected_px": [
+    580.0,
+    240.0
+   ],
+   "expected_depth_m": 45.82,
+   "expected_r_px": 2.03,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "right of frame; cull law bites first here"
+  },
+  {
+   "id": "S073",
+   "group": "G_offaxis",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    -8.0,
+    46.15,
+    15.0
+   ],
+   "range_m": 46.0,
+   "slant_m": 51.429,
+   "expected_px": [
+    60.0,
+    240.0
+   ],
+   "expected_depth_m": 45.82,
+   "expected_r_px": 2.03,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": true,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "FNR_zero",
+   "in_frame": true,
+   "note": "left of frame"
+  },
+  {
+   "id": "S074",
+   "group": "G_offaxis",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    15.0,
+    46.15,
+    4.385
+   ],
+   "range_m": 46.0,
+   "slant_m": 47.209,
+   "expected_px": [
+    320.0,
+    360.0
+   ],
+   "expected_depth_m": 45.82,
+   "expected_r_px": 2.03,
+   "background": "canopy",
+   "background_depth_m": 53.56,
+   "depth_step_m": 7.74,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "low in frame, off the ground band"
+  },
+  {
+   "id": "S075",
+   "group": "G_offaxis",
+   "cam": "P1",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    38.0,
+    46.15,
+    30.923
+   ],
+   "range_m": 46.0,
+   "slant_m": 53.838,
+   "expected_px": [
+    580.0,
+    60.0
+   ],
+   "expected_depth_m": 45.82,
+   "expected_r_px": 2.03,
+   "background": "sky",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": false,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "the FAR CORNER: |ray| 1.170, where the 47.56 m corner bound is measured"
+  },
+  {
+   "id": "S076",
+   "group": "H_annotator",
+   "cam": "P2",
+   "cam_enu": [
+    30.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    16.2,
+    34.2,
+    3.2
+   ],
+   "range_m": 34.05,
+   "slant_m": 38.589,
+   "expected_px": [
+    109.25,
+    420.21
+   ],
+   "expected_depth_m": 33.87,
+   "expected_r_px": 2.75,
+   "background": "canopy",
+   "background_depth_m": 34.38,
+   "depth_step_m": 0.51,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird at treetop height 1.4 m from a MAPPED tree at nearly the same range - the WEAKEST case for a discontinuity test (step < 1 m). Diagnostic, not a safety bar: it is 11.8 m below cruise, outside the threat band. Its real job is to confirm the CANOPY detections in the same frame carry static_map_hint."
+  },
+  {
+   "id": "S077",
+   "group": "H_annotator",
+   "cam": "P3",
+   "cam_enu": [
+    45.0,
+    20.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    41.2,
+    54.2,
+    3.2
+   ],
+   "range_m": 34.05,
+   "slant_m": 36.236,
+   "expected_px": [
+    261.97,
+    420.21
+   ],
+   "expected_depth_m": 33.87,
+   "expected_r_px": 2.75,
+   "background": "canopy_edge",
+   "background_depth_m": 34.54,
+   "depth_step_m": 0.67,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird at treetop height 1.4 m from a MAPPED tree at nearly the same range - the WEAKEST case for a discontinuity test (step < 1 m). Diagnostic, not a safety bar: it is 11.8 m below cruise, outside the threat band. Its real job is to confirm the CANOPY detections in the same frame carry static_map_hint."
+  },
+  {
+   "id": "S078",
+   "group": "H_annotator",
+   "cam": "P6",
+   "cam_enu": [
+    60.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "bird_enu": [
+    41.2,
+    34.2,
+    3.2
+   ],
+   "range_m": 34.05,
+   "slant_m": 40.646,
+   "expected_px": [
+    32.89,
+    420.21
+   ],
+   "expected_depth_m": 33.87,
+   "expected_r_px": 2.75,
+   "background": "canopy",
+   "background_depth_m": 34.34,
+   "depth_step_m": 0.47,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird at treetop height 1.4 m from a MAPPED tree at nearly the same range - the WEAKEST case for a discontinuity test (step < 1 m). Diagnostic, not a safety bar: it is 11.8 m below cruise, outside the threat band. Its real job is to confirm the CANOPY detections in the same frame carry static_map_hint."
+  },
+  {
+   "id": "S079",
+   "group": "H_annotator",
+   "cam": "P5",
+   "cam_enu": [
+    60.0,
+    40.0,
+    15.0
+   ],
+   "cam_yaw_deg": 270.0,
+   "bird_enu": [
+    66.2,
+    4.2,
+    3.2
+   ],
+   "range_m": 35.65,
+   "slant_m": 38.061,
+   "expected_px": [
+    229.56,
+    412.12
+   ],
+   "expected_depth_m": 35.47,
+   "expected_r_px": 2.63,
+   "background": "ground_band",
+   "background_depth_m": 45.32,
+   "depth_step_m": 9.85,
+   "occluded_by": null,
+   "in_threat_band": false,
+   "static_map_hint_expected": true,
+   "expect": "detect",
+   "pass_bar": "diagnostic",
+   "in_frame": true,
+   "note": "bird at treetop height 1.4 m from a MAPPED tree at nearly the same range - the WEAKEST case for a discontinuity test (step < 1 m). Diagnostic, not a safety bar: it is 11.8 m below cruise, outside the threat band. Its real job is to confirm the CANOPY detections in the same frame carry static_map_hint."
+  },
+  {
+   "group": "I_pitched_transfer",
+   "cam": "P1p",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "cam_rpy_deg": [
+    0.0,
+    12.5,
+    90.0
+   ],
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "unlabelled_recompute",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "static_map_hint_expected": false,
+   "pass_bar": "diagnostic",
+   "in_frame": null,
+   "id": "S080",
+   "bird_enu": [
+    15.0,
+    14.15,
+    11.0
+   ],
+   "range_m": 14.0,
+   "slant_m": null,
+   "in_threat_band": true,
+   "expect": "detect",
+   "note": "pitched arm: vehicle nose-down 12.5 deg (gz pitch +12.5), bird 4 m below cruise at 14.0 m down orchard row 0 \u2014 the level-camera derivation's named transfer gap, measured. Labels: recompute from the readback quaternion; background by ray-cast."
+  },
+  {
+   "group": "I_pitched_transfer",
+   "cam": "P1p",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "cam_rpy_deg": [
+    0.0,
+    12.5,
+    90.0
+   ],
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "unlabelled_recompute",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "static_map_hint_expected": false,
+   "pass_bar": "diagnostic",
+   "in_frame": null,
+   "id": "S081",
+   "bird_enu": [
+    15.0,
+    20.15,
+    11.0
+   ],
+   "range_m": 20.0,
+   "slant_m": null,
+   "in_threat_band": true,
+   "expect": "detect",
+   "note": "pitched arm: vehicle nose-down 12.5 deg (gz pitch +12.5), bird 4 m below cruise at 20.0 m down orchard row 0 \u2014 the level-camera derivation's named transfer gap, measured. Labels: recompute from the readback quaternion; background by ray-cast."
+  },
+  {
+   "group": "I_pitched_transfer",
+   "cam": "P1p",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "cam_rpy_deg": [
+    0.0,
+    12.5,
+    90.0
+   ],
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "unlabelled_recompute",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "static_map_hint_expected": false,
+   "pass_bar": "diagnostic",
+   "in_frame": null,
+   "id": "S082",
+   "bird_enu": [
+    15.0,
+    30.15,
+    11.0
+   ],
+   "range_m": 30.0,
+   "slant_m": null,
+   "in_threat_band": true,
+   "expect": "detect",
+   "note": "pitched arm: vehicle nose-down 12.5 deg (gz pitch +12.5), bird 4 m below cruise at 30.0 m down orchard row 0 \u2014 the level-camera derivation's named transfer gap, measured. Labels: recompute from the readback quaternion; background by ray-cast."
+  },
+  {
+   "group": "I_pitched_transfer",
+   "cam": "P1p",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "cam_rpy_deg": [
+    0.0,
+    12.5,
+    90.0
+   ],
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "unlabelled_recompute",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "static_map_hint_expected": false,
+   "pass_bar": "diagnostic",
+   "in_frame": null,
+   "id": "S083",
+   "bird_enu": [
+    15.0,
+    40.15,
+    11.0
+   ],
+   "range_m": 40.0,
+   "slant_m": null,
+   "in_threat_band": true,
+   "expect": "detect",
+   "note": "pitched arm: vehicle nose-down 12.5 deg (gz pitch +12.5), bird 4 m below cruise at 40.0 m down orchard row 0 \u2014 the level-camera derivation's named transfer gap, measured. Labels: recompute from the readback quaternion; background by ray-cast."
+  },
+  {
+   "group": "I_pitched_transfer",
+   "cam": "P1p",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "cam_rpy_deg": [
+    0.0,
+    12.5,
+    90.0
+   ],
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "unlabelled_recompute",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "static_map_hint_expected": false,
+   "pass_bar": "diagnostic",
+   "in_frame": null,
+   "id": "S084",
+   "bird_enu": [
+    15.0,
+    46.15,
+    11.0
+   ],
+   "range_m": 46.0,
+   "slant_m": null,
+   "in_threat_band": true,
+   "expect": "detect",
+   "note": "pitched arm: vehicle nose-down 12.5 deg (gz pitch +12.5), bird 4 m below cruise at 46.0 m down orchard row 0 \u2014 the level-camera derivation's named transfer gap, measured. Labels: recompute from the readback quaternion; background by ray-cast."
+  },
+  {
+   "group": "I_pitched_transfer",
+   "cam": "P1p",
+   "cam_enu": [
+    15.0,
+    0.0,
+    15.0
+   ],
+   "cam_yaw_deg": 90.0,
+   "cam_rpy_deg": [
+    0.0,
+    12.5,
+    90.0
+   ],
+   "expected_px": null,
+   "expected_depth_m": null,
+   "expected_r_px": null,
+   "background": "none_target_parked_out_of_world",
+   "background_depth_m": null,
+   "depth_step_m": null,
+   "occluded_by": null,
+   "static_map_hint_expected": false,
+   "pass_bar": "diagnostic",
+   "in_frame": null,
+   "id": "S085",
+   "bird_enu": [
+    -200.0,
+    -200.0,
+    50.0
+   ],
+   "range_m": null,
+   "slant_m": null,
+   "in_threat_band": false,
+   "expect": "no_detection",
+   "note": "pitched negative control: nose-down 12.5 deg, no target in the world \u2014 the tilted ground ramp, canopies and shifted cull boundary alone."
+  }
+ ]
+}

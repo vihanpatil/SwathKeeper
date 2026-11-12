@@ -59,6 +59,10 @@ headline numbers). Three pieces, host-side, no Docker except the capture step:
   and each pose rendered **twice** — once with the birds present and once with all three parked off
   the world edge — so the bird's rendered footprint is established by diffing against its own
   negative control, never by asking the detector. Spec: `docs/design/DEPTH_SEGMENTER_DESIGN.md` §5.
+  `VARIANT=<config/world_variants/*.json>` adds a DECLARED world variant's static boxes to the per-group copies —
+  never to the committed world — skips a group whose commanded camera lies inside a box, and writes the
+  declaration (sha256, per-group flag) into `groups.jsonl`; `score_depth_segmenter.py --world-variant` must then
+  be given the same file (ADR-020 am. 5 re-score, 2026-11-12).
   Input a station file (`docs/design/depth_segmenter_stations.json`); output `.npy` depth frames +
   `labels.jsonl` + `groups.jsonl` into `eval/results/depth_dataset_20260907/` (frames stay
   gitignored — ~100 MB — everything else needed to reproduce the score is committed).

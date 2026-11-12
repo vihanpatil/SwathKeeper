@@ -83,7 +83,11 @@ def _maneuver(setpoint, *, range_degenerate=None, tid="bird_0", fid=1):
 def _exec(cells=None):
     geo = GeofenceMap.from_file()
     sink = SimulatedVehicleSink(initial_wp_index=6)
-    ex = AvoidanceExecutor(geo, cells or [], sink, swath_half_width_m=3.0, alt_bounds=(2.0, 30.0))
+    # R3 is pinned on its own here: the one-commitment rule (RELATCH_AFTER_ARRIVAL_ONLY, 2026-11-10)
+    # sits in FRONT of it on a dodge in progress and would otherwise refuse every re-latch below.
+    # ...and the dodge-completion rule (an infinite arrival radius = always arrived = the old lifecycle).
+    ex = AvoidanceExecutor(geo, cells or [], sink, relatch_after_arrival_only=False, dodge_arrival_radius_m=math.inf,
+                           swath_half_width_m=3.0, alt_bounds=(2.0, 30.0))
     return ex, sink
 
 
@@ -531,6 +535,11 @@ class TestAHoldHonoursNoClearanceBarAndSaysSo(unittest.TestCase):
 
 
 # ==================================================================================================
+# The flown 2026-08-23 law: no R2 margin, no R3 flag, and (2026-11-10) no R4 sidestep rule.
+BAND_ALT_M = 4.0   # inside the 4.8 m canopy band: where the swept-path margin is live (2026-11-10)
+AS_FLOWN = {"lateral_tree_margin_m": 0.0, "degenerate_range_m": 0.0, "on_track_sidestep_min_range_m": math.inf}
+
+
 class TestTheFlownEncounterUnderTheNewControlLaw(unittest.TestCase):
     """End to end on the real thing: the 19 flown ticks replayed through the REAL policy and the
     REAL executor, first reproducing the flight and then showing exactly what R2+R3 change.
@@ -543,20 +552,23 @@ class TestTheFlownEncounterUnderTheNewControlLaw(unittest.TestCase):
     def setUpClass(cls):
         cls.geo = GeofenceMap.from_file()
 
-    def _replay(self, **overrides):
-        pol = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=CRUISE_ALT_M,
-                              **overrides)
+    def _replay(self, alt=None, **overrides):
+        """`alt` lowers the whole encounter (drone, bird, setpoints) to that altitude; BAND_ALT_M puts
+        it inside the canopy band, where the swept-path margin is live (2026-11-10)."""
+        pol = AvoidancePolicy(field_polygon=load_field_polygon(),
+                              cruise_alt_m=CRUISE_ALT_M if alt is None else alt, **overrides)
         ex, sink = _exec()
+        bird = DEMO_BIRD_ENU if alt is None else (DEMO_BIRD_ENU[0], DEMO_BIRD_ENU[1], alt)
         for _, pos, _, _, _, _ in ENCOUNTER:
-            drone = _drone(pos)
-            ex.step(drone, pol.decide(_bird(DEMO_BIRD_ENU), drone, self.geo))
+            drone = _drone(pos if alt is None else (pos[0], pos[1], alt))
+            ex.step(drone, pol.decide(_bird(bird), drone, self.geo))
         return ex, sink
 
     def test_as_flown_params_reproduce_the_flown_latch_column_exactly(self):
         """Validates the harness before it is used to claim a delta: at the as-flown params the
         replay reproduces all 19 `latch_action` values from the flight log, including the 20.9 m
         re-latch on the degenerate tick."""
-        ex, _ = self._replay(lateral_tree_margin_m=0.0, degenerate_range_m=0.0)
+        ex, _ = self._replay(**AS_FLOWN)
         self.assertEqual(_latch_actions(ex), [row[5] for row in ENCOUNTER])
         self.assertEqual(len(_kinds(ex, "relatch")), 7)
 
@@ -583,7 +595,7 @@ class TestTheFlownEncounterUnderTheNewControlLaw(unittest.TestCase):
         Stated honestly: R3 costs the noise setpoint ONE tick of delay (0.2 s at 5 Hz), it does not
         abolish the jump. That is the whole claim -- the setpoint that was pure estimator noise
         never reaches the vehicle."""
-        _, flown_sink = self._replay(lateral_tree_margin_m=0.0, degenerate_range_m=0.0)
+        _, flown_sink = self._replay(**AS_FLOWN)
         self.assertIn(SETPOINT_329, flown_sink.setpoints_sent,
                       "fixture drift: the as-flown replay no longer commands the flown setpoint")
         today, sink = self._replay()
@@ -600,17 +612,21 @@ class TestTheFlownEncounterUnderTheNewControlLaw(unittest.TestCase):
         self.assertEqual(tuple(next_man["debug"]["away_unit"]), ENCOUNTER[idx + 1][3])
 
     def test_the_new_law_still_dodges_every_tick_and_costs_one_relatch(self):
-        """The price of R2+R3 on the flown encounter: 19/19 ticks still command a vetted dodge
-        (nothing became a HOLD or a gate_reject), one takeover, and the re-latch count goes 7 -> 6
-        with one refusal in its place."""
-        flown, _ = self._replay(lateral_tree_margin_m=0.0, degenerate_range_m=0.0)
+        """The price of R2+R3+R4 on the flown encounter: 19/19 ticks still command a vetted dodge
+        (nothing became a HOLD or a gate_reject), one takeover, one R3 refusal. Re-latches: the
+        flown law made 7; R2+R3 alone made 6 (the refusal took one away); with R4 (2026-11-10) the
+        count is 7 again, because the ten far on-track ticks (ranges 6.06-11.65 m) now sidestep
+        perpendicular to the track, and a perpendicular point moves with the drone along the lane
+        -- past the 2 m re-latch threshold every few ticks -- where the old 0-deg point barely
+        moved. Measured, not designed: re-measure if any of the three rules changes."""
+        flown, _ = self._replay(**AS_FLOWN)
         ex, _ = self._replay()
         self.assertEqual(len(_kinds(ex, "maneuver")), 19)
         self.assertEqual(_kinds(ex, "hold"), [])
         self.assertEqual(_kinds(ex, "gate_reject"), [])
         self.assertEqual(len(_kinds(ex, "takeover")), 1)
         self.assertEqual(len(_kinds(flown, "relatch")), 7)
-        self.assertEqual(len(_kinds(ex, "relatch")), 6)
+        self.assertEqual(len(_kinds(ex, "relatch")), 7)
         self.assertEqual(sum(a == REFUSED for a in _latch_actions(ex)), 1)
 
     def test_R2_alone_would_still_have_flown_a_noise_driven_dodge(self):
@@ -618,23 +634,32 @@ class TestTheFlownEncounterUnderTheNewControlLaw(unittest.TestCase):
         rejected and the dodge is ROTATED -- but a rotation of a noise direction is still a noise
         direction, and the executor re-latches onto it. R2 fixes what the dodge sweeps past; only R3
         stops it being commanded at all."""
-        r2_only, sink = self._replay(degenerate_range_m=0.0)
+        # inside the band (2026-11-10): at the flown 15 m the margin no longer applies
+        r2_only, sink = self._replay(alt=BAND_ALT_M, degenerate_range_m=0.0)
         idx = [i for i, row in enumerate(ENCOUNTER) if row[0] == TICK_329[0]][0]
         self.assertEqual(_latch_actions(r2_only)[idx], "relatch")
         rotated = sink.setpoints_sent[idx]
-        self.assertNotEqual(rotated, SETPOINT_329)                    # R2 moved it...
+        self.assertNotEqual(rotated[:2], SETPOINT_329[:2])            # R2 moved it...
         self.assertNotEqual(rotated, sink.setpoints_sent[idx - 1])    # ...but it still got flown
         self.assertEqual(_kinds(r2_only, "maneuver")[idx]["debug"]["candidate_angle_deg"], 45.0)
 
     def test_every_commanded_dodge_of_the_replay_clears_the_tree_margin(self):
-        """The R2 invariant as the flight-log gate will assert it: every accepted maneuver's
-        `swept_tree_clearance_m` is at or above the margin the policy logged for that decision."""
+        """The R2 invariant as the flight-log gate asserts it: every accepted maneuver whose
+        `swept_margin_applied` is true has `swept_tree_clearance_m` at or above the margin the
+        policy logged. At the flown 15 m the margin is NOT applied (2026-11-10) and the maneuver
+        says so; lowered into the band it is, and the invariant holds on every tick."""
         ex, _ = self._replay()
         for ev in _kinds(ex, "maneuver"):
-            with self.subTest(tick=ev["tick"]):
+            with self.subTest(tick=ev["tick"], alt="cruise"):
+                self.assertFalse(ev["debug"]["swept_margin_applied"])
+                self.assertGreaterEqual(ev["debug"]["params"]["lateral_tree_margin_m"], 1.0)
+        low, _ = self._replay(alt=BAND_ALT_M)
+        self.assertGreater(len(_kinds(low, "maneuver")), 0)
+        for ev in _kinds(low, "maneuver"):
+            with self.subTest(tick=ev["tick"], alt="band"):
+                self.assertTrue(ev["debug"]["swept_margin_applied"])
                 self.assertGreaterEqual(ev["debug"]["swept_tree_clearance_m"],
                                         ev["debug"]["params"]["lateral_tree_margin_m"])
-                self.assertGreaterEqual(ev["debug"]["params"]["lateral_tree_margin_m"], 1.0)
 
     def test_every_maneuver_carries_both_numbers_the_gate_checks(self):
         """Absence from the log IS the bug: the gate fails a schema-2 log missing either field, so
@@ -649,16 +674,55 @@ class TestTheFlownEncounterUnderTheNewControlLaw(unittest.TestCase):
                                  ev["debug"]["trigger_range_m"] < bar)
                 self.assertEqual(ev["debug"]["params"]["degenerate_range_m"], bar)
 
-    def test_R4_is_still_open(self):
-        """Tripwire, not an endorsement: candidate 0 deg (straight away from the bird) is still
-        tried FIRST, which in a head-on closure is a full reversal -- the escape ownship momentum
-        forbids, and the reason the flown dodge bought 45 mm. R2/R3 do not touch it. The day the
-        candidate order changes, this fails and whoever changed it lands R4 in the ADR."""
+    def test_R4_landed_but_the_degenerate_regime_stays_away_first(self):
+        """R4 LANDED 2026-11-10 (avoidance_policy._candidate_order): an ON-TRACK bird at a
+        well-conditioned range is answered with a perpendicular sidestep first. This replay is the
+        other regime -- the flown 2026-08-23 encounter at 0.05 m range, where the away-vector's
+        direction is noise (R3) -- and it must reproduce exactly as flown: away-first, 18 of 19 ticks
+        on candidate 0. tests/fieldguard_planning/test_on_track_sidestep.py pins the new regime."""
         self.assertEqual(_CANDIDATE_ANGLES_DEG[0], 0.0)
         ex, _ = self._replay()
-        angles = [ev["debug"]["candidate_angle_deg"] for ev in _kinds(ex, "maneuver")]
-        self.assertEqual(angles.count(0.0), 18, "18 of 19 ticks still take the reversal candidate")
+        man = _kinds(ex, "maneuver")
+        angles = [ev["debug"]["candidate_angle_deg"] for ev in man]
+        orders = [ev["debug"]["candidate_order"] for ev in man]
+        near = [i for i, row in enumerate(ENCOUNTER) if row[2] < PolicyParams().on_track_sidestep_min_range_m]
+        far = [i for i in range(len(ENCOUNTER)) if i not in near]
+        self.assertEqual(len(near), 9)
+        self.assertTrue(all(orders[i] == "away_first" for i in near))
+        # the nine near ticks keep the flown reversal (at 15 m the R2 margin is not applied since
+        # 2026-11-10, so tick 329's 0 deg candidate is no longer rotated to 45 deg up here)
+        self.assertEqual([angles[i] for i in near].count(0.0), 9)
+        self.assertTrue(all(orders[i] == "on_track_sidestep" and angles[i] in (90.0, -90.0) for i in far),
+                        "a far on-track tick no longer sidesteps -- R4 regressed")
+        self.assertEqual(angles.count(0.0), 9, "the reversal candidate is now taken ONLY inside the R3 regime")
+        flown, _ = self._replay(**AS_FLOWN)
+        flown_angles = [ev["debug"]["candidate_angle_deg"] for ev in _kinds(flown, "maneuver")]
+        self.assertEqual(flown_angles.count(0.0), 19, "as flown: every tick took the reversal")
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOneCommitmentPerEncounter(unittest.TestCase):
+    """RELATCH_AFTER_ARRIVAL_ONLY (2026-11-10): on the flown 19-tick encounter the executor's default
+    now keeps the FIRST vetted latch for the whole encounter -- the vehicle never arrives within 2 m
+    of a point 10 m off its own track while it flies past the bird -- and every later jump of the
+    policy's point is a `relatch_refused_in_progress`, including the 20.9 m noise-driven one R3 was
+    written for. R3 keeps its own label and its own place in front, for the day the dodge HAS arrived."""
+
+    def test_the_flown_encounter_keeps_one_latch_under_todays_defaults(self):
+        geo = GeofenceMap.from_file()
+        pol = AvoidancePolicy(field_polygon=load_field_polygon(), cruise_alt_m=CRUISE_ALT_M)
+        sink = SimulatedVehicleSink(initial_wp_index=6)
+        ex = AvoidanceExecutor(geo, [], sink, swath_half_width_m=3.0, alt_bounds=(2.0, 30.0))
+        self.assertTrue(ex.relatch_after_arrival_only)
+        for _, pos, _, _, _, _ in ENCOUNTER:
+            drone = _drone(pos)
+            ex.step(drone, pol.decide(_bird(DEMO_BIRD_ENU), drone, geo))
+        actions = _latch_actions(ex)
+        self.assertEqual(actions[0], "latch")
+        self.assertEqual(_kinds(ex, "relatch"), [])
+        self.assertGreaterEqual(actions.count("relatch_refused_in_progress"), 1)
+        self.assertEqual(set(actions[1:]) - {"recommand_latched", "relatch_refused_in_progress", REFUSED}, set())
+        self.assertEqual(len(set(sink.setpoints_sent)), 1, "more than one point was ever commanded")
