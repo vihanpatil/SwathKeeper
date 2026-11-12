@@ -70,8 +70,8 @@ field-readiness or production claim (full statement under
   this bar — see the results table below for the other two. A fourth avoidance take, booked, cleared **9.61 m** head-on on
   2026-11-11 with the forward depth camera and reads **VALID under the flight-log gate** (7.99 m after the freeze debit;
   ADR-020 am. 8): one take, in sim, the third of three attempts with gate rules changed between them, and its booking's own
-  am. 5 precondition was measured and closed on 2026-11-12, after the flight (ADR-021 am. 2), with §0b still unratified — it is in
-  the table too, and it does not retire the three.
+  am. 5 precondition was measured and closed on 2026-11-12, after the flight (ADR-021 am. 2), and §0b ruled reported-only the same day (ADR-020 am. 9) — it
+  is in the table too, and it does not retire the three.
 - **Then the project measured *why*, offline, and changed course on the measurement.** A
   jerk/accel-limited replay of all three flights swept **81 mission speeds** from 2 to 10 m/s, each
   checked against every escape candidate and three different plant/acceleration models, and returned

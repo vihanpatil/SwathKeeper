@@ -204,7 +204,7 @@ pinned list is meant to stay two long.
 - Second sensor as a supported operating mode: **the forward depth camera is BUILT (ADR-020/021)
   flew once with no target (2026-09-11) and against a bird 24 times since 2026-11-10; one booked take is committed VALID
   under the flight-log gate (ADR-020 am. 8), its am. 5 precondition closed 2026-11-12 (ADR-021 am. 2)** — promoting it out of
-  stretch needs the owner's §0b ruling and a booked batch, not more offline evidence.
+  stretch needs a booked batch, not more offline evidence (§0b was ruled reported-only 2026-11-12, ADR-020 am. 9).
 - Live in-node NDVI stitching (offline is the v1 decision, ADR-010).
 
 ## Cut / deferred log
@@ -338,8 +338,8 @@ gt_cpa_m 9.6138 m (7.9898 m gated), acquired at 44.926 m, range error p95 0.1687
 unambiguously, frustum 29/29, window speed 0.587× booked** — committed as `eval/results/live_flight_log_20261111T202709Z.json`
 (pinned truth + hashed booking), the fourth flight in the dashboard. A same-day QA round (27 findings) hardened the three changes
 and corrected this record's numbers. **OPEN for the owner at the time:** ADR-020 am. 5's tall-obstacle re-score was not run before booking (**run and PASSED
-2026-11-12, ADR-021 am. 2 — next paragraph**), and §0b's status as a precondition (P3 item 1) is unratified — so "evidence-gated"
-holds for the flight-log gate and, since 2026-11-12, for the segmenter's clutter claim. One take, third attempt, rules changed
+2026-11-12, ADR-021 am. 2 — next paragraph**), and §0b's status as a precondition (P3 item 1) was unratified (**ruled REPORTED 2026-11-12, ADR-020 am. 9**) — so
+"evidence-gated" holds for the flight-log gate and, since 2026-11-12, for the segmenter's clutter claim. One take, third attempt, rules changed
 between attempts. Full record: `docs/encounters/BOOKED_20261111.md`.
 **2026-11-12 — the am. 5 re-score: ordered, pre-registered, SHIPPED CONSTANTS PASS (ADR-021 am. 2).** The owner chose to run it
 rather than waive it. One declared world variant (`config/world_variants/tall_structure_am5.json`: an 18 m box whose face stands
@@ -348,7 +348,9 @@ scorer; one rule, computed on both sides and compared, leaves it out for the sin
 stations, same seven bars, the SHIPPED constants: **all PASS — FNR 0/49, unmapped FP 0.0/frame over 8, range error p95 0.1076 m
 over 63, runtime p95 5.767 / max 9.532 ms; 29 FNR_zero stations structure-backed, nine of them at 34–46 m** (predicted 30; S021
 reads ground_band_edge). The segmenter stays frozen; the 46.0 m qualifier now reads "clutter-backed to 46 m against a smooth box
-face — foliage with self-depth structure untested". `eval/results/depth_dataset_20261112_tall/`.
-**Next:** the owner's §0b ruling (precondition or report) and the sensor-coverage question
+face — foliage with self-depth structure untested". `eval/results/depth_dataset_20261112_tall/`. **The owner then ruled P3 item 1 (ADR-020 am. 9): for a depth-source take
+§0b is REPORTED, not a precondition** — reported for the committed take, bird_0 median 2 nadir frames at 5.0 m/s against a forward
+acquisition at 44.9 m; both authorisation items the 2026-11-11 take left open are now closed.
+**Next:** the sensor-coverage question
 (a second aperture, or an encounter definition that excludes astern geometry); then a booked BATCH (≥ 20) under the same gate,
 and the ADR-022 option-B call on that evidence.

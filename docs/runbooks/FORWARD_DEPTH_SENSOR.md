@@ -757,11 +757,11 @@ names the artifact, because a gaps list nobody dispositions becomes a list nobod
   The rule's cost is on the record: at `min_area_px = 6` the floor would be **1.6 px → 58.50 m**.
   Both are above the booked 46.0 m, so the booking does not move either way. Closes
   `config/depth_camera.json`'s `min_resolving_radius_source` item too.
-* **OPEN — whether the nadir bird-visibility gate is still a precondition for a dodge take** is a
-  question for the ADR, not for this runbook: with detection on the forward sensor,
+* **RULED 2026-11-12 (owner, ADR-020 am. 9): for a depth-source take the nadir bird-visibility gate is REPORTED, not a
+  precondition; §0f authorises.** It was a question for the ADR, not for this runbook: with detection on the forward sensor,
   `predict_bird_visibility.py` gates the NDVI *map*, not the dodge. It is still a real gate for the
-  survey half; do not silently retire it. **Product-lead ratification owed** (ADR-020 am. 1 open
-  item 4): the recommendation is that for a *depth-source* take the forward booking gate is the
+  survey half; do not silently retire it. **Ratified as recommended** (ADR-020 am. 1 open
+  item 4, closed by am. 9): the recommendation is that for a *depth-source* take the forward booking gate is the
   **authorising** one and §0b is **REPORTED** — measured, §0b FAILS 2 of 3 birds at the booked
   5.0 m/s.
 

@@ -4808,3 +4808,16 @@ p95 5.767 / max 9.532 ms (n 425), determinism 0/79, mutation red; the sweep woul
 structure-backed (predicted 30; S021 reads ground_band_edge at 52.5 m), nine at or beyond 33.591 m, farthest 46.0 m at a 57.85 m face.
 CONSEQUENCES: am. 5's precondition is CLOSED and the 2026-11-11 booking's open item (am. 8) closes with it; the 46.0 m qualifier now
 reads "clutter-backed to 46 m against a smooth box face — foliage with self-depth structure untested"; §0b/P3 item 1 stays unratified.
+
+### ADR-020 amendment 9 (2026-11-12, THE OWNER RULED P3 ITEM 1 — am. 1 open item 4 CLOSED): for a depth-source take §0b is REPORTED, not a precondition; the forward booking gate authorises
+
+The owner chose "Report only" (over "Keep precondition"). RULING: for a take whose detection source is the forward depth camera, the
+nadir bird-visibility gate (`scripts/predict_bird_visibility.py`, runbook §0b) is REPORTED — run at the booked speed on the take's own
+mission and bird config, number recorded with the take — and the forward booking gate (§0f, ADR-020 am. 2/3) is the AUTHORISING one.
+For an NDVI-source take §0b's abort rule stands unchanged; the gate is not retired, it still governs the NDVI map and ADR-003's in-air
+evidence. Reported for the committed 2026-11-11 take, after the fact: `--speed 5.0 --mission headon_lane15 --birds headon_lane15` →
+FAIL, exit 1 — bird_0 median 2 frames in the nadir frame (min 0, max 3) over 38 driver-start phases, while the forward camera acquired
+the same bird at 44.926 m (`docs/encounters/booked_20261111/take3_visibility_0b_headon_5p0_20261112.{txt,json}`). Consequences: the
+pre-registration's §4 "unauthorised by its own procedure" now reads authorised, after the fact, for that take; both authorisation
+items am. 8 left open are closed (am. 5 by ADR-021 am. 2, this by ruling); P3 item 2 (ADR-020 am. 3 open item (a), a post-2026-09-07
+detector log with no booking) stays open. No code changes: nothing ever enforced §0b mechanically, which is why the runbook kept saying so.

@@ -20,7 +20,9 @@ constants: **all seven bars PASS** — FNR 0/49, unmapped FP 0.0/frame over 8, r
 are unchanged, so the foreground numbers reproduce 2026-09-07 to the millimetre), runtime p95 5.767 / max 9.532 ms — with **29 FNR_zero
 stations structure-backed, nine of them at 34–46 m** (predicted 30; S021 reads ground_band_edge). The am. 5 precondition is CLOSED
 (ADR-021 am. 2); no constant moved; the 46.0 m qualifier now reads "clutter-backed to 46 m against a smooth box face — foliage with
-self-depth structure untested". Still open: §0b / P3 item 1.
+self-depth structure untested". The owner then ruled P3 item 1: for a depth-source take §0b is REPORTED, not a precondition (ADR-020
+am. 9) — reported for the committed take at 5.0 m/s, bird_0 median 2 nadir frames over 38 phases against a forward acquisition at
+44.9 m. Both authorisation items the 2026-11-11 take left open are closed; P3 item 2 (a detector log with no booking) stays open.
 
 ## 2026-11-10/11 — the control loop reopened; the first VALID avoidance take
 

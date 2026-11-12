@@ -1,0 +1,18 @@
+SwathKeeper pre-flight bird-visibility prediction
+  mission  config/missions/headon_lane15.waypoints
+  birds    config/birds/headon_lane15.json  (1 birds)
+  model    5.0 m/s, 5.0 Hz -> 97 frame opportunities over 19 s at 15 m; birds start at t=2 s (>10 m gate)
+  sweep    38 phases x 0.5 s (covers the 19.0 s trajectory period)
+  camera   640x480 fx=520 -> ground footprint 18.5 x 13.8 m (along-track x cross-track)
+
+  bird       alt  depth  footprint@bird_alt     frames in view  at gate   phases  limited by
+               m      m   along x cross (m)        min/med/max  phase 0     seen
+  bird_0    25.0  -10.0    -12.3 x   -9.2     0 /    2 /    3        2    30/38  TIMING
+
+  bird_0: enters the frame at 30/38 driver-start offsets; best phase 1.0 s gives 3 frames
+      window  t=13.0-13.4 s on lane x=15 N  3 frames, closest 3.9 m
+  VERDICT: FAIL -- 1 of 1 birds below the 5-frame floor (median frames in view over the phase sweep at 5.0 m/s, 5.0 Hz): bird_0.
+           bird_0: TIMING -- does cross the frame, just rarely. Cadence, ground speed and bird speed all move this number; geometry does not have to change.
+  NOTE: cadence is frame OPPORTUNITY, not recorded yield -- pass the cadence your LAST clip measured (frames / airborne span).
+        Since the transport fix (ADR-013 am. 9: Fast DDS SHM segment + --shm-size=1g) recorded cadence has measured 5.0 Hz flat at 100 % band delivery, full boustrophedon included -- but only while config/dds/fg_fastdds.xml loads, which the clip's meta["dds"] proves. A 0.4-0.5 Hz clip is pre-fix or unloaded.
+  json -> /private/tmp/claude-501/-Users-vihanpatil-personal-projects-auto-drone-sim/5015ae93-245a-4286-a391-47ff04cdc400/scratchpad/visibility_headon_5p0.json

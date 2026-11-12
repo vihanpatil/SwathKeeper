@@ -227,6 +227,8 @@ avoidance take (:1823), so the booking half works and the safety half does not.
    REPORTED** (it governs the NDVI map, not the dodge) and the **forward booking gate becomes
    AUTHORISING**. Until ratified, §0b's ABORT RULE stands as written — see §4, which is why this
    take **cannot be flown under the runbook today**.
+   **RULED 2026-11-12 by the owner (ADR-020 am. 9): REPORTED — §0b governs the NDVI map; §0f authorises a depth-source dodge take.
+   Reported for the committed take: FAIL, exit 1, bird_0 median 2 frames (`docs/encounters/booked_20261111/take3_visibility_0b_headon_5p0_20261112.txt`).**
 2. **ADR-020 am. 3 open item (a).** An avoidance take with no booking is still VALID with a loud
    warning. Safety direction: a detector-source log written **after 2026-09-07** with no booking
    should be **INVALID-for-authorisation**. Meanwhile this pre-registration names the booking
@@ -348,6 +350,10 @@ is ratified, **the runbook as written forbids this flight.** Do not fly it on th
 paragraph; get the ratification, or fly and accept that the take is unauthorised by its own
 procedure. §0b remains a real gate for the NDVI map half regardless — and on a depth take the NDVI
 detector is DISARMED, so there is no map-detection half to salvage.
+
+> **RULED 2026-11-12 (ADR-020 am. 9): P3 item 1 → REPORTED.** The conflict above is closed in favour of the recommendation; the
+> 2026-11-11 take, flown before the ruling, is authorised by its own procedure after the fact, and this paragraph stays as the record
+> that it was not at flight time.
 
 **Two source conflicts a reader should know before booking.** (i) §0f's second clause reproduces
 *"and the depth segmenter does not exist yet"* — true when written on 2026-09-07 06:41Z, **false
@@ -472,7 +478,7 @@ the result is not a pre-registration; it is a narrative.
 * **Verdict:** `VALID`, exit 0. Every §3 PASS bullet that the checker prints is met: CPA ≥ 3.00 m, both speed medians ≤ 5.5 m/s, acquisition ≥ 33.591 m, wall 25/100 ms, detect rate ≥ 0.90, frame-shape 0, all 29 static_map_hints null, gz_clock_stream with 0 violations.
 * **§3 class: closest to PASS, but NOT a clean §3 PASS.** Four reasons:
   (i) The booking's am. 5 precondition is open: the take was booked on the 2026-09-07 artifact, and the am. 5 tall-obstacle re-score is still owed.
-  (ii) §0b / P3 item 1 is still unratified, so by §4 the take is unauthorised by its own procedure.
+  (ii) §0b / P3 item 1 is still unratified, so by §4 the take is unauthorised by its own procedure. **→ RULED 2026-11-12: REPORTED (ADR-020 am. 9); authorised by its procedure after the fact — RULING section below.**
   (iii) The checker text prints no R2 lateral-tree-margin line, so §3's R2 bullet cannot be read from it. R3 shows only `relatch_refused_degenerate=0` and `gate_rejects=0`.
   (iv) Forking paths: this accepted take is the THIRD attempt, and the gate rules changed between attempts. Gap 3 was a gate-rule change, not an artifact change.
 * **Gated numbers:** gt_cpa_m **9.6138 m** to bird_0 (tick 92; vertical sep 3.8200 m, 3D 10.3450 m). gt_cpa_gated_m **8.8013 m** after a 0.8125 m debit.
@@ -557,3 +563,13 @@ now so that nothing in it can be fitted to the numbers afterwards.
   2026-11-11 booking's open precondition closes with it. No constant moved. Still open: §0b / P3 item 1 (unratified), bar 4's shared pose
   source, the same-scenario track gap. Not measured here: static vehicle, noiseless sensor, level attitude (one pitched arm), one target per
   frame, one radius; the structure is a smooth box face with no self-depth structure of its own.
+
+## RULING (§0b / P3 item 1, 2026-11-12 — ADR-020 amendment 9)
+
+The owner chose **"Report only"**: for a depth-source take §0b is **REPORTED**, not a precondition, and §0f authorises. The §4 conflict
+above is closed as recommended; the 2026-11-11 take, flown before the ruling, is authorised by its own procedure after the fact — the
+OUTCOME sections above keep saying it was not at flight time. Reported for that take, run 2026-11-12 on its own mission, birds and
+booked speed (`python3 scripts/predict_bird_visibility.py --fps 5.0 --speed 5.0 --mission config/missions/headon_lane15.waypoints
+--birds config/birds/headon_lane15.json`): **FAIL, exit 1** — bird_0 median **2** frames in the nadir frame (min 0, max 3) over 38
+driver-start phases, limited by TIMING (a 0.4 s window on lane x = 15 at the best phase), against a forward-camera acquisition at
+44.926 m. Output: `docs/encounters/booked_20261111/take3_visibility_0b_headon_5p0_20261112.txt` + `.json`. P3 item 2 stays open.
